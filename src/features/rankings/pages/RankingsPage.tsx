@@ -1,0 +1,191 @@
+import { useState, useEffect } from 'react';
+import { rankingsService } from '@/services/rankingsService';
+import { Loading, Card, CardContent, Badge, Select } from '@/components/ui';
+import type { Ranking } from '@/types';
+import { Gender, TipoRanking } from '@/types';
+import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+const RankingsPage = () => {
+  const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [genero, setGenero] = useState<Gender>(Gender.MASCULINO);
+  const [tipoRanking, setTipoRanking] = useState<TipoRanking>(TipoRanking.GLOBAL);
+
+  useEffect(() => {
+    loadRankings();
+  }, [genero, tipoRanking]);
+
+  const loadRankings = async () => {
+    setLoading(true);
+    try {
+      const data = await rankingsService.getAll({
+        genero,
+        tipoRanking,
+        limit: 100,
+      });
+      setRankings(data);
+    } catch (error) {
+      console.error('Error loading rankings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPositionChange = (ranking: Ranking) => {
+    if (!ranking.posicionAnterior) return null;
+    const diff = ranking.posicionAnterior - ranking.posicion;
+    
+    if (diff > 0) {
+      return (
+        <span className="flex items-center text-green-600 text-sm">
+          <TrendingUp className="h-4 w-4 mr-1" />
+          +{diff}
+        </span>
+      );
+    } else if (diff < 0) {
+      return (
+        <span className="flex items-center text-red-600 text-sm">
+          <TrendingDown className="h-4 w-4 mr-1" />
+          {diff}
+        </span>
+      );
+    }
+    return (
+      <span className="flex items-center text-gray-400 text-sm">
+        <Minus className="h-4 w-4" />
+      </span>
+    );
+  };
+
+  const getPositionBadge = (position: number) => {
+    if (position === 1) {
+      return <Badge variant="warning" className="text-lg">🥇 1°</Badge>;
+    } else if (position === 2) {
+      return <Badge variant="secondary" className="text-lg">🥈 2°</Badge>;
+    } else if (position === 3) {
+      return <Badge variant="info" className="text-lg">🥉 3°</Badge>;
+    }
+    return <Badge variant="default">{position}°</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loading size="lg" text="Cargando rankings..." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <Trophy className="h-8 w-8 text-yellow-500" />
+          Rankings
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Clasificación de los mejores jugadores de pádel
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-4 mb-6">
+        <Select
+          value={genero}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenero(e.target.value as Gender)}
+          className="w-40"
+        >
+          <option value={Gender.MASCULINO}>Masculino</option>
+          <option value={Gender.FEMENINO}>Femenino</option>
+        </Select>
+
+        <Select
+          value={tipoRanking}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTipoRanking(e.target.value as TipoRanking)}
+          className="w-40"
+        >
+          <option value={TipoRanking.GLOBAL}>Global</option>
+          <option value={TipoRanking.PAIS}>País</option>
+          <option value={TipoRanking.CIUDAD}>Ciudad</option>
+        </Select>
+      </div>
+
+      {rankings.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="text-6xl mb-4">🏆</div>
+            <h3 className="text-xl font-semibold mb-2">No hay rankings disponibles</h3>
+            <p className="text-gray-600">
+              Aún no hay datos de ranking para estos filtros
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Pos.</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Jugador</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Puntos</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Torneos</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">V/D</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">%</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Cambio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rankings.map((ranking) => (
+                    <tr key={ranking.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        {getPositionBadge(ranking.posicion)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold">
+                            {ranking.jugador?.nombre?.charAt(0) || '?'}
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {ranking.jugador?.nombre} {ranking.jugador?.apellido}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {ranking.jugador?.ciudad || 'Sin ciudad'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-emerald-600">
+                        {ranking.puntosTotales}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {ranking.torneosJugados}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-green-600">{ranking.victorias}</span>
+                        /
+                        <span className="text-red-600">{ranking.derrotas}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {ranking.porcentajeVictorias
+                          ? `${Number(ranking.porcentajeVictorias).toFixed(0)}%`
+                          : '-'
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {getPositionChange(ranking)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default RankingsPage;
