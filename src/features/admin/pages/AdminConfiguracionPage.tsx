@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
 import { Loading, Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 import {
-  Settings,
   Trophy,
   Save,
   Users,
