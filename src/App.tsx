@@ -15,6 +15,10 @@ import EditProfilePage from '@/features/profile/pages/EditProfilePage';
 import TournamentDetailPage from '@/features/tournaments/pages/TournamentDetailPage';
 import AdminPage from '@/features/admin/pages/AdminPage';
 import AdminSedesPage from '@/features/admin/pages/AdminSedesPage';
+import AdminOrganizadoresPage from '@/features/admin/pages/AdminOrganizadoresPage';
+import AdminModeracionPage from '@/features/admin/pages/AdminModeracionPage';
+import AdminSuscripcionesPage from '@/features/admin/pages/AdminSuscripcionesPage';
+import AdminConfiguracionPage from '@/features/admin/pages/AdminConfiguracionPage';
 import ManageTournamentPage from '@/features/tournaments/pages/ManageTournamentPage';
 import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage';
 
@@ -51,6 +55,38 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminSedesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/organizadores"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminOrganizadoresPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/moderacion"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminModeracionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/suscripciones"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminSuscripcionesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/configuracion"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminConfiguracionPage />
                 </ProtectedRoute>
               }
             />

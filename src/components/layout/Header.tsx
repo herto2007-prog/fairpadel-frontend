@@ -14,6 +14,9 @@ import {
   Settings,
   Crown,
   MapPin,
+  UserPlus,
+  Shield,
+  CreditCard,
 } from 'lucide-react';
 
 const Header = () => {
@@ -131,6 +134,38 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
                         >
                           <MapPin className="h-4 w-4" />
                           Gestionar Sedes
+                        </Link>
+                        <Link
+                          to="/admin/organizadores"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Organizadores
+                        </Link>
+                        <Link
+                          to="/admin/moderacion"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Moderación
+                        </Link>
+                        <Link
+                          to="/admin/suscripciones"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Suscripciones
+                        </Link>
+                        <Link
+                          to="/admin/configuracion"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Configuración
                         </Link>
                       </>
                     )}

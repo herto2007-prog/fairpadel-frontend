@@ -377,7 +377,7 @@ function CanchasTab({ tournament }: { tournament: Tournament }) {
     try {
       // Cargar canchas configuradas del torneo
       const data: any = await sedesService.getTorneoCanchas(tournament.id);
-      const torneoCanchas = Array.isArray(data) ? data : (data?.torneoCanchas || []);
+      const torneoCanchas = Array.isArray(data) ? data : (data?.canchasConfiguradas || data?.torneoCanchas || []);
       setSelectedIds(torneoCanchas.map((tc: TorneoCancha) => tc.sedeCanchaId));
 
       const horariosMap: Record<string, { fecha: string; horaInicio: string; horaFin: string }[]> = {};
