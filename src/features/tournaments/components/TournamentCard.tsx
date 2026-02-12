@@ -59,7 +59,7 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({ tournament }) =>
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-1">{tournament.nombre}</h3>
         
-        <div className="space-y-2 text-sm text-gray-600 mb-4">
+        <div className="space-y-2 text-sm text-light-secondary mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>

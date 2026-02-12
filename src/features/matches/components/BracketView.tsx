@@ -84,7 +84,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
       <div className="flex gap-8 min-w-max p-4">
         {rounds.map((roundNumber) => (
           <div key={roundNumber} className="flex flex-col gap-4 min-w-[280px]">
-            <h3 className="text-lg font-semibold text-center py-2 bg-emerald-100 rounded-lg">
+            <h3 className="text-lg font-semibold text-center py-2 bg-primary-500/20 text-primary-500 rounded-lg">
               {getRoundName(roundNumber, rounds.length)}
             </h3>
             
@@ -93,8 +93,8 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
                 <Card key={match.id} className="overflow-hidden">
                   <CardContent className="p-0">
                     {/* Header con estado */}
-                    <div className="flex justify-between items-center px-3 py-2 bg-gray-50 border-b">
-                      <span className="text-xs text-gray-500">
+                    <div className="flex justify-between items-center px-3 py-2 bg-dark-surface border-b border-dark-border">
+                      <span className="text-xs text-light-secondary">
                         {match.fechaProgramada 
                           ? new Date(match.fechaProgramada).toLocaleDateString()
                           : 'Sin fecha'
@@ -105,8 +105,8 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
                     </div>
                     
                     {/* Pareja 1 */}
-                    <div className={`flex justify-between items-center px-3 py-2 border-b ${
-                      isWinner(match, 1) ? 'bg-green-50' : ''
+                    <div className={`flex justify-between items-center px-3 py-2 border-b border-dark-border ${
+                      isWinner(match, 1) ? 'bg-green-900/30' : ''
                     }`}>
                       <span className={`text-sm ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
                         {getParejaName(match, 1)}
@@ -118,7 +118,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
                     
                     {/* Pareja 2 */}
                     <div className={`flex justify-between items-center px-3 py-2 ${
-                      isWinner(match, 2) ? 'bg-green-50' : ''
+                      isWinner(match, 2) ? 'bg-green-900/30' : ''
                     }`}>
                       <span className={`text-sm ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
                         {getParejaName(match, 2)}

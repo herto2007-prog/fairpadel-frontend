@@ -80,17 +80,17 @@ export const InscripcionModal: React.FC<InscripcionModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Inscribirse al Torneo" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+          <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
             {error}
           </div>
         )}
 
-        <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="p-4 bg-dark-surface rounded-lg">
           <h3 className="font-semibold">{tournament.nombre}</h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-light-secondary">
             {new Date(tournament.fechaInicio).toLocaleDateString()} - {tournament.ciudad}
           </p>
-          <p className="text-sm font-medium text-emerald-600 mt-1">
+          <p className="text-sm font-medium text-primary-500 mt-1">
             Costo: Gs. {new Intl.NumberFormat('es-PY').format(tournament.costoInscripcion)}
           </p>
         </div>
@@ -150,7 +150,7 @@ export const InscripcionModal: React.FC<InscripcionModalProps> = ({
           required
         />
 
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-light-secondary">
           Tu pareja debe estar registrada en FairPadel con este documento.
         </p>
 

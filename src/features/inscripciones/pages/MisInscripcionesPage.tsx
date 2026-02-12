@@ -53,8 +53,8 @@ const MisInscripcionesPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Mis Inscripciones</h1>
-        <p className="text-gray-600 mt-2">Revisa el estado de tus inscripciones a torneos</p>
+        <h1 className="text-3xl font-bold text-light-text">Mis Inscripciones</h1>
+        <p className="text-light-secondary mt-2">Revisa el estado de tus inscripciones a torneos</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -83,7 +83,7 @@ const MisInscripcionesPage = () => {
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold mb-2">No tienes inscripciones</h3>
-            <p className="text-gray-600">
+            <p className="text-light-secondary">
               Explora los torneos disponibles y participa
             </p>
           </CardContent>
@@ -101,7 +101,7 @@ const MisInscripcionesPage = () => {
                       </h3>
                       {getStatusBadge(inscripcion.estado)}
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-4 text-sm text-light-secondary">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {inscripcion.tournament?.fechaInicio 
@@ -120,7 +120,7 @@ const MisInscripcionesPage = () => {
                     </div>
                     {inscripcion.pareja && (
                       <div className="mt-2 text-sm">
-                        <span className="text-gray-500">Pareja: </span>
+                        <span className="text-light-secondary">Pareja: </span>
                         {inscripcion.pareja.jugador1?.nombre} {inscripcion.pareja.jugador1?.apellido} & 
                         {inscripcion.pareja.jugador2 
                           ? ` ${inscripcion.pareja.jugador2.nombre} ${inscripcion.pareja.jugador2.apellido}`

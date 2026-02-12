@@ -34,14 +34,14 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-dark-bg">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-dark-card border-b border-dark-border shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">FairPadel</h1>
+            <h1 className="text-2xl font-bold text-light-text">FairPadel</h1>
             <div className="flex items-center gap-4">
-              <span className="text-gray-700">
+              <span className="text-light-secondary">
                 {user?.nombre} {user?.apellido}
               </span>
               <button
@@ -57,44 +57,44 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="bg-dark-card rounded-lg shadow-lg border border-dark-border p-6">
+          <h2 className="text-2xl font-bold text-light-text mb-4">
             ¡Bienvenido, {user?.nombre}! 🎾
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             {/* Información del Usuario */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold text-lg mb-3">Tu Información</h3>
-              <div className="space-y-3 text-sm">
-                <p><span className="font-medium">Documento:</span> {user?.documento}</p>
-                <p><span className="font-medium">Email:</span> {user?.email}</p>
-                <p><span className="font-medium">Género:</span> {user?.genero}</p>
-                <p><span className="font-medium">Ciudad:</span> {user?.ciudad || 'No especificada'}</p>
+            <div className="border border-dark-border rounded-lg p-4">
+              <h3 className="font-semibold text-lg mb-3 text-light-text">Tu Información</h3>
+              <div className="space-y-3 text-sm text-light-secondary">
+                <p><span className="font-medium text-light-text">Documento:</span> {user?.documento}</p>
+                <p><span className="font-medium text-light-text">Email:</span> {user?.email}</p>
+                <p><span className="font-medium text-light-text">Género:</span> {user?.genero}</p>
+                <p><span className="font-medium text-light-text">Ciudad:</span> {user?.ciudad || 'No especificada'}</p>
                 <p>
-                  <span className="font-medium">Tipo de cuenta:</span>{' '}
+                  <span className="font-medium text-light-text">Tipo de cuenta:</span>{' '}
                   {user?.esPremium ? (
-                    <span className="text-yellow-600 font-semibold">⭐ Premium</span>
+                    <span className="text-yellow-400 font-semibold">⭐ Premium</span>
                   ) : (
-                    <span className="text-gray-600">Gratuita</span>
+                    <span className="text-light-secondary">Gratuita</span>
                   )}
                 </p>
-                
+
                 {/* Roles */}
                 <div className="pt-2">
-                  <p className="font-medium mb-2">Roles:</p>
+                  <p className="font-medium mb-2 text-light-text">Roles:</p>
                   <div className="flex flex-wrap gap-2">
                     {user?.roles && user.roles.length > 0 ? (
                       user.roles.map((userRole: any, index: number) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-900/30 text-blue-400"
                         >
                           {getRoleName(userRole)}
                         </span>
                       ))
                     ) : (
-                      <span className="text-gray-500 text-sm">Sin roles asignados</span>
+                      <span className="text-light-muted text-sm">Sin roles asignados</span>
                     )}
                   </div>
                 </div>
@@ -102,9 +102,9 @@ export default function Dashboard() {
             </div>
 
             {/* Próximas Funcionalidades */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold text-lg mb-3">Próximamente</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
+            <div className="border border-dark-border rounded-lg p-4">
+              <h3 className="font-semibold text-lg mb-3 text-light-text">Próximamente</h3>
+              <ul className="space-y-2 text-sm text-light-secondary">
                 <li>✅ Sistema de autenticación completo</li>
                 <li>✅ Módulo de torneos</li>
                 <li>⏳ Inscribirse en torneos</li>
@@ -119,8 +119,8 @@ export default function Dashboard() {
 
           {/* Panel de Organizador */}
           {isOrganizer && (
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="mt-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-light-text mb-4">
                 🏆 Panel de Organizador
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -144,18 +144,18 @@ export default function Dashboard() {
           <div className="mt-6">
             <button
               onClick={() => navigate('/tournaments')}
-              className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+              className="w-full px-6 py-3 bg-dark-surface text-light-secondary rounded-lg hover:bg-dark-hover font-medium transition-colors"
             >
               🎾 Ver Todos los Torneos
             </button>
           </div>
 
-          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">
+          <div className="mt-8 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+            <h3 className="font-semibold text-green-400 mb-2">
               🎉 ¡Sprint 1-2 Completado!
             </h3>
-            <p className="text-green-700 text-sm">
-              Has completado exitosamente los Sprints 1 y 2. El sistema de autenticación 
+            <p className="text-green-400/80 text-sm">
+              Has completado exitosamente los Sprints 1 y 2. El sistema de autenticación
               está 100% funcional y ahora puedes crear y gestionar torneos.
             </p>
           </div>

@@ -100,17 +100,17 @@ const CargarResultadoPage = () => {
           <CardTitle>Cargar Resultado</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">{match.ronda}</p>
+          <div className="mb-6 p-4 bg-dark-surface rounded-lg">
+            <p className="text-sm text-light-secondary mb-2">{match.ronda}</p>
             <div className="flex justify-between items-center">
               <span className="font-medium">{pareja1Name}</span>
-              <span className="text-gray-400">vs</span>
+              <span className="text-light-secondary">vs</span>
               <span className="font-medium">{pareja2Name}</span>
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -186,7 +186,7 @@ const CargarResultadoPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-light-text mb-1">
                 Observaciones
               </label>
               <textarea

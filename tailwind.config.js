@@ -7,17 +7,31 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Paleta Dark con acentos rojos - inspirada en Daphne Dark UI Kit
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#e63946',
+          600: '#dc2626',
+          700: '#c1121f',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
+        dark: {
+          bg: '#0f0f13',
+          card: '#1a1a24',
+          surface: '#252532',
+          border: '#2d2d3d',
+          hover: '#32324a',
+          input: '#1e1e2e',
+        },
+        light: {
+          text: '#f1f1f1',
+          secondary: '#a0a0b0',
+          muted: '#6b6b7b',
         },
       },
     },

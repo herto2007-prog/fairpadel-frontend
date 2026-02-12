@@ -18,48 +18,75 @@
   animation: slide-in 0.3s ease-out;
 }
 
+/* ═══════════════════════════════════════════
+   DARK THEME - Inspirado en Daphne Dark UI Kit
+   ═══════════════════════════════════════════ */
+
+:root {
+  --bg-primary: #0f0f13;
+  --bg-card: #1a1a24;
+  --bg-surface: #252532;
+  --bg-hover: #32324a;
+  --bg-input: #1e1e2e;
+  --border-color: #2d2d3d;
+  --text-primary: #f1f1f1;
+  --text-secondary: #a0a0b0;
+  --text-muted: #6b6b7b;
+  --accent: #e63946;
+  --accent-hover: #c1121f;
+  --accent-light: #f87171;
+}
+
 /* Estilos base */
 @layer base {
   body {
-    @apply text-gray-900 antialiased;
+    @apply antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
-  
+
   h1 {
-    @apply text-4xl font-bold;
+    @apply text-4xl font-bold text-light-text;
   }
-  
+
   h2 {
-    @apply text-3xl font-semibold;
+    @apply text-3xl font-semibold text-light-text;
   }
-  
+
   h3 {
-    @apply text-2xl font-semibold;
+    @apply text-2xl font-semibold text-light-text;
   }
-  
+
   h4 {
-    @apply text-xl font-medium;
+    @apply text-xl font-medium text-light-text;
   }
 }
 
-/* Scrollbar personalizado */
+/* Scrollbar personalizado - Dark */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background-color: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  background-color: var(--border-color);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  background-color: var(--bg-hover);
 }
 
 /* Transitions suaves */
 * {
   @apply transition-colors duration-200;
+}
+
+/* Override default input/select styles for dark theme */
+input, select, textarea {
+  color-scheme: dark;
 }

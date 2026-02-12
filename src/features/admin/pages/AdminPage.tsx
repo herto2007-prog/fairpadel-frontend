@@ -73,8 +73,8 @@ const AdminPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
-        <p className="text-gray-600 mt-2">Gestiona torneos, usuarios y configuración</p>
+        <h1 className="text-3xl font-bold text-light-text">Panel de Administración</h1>
+        <p className="text-light-secondary mt-2">Gestiona torneos, usuarios y configuración</p>
       </div>
 
       {/* Métricas */}
@@ -82,26 +82,26 @@ const AdminPage = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-emerald-600">{metrics.totalUsuarios}</p>
-              <p className="text-sm text-gray-600">Usuarios</p>
+              <p className="text-3xl font-bold text-primary-500">{metrics.totalUsuarios}</p>
+              <p className="text-sm text-light-secondary">Usuarios</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-yellow-600">{metrics.usuariosPremium}</p>
-              <p className="text-sm text-gray-600">Premium</p>
+              <p className="text-sm text-light-secondary">Premium</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-blue-600">{metrics.totalTorneos}</p>
-              <p className="text-sm text-gray-600">Torneos</p>
+              <p className="text-sm text-light-secondary">Torneos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-3xl font-bold text-orange-600">{metrics.torneosPendientes}</p>
-              <p className="text-sm text-gray-600">Pendientes</p>
+              <p className="text-sm text-light-secondary">Pendientes</p>
             </CardContent>
           </Card>
         </div>
@@ -120,7 +120,7 @@ const AdminPage = () => {
         </CardHeader>
         <CardContent>
           {torneosPendientes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-light-secondary">
               <p>No hay torneos pendientes de aprobación</p>
             </div>
           ) : (
@@ -128,12 +128,12 @@ const AdminPage = () => {
               {torneosPendientes.map((torneo) => (
                 <div
                   key={torneo.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className="border border-dark-border rounded-lg p-4 hover:bg-dark-hover"
                 >
                   <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold">{torneo.nombre}</h3>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-2">
+                      <div className="flex flex-wrap gap-4 text-sm text-light-secondary mt-2">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {new Date(torneo.fechaInicio).toLocaleDateString()} - {new Date(torneo.fechaFin).toLocaleDateString()}
@@ -148,12 +148,12 @@ const AdminPage = () => {
                         </span>
                       </div>
                       {torneo.organizador && (
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-light-secondary mt-2">
                           Organizador: {torneo.organizador.nombre} {torneo.organizador.apellido} ({torneo.organizador.email})
                         </p>
                       )}
                       {torneo.descripcion && (
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                        <p className="text-sm text-light-secondary mt-2 line-clamp-2">
                           {torneo.descripcion}
                         </p>
                       )}

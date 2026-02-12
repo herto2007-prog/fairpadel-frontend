@@ -59,7 +59,7 @@ const ProfilePage = () => {
         <Card>
           <CardContent className="text-center py-12">
             <h3 className="text-xl font-semibold mb-2">Usuario no encontrado</h3>
-            <p className="text-gray-600">El perfil que buscas no existe</p>
+            <p className="text-light-secondary">El perfil que buscas no existe</p>
           </CardContent>
         </Card>
       </div>
@@ -73,7 +73,7 @@ const ProfilePage = () => {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Avatar y datos principales */}
             <div className="flex flex-col items-center md:items-start">
-              <div className="h-32 w-32 rounded-full bg-emerald-100 flex items-center justify-center text-4xl font-bold text-emerald-700 overflow-hidden">
+              <div className="h-32 w-32 rounded-full bg-primary-500/20 flex items-center justify-center text-4xl font-bold text-primary-500 overflow-hidden">
                 {profile.fotoUrl ? (
                   <img
                     src={profile.fotoUrl}
@@ -106,10 +106,10 @@ const ProfilePage = () => {
               </div>
 
               {profile.bio && (
-                <p className="text-gray-600 mb-4">{profile.bio}</p>
+                <p className="text-light-secondary mb-4">{profile.bio}</p>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-light-secondary">
                 {profile.ciudad && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
@@ -139,34 +139,34 @@ const ProfilePage = () => {
 
             {/* Estadísticas */}
             {ranking && (
-              <div className="bg-gray-50 rounded-lg p-4 min-w-[200px]">
+              <div className="bg-dark-surface rounded-lg p-4 min-w-[200px]">
                 <div className="flex items-center gap-2 mb-4">
                   <Trophy className="h-5 w-5 text-yellow-500" />
                   <span className="font-semibold">Ranking</span>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Posición</span>
-                    <span className="font-bold text-emerald-600">#{ranking.posicion}</span>
+                    <span className="text-light-secondary">Posición</span>
+                    <span className="font-bold text-primary-500">#{ranking.posicion}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Puntos</span>
+                    <span className="text-light-secondary">Puntos</span>
                     <span className="font-bold">{ranking.puntosTotales}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Torneos</span>
+                    <span className="text-light-secondary">Torneos</span>
                     <span className="font-bold">{ranking.torneosJugados}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">V/D</span>
+                    <span className="text-light-secondary">V/D</span>
                     <span className="font-bold">
-                      <span className="text-green-600">{ranking.victorias}</span>
+                      <span className="text-green-400">{ranking.victorias}</span>
                       /
-                      <span className="text-red-600">{ranking.derrotas}</span>
+                      <span className="text-red-400">{ranking.derrotas}</span>
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Campeonatos</span>
+                    <span className="text-light-secondary">Campeonatos</span>
                     <span className="font-bold">{ranking.campeonatos}</span>
                   </div>
                 </div>

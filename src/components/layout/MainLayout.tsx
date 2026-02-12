@@ -13,26 +13,26 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-dark-card border-b border-dark-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">
+          <Link to="/" className="text-2xl font-bold text-primary-500">
             FairPadel
           </Link>
 
           <nav className="flex items-center gap-4">
-            <Link to="/torneos" className="hover:text-primary">
+            <Link to="/torneos" className="text-light-secondary hover:text-primary-400">
               Torneos
             </Link>
-            <Link to="/rankings" className="hover:text-primary">
+            <Link to="/rankings" className="text-light-secondary hover:text-primary-400">
               Rankings
             </Link>
 
             {isAuthenticated ? (
               <>
-                <Link to="/mis-inscripciones" className="hover:text-primary">
+                <Link to="/mis-inscripciones" className="text-light-secondary hover:text-primary-400">
                   Mis Inscripciones
                 </Link>
-                <Link to={`/perfil/${user?.id}`} className="hover:text-primary">
+                <Link to={`/perfil/${user?.id}`} className="text-light-secondary hover:text-primary-400">
                   Perfil
                 </Link>
                 <Button variant="outline" size="sm" onClick={logout}>
@@ -61,8 +61,8 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t py-8">
-        <div className="container mx-auto px-4 text-center text-gray-600">
+      <footer className="bg-dark-card border-t border-dark-border py-8">
+        <div className="container mx-auto px-4 text-center text-light-muted">
           <p>© 2026 FairPadel - La plataforma que conecta a la comunidad del pádel</p>
         </div>
       </footer>

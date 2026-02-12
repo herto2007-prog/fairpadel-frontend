@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, Loading } from '@/components/ui';
-import  tournamentsService from '@/services/tournamentsService';
+import tournamentsService from '@/services/tournamentsService';
+import inscripcionesService from '@/services/inscripcionesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament } from '@/types';
+import { Settings, Users, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, hasRole } = useAuthStore();
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [inscripciones, setInscripciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (id) {
@@ -21,13 +25,21 @@ export default function TournamentDetailPage() {
 
   const loadTournament = async () => {
     try {
-      const data = await tournamentsService.getById(id!);
+      const [data, inscData] = await Promise.all([
+        tournamentsService.getById(id!),
+        inscripcionesService.getByTournament(id!).catch(() => []),
+      ]);
       setTournament(data);
+      setInscripciones(inscData);
     } catch (error) {
       console.error('Error loading tournament:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleCategory = (catName: string) => {
+    setExpandedCategories((prev) => ({ ...prev, [catName]: !prev[catName] }));
   };
 
   const handleInscribirse = () => {
@@ -50,7 +62,7 @@ export default function TournamentDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-12 text-center">
-          <p className="text-gray-500">Torneo no encontrado</p>
+          <p className="text-light-secondary">Torneo no encontrado</p>
           <Button className="mt-4" onClick={() => navigate('/torneos')}>
             Volver a Torneos
           </Button>
@@ -59,11 +71,15 @@ export default function TournamentDetailPage() {
     );
   }
 
-  const canInscribe = tournament.estado === 'PUBLICADO' && 
+  const canInscribe = tournament.estado === 'PUBLICADO' &&
                       new Date(tournament.fechaLimiteInscr) > new Date();
 
+  const isAdmin = hasRole('admin');
+  const isOwner = user?.id === tournament.organizadorId;
+  const canManage = isAdmin || isOwner;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-dark-surface">
       {/* Estilos para animación del botón */}
       <style>{`
         @keyframes pulse-glow {
@@ -132,7 +148,7 @@ export default function TournamentDetailPage() {
             {/* Descripción */}
             <Card className="p-6">
               <h2 className="text-2xl font-bold mb-4">Descripción</h2>
-              <p className="text-gray-700 whitespace-pre-line">
+              <p className="text-light-text whitespace-pre-line">
                 {tournament.descripcion || 'Sin descripción disponible'}
               </p>
             </Card>
@@ -140,13 +156,32 @@ export default function TournamentDetailPage() {
             {/* Categorías */}
             <Card className="p-6">
               <h2 className="text-2xl font-bold mb-4">Categorías</h2>
-              <div className="flex flex-wrap gap-2">
-                {tournament.categorias?.map((cat: any) => (
-                  <Badge key={cat.id} variant="outline">
-                    {cat.category?.nombre || 'Categoría'}
-                  </Badge>
-                )) || <p className="text-gray-500">Sin categorías</p>}
-              </div>
+              {tournament.categorias && tournament.categorias.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-blue-400 mb-2">Caballeros</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {tournament.categorias
+                        .filter((cat: any) => (cat.category?.nombre || '').toLowerCase().includes('caballeros'))
+                        .map((cat: any) => (
+                          <Badge key={cat.id} variant="outline">{cat.category?.nombre}</Badge>
+                        ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-pink-400 mb-2">Damas</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {tournament.categorias
+                        .filter((cat: any) => (cat.category?.nombre || '').toLowerCase().includes('damas'))
+                        .map((cat: any) => (
+                          <Badge key={cat.id} variant="outline">{cat.category?.nombre}</Badge>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-light-secondary">Sin categorías</p>
+              )}
             </Card>
 
             {/* Modalidades */}
@@ -157,7 +192,7 @@ export default function TournamentDetailPage() {
                   <Badge key={mod.id} variant="outline">
                     {mod.modalidad}
                   </Badge>
-                )) || <p className="text-gray-500">Sin modalidades</p>}
+                )) || <p className="text-light-secondary">Sin modalidades</p>}
               </div>
             </Card>
 
@@ -168,7 +203,7 @@ export default function TournamentDetailPage() {
                 <div className="space-y-2">
                   <p className="font-medium">{tournament.sede}</p>
                   {tournament.direccion && (
-                    <p className="text-gray-600">{tournament.direccion}</p>
+                    <p className="text-light-secondary">{tournament.direccion}</p>
                   )}
                   {tournament.mapsUrl && (
                     <a
@@ -183,6 +218,93 @@ export default function TournamentDetailPage() {
                 </div>
               </Card>
             )}
+            {/* Inscriptos */}
+            {inscripciones.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Users className="w-6 h-6 text-primary-500" />
+                  Inscriptos ({inscripciones.length} parejas)
+                </h2>
+                {(() => {
+                  // Agrupar por categoría
+                  const grouped: Record<string, any[]> = {};
+                  inscripciones.forEach((insc) => {
+                    const catName = insc.category?.nombre || 'Sin categoría';
+                    if (!grouped[catName]) grouped[catName] = [];
+                    grouped[catName].push(insc);
+                  });
+
+                  // Separar en caballeros y damas
+                  const caballerosEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('caballeros'));
+                  const damasEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('damas'));
+                  const otherEntries = Object.entries(grouped).filter(([name]) => !name.toLowerCase().includes('caballeros') && !name.toLowerCase().includes('damas'));
+
+                  const renderGroup = (entries: [string, any[]][], title: string, color: string) => {
+                    if (entries.length === 0) return null;
+                    return (
+                      <div className="mb-4">
+                        <h4 className={`font-medium text-${color}-400 mb-2`}>{title}</h4>
+                        {entries.map(([catName, inscs]) => {
+                          const isExpanded = expandedCategories[catName] !== false;
+                          return (
+                            <div key={catName} className="mb-3">
+                              <button
+                                onClick={() => toggleCategory(catName)}
+                                className="flex items-center justify-between w-full text-left p-2 rounded-lg hover:bg-dark-hover"
+                              >
+                                <span className="font-medium text-sm">{catName} ({inscs.length} parejas)</span>
+                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </button>
+                              {isExpanded && (
+                                <div className="space-y-2 mt-1 pl-2">
+                                  {inscs.map((insc: any) => (
+                                    <div key={insc.id} className="flex items-center gap-3 p-2 rounded-lg bg-dark-surface">
+                                      <div className="flex items-center gap-2 flex-1">
+                                        <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-xs font-bold text-primary-400">
+                                          {(insc.pareja?.jugador1?.nombre?.[0] || '?').toUpperCase()}
+                                        </div>
+                                        <div className="text-sm">
+                                          <p className="font-medium">
+                                            {insc.pareja?.jugador1
+                                              ? `${insc.pareja.jugador1.nombre} ${insc.pareja.jugador1.apellido}`
+                                              : 'Jugador 1'}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <span className="text-light-secondary text-xs">+</span>
+                                      <div className="flex items-center gap-2 flex-1">
+                                        <div className="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-xs font-bold text-blue-400">
+                                          {(insc.pareja?.jugador2?.nombre?.[0] || '?').toUpperCase()}
+                                        </div>
+                                        <div className="text-sm">
+                                          <p className="font-medium">
+                                            {insc.pareja?.jugador2
+                                              ? `${insc.pareja.jugador2.nombre} ${insc.pareja.jugador2.apellido}`
+                                              : `Doc: ${insc.pareja?.jugador2Documento || '?'}`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div>
+                      {renderGroup(caballerosEntries, 'Caballeros', 'blue')}
+                      {renderGroup(damasEntries, 'Damas', 'pink')}
+                      {renderGroup(otherEntries, 'Otras', 'gray')}
+                    </div>
+                  );
+                })()}
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -193,22 +315,22 @@ export default function TournamentDetailPage() {
               
               <div className="space-y-4 mb-6">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Fecha de inicio</p>
+                  <p className="text-sm text-light-secondary mb-1">Fecha de inicio</p>
                   <p className="font-medium">{formatDate(tournament.fechaInicio)}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Fecha de fin</p>
+                  <p className="text-sm text-light-secondary mb-1">Fecha de fin</p>
                   <p className="font-medium">{formatDate(tournament.fechaFin)}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Límite inscripción</p>
+                  <p className="text-sm text-light-secondary mb-1">Límite inscripción</p>
                   <p className="font-medium">{formatDate(tournament.fechaLimiteInscr)}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Costo</p>
+                  <p className="text-sm text-light-secondary mb-1">Costo</p>
                   <p className="font-bold text-2xl text-primary-600">
                     {tournament.costoInscripcion > 0 
                       ? formatCurrency(Number(tournament.costoInscripcion))
@@ -229,25 +351,40 @@ export default function TournamentDetailPage() {
                   <span className="text-2xl">🏆</span>
                 </button>
               ) : tournament.estado === 'PUBLICADO' ? (
-                <div className="text-center p-4 bg-yellow-50 rounded-lg border-2 border-yellow-200">
-                  <p className="text-sm text-yellow-800 font-medium">
+                <div className="text-center p-4 bg-yellow-900/30 rounded-lg border-2 border-yellow-500/50">
+                  <p className="text-sm text-yellow-400 font-medium">
                     ⏰ Inscripciones cerradas
                   </p>
                 </div>
               ) : (
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                <div className="text-center p-4 bg-dark-surface rounded-lg">
+                  <p className="text-sm text-light-secondary">
                     Torneo {tournament.estado.toLowerCase()}
                   </p>
                 </div>
               )}
             </Card>
 
+            {/* Botón Administrar - solo visible para organizador del torneo y admin */}
+            {canManage && (
+              <button
+                onClick={() => navigate(`/tournaments/${id}/manage`)}
+                className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl
+                           transition-all duration-200 hover:scale-[1.02] active:scale-95
+                           flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Administrar Torneo</span>
+              </button>
+            )}
+
             {/* Organizador Card */}
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-4">Organizador</h3>
-              <p className="text-gray-600">
-                ID: {tournament.organizadorId?.slice(0, 8)}...
+              <p className="text-light-secondary">
+                {tournament.organizador
+                  ? `${tournament.organizador.nombre} ${tournament.organizador.apellido}`
+                  : `ID: ${tournament.organizadorId?.slice(0, 8)}...`}
               </p>
             </Card>
           </div>

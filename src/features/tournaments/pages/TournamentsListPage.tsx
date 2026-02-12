@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
 import { Loading, Card, CardContent } from '@/components/ui';
 import { TournamentCard } from '../components/TournamentCard';
 import { TournamentFilters } from '../components/TournamentFilters';
+import { useAuthStore } from '@/store/authStore';
 import type { Tournament, TournamentFilters as Filters } from '@/types';
 import { TournamentStatus } from '@/types';
+import { Plus } from 'lucide-react';
 
 const TournamentsListPage = () => {
+  const navigate = useNavigate();
+  const { hasRole } = useAuthStore();
+  const canCreate = hasRole('admin') || hasRole('organizador');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
@@ -43,11 +49,22 @@ const TournamentsListPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Torneos</h1>
-        <p className="text-gray-600 mt-2">
-          Encuentra y participa en los mejores torneos de pádel
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-light-text">Torneos</h1>
+          <p className="text-light-secondary mt-2">
+            Encuentra y participa en los mejores torneos de pádel
+          </p>
+        </div>
+        {canCreate && (
+          <button
+            onClick={() => navigate('/tournaments/create')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            Crear Torneo
+          </button>
+        )}
       </div>
 
       <TournamentFilters filters={filters} onChange={handleFiltersChange} />
@@ -57,7 +74,7 @@ const TournamentsListPage = () => {
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">🎾</div>
             <h3 className="text-xl font-semibold mb-2">No hay torneos disponibles</h3>
-            <p className="text-gray-600">
+            <p className="text-light-secondary">
               No se encontraron torneos con los filtros seleccionados.
             </p>
           </CardContent>

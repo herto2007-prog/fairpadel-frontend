@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
-import { Button, Input, Card, CardHeader, CardTitle, CardContent, Checkbox } from '@/components/ui';
+import { Button, Input, Card, CardHeader, CardTitle, CardContent, Checkbox, Loading } from '@/components/ui';
 import type { Category, Sede } from '@/types';
 import { Modalidad } from '@/types';
 import SedeSelector from '../components/SedeSelector';
+import { ArrowLeft } from 'lucide-react';
 
-const CreateTournamentPage = () => {
+export default function EditTournamentPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedModalidades, setSelectedModalidades] = useState<Modalidad[]>([Modalidad.TRADICIONAL]);
+  const [selectedModalidades, setSelectedModalidades] = useState<Modalidad[]>([]);
   const [selectedSede, setSelectedSede] = useState<Sede | null>(null);
 
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    pais: 'Paraguay',
-    region: 'Alto Parana',
-    ciudad: 'Ciudad del Este',
+    pais: '',
+    region: '',
+    ciudad: '',
     fechaInicio: '',
     fechaFin: '',
     fechaLimiteInscripcion: '',
@@ -29,22 +32,49 @@ const CreateTournamentPage = () => {
   });
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    if (id) {
+      loadData();
+    }
+  }, [id]);
 
-  const loadCategories = async () => {
+  const loadData = async () => {
     try {
-      const data = await tournamentsService.getCategories();
-      setCategories(data);
-    } catch (error) {
-      console.error('Error loading categories:', error);
+      const [tournament, cats] = await Promise.all([
+        tournamentsService.getById(id!),
+        tournamentsService.getCategories(),
+      ]);
+
+      setCategories(cats);
+      setSelectedCategories(tournament.categorias?.map((tc) => tc.categoryId) || []);
+      setSelectedModalidades(tournament.modalidades?.map((tm) => tm.modalidad) || []);
+      if (tournament.sedePrincipal) {
+        setSelectedSede(tournament.sedePrincipal);
+      }
+
+      setFormData({
+        nombre: tournament.nombre,
+        descripcion: tournament.descripcion || '',
+        pais: tournament.pais,
+        region: tournament.region,
+        ciudad: tournament.ciudad,
+        fechaInicio: tournament.fechaInicio?.split('T')[0] || '',
+        fechaFin: tournament.fechaFin?.split('T')[0] || '',
+        fechaLimiteInscripcion: tournament.fechaLimiteInscr?.split('T')[0] || '',
+        flyerUrl: tournament.flyerUrl,
+        costoInscripcion: Number(tournament.costoInscripcion),
+      });
+    } catch (err) {
+      console.error('Error loading tournament:', err);
+      setError('Error al cargar el torneo');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
+        ? prev.filter((cid) => cid !== categoryId)
         : [...prev, categoryId]
     );
   };
@@ -57,15 +87,10 @@ const CreateTournamentPage = () => {
     );
   };
 
-  const handleSedeSelect = (sede: Sede | null) => {
-    setSelectedSede(sede);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Validaciones del frontend
     if (!formData.nombre || formData.nombre.length < 5) {
       setError('El nombre del torneo debe tener al menos 5 caracteres');
       return;
@@ -77,7 +102,7 @@ const CreateTournamentPage = () => {
     }
 
     if (selectedCategories.length === 0) {
-      setError('Debes seleccionar al menos una categoria');
+      setError('Debes seleccionar al menos una categoría');
       return;
     }
 
@@ -86,12 +111,6 @@ const CreateTournamentPage = () => {
       return;
     }
 
-    if (!formData.flyerUrl) {
-      setError('La URL del flyer es obligatoria');
-      return;
-    }
-
-    // Validar fechas
     const fechaInicio = new Date(formData.fechaInicio);
     const fechaFin = new Date(formData.fechaFin);
     const fechaLimite = new Date(formData.fechaLimiteInscripcion);
@@ -102,14 +121,14 @@ const CreateTournamentPage = () => {
     }
 
     if (fechaLimite >= fechaInicio) {
-      setError('La fecha limite de inscripcion debe ser anterior a la fecha de inicio');
+      setError('La fecha límite de inscripción debe ser anterior a la fecha de inicio');
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const tournamentData = {
+      await tournamentsService.update(id!, {
         nombre: formData.nombre,
         descripcion: formData.descripcion || undefined,
         pais: formData.pais,
@@ -120,29 +139,33 @@ const CreateTournamentPage = () => {
         fechaLimiteInscripcion: formData.fechaLimiteInscripcion,
         flyerUrl: formData.flyerUrl,
         costoInscripcion: Number(formData.costoInscripcion),
-        // Nuevo: sede del sistema
         sedeId: selectedSede?.id || undefined,
-        // Legacy: auto-fill from sede si existe
         sede: selectedSede?.nombre || undefined,
         direccion: selectedSede?.direccion || undefined,
         mapsUrl: selectedSede?.mapsUrl || undefined,
         categorias: selectedCategories,
         modalidades: selectedModalidades,
-      };
-
-      const tournament = await tournamentsService.create(tournamentData);
-      navigate(`/tournaments/${tournament.id}`);
+      });
+      navigate(`/tournaments/${id}/manage`);
     } catch (err: any) {
       const message = err.response?.data?.message;
       if (Array.isArray(message)) {
         setError(message.join(', '));
       } else {
-        setError(message || 'Error al crear el torneo');
+        setError(message || 'Error al actualizar el torneo');
       }
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loading size="lg" />
+      </div>
+    );
+  }
 
   const maleCategories = categories.filter((c) => c.tipo === 'MASCULINO');
   const femaleCategories = categories.filter((c) => c.tipo === 'FEMENINO');
@@ -151,7 +174,15 @@ const CreateTournamentPage = () => {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Card>
         <CardHeader>
-          <CardTitle>Crear Nuevo Torneo</CardTitle>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/tournaments/${id}/manage`)}
+              className="p-2 hover:bg-dark-hover rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <CardTitle>Editar Torneo</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -161,14 +192,13 @@ const CreateTournamentPage = () => {
               </div>
             )}
 
-            {/* Informacion basica */}
+            {/* Información básica */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Informacion Basica</h3>
+              <h3 className="text-lg font-semibold border-b pb-2">Información Básica</h3>
 
               <Input
                 label="Nombre del Torneo *"
                 type="text"
-                placeholder="Ej: Copa FairPadel 2026 (minimo 5 caracteres)"
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                 required
@@ -176,12 +206,11 @@ const CreateTournamentPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-light-text mb-1">
-                  Descripcion
+                  Descripción
                 </label>
                 <textarea
                   className="w-full rounded-md border border-dark-border bg-dark-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   rows={3}
-                  placeholder="Describe tu torneo..."
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                 />
@@ -190,36 +219,33 @@ const CreateTournamentPage = () => {
               <Input
                 label="URL del Flyer *"
                 type="url"
-                placeholder="https://ejemplo.com/flyer.jpg"
                 value={formData.flyerUrl}
                 onChange={(e) => setFormData({ ...formData, flyerUrl: e.target.value })}
                 required
               />
 
               <Input
-                label="Costo de Inscripcion (Gs.) *"
+                label="Costo de Inscripción (Gs.) *"
                 type="number"
-                placeholder="150000"
                 value={formData.costoInscripcion}
                 onChange={(e) => setFormData({ ...formData, costoInscripcion: Number(e.target.value) })}
                 required
               />
             </div>
 
-            {/* Ubicacion */}
+            {/* Ubicación */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Ubicacion</h3>
-
+              <h3 className="text-lg font-semibold border-b pb-2">Ubicación</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
-                  label="Pais *"
+                  label="País *"
                   type="text"
                   value={formData.pais}
                   onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
                   required
                 />
                 <Input
-                  label="Region/Departamento *"
+                  label="Región/Departamento *"
                   type="text"
                   value={formData.region}
                   onChange={(e) => setFormData({ ...formData, region: e.target.value })}
@@ -240,7 +266,7 @@ const CreateTournamentPage = () => {
               <h3 className="text-lg font-semibold border-b pb-2">Sede del Torneo</h3>
               <SedeSelector
                 selectedSedeId={selectedSede?.id || null}
-                onSelect={handleSedeSelect}
+                onSelect={(sede) => setSelectedSede(sede)}
                 ciudad={formData.ciudad}
               />
               {selectedSede && (
@@ -248,9 +274,6 @@ const CreateTournamentPage = () => {
                   <p className="text-sm text-primary-400">
                     <strong>Sede seleccionada:</strong> {selectedSede.nombre}
                     {selectedSede.direccion && ` - ${selectedSede.direccion}`}
-                  </p>
-                  <p className="text-xs text-primary-500 mt-1">
-                    {selectedSede.canchas?.length || 0} cancha(s) disponible(s)
                   </p>
                 </div>
               )}
@@ -260,9 +283,8 @@ const CreateTournamentPage = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Fechas</h3>
               <p className="text-sm text-light-secondary">
-                La fecha limite de inscripcion debe ser <strong>anterior</strong> a la fecha de inicio del torneo.
+                La fecha límite de inscripción debe ser <strong>anterior</strong> a la fecha de inicio.
               </p>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
                   label="Fecha de Inicio *"
@@ -279,7 +301,7 @@ const CreateTournamentPage = () => {
                   required
                 />
                 <Input
-                  label="Limite de Inscripcion *"
+                  label="Límite de Inscripción *"
                   type="date"
                   value={formData.fechaLimiteInscripcion}
                   onChange={(e) => setFormData({ ...formData, fechaLimiteInscripcion: e.target.value })}
@@ -288,10 +310,10 @@ const CreateTournamentPage = () => {
               </div>
             </div>
 
-            {/* Categorias */}
+            {/* Categorías */}
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-lg font-semibold">Categorias *</h3>
+                <h3 className="text-lg font-semibold">Categorías *</h3>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -309,8 +331,6 @@ const CreateTournamentPage = () => {
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-light-secondary">Selecciona al menos una categoria</p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -331,7 +351,7 @@ const CreateTournamentPage = () => {
                       {maleCategories.every((c) => selectedCategories.includes(c.id)) ? 'Desmarcar' : 'Marcar todos'}
                     </button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
                     {maleCategories.map((category) => (
                       <Checkbox
                         key={category.id}
@@ -361,7 +381,7 @@ const CreateTournamentPage = () => {
                       {femaleCategories.every((c) => selectedCategories.includes(c.id)) ? 'Desmarcar' : 'Marcar todas'}
                     </button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
                     {femaleCategories.map((category) => (
                       <Checkbox
                         key={category.id}
@@ -375,7 +395,7 @@ const CreateTournamentPage = () => {
               </div>
               {selectedCategories.length > 0 && (
                 <p className="text-sm text-primary-500">
-                  {selectedCategories.length} categoria(s) seleccionada(s)
+                  {selectedCategories.length} categoría(s) seleccionada(s)
                 </p>
               )}
             </div>
@@ -383,8 +403,6 @@ const CreateTournamentPage = () => {
             {/* Modalidades */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">Modalidades *</h3>
-              <p className="text-sm text-light-secondary">Selecciona al menos una modalidad</p>
-
               <div className="flex flex-wrap gap-4">
                 {Object.values(Modalidad).map((modalidad) => (
                   <Checkbox
@@ -401,17 +419,17 @@ const CreateTournamentPage = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(`/tournaments/${id}/manage`)}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 variant="primary"
-                loading={loading}
+                loading={saving}
                 className="flex-1"
               >
-                Crear Torneo
+                Guardar Cambios
               </Button>
             </div>
           </form>
@@ -419,6 +437,4 @@ const CreateTournamentPage = () => {
       </Card>
     </div>
   );
-};
-
-export default CreateTournamentPage;
+}

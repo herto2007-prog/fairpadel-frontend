@@ -45,13 +45,13 @@ const HomePage = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white py-16">
+      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Bienvenido a FairPadel 🎾
+              Bienvenido a FairPadel
             </h1>
-            <p className="text-xl text-emerald-100 mb-8">
+            <p className="text-xl text-red-100 mb-8">
               La plataforma líder para gestionar torneos de pádel en Paraguay.
               Inscríbete, compite y sigue tu ranking.
             </p>
@@ -87,35 +87,35 @@ const HomePage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-dark-surface">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <Card>
               <CardContent className="text-center py-6">
-                <Trophy className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                <p className="text-3xl font-bold text-gray-900">50+</p>
-                <p className="text-sm text-gray-600">Torneos</p>
+                <Trophy className="h-8 w-8 text-primary-500 mx-auto mb-2" />
+                <p className="text-3xl font-bold text-light-text">50+</p>
+                <p className="text-sm text-light-secondary">Torneos</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="text-center py-6">
-                <Users className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                <p className="text-3xl font-bold text-gray-900">500+</p>
-                <p className="text-sm text-gray-600">Jugadores</p>
+                <Users className="h-8 w-8 text-primary-500 mx-auto mb-2" />
+                <p className="text-3xl font-bold text-light-text">500+</p>
+                <p className="text-sm text-light-secondary">Jugadores</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="text-center py-6">
-                <Calendar className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                <p className="text-3xl font-bold text-gray-900">100+</p>
-                <p className="text-sm text-gray-600">Partidos</p>
+                <Calendar className="h-8 w-8 text-primary-500 mx-auto mb-2" />
+                <p className="text-3xl font-bold text-light-text">100+</p>
+                <p className="text-sm text-light-secondary">Partidos</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="text-center py-6">
                 <span className="text-3xl">🏆</span>
-                <p className="text-3xl font-bold text-gray-900">16</p>
-                <p className="text-sm text-gray-600">Categorías</p>
+                <p className="text-3xl font-bold text-light-text">16</p>
+                <p className="text-sm text-light-secondary">Categorías</p>
               </CardContent>
             </Card>
           </div>
@@ -127,8 +127,8 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Próximos Torneos</h2>
-              <p className="text-gray-600">Inscríbete en los mejores torneos de pádel</p>
+              <h2 className="text-2xl font-bold text-light-text">Próximos Torneos</h2>
+              <p className="text-light-secondary">Inscríbete en los mejores torneos de pádel</p>
             </div>
             <Link to="/tournaments">
               <Button variant="outline">
@@ -141,7 +141,7 @@ const HomePage = () => {
           {tournaments.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <p className="text-gray-600">No hay torneos disponibles en este momento</p>
+                <p className="text-light-secondary">No hay torneos disponibles en este momento</p>
               </CardContent>
             </Card>
           ) : (
@@ -155,12 +155,12 @@ const HomePage = () => {
       </section>
 
       {/* Top 10 Rankings */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-dark-surface">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Top 10 Ranking</h2>
-              <p className="text-gray-600">Los mejores jugadores de la plataforma</p>
+              <h2 className="text-2xl font-bold text-light-text">Top 10 Ranking</h2>
+              <p className="text-light-secondary">Los mejores jugadores de la plataforma</p>
             </div>
             <Link to="/rankings">
               <Button variant="outline">
@@ -172,29 +172,29 @@ const HomePage = () => {
 
           <Card>
             <CardContent className="p-0">
-              <div className="divide-y">
+              <div className="divide-y divide-dark-border">
                 {rankings.slice(0, 10).map((ranking, index) => (
-                  <div key={ranking.id} className="flex items-center gap-4 p-4 hover:bg-gray-50">
-                    <div className="w-8 text-center font-bold text-lg">
+                  <div key={ranking.id} className="flex items-center gap-4 p-4 hover:bg-dark-hover transition-colors">
+                    <div className="w-8 text-center font-bold text-lg text-light-text">
                       {index === 0 && '🥇'}
                       {index === 1 && '🥈'}
                       {index === 2 && '🥉'}
                       {index > 2 && `${index + 1}`}
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold">
+                    <div className="h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-semibold">
                       {ranking.jugador?.nombre?.charAt(0) || '?'}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">
+                      <p className="font-medium text-light-text">
                         {ranking.jugador?.nombre} {ranking.jugador?.apellido}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-light-muted">
                         {ranking.jugador?.ciudad || 'Sin ciudad'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-emerald-600">{ranking.puntosTotales} pts</p>
-                      <p className="text-sm text-gray-500">{ranking.torneosJugados} torneos</p>
+                      <p className="font-bold text-primary-500">{ranking.puntosTotales} pts</p>
+                      <p className="text-sm text-light-muted">{ranking.torneosJugados} torneos</p>
                     </div>
                   </div>
                 ))}

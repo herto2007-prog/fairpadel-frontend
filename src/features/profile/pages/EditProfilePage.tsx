@@ -72,12 +72,12 @@ const EditProfilePage = () => {
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
+            <div className="mb-4 p-3 bg-green-900/30 border border-green-500/50 text-green-400 rounded-md text-sm">
               {success}
             </div>
           )}
@@ -85,7 +85,7 @@ const EditProfilePage = () => {
           {/* Foto de perfil */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center text-2xl font-bold text-emerald-700 overflow-hidden">
+              <div className="h-24 w-24 rounded-full bg-primary-500/20 flex items-center justify-center text-2xl font-bold text-primary-500 overflow-hidden">
                 {user.fotoUrl ? (
                   <img
                     src={user.fotoUrl}
@@ -96,7 +96,7 @@ const EditProfilePage = () => {
                   `${user.nombre.charAt(0)}${user.apellido.charAt(0)}`
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 h-8 w-8 bg-emerald-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-emerald-700">
+              <label className="absolute bottom-0 right-0 h-8 w-8 bg-primary-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-600">
                 <Camera className="h-4 w-4 text-white" />
                 <input
                   type="file"
@@ -108,7 +108,7 @@ const EditProfilePage = () => {
               </label>
             </div>
             {uploadingPhoto && (
-              <p className="text-sm text-gray-500 mt-2">Subiendo foto...</p>
+              <p className="text-sm text-light-secondary mt-2">Subiendo foto...</p>
             )}
           </div>
 
@@ -153,7 +153,7 @@ const EditProfilePage = () => {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-light-text mb-1">
                 Biografía
               </label>
               <textarea
@@ -164,7 +164,7 @@ const EditProfilePage = () => {
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-light-secondary mt-1">
                 {formData.bio?.length || 0}/500 caracteres
               </p>
             </div>

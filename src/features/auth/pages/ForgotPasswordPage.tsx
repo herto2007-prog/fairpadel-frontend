@@ -26,13 +26,13 @@ const ForgotPasswordPage = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
         <Card className="w-full max-w-md">
           <CardContent className="text-center py-8">
             <div className="text-6xl mb-4">📧</div>
-            <h2 className="text-2xl font-bold mb-2">Correo enviado</h2>
-            <p className="text-gray-600 mb-6">
-              Si existe una cuenta con el email <strong>{email}</strong>, 
+            <h2 className="text-2xl font-bold mb-2 text-light-text">Correo enviado</h2>
+            <p className="text-light-secondary mb-6">
+              Si existe una cuenta con el email <strong className="text-light-text">{email}</strong>,
               recibirás instrucciones para restablecer tu contraseña.
             </p>
             <Link to="/login">
@@ -45,7 +45,7 @@ const ForgotPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>Recuperar Contraseña</CardTitle>
@@ -53,12 +53,12 @@ const ForgotPasswordPage = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}
 
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-light-secondary">
               Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
             </p>
 
@@ -71,9 +71,9 @@ const ForgotPasswordPage = () => {
               required
             />
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               variant="primary"
               loading={loading}
             >
@@ -81,7 +81,7 @@ const ForgotPasswordPage = () => {
             </Button>
 
             <p className="text-center text-sm">
-              <Link to="/login" className="text-emerald-600 hover:underline">
+              <Link to="/login" className="text-primary-500 hover:text-primary-400 hover:underline">
                 Volver al login
               </Link>
             </p>

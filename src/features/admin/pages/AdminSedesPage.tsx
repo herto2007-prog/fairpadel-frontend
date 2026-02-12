@@ -217,9 +217,9 @@ interface CanchaCardProps {
 
 const CanchaCard: React.FC<CanchaCardProps> = ({ cancha, onEdit, onDelete }) => {
   const tipoBadge: Record<string, string> = {
-    INDOOR: 'bg-blue-100 text-blue-700',
-    OUTDOOR: 'bg-green-100 text-green-700',
-    SEMI_TECHADA: 'bg-yellow-100 text-yellow-700',
+    INDOOR: 'bg-blue-900/30 text-blue-400',
+    OUTDOOR: 'bg-green-900/30 text-green-400',
+    SEMI_TECHADA: 'bg-yellow-900/30 text-yellow-400',
   };
 
   const tipoLabel: Record<string, string> = {
@@ -229,19 +229,19 @@ const CanchaCard: React.FC<CanchaCardProps> = ({ cancha, onEdit, onDelete }) => 
   };
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+    <div className="flex items-center justify-between p-3 border border-dark-border rounded-lg hover:bg-dark-hover">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-          <LayoutGrid className="h-5 w-5 text-emerald-600" />
+        <div className="h-10 w-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
+          <LayoutGrid className="h-5 w-5 text-primary-500" />
         </div>
         <div>
           <p className="font-medium">{cancha.nombre}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${tipoBadge[cancha.tipo] || 'bg-gray-100 text-gray-700'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${tipoBadge[cancha.tipo] || 'bg-dark-surface text-light-text'}`}>
               {tipoLabel[cancha.tipo] || cancha.tipo}
             </span>
             {!cancha.activa && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400">
                 Inactiva
               </span>
             )}
@@ -251,14 +251,14 @@ const CanchaCard: React.FC<CanchaCardProps> = ({ cancha, onEdit, onDelete }) => 
       <div className="flex gap-1">
         <button
           onClick={() => onEdit(cancha)}
-          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          className="p-2 text-light-secondary hover:text-blue-400 hover:bg-blue-900/30 rounded-lg transition-colors"
           title="Editar cancha"
         >
           <Edit2 className="h-4 w-4" />
         </button>
         <button
           onClick={() => onDelete(cancha.id)}
-          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          className="p-2 text-light-secondary hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
           title="Eliminar cancha"
         >
           <Trash2 className="h-4 w-4" />
@@ -350,7 +350,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
             {sede.logoUrl ? (
               <img src={sede.logoUrl} alt={sede.nombre} className="h-12 w-12 rounded-lg object-cover" />
             ) : (
-              <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg">
+              <div className="h-12 w-12 rounded-lg bg-primary-500/20 flex items-center justify-center text-primary-500 font-bold text-lg">
                 {sede.nombre.charAt(0)}
               </div>
             )}
@@ -361,7 +361,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
                   {sede.activo ? 'Activa' : 'Inactiva'}
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-1">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-light-secondary mt-1">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
                   {sede.ciudad}
@@ -375,7 +375,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
                 )}
               </div>
               {sede.horarioAtencion && (
-                <p className="text-xs text-gray-400 mt-1">{sede.horarioAtencion}</p>
+                <p className="text-xs text-light-secondary mt-1">{sede.horarioAtencion}</p>
               )}
             </div>
           </div>
@@ -383,14 +383,14 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
           <div className="flex items-center gap-1 ml-2">
             <button
               onClick={() => onEdit(sede)}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-light-secondary hover:text-blue-400 hover:bg-blue-900/30 rounded-lg transition-colors"
               title="Editar sede"
             >
               <Edit2 className="h-4 w-4" />
             </button>
             <button
               onClick={() => onDelete(sede.id)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-light-secondary hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
               title="Eliminar sede"
             >
               <Trash2 className="h-4 w-4" />
@@ -401,7 +401,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
         {/* Boton expandir canchas */}
         <button
           onClick={handleExpand}
-          className="mt-3 flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+          className="mt-3 flex items-center gap-2 text-sm text-primary-500 hover:text-primary-400 font-medium"
         >
           <LayoutGrid className="h-4 w-4" />
           Canchas ({canchas.length || sede.canchas?.length || 0})
@@ -410,13 +410,13 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
 
         {/* Lista de canchas (expandida) */}
         {expanded && (
-          <div className="mt-3 border-t pt-3 space-y-3">
+          <div className="mt-3 border-t border-dark-border pt-3 space-y-3">
             {loadingCanchas ? (
               <Loading size="sm" text="Cargando canchas..." />
             ) : (
               <>
                 {canchas.length === 0 && !showCanchaForm && (
-                  <p className="text-sm text-gray-400 text-center py-4">
+                  <p className="text-sm text-light-secondary text-center py-4">
                     No hay canchas registradas en esta sede
                   </p>
                 )}
@@ -435,7 +435,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
 
                 {/* Formulario de nueva cancha */}
                 {showCanchaForm && (
-                  <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="border border-dark-border rounded-lg p-4 bg-dark-surface">
                     <h4 className="font-medium mb-3">Nueva Cancha</h4>
                     <CanchaForm
                       onSubmit={handleCreateCancha}
@@ -447,7 +447,7 @@ const SedeCard: React.FC<SedeCardProps> = ({ sede, onEdit, onDelete }) => {
 
                 {/* Formulario de editar cancha */}
                 {editingCancha && (
-                  <div className="border rounded-lg p-4 bg-blue-50">
+                  <div className="border border-dark-border rounded-lg p-4 bg-blue-900/30">
                     <h4 className="font-medium mb-3">Editar: {editingCancha.nombre}</h4>
                     <CanchaForm
                       cancha={editingCancha}
@@ -559,8 +559,8 @@ const AdminSedesPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion de Sedes</h1>
-          <p className="text-gray-600 mt-1">Administra sedes y canchas para los torneos</p>
+          <h1 className="text-3xl font-bold text-light-text">Gestion de Sedes</h1>
+          <p className="text-light-secondary mt-1">Administra sedes y canchas para los torneos</p>
         </div>
         <Button
           variant="primary"
@@ -607,11 +607,11 @@ const AdminSedesPage = () => {
       {filteredSedes.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <MapPin className="h-12 w-12 text-light-secondary mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-light-text mb-2">
               {filterCiudad ? 'No se encontraron sedes' : 'No hay sedes registradas'}
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-light-secondary mb-4">
               {filterCiudad
                 ? 'Intenta con otro filtro de ciudad'
                 : 'Crea la primera sede para empezar a gestionar canchas'}
@@ -642,7 +642,7 @@ const AdminSedesPage = () => {
 
       {/* Resumen */}
       {sedes.length > 0 && (
-        <div className="mt-6 text-sm text-gray-500 text-center">
+        <div className="mt-6 text-sm text-light-secondary text-center">
           {sedes.length} sede(s) registrada(s) &middot;{' '}
           {sedes.reduce((acc, s) => acc + (s.canchas?.length || 0), 0)} cancha(s) en total
         </div>

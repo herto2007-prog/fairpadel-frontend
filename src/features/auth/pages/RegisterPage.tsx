@@ -25,7 +25,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
@@ -50,13 +50,13 @@ const RegisterPage = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
         <Card className="w-full max-w-md">
           <CardContent className="text-center py-8">
             <div className="text-6xl mb-4">📧</div>
-            <h2 className="text-2xl font-bold mb-2">¡Registro exitoso!</h2>
-            <p className="text-gray-600 mb-6">
-              Hemos enviado un correo de verificación a <strong>{formData.email}</strong>. 
+            <h2 className="text-2xl font-bold mb-2 text-light-text">¡Registro exitoso!</h2>
+            <p className="text-light-secondary mb-6">
+              Hemos enviado un correo de verificación a <strong className="text-light-text">{formData.email}</strong>.
               Por favor revisa tu bandeja de entrada.
             </p>
             <Button variant="primary" onClick={() => navigate('/login')}>
@@ -69,18 +69,18 @@ const RegisterPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <span className="text-3xl font-bold text-emerald-600">🎾 FairPadel</span>
+            <span className="text-3xl font-bold text-primary-500">FairPadel</span>
           </div>
           <CardTitle>Crear Cuenta</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}
@@ -116,7 +116,7 @@ const RegisterPage = () => {
             <Select
               label="Género"
               value={formData.genero}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                 setFormData({ ...formData, genero: e.target.value as Gender })
               }
               required
@@ -169,18 +169,18 @@ const RegisterPage = () => {
               required
             />
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               variant="primary"
               loading={loading}
             >
               Crear Cuenta
             </Button>
 
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-light-secondary">
               ¿Ya tienes cuenta?{' '}
-              <Link to="/login" className="text-emerald-600 hover:underline font-medium">
+              <Link to="/login" className="text-primary-500 hover:text-primary-400 hover:underline font-medium">
                 Inicia sesión
               </Link>
             </p>

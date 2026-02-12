@@ -15,6 +15,8 @@ import EditProfilePage from '@/features/profile/pages/EditProfilePage';
 import TournamentDetailPage from '@/features/tournaments/pages/TournamentDetailPage';
 import AdminPage from '@/features/admin/pages/AdminPage';
 import AdminSedesPage from '@/features/admin/pages/AdminSedesPage';
+import ManageTournamentPage from '@/features/tournaments/pages/ManageTournamentPage';
+import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage';
 
 function App() {
   return (
@@ -97,6 +99,22 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="organizador">
                   <CreateTournamentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tournaments/:id/manage"
+              element={
+                <ProtectedRoute requiredRole="organizador">
+                  <ManageTournamentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tournaments/:id/edit"
+              element={
+                <ProtectedRoute requiredRole="organizador">
+                  <EditTournamentPage />
                 </ProtectedRoute>
               }
             />

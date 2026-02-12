@@ -81,8 +81,8 @@ const MyTournamentsPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mis Torneos</h1>
-          <p className="text-gray-600 mt-2">Administra los torneos que has creado</p>
+          <h1 className="text-3xl font-bold text-light-text">Mis Torneos</h1>
+          <p className="text-light-secondary mt-2">Administra los torneos que has creado</p>
         </div>
         <Link to="/tournaments/create">
           <Button variant="primary">
@@ -112,7 +112,7 @@ const MyTournamentsPage = () => {
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">🎾</div>
             <h3 className="text-xl font-semibold mb-2">No tienes torneos</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-light-secondary mb-6">
               Comienza creando tu primer torneo
             </p>
             <Link to="/tournaments/create">
@@ -131,7 +131,7 @@ const MyTournamentsPage = () => {
                       <h3 className="text-xl font-semibold">{tournament.nombre}</h3>
                       {getStatusBadge(tournament.estado)}
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-4 text-sm text-light-secondary">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {new Date(tournament.fechaInicio).toLocaleDateString()}

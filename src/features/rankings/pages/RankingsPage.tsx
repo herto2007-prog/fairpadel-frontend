@@ -37,21 +37,21 @@ const RankingsPage = () => {
     
     if (diff > 0) {
       return (
-        <span className="flex items-center text-green-600 text-sm">
+        <span className="flex items-center text-green-400 text-sm">
           <TrendingUp className="h-4 w-4 mr-1" />
           +{diff}
         </span>
       );
     } else if (diff < 0) {
       return (
-        <span className="flex items-center text-red-600 text-sm">
+        <span className="flex items-center text-red-400 text-sm">
           <TrendingDown className="h-4 w-4 mr-1" />
           {diff}
         </span>
       );
     }
     return (
-      <span className="flex items-center text-gray-400 text-sm">
+      <span className="flex items-center text-light-secondary text-sm">
         <Minus className="h-4 w-4" />
       </span>
     );
@@ -79,11 +79,11 @@ const RankingsPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-light-text flex items-center gap-2">
           <Trophy className="h-8 w-8 text-yellow-500" />
           Rankings
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-light-secondary mt-2">
           Clasificación de los mejores jugadores de pádel
         </p>
       </div>
@@ -114,7 +114,7 @@ const RankingsPage = () => {
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">🏆</div>
             <h3 className="text-xl font-semibold mb-2">No hay rankings disponibles</h3>
-            <p className="text-gray-600">
+            <p className="text-light-secondary">
               Aún no hay datos de ranking para estos filtros
             </p>
           </CardContent>
@@ -125,47 +125,47 @@ const RankingsPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Pos.</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Jugador</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Puntos</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Torneos</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">V/D</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">%</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-600">Cambio</th>
+                  <tr className="bg-dark-surface border-b border-dark-border">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-light-secondary">Pos.</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-light-secondary">Jugador</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-light-secondary">Puntos</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-light-secondary">Torneos</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-light-secondary">V/D</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-light-secondary">%</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-light-secondary">Cambio</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-dark-border">
                   {rankings.map((ranking) => (
-                    <tr key={ranking.id} className="hover:bg-gray-50">
+                    <tr key={ranking.id} className="hover:bg-dark-hover">
                       <td className="px-4 py-3">
                         {getPositionBadge(ranking.posicion)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold">
                             {ranking.jugador?.nombre?.charAt(0) || '?'}
                           </div>
                           <div>
                             <p className="font-medium">
                               {ranking.jugador?.nombre} {ranking.jugador?.apellido}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-light-secondary">
                               {ranking.jugador?.ciudad || 'Sin ciudad'}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center font-bold text-emerald-600">
+                      <td className="px-4 py-3 text-center font-bold text-primary-500">
                         {ranking.puntosTotales}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {ranking.torneosJugados}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="text-green-600">{ranking.victorias}</span>
+                        <span className="text-green-400">{ranking.victorias}</span>
                         /
-                        <span className="text-red-600">{ranking.derrotas}</span>
+                        <span className="text-red-400">{ranking.derrotas}</span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {ranking.porcentajeVictorias

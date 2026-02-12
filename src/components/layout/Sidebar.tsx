@@ -34,15 +34,15 @@ export const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 w-64 h-full bg-white shadow-lg transition-transform lg:translate-x-0',
+          'fixed top-0 left-0 z-40 w-64 h-full bg-dark-card border-r border-dark-border shadow-lg transition-transform lg:translate-x-0',
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Menú</h2>
+        <div className="flex items-center justify-between p-4 border-b border-dark-border">
+          <h2 className="text-lg font-semibold text-light-text">Menú</h2>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-600 hover:text-gray-900"
+            className="lg:hidden text-light-secondary hover:text-light-text"
           >
             <X className="w-5 h-5" />
           </button>
@@ -61,8 +61,8 @@ export const Sidebar: React.FC = () => {
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                   isActive
-                    ? 'bg-primary-50 text-primary-600 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-primary-500/10 text-primary-500 font-medium'
+                    : 'text-light-secondary hover:bg-dark-hover hover:text-light-text'
                 )}
               >
                 <Icon className="w-5 h-5" />

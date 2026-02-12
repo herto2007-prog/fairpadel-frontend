@@ -95,8 +95,9 @@ export interface TournamentCategory {
   id: string;
   tournamentId: string;
   categoryId: string;
+  inscripcionAbierta: boolean;
   category: Category;
-  // Alias para acceso directo
+  inscripcionesCount?: number;
   nombre?: string;
 }
 
@@ -104,6 +105,14 @@ export interface TournamentModalidad {
   id: string;
   tournamentId: string;
   modalidad: Modalidad;
+}
+
+export interface TorneoPelotasRonda {
+  id: string;
+  tournamentId: string;
+  ronda: string;
+  cantidadPelotas: number;
+  createdAt?: string;
 }
 
 // ==================== SEDES Y CANCHAS ====================

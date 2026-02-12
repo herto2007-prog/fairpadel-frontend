@@ -5,17 +5,17 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-dark-bg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        default: 'bg-primary-500 text-white hover:bg-primary-700',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        outline: 'border border-dark-border bg-transparent text-light-text hover:bg-dark-hover',
+        secondary: 'bg-dark-surface text-light-text hover:bg-dark-hover',
+        ghost: 'text-light-secondary hover:bg-dark-hover hover:text-light-text',
         link: 'text-primary underline-offset-4 hover:underline',
-        primary: 'bg-emerald-600 text-white hover:bg-emerald-700',
+        primary: 'bg-primary-500 text-white hover:bg-primary-700',
         success: 'bg-green-600 text-white hover:bg-green-700',
         warning: 'bg-yellow-500 text-white hover:bg-yellow-600',
         danger: 'bg-red-600 text-white hover:bg-red-700',

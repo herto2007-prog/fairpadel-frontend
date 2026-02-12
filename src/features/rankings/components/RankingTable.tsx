@@ -24,67 +24,67 @@ export default function RankingTable({ rankings, showTrend = true }: RankingTabl
   };
 
   const getTrendColor = (ranking: Ranking) => {
-    if (!ranking.posicionAnterior) return 'text-gray-500';
+    if (!ranking.posicionAnterior) return 'text-light-secondary';
     
     const diff = ranking.posicionAnterior - ranking.posicion;
-    if (diff > 0) return 'text-green-600';
-    if (diff < 0) return 'text-red-600';
-    return 'text-gray-500';
+    if (diff > 0) return 'text-green-400';
+    if (diff < 0) return 'text-red-400';
+    return 'text-light-secondary';
   };
 
   if (rankings.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-12 text-center">
-        <p className="text-gray-500">No hay rankings disponibles</p>
+      <div className="bg-dark-card rounded-lg shadow p-12 text-center">
+        <p className="text-light-secondary">No hay rankings disponibles</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-dark-card rounded-lg shadow overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-dark-surface border-b border-dark-border">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-light-secondary uppercase tracking-wider">
                 Pos
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-light-secondary uppercase tracking-wider">
                 Jugador
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                 Puntos
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                 Torneos
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                 V-D
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                 % Victorias
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                 🏆
               </th>
               {showTrend && (
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-light-secondary uppercase tracking-wider">
                   Tendencia
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-dark-border">
             {rankings.map((ranking) => (
               <tr 
                 key={ranking.id}
-                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                className="hover:bg-dark-hover transition-colors cursor-pointer"
               >
                 {/* Posición */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <span className={`text-lg font-bold ${
-                      ranking.posicion <= 3 ? 'text-primary-600' : 'text-gray-900'
+                      ranking.posicion <= 3 ? 'text-primary-600' : 'text-light-text'
                     }`}>
                       {ranking.posicion}
                     </span>
@@ -105,10 +105,10 @@ export default function RankingTable({ rankings, showTrend = true }: RankingTabl
                       </div>
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-light-text">
                         Jugador #{ranking.jugadorId.slice(0, 8)}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-light-secondary">
                         {ranking.genero}
                       </div>
                     </div>
@@ -123,15 +123,15 @@ export default function RankingTable({ rankings, showTrend = true }: RankingTabl
                 </td>
 
                 {/* Torneos */}
-                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-light-text">
                   {ranking.torneosJugados}
                 </td>
 
                 {/* V-D */}
                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                  <span className="text-green-600 font-medium">{ranking.victorias}</span>
-                  <span className="text-gray-400"> - </span>
-                  <span className="text-red-600 font-medium">{ranking.derrotas}</span>
+                  <span className="text-green-400 font-medium">{ranking.victorias}</span>
+                  <span className="text-light-secondary"> - </span>
+                  <span className="text-red-400 font-medium">{ranking.derrotas}</span>
                 </td>
 
                 {/* % Victorias */}

@@ -68,14 +68,14 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b">
+        <div className="flex justify-between items-center px-4 py-2 bg-dark-surface border-b border-dark-border">
           <span className="text-sm font-medium">{match.ronda}</span>
           {getStatusBadge(match.estado)}
         </div>
 
         {/* Fecha y hora */}
         {(match.fechaProgramada || match.horaProgramada) && (
-          <div className="flex gap-4 px-4 py-2 text-sm text-gray-600 border-b">
+          <div className="flex gap-4 px-4 py-2 text-sm text-light-secondary border-b border-dark-border">
             {match.fechaProgramada && (
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -92,8 +92,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         )}
 
         {/* Pareja 1 */}
-        <div className={`flex justify-between items-center px-4 py-3 border-b ${
-          isWinner(1) ? 'bg-green-50' : ''
+        <div className={`flex justify-between items-center px-4 py-3 border-b border-dark-border ${
+          isWinner(1) ? 'bg-green-900/30' : ''
         }`}>
           <span className={`${isWinner(1) ? 'font-semibold' : ''}`}>
             {getParejaName(1)}
@@ -105,7 +105,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
         {/* Pareja 2 */}
         <div className={`flex justify-between items-center px-4 py-3 ${
-          isWinner(2) ? 'bg-green-50' : ''
+          isWinner(2) ? 'bg-green-900/30' : ''
         }`}>
           <span className={`${isWinner(2) ? 'font-semibold' : ''}`}>
             {getParejaName(2)}
@@ -116,18 +116,18 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         </div>
 
         {/* Info adicional */}
-        <div className="px-4 py-2 bg-gray-50 text-sm text-gray-500">
+        <div className="px-4 py-2 bg-dark-surface text-sm text-light-secondary">
           {match.torneoCancha?.sedeCancha && (
             <p>🎾 Cancha: {match.torneoCancha.sedeCancha.nombre}</p>
           )}
           {match.observaciones && (
-            <p className="text-gray-600 italic">💬 {match.observaciones}</p>
+            <p className="text-light-secondary italic">💬 {match.observaciones}</p>
           )}
         </div>
 
         {/* Acciones */}
         {showActions && match.estado === MatchStatus.PROGRAMADO && (
-          <div className="px-4 py-3 border-t">
+          <div className="px-4 py-3 border-t border-dark-border">
             <Button 
               size="sm" 
               className="w-full"

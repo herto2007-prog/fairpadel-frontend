@@ -52,21 +52,21 @@ const VerifyEmailPage = () => {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-dark-bg">
         <Loading size="lg" text="Verificando email..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
       <Card className="w-full max-w-md">
         <CardContent className="text-center py-8">
           {status === 'success' ? (
             <>
               <div className="text-6xl mb-4">✅</div>
-              <h2 className="text-2xl font-bold mb-2 text-green-600">¡Verificado!</h2>
-              <p className="text-gray-600 mb-6">{message}</p>
+              <h2 className="text-2xl font-bold mb-2 text-green-400">¡Verificado!</h2>
+              <p className="text-light-secondary mb-6">{message}</p>
               <Button variant="primary" onClick={() => navigate('/login')}>
                 Iniciar Sesión
               </Button>
@@ -74,11 +74,11 @@ const VerifyEmailPage = () => {
           ) : (
             <>
               <div className="text-6xl mb-4">❌</div>
-              <h2 className="text-2xl font-bold mb-2 text-red-600">Error</h2>
-              <p className="text-gray-600 mb-6">{message}</p>
-              
+              <h2 className="text-2xl font-bold mb-2 text-red-400">Error</h2>
+              <p className="text-light-secondary mb-6">{message}</p>
+
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-light-muted">
                   ¿Necesitas un nuevo correo de verificación?
                 </p>
                 <input
@@ -86,10 +86,10 @@ const VerifyEmailPage = () => {
                   placeholder="Tu email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-dark-border bg-dark-input text-light-text rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleResend}
                   loading={resending}
                   className="w-full"
@@ -98,8 +98,8 @@ const VerifyEmailPage = () => {
                 </Button>
               </div>
 
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => navigate('/login')}
                 className="mt-4"
               >

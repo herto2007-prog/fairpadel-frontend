@@ -62,9 +62,47 @@ export const tournamentsService = {
 
   // Alias para compatibilidad
   start: async (id: string): Promise<Tournament> => {
-    // TODO: Implementar en backend si es necesario
-    // Por ahora, esto podría ser un cambio de estado
     const response = await api.patch(`/tournaments/${id}`, { estado: 'EN_CURSO' });
+    return response.data;
+  },
+
+  // PATCH /tournaments/:id/categorias/:tcId/toggle-inscripcion
+  toggleInscripcionCategoria: async (tournamentId: string, tournamentCategoryId: string) => {
+    const response = await api.patch(`/tournaments/${tournamentId}/categorias/${tournamentCategoryId}/toggle-inscripcion`);
+    return response.data;
+  },
+
+  // GET /tournaments/:id/stats
+  getStats: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/stats`);
+    return response.data;
+  },
+
+  // GET /tournaments/:id/pelotas-ronda
+  getPelotasRonda: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/pelotas-ronda`);
+    return response.data;
+  },
+
+  // PUT /tournaments/:id/pelotas-ronda
+  updatePelotasRonda: async (tournamentId: string, rondas: { ronda: string; cantidadPelotas: number }[]) => {
+    const response = await api.put(`/tournaments/${tournamentId}/pelotas-ronda`, { rondas });
+    return response.data;
+  },
+
+  // Ayudantes
+  getAyudantes: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/ayudantes`);
+    return response.data;
+  },
+
+  addAyudante: async (tournamentId: string, data: { documento: string; nombre?: string; rol?: string }) => {
+    const response = await api.post(`/tournaments/${tournamentId}/ayudantes`, data);
+    return response.data;
+  },
+
+  removeAyudante: async (tournamentId: string, ayudanteId: string) => {
+    const response = await api.delete(`/tournaments/${tournamentId}/ayudantes/${ayudanteId}`);
     return response.data;
   },
 };

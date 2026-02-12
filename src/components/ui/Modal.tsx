@@ -44,22 +44,22 @@ const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 transition-opacity"
+        className="fixed inset-0 bg-black/70 transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal Content */}
       <div
         className={cn(
-          'relative z-50 w-full mx-4 bg-white rounded-lg shadow-xl',
+          'relative z-50 w-full mx-4 bg-dark-card rounded-lg shadow-xl',
           sizeClasses[size]
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-dark-border">
             {title && (
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-light-text">{title}</h2>
             )}
             {showCloseButton && (
               <Button
@@ -73,7 +73,7 @@ const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        
+
         {/* Body */}
         <div className="p-4">
           {children}

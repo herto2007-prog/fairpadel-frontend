@@ -76,8 +76,8 @@ const FixturePage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{tournament.nombre}</h1>
-        <p className="text-gray-600 mt-2">Fixture del torneo</p>
+        <h1 className="text-3xl font-bold text-light-text">{tournament.nombre}</h1>
+        <p className="text-light-secondary mt-2">Fixture del torneo</p>
       </div>
 
       {categories.length > 0 && (
@@ -102,7 +102,7 @@ const FixturePage = () => {
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
             <h3 className="text-xl font-semibold mb-2">Sin partidos</h3>
-            <p className="text-gray-600">
+            <p className="text-light-secondary">
               Aún no se ha generado el fixture para esta categoría
             </p>
           </CardContent>

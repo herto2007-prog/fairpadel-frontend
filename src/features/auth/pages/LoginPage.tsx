@@ -33,22 +33,22 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <span className="text-3xl font-bold text-emerald-600">🎾 FairPadel</span>
+            <span className="text-3xl font-bold text-primary-500">FairPadel</span>
           </div>
           <CardTitle>Iniciar Sesión</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+              <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
                 {error}
               </div>
             )}
-            
+
             <Input
               label="Documento de Identidad"
               type="text"
@@ -57,7 +57,7 @@ const LoginPage = () => {
               onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
               required
             />
-            
+
             <Input
               label="Contraseña"
               type="password"
@@ -68,26 +68,26 @@ const LoginPage = () => {
             />
 
             <div className="flex items-center justify-between">
-              <Link 
-                to="/forgot-password" 
-                className="text-sm text-emerald-600 hover:underline"
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary-500 hover:text-primary-400 hover:underline"
               >
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               variant="primary"
               loading={loading}
             >
               Iniciar Sesión
             </Button>
 
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-light-secondary">
               ¿No tienes cuenta?{' '}
-              <Link to="/register" className="text-emerald-600 hover:underline font-medium">
+              <Link to="/register" className="text-primary-500 hover:text-primary-400 hover:underline font-medium">
                 Regístrate aquí
               </Link>
             </p>

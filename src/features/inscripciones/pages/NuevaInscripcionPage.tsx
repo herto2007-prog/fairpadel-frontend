@@ -98,9 +98,11 @@ export default function NuevaInscripcionPage() {
       ]);
       setTournament(tournamentData);
       
-      // Filtrar categorías del torneo
-      const tournamentCategoryIds = tournamentData.categorias?.map((c: any) => c.categoryId || c.category?.id) || [];
-      setAllCategories(categoriesData.filter((c: Category) => tournamentCategoryIds.includes(c.id)));
+      // Filtrar categorías del torneo (solo las que tienen inscripción abierta)
+      const openCategoryIds = (tournamentData.categorias || [])
+        .filter((c: any) => c.inscripcionAbierta !== false)
+        .map((c: any) => c.categoryId || c.category?.id);
+      setAllCategories(categoriesData.filter((c: Category) => openCategoryIds.includes(c.id)));
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Error al cargar los datos del torneo');
@@ -232,7 +234,7 @@ export default function NuevaInscripcionPage() {
       <div className="container mx-auto px-4 py-8">
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">{error || 'Torneo no encontrado'}</p>
+          <p className="text-light-secondary mb-4">{error || 'Torneo no encontrado'}</p>
           <Button onClick={() => navigate('/tournaments')}>
             Volver a Torneos
           </Button>
@@ -245,19 +247,19 @@ export default function NuevaInscripcionPage() {
   const selectedCategoryData = allCategories.find(c => c.id === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-dark-surface py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="mb-6">
           <button 
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="flex items-center gap-2 text-light-secondary hover:text-light-text mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
           </button>
           <h1 className="text-2xl font-bold">Inscripción al Torneo</h1>
-          <p className="text-gray-600">{tournament.nombre}</p>
+          <p className="text-light-secondary">{tournament.nombre}</p>
         </div>
 
         {/* Progress Steps */}
@@ -266,12 +268,12 @@ export default function NuevaInscripcionPage() {
             <div key={s} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors
-                  ${step >= s ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}
+                  ${step >= s ? 'bg-primary-500 text-white' : 'bg-dark-border text-light-secondary'}`}
               >
                 {step > s ? '✓' : s}
               </div>
               {s < 5 && (
-                <div className={`w-8 sm:w-12 h-1 ${step > s ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div className={`w-8 sm:w-12 h-1 ${step > s ? 'bg-primary-500' : 'bg-dark-border'}`} />
               )}
             </div>
           ))}
@@ -279,9 +281,9 @@ export default function NuevaInscripcionPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-500/50 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700">{error}</p>
+            <p className="text-red-400">{error}</p>
           </div>
         )}
 
@@ -293,16 +295,16 @@ export default function NuevaInscripcionPage() {
             <h2 className="text-xl font-bold mb-6">Paso 1: Datos de la Pareja</h2>
 
             {/* Jugador 1 (Usuario actual) */}
-            <div className="mb-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-              <p className="text-sm text-emerald-700 font-medium mb-2">👤 JUGADOR 1 (Tú)</p>
+            <div className="mb-6 p-4 bg-primary-500/10 rounded-lg border border-primary-500/30">
+              <p className="text-sm text-primary-500 font-medium mb-2">👤 JUGADOR 1 (Tú)</p>
               <p className="font-semibold">{user?.nombre} {user?.apellido}</p>
-              <p className="text-sm text-gray-600">Doc: {user?.documento}</p>
-              <p className="text-sm text-gray-600">Género: {user?.genero}</p>
+              <p className="text-sm text-light-secondary">Doc: {user?.documento}</p>
+              <p className="text-sm text-light-secondary">Género: {user?.genero}</p>
             </div>
 
             {/* Jugador 2 (Búsqueda) */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-light-text mb-2">
                 👥 JUGADOR 2 - Documento de tu compañero/a
               </label>
               <div className="flex gap-2">
@@ -330,29 +332,29 @@ export default function NuevaInscripcionPage() {
 
             {/* Resultado búsqueda - Encontrado */}
             {jugador2 && (
-              <div className="mb-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div className="mb-6 p-4 bg-primary-500/10 rounded-lg border border-primary-500/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-500" />
-                  <span className="font-medium text-emerald-700">Jugador encontrado</span>
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-primary-500">Jugador encontrado</span>
                 </div>
                 <p className="font-semibold">{jugador2.nombre} {jugador2.apellido}</p>
-                <p className="text-sm text-gray-600">Género: {jugador2.genero}</p>
-                {jugador2.ciudad && <p className="text-sm text-gray-600">Ciudad: {jugador2.ciudad}</p>}
+                <p className="text-sm text-light-secondary">Género: {jugador2.genero}</p>
+                {jugador2.ciudad && <p className="text-sm text-light-secondary">Ciudad: {jugador2.ciudad}</p>}
               </div>
             )}
 
             {/* Resultado búsqueda - No encontrado */}
             {jugador2NotFound && (
-              <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="mb-6 p-4 bg-yellow-900/30 rounded-lg border border-yellow-500/50">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="h-5 w-5 text-yellow-500" />
-                  <span className="font-medium text-yellow-700">Jugador no registrado</span>
+                  <span className="font-medium text-yellow-400">Jugador no registrado</span>
                 </div>
-                <p className="text-sm text-yellow-800 mb-3">
+                <p className="text-sm text-yellow-400 mb-3">
                   Este jugador aún no tiene cuenta en FairPadel.
                 </p>
-                <p className="text-sm text-yellow-800 mb-3">
-                  ℹ️ Puedes continuar con la inscripción. La pareja se activará cuando 
+                <p className="text-sm text-yellow-400 mb-3">
+                  ℹ️ Puedes continuar con la inscripción. La pareja se activará cuando
                   este jugador se registre con el documento: <strong>{jugador2Documento}</strong>
                 </p>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -360,9 +362,9 @@ export default function NuevaInscripcionPage() {
                     type="checkbox"
                     checked={acceptNotRegistered}
                     onChange={(e) => setAcceptNotRegistered(e.target.checked)}
-                    className="w-4 h-4 text-emerald-600 rounded"
+                    className="w-4 h-4 text-primary-500 rounded"
                   />
-                  <span className="text-sm text-yellow-800">Entiendo y deseo continuar</span>
+                  <span className="text-sm text-yellow-400">Entiendo y deseo continuar</span>
                 </label>
               </div>
             )}
@@ -388,7 +390,7 @@ export default function NuevaInscripcionPage() {
             {/* Modalidad - Solo si hay más de una */}
             {tournament.modalidades && tournament.modalidades.length > 1 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-light-text mb-3">
                   ⚡ Selecciona la modalidad *
                 </label>
                 <div className="space-y-2">
@@ -396,9 +398,9 @@ export default function NuevaInscripcionPage() {
                     <label
                       key={mod.modalidad}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors
-                        ${selectedModalidad === mod.modalidad 
-                          ? 'border-emerald-500 bg-emerald-50' 
-                          : 'border-gray-200 hover:bg-gray-50'}`}
+                        ${selectedModalidad === mod.modalidad
+                          ? 'border-primary-500 bg-primary-500/10'
+                          : 'border-dark-border hover:bg-dark-hover'}`}
                     >
                       <input
                         type="radio"
@@ -413,7 +415,7 @@ export default function NuevaInscripcionPage() {
                       />
                       <div>
                         <p className="font-medium">{mod.modalidad}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-light-secondary">
                           {mod.modalidad === 'TRADICIONAL' && 'Ambos jugadores del mismo género'}
                           {mod.modalidad === 'MIXTO' && 'Un hombre y una mujer'}
                           {mod.modalidad === 'SUMA' && 'Combinación de categorías (sin restricción de género)'}
@@ -427,8 +429,8 @@ export default function NuevaInscripcionPage() {
 
             {/* Info de restricción */}
             {user?.genero === 'MASCULINO' && selectedModalidad === 'TRADICIONAL' && (
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-700">
+              <div className="mb-4 p-3 bg-blue-900/30 rounded-lg border border-blue-500/50">
+                <p className="text-sm text-blue-400">
                   ℹ️ Como jugador masculino en modalidad Tradicional, solo puedes inscribirte en categorías de <strong>Caballeros</strong>.
                 </p>
               </div>
@@ -436,12 +438,12 @@ export default function NuevaInscripcionPage() {
 
             {/* Categoría */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-light-text mb-3">
                 🎾 Selecciona tu categoría *
               </label>
               
               {filteredAndSortedCategories.length === 0 ? (
-                <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500">
+                <div className="p-4 bg-dark-surface rounded-lg text-center text-light-secondary">
                   No hay categorías disponibles para esta configuración
                 </div>
               ) : (
@@ -450,9 +452,9 @@ export default function NuevaInscripcionPage() {
                     <label
                       key={cat.id}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors
-                        ${selectedCategory === cat.id 
-                          ? 'border-emerald-500 bg-emerald-50' 
-                          : 'border-gray-200 hover:bg-gray-50'}`}
+                        ${selectedCategory === cat.id
+                          ? 'border-primary-500 bg-primary-500/10'
+                          : 'border-dark-border hover:bg-dark-hover'}`}
                     >
                       <input
                         type="radio"
@@ -471,10 +473,10 @@ export default function NuevaInscripcionPage() {
 
             {/* Validación de género */}
             {!generoValidation.valid && (
-              <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="mb-6 p-4 bg-red-900/30 rounded-lg border border-red-500/50">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-red-500" />
-                  <span className="text-red-700">{generoValidation.message}</span>
+                  <span className="text-red-400">{generoValidation.message}</span>
                 </div>
               </div>
             )}
@@ -498,15 +500,15 @@ export default function NuevaInscripcionPage() {
             <h2 className="text-xl font-bold mb-6">Paso 3: Resumen de Inscripción</h2>
 
             <div className="space-y-4 mb-6">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">🏆 Torneo</p>
+              <div className="p-4 bg-dark-surface rounded-lg">
+                <p className="text-sm text-light-secondary mb-1">🏆 Torneo</p>
                 <p className="font-semibold">{tournament.nombre}</p>
-                <p className="text-sm text-gray-600">📍 {tournament.ciudad}</p>
-                <p className="text-sm text-gray-600">📅 {formatDate(tournament.fechaInicio)} - {formatDate(tournament.fechaFin)}</p>
+                <p className="text-sm text-light-secondary">📍 {tournament.ciudad}</p>
+                <p className="text-sm text-light-secondary">📅 {formatDate(tournament.fechaInicio)} - {formatDate(tournament.fechaFin)}</p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">👥 Pareja</p>
+              <div className="p-4 bg-dark-surface rounded-lg">
+                <p className="text-sm text-light-secondary mb-1">👥 Pareja</p>
                 <p className="font-medium">• {user?.nombre} {user?.apellido}</p>
                 <p className="font-medium">
                   • {jugador2 
@@ -515,19 +517,19 @@ export default function NuevaInscripcionPage() {
                 </p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">🎾 Categoría</p>
+              <div className="p-4 bg-dark-surface rounded-lg">
+                <p className="text-sm text-light-secondary mb-1">🎾 Categoría</p>
                 <p className="font-semibold">{selectedCategoryData?.nombre}</p>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">⚡ Modalidad</p>
+              <div className="p-4 bg-dark-surface rounded-lg">
+                <p className="text-sm text-light-secondary mb-1">⚡ Modalidad</p>
                 <p className="font-semibold">{selectedModalidad}</p>
               </div>
 
-              <div className="p-4 bg-emerald-50 rounded-lg border-2 border-emerald-200">
-                <p className="text-sm text-emerald-700 mb-1">💰 MONTO A PAGAR</p>
-                <p className="text-3xl font-bold text-emerald-600">
+              <div className="p-4 bg-primary-500/10 rounded-lg border-2 border-primary-500/30">
+                <p className="text-sm text-primary-500 mb-1">💰 MONTO A PAGAR</p>
+                <p className="text-3xl font-bold text-primary-500">
                   {Number(tournament.costoInscripcion) > 0 
                     ? formatCurrency(Number(tournament.costoInscripcion))
                     : '¡GRATIS!'}
@@ -562,17 +564,17 @@ export default function NuevaInscripcionPage() {
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-6">Paso 4: Método de Pago</h2>
             
-            <p className="text-gray-600 mb-4">
-              Monto a pagar: <strong className="text-emerald-600">{formatCurrency(Number(tournament.costoInscripcion))}</strong>
+            <p className="text-light-secondary mb-4">
+              Monto a pagar: <strong className="text-primary-500">{formatCurrency(Number(tournament.costoInscripcion))}</strong>
             </p>
 
             <div className="space-y-3 mb-6">
               {/* Bancard */}
               <label
                 className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors
-                  ${selectedMetodoPago === 'BANCARD' 
-                    ? 'border-emerald-500 bg-emerald-50' 
-                    : 'border-gray-200 hover:bg-gray-50'}`}
+                  ${selectedMetodoPago === 'BANCARD'
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-border hover:bg-dark-hover'}`}
               >
                 <input
                   type="radio"
@@ -585,16 +587,16 @@ export default function NuevaInscripcionPage() {
                 <CreditCard className="h-6 w-6 mr-3 text-blue-600" />
                 <div>
                   <p className="font-medium">Tarjeta de crédito/débito (Bancard)</p>
-                  <p className="text-sm text-gray-500">Pago inmediato y seguro</p>
+                  <p className="text-sm text-light-secondary">Pago inmediato y seguro</p>
                 </div>
               </label>
 
               {/* Transferencia */}
               <label
                 className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors
-                  ${selectedMetodoPago === 'TRANSFERENCIA' 
-                    ? 'border-emerald-500 bg-emerald-50' 
-                    : 'border-gray-200 hover:bg-gray-50'}`}
+                  ${selectedMetodoPago === 'TRANSFERENCIA'
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-border hover:bg-dark-hover'}`}
               >
                 <input
                   type="radio"
@@ -607,16 +609,16 @@ export default function NuevaInscripcionPage() {
                 <Building className="h-6 w-6 mr-3 text-purple-600" />
                 <div>
                   <p className="font-medium">Transferencia bancaria</p>
-                  <p className="text-sm text-gray-500">Sube tu comprobante después</p>
+                  <p className="text-sm text-light-secondary">Sube tu comprobante después</p>
                 </div>
               </label>
 
               {/* Efectivo */}
               <label
                 className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors
-                  ${selectedMetodoPago === 'EFECTIVO' 
-                    ? 'border-emerald-500 bg-emerald-50' 
-                    : 'border-gray-200 hover:bg-gray-50'}`}
+                  ${selectedMetodoPago === 'EFECTIVO'
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-border hover:bg-dark-hover'}`}
               >
                 <input
                   type="radio"
@@ -629,7 +631,7 @@ export default function NuevaInscripcionPage() {
                 <Banknote className="h-6 w-6 mr-3 text-green-600" />
                 <div>
                   <p className="font-medium">Efectivo (Presencial)</p>
-                  <p className="text-sm text-gray-500">Paga directamente al organizador</p>
+                  <p className="text-sm text-light-secondary">Paga directamente al organizador</p>
                 </div>
               </label>
             </div>
@@ -658,14 +660,14 @@ export default function NuevaInscripcionPage() {
         {step === 5 && inscripcionResult && (
           <Card className="p-6 text-center">
             <div className="mb-6">
-              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-10 w-10 text-emerald-500" />
+              <div className="w-20 h-20 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-10 w-10 text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold text-emerald-700">¡Inscripción Registrada!</h2>
+              <h2 className="text-2xl font-bold text-primary-500">¡Inscripción Registrada!</h2>
             </div>
 
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg text-left">
-              <p className="text-sm text-gray-500 mb-1">Estado de tu inscripción:</p>
+            <div className="mb-6 p-4 bg-dark-surface rounded-lg text-left">
+              <p className="text-sm text-light-secondary mb-1">Estado de tu inscripción:</p>
               <Badge 
                 variant={
                   inscripcionResult.estado === 'CONFIRMADA' ? 'success' :
@@ -680,9 +682,9 @@ export default function NuevaInscripcionPage() {
 
             {/* Instrucciones según método de pago */}
             {selectedMetodoPago === 'TRANSFERENCIA' && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg text-left">
-                <h3 className="font-bold text-blue-800 mb-2">🏦 Próximos pasos</h3>
-                <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
+              <div className="mb-6 p-4 bg-blue-900/30 rounded-lg text-left">
+                <h3 className="font-bold text-blue-400 mb-2">🏦 Próximos pasos</h3>
+                <ol className="text-sm text-blue-400 list-decimal list-inside space-y-1">
                   <li>Realiza la transferencia por {formatCurrency(Number(tournament.costoInscripcion))}</li>
                   <li>Ve a "Mis Inscripciones" en tu perfil</li>
                   <li>Sube el comprobante de pago</li>
@@ -692,16 +694,16 @@ export default function NuevaInscripcionPage() {
             )}
 
             {selectedMetodoPago === 'EFECTIVO' && (
-              <div className="mb-6 p-4 bg-green-50 rounded-lg text-left">
-                <h3 className="font-bold text-green-800 mb-2">💵 Pago en Efectivo</h3>
-                <p className="text-sm text-green-700 mb-2">
+              <div className="mb-6 p-4 bg-green-900/30 rounded-lg text-left">
+                <h3 className="font-bold text-green-400 mb-2">💵 Pago en Efectivo</h3>
+                <p className="text-sm text-green-400 mb-2">
                   Coordina con el organizador para realizar el pago presencial.
                 </p>
-                <p className="text-sm text-green-700">
+                <p className="text-sm text-green-400">
                   <strong>Monto a pagar:</strong> {formatCurrency(Number(tournament.costoInscripcion))}
                 </p>
                 {tournament.sede && (
-                  <p className="text-sm text-green-700 mt-2">
+                  <p className="text-sm text-green-400 mt-2">
                     <strong>Sede:</strong> {tournament.sede}
                   </p>
                 )}
@@ -709,9 +711,9 @@ export default function NuevaInscripcionPage() {
             )}
 
             {selectedMetodoPago === 'BANCARD' && (
-              <div className="mb-6 p-4 bg-purple-50 rounded-lg text-left">
-                <h3 className="font-bold text-purple-800 mb-2">💳 Pago con Tarjeta</h3>
-                <p className="text-sm text-purple-700 mb-3">
+              <div className="mb-6 p-4 bg-purple-900/30 rounded-lg text-left">
+                <h3 className="font-bold text-purple-400 mb-2">💳 Pago con Tarjeta</h3>
+                <p className="text-sm text-purple-400 mb-3">
                   Serás redirigido a Bancard para completar el pago de forma segura.
                 </p>
                 <Button className="w-full bg-purple-600 hover:bg-purple-700">
@@ -721,9 +723,9 @@ export default function NuevaInscripcionPage() {
             )}
 
             {Number(tournament.costoInscripcion) === 0 && (
-              <div className="mb-6 p-4 bg-emerald-50 rounded-lg text-left">
-                <h3 className="font-bold text-emerald-800 mb-2">🎉 ¡Torneo Gratuito!</h3>
-                <p className="text-sm text-emerald-700">
+              <div className="mb-6 p-4 bg-primary-500/10 rounded-lg text-left">
+                <h3 className="font-bold text-primary-500 mb-2">🎉 ¡Torneo Gratuito!</h3>
+                <p className="text-sm text-primary-500">
                   Tu inscripción está confirmada. ¡Nos vemos en la cancha!
                 </p>
               </div>

@@ -76,14 +76,14 @@ export const PagoModal: React.FC<PagoModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Realizar Pago" size="md">
       <div className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+          <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
             {error}
           </div>
         )}
 
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600">Monto a pagar:</p>
-          <p className="text-2xl font-bold text-emerald-600">
+        <div className="p-4 bg-dark-surface rounded-lg">
+          <p className="text-sm text-light-secondary">Monto a pagar:</p>
+          <p className="text-2xl font-bold text-primary-500">
             Gs. {new Intl.NumberFormat('es-PY').format(monto)}
           </p>
         </div>
@@ -99,16 +99,16 @@ export const PagoModal: React.FC<PagoModalProps> = ({
                 onClick={() => setSelectedMethod(method.id)}
                 className={`w-full p-4 rounded-lg border-2 text-left transition-colors flex items-center gap-4 ${
                   selectedMethod === method.id
-                    ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary-500 bg-primary-500/10'
+                    : 'border-dark-border hover:border-dark-hover'
                 }`}
               >
                 <Icon className={`h-6 w-6 ${
-                  selectedMethod === method.id ? 'text-emerald-600' : 'text-gray-400'
+                  selectedMethod === method.id ? 'text-primary-500' : 'text-light-secondary'
                 }`} />
                 <div>
                   <p className="font-medium">{method.name}</p>
-                  <p className="text-sm text-gray-500">{method.description}</p>
+                  <p className="text-sm text-light-secondary">{method.description}</p>
                 </div>
               </button>
             );
