@@ -7,9 +7,19 @@ import {
   Users,
   BarChart2,
   PieChart,
+  Settings,
+  Percent,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-type Tab = 'puntos' | 'estadisticas';
+type Tab = 'sistema' | 'puntos' | 'estadisticas';
+
+interface ConfigSistema {
+  id: string;
+  clave: string;
+  valor: string;
+  descripcion: string | null;
+}
 
 interface ConfigPuntos {
   id: string;
@@ -59,7 +69,8 @@ const generoLabels: Record<string, string> = {
 };
 
 const AdminConfiguracionPage = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('puntos');
+  const [activeTab, setActiveTab] = useState<Tab>('sistema');
+  const [configSistema, setConfigSistema] = useState<ConfigSistema[]>([]);
   const [configPuntos, setConfigPuntos] = useState<ConfigPuntos[]>([]);
   const [editedPuntos, setEditedPuntos] = useState<Record<string, { puntosBase: number; multiplicador: number }>>({});
   const [metricasUsuarios, setMetricasUsuarios] = useState<MetricasUsuarios | null>(null);
@@ -75,7 +86,10 @@ const AdminConfiguracionPage = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'puntos') {
+      if (activeTab === 'sistema') {
+        const data = await adminService.getConfiguracionSistema();
+        setConfigSistema(data);
+      } else if (activeTab === 'puntos') {
         const data = await adminService.getConfiguracionPuntos();
         setConfigPuntos(data);
         setEditedPuntos({});
@@ -139,6 +153,7 @@ const AdminConfiguracionPage = () => {
   };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: 'sistema', label: 'Configuración General', icon: <Settings className="w-4 h-4" /> },
     { key: 'puntos', label: 'Tabla de Puntos', icon: <Trophy className="w-4 h-4" /> },
     { key: 'estadisticas', label: 'Estadísticas Generales', icon: <PieChart className="w-4 h-4" /> },
   ];
@@ -174,6 +189,23 @@ const AdminConfiguracionPage = () => {
         </div>
       ) : (
         <>
+          {activeTab === 'sistema' && (
+            <SistemaTab
+              config={configSistema}
+              onUpdate={async (clave, valor) => {
+                try {
+                  await adminService.actualizarConfiguracionSistema(clave, valor);
+                  setConfigSistema(prev =>
+                    prev.map(c => c.clave === clave ? { ...c, valor } : c)
+                  );
+                  toast.success('Configuración actualizada');
+                } catch (error: any) {
+                  const msg = error?.response?.data?.message || 'Error al actualizar';
+                  toast.error(msg);
+                }
+              }}
+            />
+          )}
           {activeTab === 'puntos' && (
             <PuntosTab
               config={configPuntos}
@@ -195,6 +227,119 @@ const AdminConfiguracionPage = () => {
     </div>
   );
 };
+
+// ========== Tab: Configuración General ==========
+
+const claveLabels: Record<string, { label: string; descripcion: string; sufijo: string }> = {
+  COMISION_INSCRIPCION: {
+    label: 'Comisión por Inscripción',
+    descripcion: 'Porcentaje que la plataforma cobra por cada inscripción paga a un torneo',
+    sufijo: '%',
+  },
+};
+
+function SistemaTab({
+  config,
+  onUpdate,
+}: {
+  config: ConfigSistema[];
+  onUpdate: (clave: string, valor: string) => Promise<void>;
+}) {
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  const handleSave = async (clave: string) => {
+    const newVal = editValues[clave];
+    if (newVal === undefined) return;
+
+    setSavingKey(clave);
+    await onUpdate(clave, newVal);
+    setEditValues(prev => {
+      const next = { ...prev };
+      delete next[clave];
+      return next;
+    });
+    setSavingKey(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Percent className="w-5 h-5" />
+            Parámetros del Sistema
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {config.length === 0 ? (
+            <p className="text-light-secondary text-sm text-center py-4">No hay configuraciones registradas</p>
+          ) : (
+            <div className="space-y-4">
+              {config.map((item) => {
+                const meta = claveLabels[item.clave];
+                const isEditing = editValues[item.clave] !== undefined;
+                const currentVal = editValues[item.clave] ?? item.valor;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-dark-border rounded-lg p-4 hover:bg-dark-hover"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-light-text">
+                          {meta?.label || item.clave}
+                        </h3>
+                        <p className="text-sm text-light-secondary mt-1">
+                          {meta?.descripcion || item.descripcion || ''}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={currentVal}
+                            onChange={(e) =>
+                              setEditValues(prev => ({ ...prev, [item.clave]: e.target.value }))
+                            }
+                            className="w-28 px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-lg font-bold text-light-text text-center focus:outline-none focus:border-primary-500"
+                          />
+                          {meta?.sufijo && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-light-secondary font-medium">
+                              {meta.sufijo}
+                            </span>
+                          )}
+                        </div>
+
+                        {isEditing && (
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleSave(item.clave)}
+                            loading={savingKey === item.clave}
+                            disabled={savingKey !== null}
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            Guardar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 // ========== Tab: Tabla de Puntos ==========
 

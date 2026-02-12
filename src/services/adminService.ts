@@ -65,6 +65,11 @@ export const adminService = {
     return response.data;
   },
 
+  promoverOrganizador: async (documento: string): Promise<{ message: string; usuario?: any }> => {
+    const response = await api.post('/admin/promover-organizador', { documento });
+    return response.data;
+  },
+
   // ============ MODERACIÓN FOTOS ============
   getFotosModeracion: async (): Promise<any[]> => {
     const response = await api.get('/admin/fotos-moderacion');
@@ -157,6 +162,17 @@ export const adminService = {
 
   actualizarConfiguracionPuntos: async (id: string, data: { puntosBase: number; multiplicador: number }): Promise<{ message: string }> => {
     const response = await api.put(`/admin/configuracion/puntos/${id}`, data);
+    return response.data;
+  },
+
+  // ============ CONFIGURACIÓN SISTEMA ============
+  getConfiguracionSistema: async (): Promise<any[]> => {
+    const response = await api.get('/admin/configuracion/sistema');
+    return response.data;
+  },
+
+  actualizarConfiguracionSistema: async (clave: string, valor: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/configuracion/sistema/${clave}`, { valor });
     return response.data;
   },
 
