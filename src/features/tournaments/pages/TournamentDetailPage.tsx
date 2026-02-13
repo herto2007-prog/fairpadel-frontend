@@ -237,72 +237,107 @@ export default function TournamentDetailPage() {
                     grouped[catName].push(insc);
                   });
 
-                  // Separar en caballeros y damas
-                  const caballerosEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('caballeros'));
-                  const damasEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('damas'));
-                  const otherEntries = Object.entries(grouped).filter(([name]) => !name.toLowerCase().includes('caballeros') && !name.toLowerCase().includes('damas'));
+                  // Separar en caballeros y damas, ordenar por nombre ascendente (1ra, 2da, 3ra...)
+                  const sortCat = (a: [string, any[]], b: [string, any[]]) => a[0].localeCompare(b[0], 'es', { numeric: true });
+                  const caballerosEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('caballeros')).sort(sortCat);
+                  const damasEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('damas')).sort(sortCat);
 
-                  const renderGroup = (entries: [string, any[]][], title: string, color: string) => {
+                  const PlayerAvatar = ({ player, size = 28 }: { player?: any; size?: number }) => {
+                    if (!player) {
+                      return (
+                        <div
+                          className="rounded-full bg-dark-border flex items-center justify-center flex-shrink-0"
+                          style={{ width: size, height: size }}
+                        >
+                          <span className="text-light-secondary" style={{ fontSize: size * 0.4 }}>?</span>
+                        </div>
+                      );
+                    }
+                    const initials = `${player.nombre?.charAt(0) || ''}${player.apellido?.charAt(0) || ''}`.toUpperCase();
+                    if (player.fotoUrl) {
+                      return (
+                        <img
+                          src={player.fotoUrl}
+                          alt={initials}
+                          className="rounded-full object-cover flex-shrink-0 border border-dark-border"
+                          style={{ width: size, height: size }}
+                        />
+                      );
+                    }
+                    return (
+                      <div
+                        className="rounded-full bg-primary-500/30 flex items-center justify-center flex-shrink-0 border border-primary-500/20"
+                        style={{ width: size, height: size }}
+                      >
+                        <span className="text-primary-300 font-semibold leading-none" style={{ fontSize: size * 0.38 }}>
+                          {initials}
+                        </span>
+                      </div>
+                    );
+                  };
+
+                  const renderColumn = (entries: [string, any[]][], title: string, accentColor: string) => {
                     if (entries.length === 0) return null;
                     return (
-                      <div className="mb-4">
-                        <h4 className={`font-medium text-${color}-400 mb-2`}>{title}</h4>
-                        {entries.map(([catName, inscs]) => {
-                          const isExpanded = expandedCategories[catName] !== false;
-                          return (
-                            <div key={catName} className="mb-3">
-                              <button
-                                onClick={() => toggleCategory(catName)}
-                                className="flex items-center justify-between w-full text-left p-2 rounded-lg hover:bg-dark-hover"
-                              >
-                                <span className="font-medium text-sm">{catName} ({inscs.length} parejas)</span>
-                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                              </button>
-                              {isExpanded && (
-                                <div className="space-y-2 mt-1 pl-2">
-                                  {inscs.map((insc: any) => (
-                                    <div key={insc.id} className="flex items-center gap-3 p-2 rounded-lg bg-dark-surface">
-                                      <div className="flex items-center gap-2 flex-1">
-                                        <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-xs font-bold text-primary-400">
-                                          {(insc.pareja?.jugador1?.nombre?.[0] || '?').toUpperCase()}
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`font-semibold text-${accentColor}-400 mb-3 text-center text-sm uppercase tracking-wider`}>
+                          {title}
+                        </h4>
+                        <div className="space-y-4">
+                          {entries.map(([catName, inscs]) => {
+                            const isExpanded = expandedCategories[catName] !== false;
+                            return (
+                              <div key={catName}>
+                                <button
+                                  onClick={() => toggleCategory(catName)}
+                                  className={`flex items-center justify-between w-full text-left px-3 py-2 rounded-lg hover:bg-dark-hover border border-dark-border bg-dark-bg`}
+                                >
+                                  <span className="font-medium text-sm">{catName.replace(' Caballeros', '').replace(' Damas', '')}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs text-${accentColor}-400 font-medium`}>{inscs.length}</span>
+                                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                  </div>
+                                </button>
+                                {isExpanded && (
+                                  <div className="space-y-1 mt-1">
+                                    {inscs.map((insc: any, idx: number) => (
+                                      <div key={insc.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-dark-surface">
+                                        <span className="text-xs text-light-secondary w-5 text-right flex-shrink-0">{idx + 1}</span>
+                                        <div className="flex -space-x-1.5 flex-shrink-0">
+                                          <PlayerAvatar player={insc.pareja?.jugador1} size={26} />
+                                          <PlayerAvatar player={insc.pareja?.jugador2} size={26} />
                                         </div>
-                                        <div className="text-sm">
-                                          <p className="font-medium">
-                                            {insc.pareja?.jugador1
-                                              ? `${insc.pareja.jugador1.nombre} ${insc.pareja.jugador1.apellido}`
-                                              : 'Jugador 1'}
+                                        <div className="text-sm min-w-0 flex-1">
+                                          <p className="truncate">
+                                            <span className="font-medium">
+                                              {insc.pareja?.jugador1
+                                                ? `${insc.pareja.jugador1.nombre?.charAt(0)}. ${insc.pareja.jugador1.apellido}`
+                                                : '?'}
+                                            </span>
+                                            <span className="text-light-secondary mx-1">/</span>
+                                            <span className="font-medium">
+                                              {insc.pareja?.jugador2
+                                                ? `${insc.pareja.jugador2.nombre?.charAt(0)}. ${insc.pareja.jugador2.apellido}`
+                                                : `Doc: ${insc.pareja?.jugador2Documento || '?'}`}
+                                            </span>
                                           </p>
                                         </div>
                                       </div>
-                                      <span className="text-light-secondary text-xs">+</span>
-                                      <div className="flex items-center gap-2 flex-1">
-                                        <div className="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center text-xs font-bold text-blue-400">
-                                          {(insc.pareja?.jugador2?.nombre?.[0] || '?').toUpperCase()}
-                                        </div>
-                                        <div className="text-sm">
-                                          <p className="font-medium">
-                                            {insc.pareja?.jugador2
-                                              ? `${insc.pareja.jugador2.nombre} ${insc.pareja.jugador2.apellido}`
-                                              : `Doc: ${insc.pareja?.jugador2Documento || '?'}`}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   };
 
                   return (
-                    <div>
-                      {renderGroup(caballerosEntries, 'Caballeros', 'blue')}
-                      {renderGroup(damasEntries, 'Damas', 'pink')}
-                      {renderGroup(otherEntries, 'Otras', 'gray')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {renderColumn(caballerosEntries, 'Caballeros', 'blue')}
+                      {renderColumn(damasEntries, 'Damas', 'pink')}
                     </div>
                   );
                 })()}
