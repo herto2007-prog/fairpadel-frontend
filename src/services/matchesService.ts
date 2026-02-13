@@ -22,11 +22,45 @@ class MatchesService {
     return response.data;
   }
 
-  async generarFixture(tournamentId: string, categoryId: string): Promise<Match[]> {
-    const response = await api.post<Match[]>(`/matches/fixture`, {
-      tournamentId,
-      categoryId,
+  async sortearCategoria(tournamentId: string, categoryId: string): Promise<any> {
+    const response = await api.post(
+      `/matches/torneo/${tournamentId}/categoria/${categoryId}/sortear`,
+    );
+    return response.data;
+  }
+
+  async generarFixtureCompleto(tournamentId: string): Promise<any> {
+    const response = await api.post(`/matches/torneo/${tournamentId}/generar-fixture`);
+    return response.data;
+  }
+
+  async obtenerFixture(tournamentId: string, categoryId?: string): Promise<any> {
+    const params = categoryId ? `?categoryId=${categoryId}` : '';
+    const response = await api.get(`/matches/torneo/${tournamentId}/fixture${params}`);
+    return response.data;
+  }
+
+  async publicarFixture(tournamentId: string, categoryId: string): Promise<any> {
+    const response = await api.post(
+      `/matches/torneo/${tournamentId}/categoria/${categoryId}/publicar-fixture`,
+    );
+    return response.data;
+  }
+
+  async swapMatchSchedules(match1Id: string, match2Id: string): Promise<any> {
+    const response = await api.post('/matches/swap-schedules', {
+      match1Id,
+      match2Id,
     });
+    return response.data;
+  }
+
+  async reprogramarPartido(matchId: string, data: {
+    fechaProgramada: string;
+    horaProgramada: string;
+    torneoCanchaId?: string;
+  }): Promise<Match> {
+    const response = await api.put<Match>(`/matches/${matchId}/reprogramar`, data);
     return response.data;
   }
 

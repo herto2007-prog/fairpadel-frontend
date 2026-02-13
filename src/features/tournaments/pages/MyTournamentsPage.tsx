@@ -39,18 +39,6 @@ const MyTournamentsPage = () => {
     }
   };
 
-  const handleStart = async (id: string) => {
-    setActionLoading(id);
-    try {
-      await tournamentsService.start(id);
-      loadTournaments();
-    } catch (error) {
-      console.error('Error starting tournament:', error);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const getStatusBadge = (status: TournamentStatus) => {
     const variants: Record<TournamentStatus, { variant: 'success' | 'warning' | 'info' | 'default' | 'danger'; label: string }> = {
       [TournamentStatus.BORRADOR]: { variant: 'default', label: 'Borrador' },
@@ -156,14 +144,10 @@ const MyTournamentsPage = () => {
                         Publicar
                       </Button>
                     )}
-                    {tournament.estado === TournamentStatus.PUBLICADO && (
-                      <Button
-                        variant="success"
-                        onClick={() => handleStart(tournament.id)}
-                        loading={actionLoading === tournament.id}
-                      >
-                        Iniciar
-                      </Button>
+                    {(tournament.estado === TournamentStatus.PUBLICADO || tournament.estado === TournamentStatus.EN_CURSO) && (
+                      <Link to={`/tournaments/${tournament.id}/manage`}>
+                        <Button variant="success">Gestionar</Button>
+                      </Link>
                     )}
                     <Link to={`/tournaments/${tournament.id}`}>
                       <Button variant="outline">Ver detalles</Button>

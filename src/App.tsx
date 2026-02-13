@@ -19,8 +19,12 @@ import AdminOrganizadoresPage from '@/features/admin/pages/AdminOrganizadoresPag
 import AdminModeracionPage from '@/features/admin/pages/AdminModeracionPage';
 import AdminSuscripcionesPage from '@/features/admin/pages/AdminSuscripcionesPage';
 import AdminConfiguracionPage from '@/features/admin/pages/AdminConfiguracionPage';
+import AdminCircuitosPage from '@/features/admin/pages/AdminCircuitosPage';
 import ManageTournamentPage from '@/features/tournaments/pages/ManageTournamentPage';
 import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage';
+import CircuitosListPage from '@/features/circuitos/pages/CircuitosListPage';
+import CircuitoDetailPage from '@/features/circuitos/pages/CircuitoDetailPage';
+import FixturePage from '@/features/matches/pages/FixturePage';
 
 function App() {
   return (
@@ -40,6 +44,9 @@ function App() {
             <Route path="/tournaments" element={<TournamentsListPage />} />
             <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
             <Route path="/rankings" element={<RankingsPage />} />
+            <Route path="/circuitos" element={<CircuitosListPage />} />
+            <Route path="/circuitos/:id" element={<CircuitoDetailPage />} />
+            <Route path="/tournaments/:tournamentId/fixture" element={<FixturePage />} />
 
             {/* Protected - Admin */}
             <Route
@@ -87,6 +94,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminConfiguracionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/circuitos"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminCircuitosPage />
                 </ProtectedRoute>
               }
             />

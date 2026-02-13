@@ -6,3 +6,4 @@ export { rankingsService } from './rankingsService';
 export { usersService } from './usersService';
 export { matchesService } from './matchesService';
 export { sedesService } from './sedesService';
+export { circuitosService } from './circuitosService';

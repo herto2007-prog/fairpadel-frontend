@@ -15,6 +15,15 @@ export enum TournamentStatus {
   CANCELADO = 'CANCELADO',
 }
 
+export enum CategoriaEstado {
+  INSCRIPCIONES_ABIERTAS = 'INSCRIPCIONES_ABIERTAS',
+  INSCRIPCIONES_CERRADAS = 'INSCRIPCIONES_CERRADAS',
+  FIXTURE_BORRADOR = 'FIXTURE_BORRADOR',
+  SORTEO_REALIZADO = 'SORTEO_REALIZADO',
+  EN_CURSO = 'EN_CURSO',
+  FINALIZADA = 'FINALIZADA',
+}
+
 export enum Modalidad {
   TRADICIONAL = 'TRADICIONAL',
   MIXTO = 'MIXTO',
@@ -49,6 +58,13 @@ export enum TipoRanking {
   GLOBAL = 'GLOBAL',
   PAIS = 'PAIS',
   CIUDAD = 'CIUDAD',
+  LIGA = 'LIGA',
+}
+
+export enum CircuitoEstado {
+  ACTIVO = 'ACTIVO',
+  FINALIZADO = 'FINALIZADO',
+  CANCELADO = 'CANCELADO',
 }
 
 export enum TipoCancha {
@@ -96,6 +112,7 @@ export interface TournamentCategory {
   tournamentId: string;
   categoryId: string;
   inscripcionAbierta: boolean;
+  estado: CategoriaEstado;
   category: Category;
   inscripcionesCount?: number;
   nombre?: string;
@@ -200,6 +217,9 @@ export interface Tournament {
   sedePrincipal?: Sede;
   torneoCanchas?: TorneoCancha[];
   torneoSedes?: TorneoSede[];
+  // Circuito
+  circuitoId?: string;
+  circuito?: Circuito;
   estado: TournamentStatus;
   organizadorId: string;
   organizador?: Partial<User>;
@@ -252,6 +272,8 @@ export interface Match {
   horaFinEstimada?: string;
   torneoCanchaId?: string;
   torneoCancha?: TorneoCancha;
+  partidoSiguienteId?: string;
+  posicionEnSiguiente?: number;
   observaciones?: string;
   estado: MatchStatus;
   pareja1?: Pareja;
@@ -464,4 +486,48 @@ export interface PaymentResponse {
   redirectUrl?: string;
   checkoutUrl?: string;
   message?: string;
+}
+
+// Circuitos
+export interface Circuito {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  pais: string;
+  region?: string;
+  ciudad?: string;
+  temporada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: CircuitoEstado;
+  logoUrl?: string;
+  torneos?: Tournament[];
+  _count?: { torneos: number };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CircuitoStanding {
+  posicion: number;
+  jugador: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    ciudad?: string;
+    genero: Gender;
+  };
+  puntosTotales: number;
+  torneosJugados: number;
+}
+
+export interface CreateCircuitoDto {
+  nombre: string;
+  descripcion?: string;
+  pais: string;
+  region?: string;
+  ciudad?: string;
+  temporada: string;
+  fechaInicio: string;
+  fechaFin: string;
+  logoUrl?: string;
 }

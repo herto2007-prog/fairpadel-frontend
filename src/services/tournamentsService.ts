@@ -60,12 +60,6 @@ export const tournamentsService = {
     await api.delete(`/tournaments/${id}`);
   },
 
-  // Alias para compatibilidad
-  start: async (id: string): Promise<Tournament> => {
-    const response = await api.patch(`/tournaments/${id}`, { estado: 'EN_CURSO' });
-    return response.data;
-  },
-
   // PATCH /tournaments/:id/categorias/:tcId/toggle-inscripcion
   toggleInscripcionCategoria: async (tournamentId: string, tournamentCategoryId: string) => {
     const response = await api.patch(`/tournaments/${tournamentId}/categorias/${tournamentCategoryId}/toggle-inscripcion`);

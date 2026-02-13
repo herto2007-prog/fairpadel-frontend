@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Loading, Checkbox } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
+import { matchesService } from '@/services/matchesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda } from '@/types';
+import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda, Match, Pareja } from '@/types';
+import { BracketView } from '@/features/matches/components/BracketView';
 import {
   ArrowLeft,
   BarChart3,
@@ -27,9 +29,12 @@ import {
   Plus,
   Trash2,
   UserPlus,
+  ArrowRightLeft,
+  Eye,
+  Send,
 } from 'lucide-react';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -108,6 +113,7 @@ export default function ManageTournamentPage() {
     { key: 'resumen', label: 'Resumen', icon: <LayoutDashboard className="w-4 h-4" /> },
     { key: 'editar', label: 'Editar', icon: <Edit3 className="w-4 h-4" /> },
     { key: 'inscripciones', label: 'Inscripciones', icon: <Users className="w-4 h-4" /> },
+    { key: 'sorteo', label: 'Sorteo', icon: <Trophy className="w-4 h-4" /> },
     { key: 'canchas', label: 'Canchas y Horarios', icon: <Layers className="w-4 h-4" /> },
     { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
     { key: 'ayudantes', label: 'Ayudantes', icon: <UserPlus className="w-4 h-4" /> },
@@ -164,6 +170,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} />}
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
         {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} />}
+        {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} />}
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
@@ -1074,6 +1081,424 @@ function DashboardPremiumTab({ tournament, stats, isPremium }: { tournament: Tou
           </div>
         ) : <p className="text-light-secondary text-sm text-center py-4">Sin datos</p>}
       </Card>
+    </div>
+  );
+}
+
+// ===================== SORTEO TAB =====================
+
+function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: Tournament; stats: TournamentStats | null; onRefresh: () => Promise<void>; isPremium: boolean }) {
+  const [sorteando, setSorteando] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const [fixtureData, setFixtureData] = useState<Match[]>([]);
+  const [loadingFixture, setLoadingFixture] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<Record<string, { fechaProgramada: string; horaProgramada: string; torneoCanchaId: string }>>({});
+  const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
+  const [swapMode, setSwapMode] = useState(false);
+  const [swapSelection, setSwapSelection] = useState<string[]>([]);
+  const [swapping, setSwapping] = useState(false);
+
+  const categorias = stats?.categorias || [];
+  const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
+  const damas = categorias.filter((c) => c.category?.tipo === 'FEMENINO');
+
+  const handleSortear = async (categoryId: string) => {
+    setSorteando(categoryId);
+    setMessage('');
+    try {
+      const result = await matchesService.sortearCategoria(tournament.id, categoryId);
+      setMessage(result.message || 'Sorteo realizado exitosamente');
+      setMessageType('success');
+      await onRefresh();
+      // Auto-cargar fixture después del sorteo
+      await loadFixture(categoryId);
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || 'Error al realizar el sorteo');
+      setMessageType('error');
+    } finally {
+      setSorteando(null);
+    }
+  };
+
+  const loadFixture = async (categoryId: string) => {
+    setLoadingFixture(true);
+    try {
+      const data = await matchesService.obtenerFixture(tournament.id, categoryId);
+      const catData = data[categoryId];
+      if (catData) {
+        const allMatches = Object.values(catData.rondas).flat() as Match[];
+        setFixtureData(allMatches);
+      } else {
+        setFixtureData([]);
+      }
+      setSelectedCategory(categoryId);
+    } catch (error) {
+      console.error('Error loading fixture:', error);
+      setFixtureData([]);
+    } finally {
+      setLoadingFixture(false);
+    }
+  };
+
+  const handlePublicar = async (categoryId: string) => {
+    setPublishing(true);
+    setMessage('');
+    try {
+      const result = await matchesService.publicarFixture(tournament.id, categoryId);
+      setMessage(result.message || 'Fixture publicado exitosamente');
+      setMessageType('success');
+      await onRefresh();
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || 'Error al publicar fixture');
+      setMessageType('error');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleReprogramar = async (matchId: string) => {
+    const editData = editingSchedule[matchId];
+    if (!editData) return;
+    setSavingSchedule(matchId);
+    try {
+      await matchesService.reprogramarPartido(matchId, {
+        fechaProgramada: editData.fechaProgramada,
+        horaProgramada: editData.horaProgramada,
+        torneoCanchaId: editData.torneoCanchaId || undefined,
+      });
+      setMessage('Horario actualizado');
+      setMessageType('success');
+      setEditingSchedule((prev) => {
+        const next = { ...prev };
+        delete next[matchId];
+        return next;
+      });
+      if (selectedCategory) await loadFixture(selectedCategory);
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || 'Error al reprogramar');
+      setMessageType('error');
+    } finally {
+      setSavingSchedule(null);
+    }
+  };
+
+  const handleSwapSelect = (matchId: string) => {
+    setSwapSelection((prev) => {
+      if (prev.includes(matchId)) return prev.filter((id) => id !== matchId);
+      if (prev.length >= 2) return [matchId];
+      return [...prev, matchId];
+    });
+  };
+
+  const handleSwapConfirm = async () => {
+    if (swapSelection.length !== 2) return;
+    setSwapping(true);
+    try {
+      await matchesService.swapMatchSchedules(swapSelection[0], swapSelection[1]);
+      setMessage('Horarios intercambiados exitosamente');
+      setMessageType('success');
+      setSwapSelection([]);
+      setSwapMode(false);
+      if (selectedCategory) await loadFixture(selectedCategory);
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || 'Error al intercambiar horarios');
+      setMessageType('error');
+    } finally {
+      setSwapping(false);
+    }
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    const config: Record<string, { bg: string; text: string; label: string }> = {
+      INSCRIPCIONES_ABIERTAS: { bg: 'bg-green-900/30', text: 'text-green-400', label: 'Inscripciones Abiertas' },
+      INSCRIPCIONES_CERRADAS: { bg: 'bg-yellow-900/30', text: 'text-yellow-400', label: 'Listas para Sorteo' },
+      FIXTURE_BORRADOR: { bg: 'bg-orange-900/30', text: 'text-orange-400', label: 'Fixture Borrador' },
+      SORTEO_REALIZADO: { bg: 'bg-blue-900/30', text: 'text-blue-400', label: 'Fixture Publicado' },
+      EN_CURSO: { bg: 'bg-purple-900/30', text: 'text-purple-400', label: 'En Curso' },
+      FINALIZADA: { bg: 'bg-gray-900/30', text: 'text-gray-400', label: 'Finalizada' },
+    };
+    const c = config[estado] || config.INSCRIPCIONES_ABIERTAS;
+    return <span className={`text-xs px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>{c.label}</span>;
+  };
+
+  const canSortear = (tc: TournamentCategory & { inscripcionesCount: number }) => {
+    return (
+      (tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') &&
+      tc.inscripcionesCount >= 2 &&
+      ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado)
+    );
+  };
+
+  const getParejaLabel = (pareja?: Pareja) => {
+    if (!pareja) return 'TBD';
+    const j1 = pareja.jugador1;
+    const j2 = pareja.jugador2;
+    if (!j1) return 'TBD';
+    return `${j1.nombre?.charAt(0)}. ${j1.apellido} / ${j2 ? `${j2.nombre?.charAt(0)}. ${j2.apellido}` : 'TBD'}`;
+  };
+
+  const renderCategoriaRow = (tc: TournamentCategory & { inscripcionesCount: number }) => (
+    <div key={tc.id} className="flex items-center justify-between p-4 rounded-lg border border-dark-border bg-dark-card">
+      <div>
+        <p className="font-medium">{tc.category?.nombre}</p>
+        <div className="flex items-center gap-2 mt-1">
+          {getEstadoBadge(tc.estado)}
+          <span className="text-xs text-light-secondary">{tc.inscripcionesCount} parejas confirmadas</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {canSortear(tc) && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => handleSortear(tc.categoryId)}
+            loading={sorteando === tc.categoryId}
+            disabled={sorteando !== null}
+          >
+            <Trophy className="w-4 h-4 mr-1" /> {tc.estado === 'FIXTURE_BORRADOR' ? 'Re-Sortear' : 'Sortear'}
+          </Button>
+        )}
+        {['FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadFixture(tc.categoryId)}
+            loading={loadingFixture && selectedCategory === tc.categoryId}
+          >
+            <Eye className="w-4 h-4 mr-1" /> Ver Fixture
+          </Button>
+        )}
+        {tc.estado === 'FIXTURE_BORRADOR' && (
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => handlePublicar(tc.categoryId)}
+            loading={publishing}
+          >
+            <Send className="w-4 h-4 mr-1" /> Publicar
+          </Button>
+        )}
+        {tc.estado === 'INSCRIPCIONES_ABIERTAS' && (
+          <span className="text-xs text-yellow-400">Cierra inscripciones primero</span>
+        )}
+        {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 2 && (
+          <span className="text-xs text-red-400">Min. 2 parejas</span>
+        )}
+        {tc.estado === 'FINALIZADA' && (
+          <span className="text-xs text-gray-400">Finalizada</span>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="font-bold text-lg mb-2">Sorteo y Fixture por Categoria</h3>
+        <p className="text-sm text-light-secondary mb-4">
+          Cierra inscripciones → Sortear (genera fixture borrador con seeding) → Revisar/Editar → Publicar.
+          Las demas categorias pueden seguir recibiendo inscripciones.
+        </p>
+
+        {message && (
+          <div className={`p-3 rounded-md text-sm mb-4 ${
+            messageType === 'error'
+              ? 'bg-red-900/30 text-red-400 border border-red-500/50'
+              : 'bg-green-900/30 text-green-400 border border-green-500/50'
+          }`}>
+            {message}
+          </div>
+        )}
+
+        {categorias.length === 0 ? (
+          <div className="text-center py-8 text-light-secondary">
+            <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No hay categorias configuradas</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {caballeros.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-light-secondary uppercase tracking-wide mb-3">Caballeros</h4>
+                <div className="space-y-2">{caballeros.map(renderCategoriaRow)}</div>
+              </div>
+            )}
+            {damas.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-light-secondary uppercase tracking-wide mb-3">Damas</h4>
+                <div className="space-y-2">{damas.map(renderCategoriaRow)}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Vista del Fixture */}
+      {selectedCategory && fixtureData.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Vista del Fixture</h3>
+            <div className="flex gap-2 items-center">
+              {isPremium ? (
+                <Button
+                  variant={swapMode ? 'danger' : 'outline'}
+                  size="sm"
+                  onClick={() => { setSwapMode(!swapMode); setSwapSelection([]); }}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-1" />
+                  {swapMode ? 'Cancelar Swap' : 'Intercambiar Horarios'}
+                </Button>
+              ) : (
+                <span className="text-xs text-light-secondary flex items-center gap-1">
+                  <Lock className="w-3 h-3" /> Swap requiere Premium
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Bracket visual */}
+          <BracketView matches={fixtureData} />
+
+          {/* Swap preview */}
+          {swapMode && swapSelection.length === 2 && (
+            <div className="mt-4 p-4 bg-amber-900/30 border border-amber-500/50 rounded-lg">
+              <p className="text-sm text-amber-400 mb-3">Intercambiar horarios de estos 2 partidos:</p>
+              <div className="flex items-center gap-4 text-sm mb-3">
+                <div className="flex-1 p-2 bg-dark-surface rounded">
+                  {(() => {
+                    const m = fixtureData.find((m) => m.id === swapSelection[0]);
+                    return m ? `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${m.horaProgramada || 'Sin hora'}` : '';
+                  })()}
+                </div>
+                <ArrowRightLeft className="w-5 h-5 text-amber-400" />
+                <div className="flex-1 p-2 bg-dark-surface rounded">
+                  {(() => {
+                    const m = fixtureData.find((m) => m.id === swapSelection[1]);
+                    return m ? `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${m.horaProgramada || 'Sin hora'}` : '';
+                  })()}
+                </div>
+              </div>
+              <Button variant="primary" size="sm" onClick={handleSwapConfirm} loading={swapping}>
+                Confirmar Intercambio
+              </Button>
+            </div>
+          )}
+
+          {/* Grilla editable de partidos */}
+          <div className="mt-6">
+            <h4 className="font-semibold mb-3">Grilla de Partidos</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-dark-border">
+                    {swapMode && <th className="py-2 px-3 text-center w-10"></th>}
+                    <th className="py-2 px-3 text-left">Ronda</th>
+                    <th className="py-2 px-3 text-left">Pareja 1</th>
+                    <th className="py-2 px-3 text-left">Pareja 2</th>
+                    <th className="py-2 px-3 text-left">Fecha</th>
+                    <th className="py-2 px-3 text-left">Hora</th>
+                    <th className="py-2 px-3 text-left">Estado</th>
+                    <th className="py-2 px-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fixtureData.map((match) => {
+                    const isEditing = !!editingSchedule[match.id];
+                    const isSelected = swapSelection.includes(match.id);
+                    return (
+                      <tr
+                        key={match.id}
+                        className={`border-b border-dark-border ${isSelected ? 'bg-amber-900/20' : ''} ${swapMode ? 'cursor-pointer hover:bg-dark-hover' : ''}`}
+                        onClick={swapMode ? () => handleSwapSelect(match.id) : undefined}
+                      >
+                        {swapMode && (
+                          <td className="py-2 px-3 text-center">
+                            <input type="checkbox" checked={isSelected} readOnly className="rounded" />
+                          </td>
+                        )}
+                        <td className="py-2 px-3 font-medium">{match.ronda}</td>
+                        <td className="py-2 px-3">{getParejaLabel(match.pareja1)}</td>
+                        <td className="py-2 px-3">{getParejaLabel(match.pareja2)}</td>
+                        <td className="py-2 px-3">
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              value={editingSchedule[match.id]?.fechaProgramada || ''}
+                              onChange={(e) => setEditingSchedule((prev) => ({
+                                ...prev,
+                                [match.id]: { ...prev[match.id], fechaProgramada: e.target.value },
+                              }))}
+                              className="text-sm bg-dark-surface border border-dark-border rounded px-2 py-1 text-light-text"
+                            />
+                          ) : (
+                            match.fechaProgramada ? new Date(match.fechaProgramada).toLocaleDateString() : 'Sin fecha'
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          {isEditing ? (
+                            <input
+                              type="time"
+                              value={editingSchedule[match.id]?.horaProgramada || ''}
+                              onChange={(e) => setEditingSchedule((prev) => ({
+                                ...prev,
+                                [match.id]: { ...prev[match.id], horaProgramada: e.target.value },
+                              }))}
+                              className="text-sm bg-dark-surface border border-dark-border rounded px-2 py-1 text-light-text"
+                            />
+                          ) : (
+                            match.horaProgramada || 'Sin hora'
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            match.estado === 'FINALIZADO' ? 'bg-green-900/30 text-green-400' :
+                            match.estado === 'WO' ? 'bg-red-900/30 text-red-400' :
+                            'bg-gray-900/30 text-gray-400'
+                          }`}>
+                            {match.estado === 'WO' ? 'BYE' : match.estado}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          {!swapMode && match.estado !== 'FINALIZADO' && match.estado !== 'WO' && (
+                            isEditing ? (
+                              <div className="flex gap-1 justify-center">
+                                <Button size="sm" variant="primary" onClick={() => handleReprogramar(match.id)} loading={savingSchedule === match.id}>
+                                  <Save className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingSchedule((prev) => {
+                                  const next = { ...prev };
+                                  delete next[match.id];
+                                  return next;
+                                })}>
+                                  ✕
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => setEditingSchedule((prev) => ({
+                                ...prev,
+                                [match.id]: {
+                                  fechaProgramada: match.fechaProgramada?.split('T')[0] || '',
+                                  horaProgramada: match.horaProgramada || '',
+                                  torneoCanchaId: match.torneoCanchaId || '',
+                                },
+                              }))}>
+                                <Edit3 className="w-3 h-3" />
+                              </Button>
+                            )
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

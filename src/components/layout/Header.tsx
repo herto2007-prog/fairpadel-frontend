@@ -36,6 +36,7 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
   const navLinks = [
     { to: '/', label: 'Inicio', icon: Home },
     { to: '/tournaments', label: 'Torneos', icon: Calendar },
+    { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
   ];
 
@@ -160,6 +161,14 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
                           Suscripciones
                         </Link>
                         <Link
+                          to="/admin/circuitos"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <Trophy className="h-4 w-4" />
+                          Circuitos
+                        </Link>
+                        <Link
                           to="/admin/configuracion"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
@@ -252,6 +261,67 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
                       <Trophy className="h-5 w-5" />
                       Mis Torneos
                     </Link>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <hr className="my-2 border-dark-border" />
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Settings className="h-5 w-5" />
+                        Administración
+                      </Link>
+                      <Link
+                        to="/admin/sedes"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <MapPin className="h-5 w-5" />
+                        Gestionar Sedes
+                      </Link>
+                      <Link
+                        to="/admin/organizadores"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <UserPlus className="h-5 w-5" />
+                        Organizadores
+                      </Link>
+                      <Link
+                        to="/admin/moderacion"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Shield className="h-5 w-5" />
+                        Moderación
+                      </Link>
+                      <Link
+                        to="/admin/suscripciones"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <CreditCard className="h-5 w-5" />
+                        Suscripciones
+                      </Link>
+                      <Link
+                        to="/admin/circuitos"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Trophy className="h-5 w-5" />
+                        Circuitos
+                      </Link>
+                      <Link
+                        to="/admin/configuracion"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Settings className="h-5 w-5" />
+                        Configuración
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={() => {
