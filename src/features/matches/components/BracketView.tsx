@@ -1,7 +1,48 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
 import { Card, CardContent, Badge } from '@/components/ui';
-import type { Match } from '@/types';
+import type { Match, User } from '@/types';
 import { MatchStatus } from '@/types';
+
+/** Avatar circular del jugador — muestra foto o iniciales */
+const PlayerAvatar = ({ player, size = 24 }: { player?: User | null; size?: number }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (!player) {
+    return (
+      <div
+        className="rounded-full bg-dark-border flex items-center justify-center flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        <span className="text-light-secondary" style={{ fontSize: size * 0.4 }}>?</span>
+      </div>
+    );
+  }
+
+  const initials = `${player.nombre?.charAt(0) || ''}${player.apellido?.charAt(0) || ''}`.toUpperCase();
+
+  if (player.fotoUrl && !imgError) {
+    return (
+      <img
+        src={player.fotoUrl}
+        alt={initials}
+        className="rounded-full object-cover flex-shrink-0 border border-dark-border"
+        style={{ width: size, height: size }}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="rounded-full bg-primary-500/30 flex items-center justify-center flex-shrink-0 border border-primary-500/20"
+      style={{ width: size, height: size }}
+    >
+      <span className="text-primary-300 font-semibold leading-none" style={{ fontSize: size * 0.38 }}>
+        {initials}
+      </span>
+    </div>
+  );
+};
 
 interface BracketViewProps {
   matches: Match[];
@@ -211,25 +252,37 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
             </div>
 
             {/* Pareja 1 */}
-            <div className={`flex justify-between items-center px-3 py-2 border-b border-dark-border ${
+            <div className={`flex justify-between items-center px-2 py-1.5 border-b border-dark-border ${
               isWinner(match, 1) ? 'bg-green-900/30' : ''
             }`}>
-              <span className={`text-sm ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
-                {getParejaName(match, 1)}
-              </span>
-              <span className="font-mono font-semibold">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex -space-x-1.5 flex-shrink-0">
+                  <PlayerAvatar player={match.pareja1?.jugador1} size={22} />
+                  <PlayerAvatar player={match.pareja1?.jugador2} size={22} />
+                </div>
+                <span className={`text-sm truncate ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
+                  {getParejaName(match, 1)}
+                </span>
+              </div>
+              <span className="font-mono font-semibold text-sm ml-2 flex-shrink-0">
                 {getScore(match, 1)}
               </span>
             </div>
 
             {/* Pareja 2 */}
-            <div className={`flex justify-between items-center px-3 py-2 ${
+            <div className={`flex justify-between items-center px-2 py-1.5 ${
               isWinner(match, 2) ? 'bg-green-900/30' : ''
             }`}>
-              <span className={`text-sm ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
-                {getParejaName(match, 2)}
-              </span>
-              <span className="font-mono font-semibold">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex -space-x-1.5 flex-shrink-0">
+                  <PlayerAvatar player={match.pareja2?.jugador1} size={22} />
+                  <PlayerAvatar player={match.pareja2?.jugador2} size={22} />
+                </div>
+                <span className={`text-sm truncate ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
+                  {getParejaName(match, 2)}
+                </span>
+              </div>
+              <span className="font-mono font-semibold text-sm ml-2 flex-shrink-0">
                 {getScore(match, 2)}
               </span>
             </div>
@@ -273,7 +326,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
               const spacingMultiplier = Math.pow(2, roundIdx);
 
               return (
-                <div key={roundKey} className="flex flex-col min-w-[280px]">
+                <div key={roundKey} className="flex flex-col min-w-[300px]">
                   <h3 className="text-lg font-semibold text-center py-2 bg-primary-500/20 text-primary-500 rounded-lg mb-4">
                     {getRoundName(roundKey)}
                     <span className="text-xs font-normal ml-2 opacity-70">({roundMatches.length})</span>
