@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Loading, Checkbox } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
@@ -1094,6 +1094,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const [fixtureData, setFixtureData] = useState<Match[]>([]);
   const [loadingFixture, setLoadingFixture] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const fixtureRef = useRef<HTMLDivElement>(null);
   const [publishing, setPublishing] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Record<string, { fechaProgramada: string; horaProgramada: string; torneoCanchaId: string }>>({});
   const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
@@ -1104,6 +1105,9 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const categorias = stats?.categorias || [];
   const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
   const damas = categorias.filter((c) => c.category?.tipo === 'FEMENINO');
+
+  // Debug: log render state
+  console.log('[SorteoTab render] selectedCategory:', selectedCategory, 'fixtureData.length:', fixtureData.length, 'loadingFixture:', loadingFixture);
 
   const handleSortear = async (categoryId: string) => {
     setSorteando(categoryId);
@@ -1154,6 +1158,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           setMessage('El fixture no tiene partidos aún');
           setMessageType('error');
         }
+        // Auto-scroll al fixture
+        setTimeout(() => {
+          fixtureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       } else {
         setFixtureData([]);
         setMessage('No se encontraron partidos para esta categoría');
@@ -1378,7 +1386,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
 
       {/* Vista del Fixture */}
       {selectedCategory && (loadingFixture || fixtureData.length > 0) && (
-        <Card className="p-6">
+        <Card className="p-6" ref={fixtureRef}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">
               Vista del Fixture
