@@ -1125,19 +1125,25 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
 
   const loadFixture = async (categoryId: string) => {
     setLoadingFixture(true);
+    setSelectedCategory(categoryId);
     try {
       const data = await matchesService.obtenerFixture(tournament.id, categoryId);
-      const catData = data[categoryId];
-      if (catData) {
+      // El backend devuelve { [categoryId]: { category, rondas: { OCTAVOS: [...], ... } } }
+      // Intentar con la key exacta, o con la primera key disponible
+      const catData = data[categoryId] || (Object.keys(data).length > 0 ? Object.values(data)[0] as any : null);
+      if (catData && catData.rondas) {
         const allMatches = Object.values(catData.rondas).flat() as Match[];
         setFixtureData(allMatches);
       } else {
         setFixtureData([]);
+        setMessage('No se encontraron partidos para esta categoría');
+        setMessageType('error');
       }
-      setSelectedCategory(categoryId);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading fixture:', error);
       setFixtureData([]);
+      setMessage(error.response?.data?.message || 'Error al cargar fixture');
+      setMessageType('error');
     } finally {
       setLoadingFixture(false);
     }
@@ -1224,11 +1230,14 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     return <span className={`text-xs px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>{c.label}</span>;
   };
 
+  const hasCanchas = (stats?.canchasConfiguradas || 0) > 0;
+
   const canSortear = (tc: TournamentCategory & { inscripcionesCount: number }) => {
     return (
       (tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') &&
       tc.inscripcionesCount >= 2 &&
-      ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado)
+      ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) &&
+      hasCanchas
     );
   };
 
@@ -1287,6 +1296,9 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
         {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 2 && (
           <span className="text-xs text-red-400">Min. 2 parejas</span>
         )}
+        {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 2 && !hasCanchas && (
+          <span className="text-xs text-orange-400">Configura canchas y horarios primero</span>
+        )}
         {tc.estado === 'FINALIZADA' && (
           <span className="text-xs text-gray-400">Finalizada</span>
         )}
@@ -1302,6 +1314,13 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           Cierra inscripciones → Sortear (genera fixture borrador con seeding) → Revisar/Editar → Publicar.
           Las demas categorias pueden seguir recibiendo inscripciones.
         </p>
+
+        {!hasCanchas && (
+          <div className="p-3 rounded-md text-sm mb-4 bg-orange-900/30 text-orange-400 border border-orange-500/50 flex items-center gap-2">
+            <MapPin className="w-4 h-4 flex-shrink-0" />
+            <span>Necesitas configurar <strong>canchas y horarios</strong> en la pestaña &quot;Canchas y Horarios&quot; antes de poder realizar el sorteo.</span>
+          </div>
+        )}
 
         {message && (
           <div className={`p-3 rounded-md text-sm mb-4 ${

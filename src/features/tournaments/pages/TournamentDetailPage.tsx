@@ -71,8 +71,11 @@ export default function TournamentDetailPage() {
     );
   }
 
-  const canInscribe = tournament.estado === 'PUBLICADO' &&
-                      new Date(tournament.fechaLimiteInscr) > new Date();
+  // Permitir inscripción si el torneo está PUBLICADO o EN_CURSO y hay categorías con inscripción abierta
+  const hasOpenCategories = tournament.categorias?.some(
+    (tc: any) => tc.inscripcionAbierta || tc.estado === 'INSCRIPCIONES_ABIERTAS'
+  ) ?? false;
+  const canInscribe = ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) && hasOpenCategories;
 
   const isAdmin = hasRole('admin');
   const isOwner = user?.id === tournament.organizadorId;
@@ -350,16 +353,16 @@ export default function TournamentDetailPage() {
                   <span>¡INSCRIBIRSE AHORA!</span>
                   <span className="text-2xl">🏆</span>
                 </button>
-              ) : tournament.estado === 'PUBLICADO' ? (
+              ) : ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) ? (
                 <div className="text-center p-4 bg-yellow-900/30 rounded-lg border-2 border-yellow-500/50">
                   <p className="text-sm text-yellow-400 font-medium">
-                    ⏰ Inscripciones cerradas
+                    ⏰ Todas las inscripciones cerradas
                   </p>
                 </div>
               ) : (
                 <div className="text-center p-4 bg-dark-surface rounded-lg">
                   <p className="text-sm text-light-secondary">
-                    Torneo {tournament.estado.toLowerCase()}
+                    Torneo {tournament.estado.replace('_', ' ').toLowerCase()}
                   </p>
                 </div>
               )}
