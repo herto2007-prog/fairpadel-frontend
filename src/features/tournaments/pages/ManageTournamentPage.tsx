@@ -1126,14 +1126,34 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const loadFixture = async (categoryId: string) => {
     setLoadingFixture(true);
     setSelectedCategory(categoryId);
+    setFixtureData([]);
+    setMessage('');
     try {
       const data = await matchesService.obtenerFixture(tournament.id, categoryId);
+      console.log('Fixture API response:', JSON.stringify(data).substring(0, 500));
+      console.log('Keys in response:', Object.keys(data || {}));
+      console.log('Looking for categoryId:', categoryId);
+
+      if (!data || typeof data !== 'object') {
+        setFixtureData([]);
+        setMessage('La API devolvió una respuesta vacía');
+        setMessageType('error');
+        return;
+      }
+
       // El backend devuelve { [categoryId]: { category, rondas: { OCTAVOS: [...], ... } } }
       // Intentar con la key exacta, o con la primera key disponible
       const catData = data[categoryId] || (Object.keys(data).length > 0 ? Object.values(data)[0] as any : null);
+      console.log('catData found:', !!catData, 'rondas:', catData ? Object.keys(catData.rondas || {}) : 'N/A');
+
       if (catData && catData.rondas) {
         const allMatches = Object.values(catData.rondas).flat() as Match[];
+        console.log('Parsed matches:', allMatches.length);
         setFixtureData(allMatches);
+        if (allMatches.length === 0) {
+          setMessage('El fixture no tiene partidos aún');
+          setMessageType('error');
+        }
       } else {
         setFixtureData([]);
         setMessage('No se encontraron partidos para esta categoría');
@@ -1141,8 +1161,9 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
       }
     } catch (error: any) {
       console.error('Error loading fixture:', error);
+      console.error('Error details:', error.response?.status, error.response?.data);
       setFixtureData([]);
-      setMessage(error.response?.data?.message || 'Error al cargar fixture');
+      setMessage(error.response?.data?.message || `Error al cargar fixture: ${error.message}`);
       setMessageType('error');
     } finally {
       setLoadingFixture(false);
@@ -1356,10 +1377,16 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
       </Card>
 
       {/* Vista del Fixture */}
-      {selectedCategory && fixtureData.length > 0 && (
+      {selectedCategory && (loadingFixture || fixtureData.length > 0) && (
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">Vista del Fixture</h3>
+            <h3 className="font-bold text-lg">
+              Vista del Fixture
+              {(() => {
+                const cat = categorias.find(c => c.categoryId === selectedCategory);
+                return cat ? ` — ${cat.category?.nombre}` : '';
+              })()}
+            </h3>
             <div className="flex gap-2 items-center">
               {isPremium ? (
                 <Button
@@ -1379,7 +1406,17 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           </div>
 
           {/* Bracket visual */}
-          <BracketView matches={fixtureData} />
+          {loadingFixture ? (
+            <div className="flex justify-center py-12">
+              <Loading size="lg" />
+            </div>
+          ) : fixtureData.length > 0 ? (
+            <BracketView matches={fixtureData} />
+          ) : (
+            <div className="text-center py-8 text-light-secondary">
+              <p>No se encontraron partidos para esta categoría</p>
+            </div>
+          )}
 
           {/* Swap preview */}
           {swapMode && swapSelection.length === 2 && (
@@ -1407,6 +1444,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           )}
 
           {/* Grilla editable de partidos */}
+          {fixtureData.length > 0 && (
           <div className="mt-6">
             <h4 className="font-semibold mb-3">Grilla de Partidos</h4>
             <div className="overflow-x-auto">
@@ -1516,6 +1554,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
               </table>
             </div>
           </div>
+          )}
         </Card>
       )}
     </div>
