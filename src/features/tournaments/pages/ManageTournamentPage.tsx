@@ -1101,13 +1101,25 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const [swapMode, setSwapMode] = useState(false);
   const [swapSelection, setSwapSelection] = useState<string[]>([]);
   const [swapping, setSwapping] = useState(false);
+  const [torneoCanchas, setTorneoCanchas] = useState<TorneoCancha[]>([]);
 
   const categorias = stats?.categorias || [];
   const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
   const damas = categorias.filter((c) => c.category?.tipo === 'FEMENINO');
 
-  // Debug: log render state
-  console.log('[SorteoTab render] selectedCategory:', selectedCategory, 'fixtureData.length:', fixtureData.length, 'loadingFixture:', loadingFixture);
+  // Cargar lista de canchas del torneo para el dropdown
+  useEffect(() => {
+    const loadCanchas = async () => {
+      try {
+        const data: any = await sedesService.getTorneoCanchas(tournament.id);
+        const canchas = Array.isArray(data) ? data : (data?.canchasConfiguradas || data?.torneoCanchas || []);
+        setTorneoCanchas(canchas);
+      } catch (e) {
+        console.error('Error loading canchas for sorteo:', e);
+      }
+    };
+    loadCanchas();
+  }, [tournament.id]);
 
   const handleSortear = async (categoryId: string) => {
     setSorteando(categoryId);
@@ -1134,10 +1146,6 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     setMessage('');
     try {
       const data = await matchesService.obtenerFixture(tournament.id, categoryId);
-      console.log('Fixture API response:', JSON.stringify(data).substring(0, 500));
-      console.log('Keys in response:', Object.keys(data || {}));
-      console.log('Looking for categoryId:', categoryId);
-
       if (!data || typeof data !== 'object') {
         setFixtureData([]);
         setMessage('La API devolvió una respuesta vacía');
@@ -1148,11 +1156,9 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
       // El backend devuelve { [categoryId]: { category, rondas: { OCTAVOS: [...], ... } } }
       // Intentar con la key exacta, o con la primera key disponible
       const catData = data[categoryId] || (Object.keys(data).length > 0 ? Object.values(data)[0] as any : null);
-      console.log('catData found:', !!catData, 'rondas:', catData ? Object.keys(catData.rondas || {}) : 'N/A');
 
       if (catData && catData.rondas) {
         const allMatches = Object.values(catData.rondas).flat() as Match[];
-        console.log('Parsed matches:', allMatches.length);
         setFixtureData(allMatches);
         if (allMatches.length === 0) {
           setMessage('El fixture no tiene partidos aún');
@@ -1434,14 +1440,18 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                 <div className="flex-1 p-2 bg-dark-surface rounded">
                   {(() => {
                     const m = fixtureData.find((m) => m.id === swapSelection[0]);
-                    return m ? `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${m.horaProgramada || 'Sin hora'}` : '';
+                    if (!m) return '';
+                    const canchaName = m.torneoCancha?.sedeCancha?.nombre || 'Sin cancha';
+                    return `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${canchaName} ${m.horaProgramada || 'Sin hora'}`;
                   })()}
                 </div>
                 <ArrowRightLeft className="w-5 h-5 text-amber-400" />
                 <div className="flex-1 p-2 bg-dark-surface rounded">
                   {(() => {
                     const m = fixtureData.find((m) => m.id === swapSelection[1]);
-                    return m ? `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${m.horaProgramada || 'Sin hora'}` : '';
+                    if (!m) return '';
+                    const canchaName = m.torneoCancha?.sedeCancha?.nombre || 'Sin cancha';
+                    return `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${canchaName} ${m.horaProgramada || 'Sin hora'}`;
                   })()}
                 </div>
               </div>
@@ -1463,6 +1473,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                     <th className="py-2 px-3 text-left">Ronda</th>
                     <th className="py-2 px-3 text-left">Pareja 1</th>
                     <th className="py-2 px-3 text-left">Pareja 2</th>
+                    <th className="py-2 px-3 text-left">Cancha</th>
                     <th className="py-2 px-3 text-left">Fecha</th>
                     <th className="py-2 px-3 text-left">Hora</th>
                     <th className="py-2 px-3 text-left">Estado</th>
@@ -1487,6 +1498,29 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                         <td className="py-2 px-3 font-medium">{match.ronda}</td>
                         <td className="py-2 px-3">{getParejaLabel(match.pareja1)}</td>
                         <td className="py-2 px-3">{getParejaLabel(match.pareja2)}</td>
+                        <td className="py-2 px-3">
+                          {isEditing ? (
+                            <select
+                              value={editingSchedule[match.id]?.torneoCanchaId || ''}
+                              onChange={(e) => setEditingSchedule((prev) => ({
+                                ...prev,
+                                [match.id]: { ...prev[match.id], torneoCanchaId: e.target.value },
+                              }))}
+                              className="text-sm bg-dark-surface border border-dark-border rounded px-2 py-1 text-light-text max-w-[140px]"
+                            >
+                              <option value="">Sin cancha</option>
+                              {torneoCanchas.map((tc) => (
+                                <option key={tc.id} value={tc.id}>
+                                  {tc.sedeCancha?.nombre || tc.sedeCanchaId}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-xs">
+                              {match.torneoCancha?.sedeCancha?.nombre || 'Sin cancha'}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2 px-3">
                           {isEditing ? (
                             <input

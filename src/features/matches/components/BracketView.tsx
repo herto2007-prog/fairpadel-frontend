@@ -1,3 +1,4 @@
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { Card, CardContent, Badge } from '@/components/ui';
 import type { Match } from '@/types';
 import { MatchStatus } from '@/types';
@@ -15,7 +16,6 @@ const ROUND_ORDER: Record<string, number> = {
   CUARTOS: 3,
   SEMIFINAL: 4,
   FINAL: 5,
-  UBICACION: 6,
 };
 
 const ROUND_LABELS: Record<string, string> = {
@@ -24,31 +24,37 @@ const ROUND_LABELS: Record<string, string> = {
   CUARTOS: 'Cuartos',
   SEMIFINAL: 'Semifinal',
   FINAL: 'Final',
-  UBICACION: '3er y 4to Puesto',
 };
 
 export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
+  const bracketRef = useRef<HTMLDivElement>(null);
+  const [connectors, setConnectors] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
+
   // Agrupar partidos por ronda (string) en vez de numeroRonda (secuencial)
-  const matchesByRound = matches.reduce((acc, match) => {
-    const round = match.ronda;
-    if (!acc[round]) {
-      acc[round] = [];
+  const matchesByRound = useMemo(() => {
+    const grouped = matches.reduce((acc, match) => {
+      const round = match.ronda;
+      if (!acc[round]) {
+        acc[round] = [];
+      }
+      acc[round].push(match);
+      return acc;
+    }, {} as Record<string, Match[]>);
+
+    // Ordenar matches dentro de cada ronda por numeroRonda
+    for (const round of Object.keys(grouped)) {
+      grouped[round].sort((a, b) => a.numeroRonda - b.numeroRonda);
     }
-    acc[round].push(match);
-    return acc;
-  }, {} as Record<string, Match[]>);
 
-  // Ordenar matches dentro de cada ronda por numeroRonda (para mantener orden del bracket)
-  for (const round of Object.keys(matchesByRound)) {
-    matchesByRound[round].sort((a, b) => a.numeroRonda - b.numeroRonda);
-  }
+    return grouped;
+  }, [matches]);
 
-  // Obtener rondas principales (sin UBICACION)
-  const mainRounds = Object.keys(matchesByRound)
-    .filter((r) => r !== 'UBICACION')
-    .sort((a, b) => (ROUND_ORDER[a] || 0) - (ROUND_ORDER[b] || 0));
-
-  const ubicacionMatches = matchesByRound['UBICACION'] || [];
+  // Obtener rondas ordenadas (sin UBICACION)
+  const rounds = useMemo(() => {
+    return Object.keys(matchesByRound)
+      .filter((r) => r !== 'UBICACION')
+      .sort((a, b) => (ROUND_ORDER[a] || 0) - (ROUND_ORDER[b] || 0));
+  }, [matchesByRound]);
 
   const getRoundName = (roundKey: string) => {
     return ROUND_LABELS[roundKey] || roundKey.replace('RONDA_', 'Ronda ');
@@ -107,78 +113,184 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
     return match.parejaGanadoraId === parejaId;
   };
 
-  const renderMatchCard = (match: Match) => (
-    <Card key={match.id} className="overflow-hidden">
-      <CardContent className="p-0">
-        {/* Header con estado */}
-        <div className="flex justify-between items-center px-3 py-2 bg-dark-surface border-b border-dark-border">
-          <span className="text-xs text-light-secondary">
-            {match.fechaProgramada
-              ? new Date(match.fechaProgramada).toLocaleDateString()
-              : 'Sin fecha'
-            }
-            {match.horaProgramada && ` ${match.horaProgramada}`}
-          </span>
-          {getStatusBadge(match.estado)}
-        </div>
+  const getCanchaLabel = (match: Match): string | null => {
+    if (match.torneoCancha?.sedeCancha) {
+      return match.torneoCancha.sedeCancha.nombre;
+    }
+    return null;
+  };
 
-        {/* Pareja 1 */}
-        <div className={`flex justify-between items-center px-3 py-2 border-b border-dark-border ${
-          isWinner(match, 1) ? 'bg-green-900/30' : ''
-        }`}>
-          <span className={`text-sm ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
-            {getParejaName(match, 1)}
-          </span>
-          <span className="font-mono font-semibold">
-            {getScore(match, 1)}
-          </span>
-        </div>
+  // Calcular conectores SVG entre rondas
+  useEffect(() => {
+    if (!bracketRef.current || rounds.length < 2) {
+      setConnectors([]);
+      return;
+    }
 
-        {/* Pareja 2 */}
-        <div className={`flex justify-between items-center px-3 py-2 ${
-          isWinner(match, 2) ? 'bg-green-900/30' : ''
-        }`}>
-          <span className={`text-sm ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
-            {getParejaName(match, 2)}
-          </span>
-          <span className="font-mono font-semibold">
-            {getScore(match, 2)}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  );
+    const calculateConnectors = () => {
+      const newConnectors: { x1: number; y1: number; x2: number; y2: number }[] = [];
+      const container = bracketRef.current;
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+
+      for (let i = 0; i < rounds.length - 1; i++) {
+        const currentRound = rounds[i];
+        const nextRound = rounds[i + 1];
+        const currentMatches = matchesByRound[currentRound] || [];
+        const nextMatches = matchesByRound[nextRound] || [];
+
+        // Para cada match de la ronda siguiente, buscar sus 2 matches alimentadores
+        for (let nIdx = 0; nIdx < nextMatches.length; nIdx++) {
+          const nextMatch = nextMatches[nIdx];
+          const nextEl = container.querySelector(`[data-match-id="${nextMatch.id}"]`) as HTMLElement;
+          if (!nextEl) continue;
+
+          const nextRect = nextEl.getBoundingClientRect();
+          const nextY = nextRect.top + nextRect.height / 2 - containerRect.top;
+          const nextX = nextRect.left - containerRect.left;
+
+          // Buscar matches que alimentan a este (por partidoSiguienteId)
+          const feeders = currentMatches.filter(m => m.partidoSiguienteId === nextMatch.id);
+
+          for (const feeder of feeders) {
+            const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
+            if (!feederEl) continue;
+
+            const feederRect = feederEl.getBoundingClientRect();
+            const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
+            const feederX = feederRect.right - containerRect.left;
+
+            newConnectors.push({
+              x1: feederX,
+              y1: feederY,
+              x2: nextX,
+              y2: nextY,
+            });
+          }
+        }
+      }
+
+      setConnectors(newConnectors);
+    };
+
+    // Wait for DOM to settle
+    const timer = setTimeout(calculateConnectors, 200);
+    return () => clearTimeout(timer);
+  }, [rounds, matchesByRound, matches]);
+
+  const renderMatchCard = (match: Match) => {
+    const canchaLabel = getCanchaLabel(match);
+    const isBye = match.estado === MatchStatus.WO && match.observaciones?.includes('BYE');
+
+    return (
+      <div key={match.id} data-match-id={match.id}>
+        <Card className={`overflow-hidden ${isBye ? 'opacity-60' : ''}`}>
+          <CardContent className="p-0">
+            {/* Header con cancha + fecha + hora + estado */}
+            <div className="flex justify-between items-center px-3 py-1.5 bg-dark-surface border-b border-dark-border gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {canchaLabel && (
+                  <span className="text-xs font-medium text-primary-400 truncate flex items-center gap-1">
+                    <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/>
+                      <path d="M8 4a4 4 0 1 0 0 8 4 4 0 0 0 8-4z" opacity="0.3"/>
+                    </svg>
+                    {canchaLabel}
+                  </span>
+                )}
+                <span className="text-xs text-light-secondary whitespace-nowrap">
+                  {match.fechaProgramada
+                    ? new Date(match.fechaProgramada).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })
+                    : ''
+                  }
+                  {match.horaProgramada && ` ${match.horaProgramada}`}
+                </span>
+              </div>
+              {getStatusBadge(match.estado)}
+            </div>
+
+            {/* Pareja 1 */}
+            <div className={`flex justify-between items-center px-3 py-2 border-b border-dark-border ${
+              isWinner(match, 1) ? 'bg-green-900/30' : ''
+            }`}>
+              <span className={`text-sm ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
+                {getParejaName(match, 1)}
+              </span>
+              <span className="font-mono font-semibold">
+                {getScore(match, 1)}
+              </span>
+            </div>
+
+            {/* Pareja 2 */}
+            <div className={`flex justify-between items-center px-3 py-2 ${
+              isWinner(match, 2) ? 'bg-green-900/30' : ''
+            }`}>
+              <span className={`text-sm ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
+                {getParejaName(match, 2)}
+              </span>
+              <span className="font-mono font-semibold">
+                {getScore(match, 2)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
-      {/* Bracket principal */}
+      {/* Bracket principal con conectores */}
       <div className="overflow-x-auto">
-        <div className="flex gap-8 min-w-max p-4">
-          {mainRounds.map((roundKey) => (
-            <div key={roundKey} className="flex flex-col gap-4 min-w-[280px]">
-              <h3 className="text-lg font-semibold text-center py-2 bg-primary-500/20 text-primary-500 rounded-lg">
-                {getRoundName(roundKey)}
-              </h3>
+        <div className="relative" ref={bracketRef}>
+          {/* SVG conectores */}
+          {connectors.length > 0 && (
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              style={{ width: '100%', height: '100%', overflow: 'visible' }}
+            >
+              {connectors.map((c, idx) => {
+                const midX = (c.x1 + c.x2) / 2;
+                return (
+                  <path
+                    key={idx}
+                    d={`M ${c.x1} ${c.y1} H ${midX} V ${c.y2} H ${c.x2}`}
+                    stroke="rgba(99, 102, 241, 0.4)"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                );
+              })}
+            </svg>
+          )}
 
-              <div className="space-y-4">
-                {matchesByRound[roundKey].map((match) => renderMatchCard(match))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+          {/* Rondas */}
+          <div className="flex gap-8 min-w-max p-4">
+            {rounds.map((roundKey, roundIdx) => {
+              const roundMatches = matchesByRound[roundKey] || [];
+              // Calcular espaciado vertical progresivo para alinear con bracket
+              const spacingMultiplier = Math.pow(2, roundIdx);
 
-      {/* Partido de ubicación (3er y 4to lugar) */}
-      {ubicacionMatches.length > 0 && (
-        <div className="max-w-[320px]">
-          <h3 className="text-lg font-semibold text-center py-2 bg-amber-500/20 text-amber-500 rounded-lg mb-4">
-            {getRoundName('UBICACION')}
-          </h3>
-          <div className="space-y-4">
-            {ubicacionMatches.map((match) => renderMatchCard(match))}
+              return (
+                <div key={roundKey} className="flex flex-col min-w-[280px]">
+                  <h3 className="text-lg font-semibold text-center py-2 bg-primary-500/20 text-primary-500 rounded-lg mb-4">
+                    {getRoundName(roundKey)}
+                    <span className="text-xs font-normal ml-2 opacity-70">({roundMatches.length})</span>
+                  </h3>
+
+                  <div
+                    className="flex flex-col justify-around flex-1"
+                    style={{ gap: `${Math.max(16, spacingMultiplier * 16)}px` }}
+                  >
+                    {roundMatches.map((match) => renderMatchCard(match))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
