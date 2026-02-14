@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
+import tournamentsService from '@/services/tournamentsService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Select } from '@/components/ui';
-import type { RegisterDto } from '@/types';
+import type { RegisterDto, Category } from '@/types';
 import { Gender } from '@/types';
 
 const RegisterPage = () => {
@@ -10,6 +11,7 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<RegisterDto>({
     documento: '',
     nombre: '',
@@ -21,6 +23,28 @@ const RegisterPage = () => {
     confirmPassword: '',
     ciudad: '',
   });
+
+  useEffect(() => {
+    tournamentsService.getCategories().then(setCategories).catch(() => {});
+  }, []);
+
+  // Filter categories by selected gender and sort by orden DESC (8va first)
+  const filteredCategories = useMemo(() => {
+    const generoTipo = formData.genero === Gender.MASCULINO ? 'MASCULINO' : 'FEMENINO';
+    return categories
+      .filter((c) => c.tipo === generoTipo)
+      .sort((a, b) => b.orden - a.orden);
+  }, [categories, formData.genero]);
+
+  // Set default category (8va) when gender changes
+  useEffect(() => {
+    if (filteredCategories.length > 0) {
+      const default8va = filteredCategories.find((c) => c.orden === 8);
+      if (default8va) {
+        setFormData((prev) => ({ ...prev, categoriaActualId: default8va.id }));
+      }
+    }
+  }, [filteredCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +148,22 @@ const RegisterPage = () => {
               <option value={Gender.MASCULINO}>Masculino</option>
               <option value={Gender.FEMENINO}>Femenino</option>
             </Select>
+
+            {filteredCategories.length > 0 && (
+              <Select
+                label="¿En qué categoría jugás actualmente?"
+                value={formData.categoriaActualId || ''}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setFormData({ ...formData, categoriaActualId: e.target.value })
+                }
+              >
+                {filteredCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nombre}{cat.orden === 8 ? ' (Principiante)' : cat.orden === 1 ? ' (Más alta)' : ''}
+                  </option>
+                ))}
+              </Select>
+            )}
 
             <Input
               label="Email"

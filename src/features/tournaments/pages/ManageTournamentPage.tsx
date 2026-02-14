@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Loading, Checkbox } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
@@ -38,6 +38,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Award,
+  Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -1204,6 +1205,7 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'todas' | 'pendientes' | 'confirmadas' | 'rechazadas'>('todas');
+  const [searchCedula, setSearchCedula] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectMotivo, setRejectMotivo] = useState<Record<string, string>>({});
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
@@ -1257,14 +1259,27 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
   const confirmadas = inscripciones.filter((i) => i.estado === 'CONFIRMADA');
   const rechazadas = inscripciones.filter((i) => i.estado === 'RECHAZADA');
 
-  const filteredInscripciones =
-    filter === 'pendientes'
+  const filteredInscripciones = useMemo(() => {
+    let result = filter === 'pendientes'
       ? pendientes
       : filter === 'confirmadas'
         ? confirmadas
         : filter === 'rechazadas'
           ? rechazadas
           : inscripciones;
+
+    if (searchCedula.trim()) {
+      const search = searchCedula.trim().toLowerCase();
+      result = result.filter((insc) => {
+        const j1Doc = (insc.pareja as any)?.jugador1?.documento?.toLowerCase() || '';
+        const j2Doc = (insc.pareja as any)?.jugador2?.documento?.toLowerCase() || '';
+        const j2DocField = (insc.pareja as any)?.jugador2Documento?.toLowerCase() || '';
+        return j1Doc.includes(search) || j2Doc.includes(search) || j2DocField.includes(search);
+      });
+    }
+
+    return result;
+  }, [inscripciones, filter, searchCedula, pendientes, confirmadas, rechazadas]);
 
   const getEstadoBadge = (estado: string) => {
     const colors: Record<string, string> = {
@@ -1324,6 +1339,18 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
           <p className="text-2xl font-bold text-light-text">{inscripciones.length}</p>
           <p className="text-xs text-light-secondary">Total</p>
         </Card>
+      </div>
+
+      {/* Search by cédula */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-light-secondary" />
+        <input
+          type="text"
+          value={searchCedula}
+          onChange={(e) => setSearchCedula(e.target.value)}
+          placeholder="Buscar por cédula del jugador..."
+          className="w-full pl-10 pr-4 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-light-text placeholder-light-secondary focus:outline-none focus:ring-1 focus:ring-primary-500"
+        />
       </div>
 
       {/* Filters */}
@@ -1645,8 +1672,19 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const handleFinalizarCategoria = async (categoryId: string) => {
     setFinalizingCategory(categoryId);
     try {
-      await matchesService.finalizarCategoria(tournament.id, categoryId);
+      const result = await matchesService.finalizarCategoria(tournament.id, categoryId);
       toast.success('Categoría finalizada exitosamente. Rankings actualizados.');
+
+      // Mostrar promociones si las hubo
+      if (result?.promociones && result.promociones.length > 0) {
+        result.promociones.forEach((p: any) => {
+          toast.success(
+            `⬆️ ${p.nombre}: ${p.categoriaAnterior} → ${p.categoriaNueva}`,
+            { duration: 8000, icon: '🏆' }
+          );
+        });
+      }
+
       setShowStandingsModal(null);
       setStandingsData(null);
       await onRefresh();

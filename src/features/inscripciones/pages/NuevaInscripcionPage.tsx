@@ -130,10 +130,20 @@ export default function NuevaInscripcionPage() {
 
     // REGLA: Si el usuario es FEMENINO y modalidad es TRADICIONAL
     // Puede ver DAMAS y CABALLEROS (pero con reglas específicas que se validan en backend)
-    // Por ahora mostramos todas las del torneo
 
-    // REGLA: MIXTO y SUMA no tienen restricción de género en frontend
-    // Se muestran todas las categorías del torneo
+    // REGLA: Restricción por nivel de categoría del jugador
+    // En TRADICIONAL, solo puede inscribirse en su categoría o 1 nivel arriba
+    if (user.categoriaActual && selectedModalidad === 'TRADICIONAL') {
+      const userOrden = user.categoriaActual.orden;
+      filtered = filtered.filter(cat => {
+        // Same gender type check
+        if (cat.tipo !== user.categoriaActual!.tipo) return true; // Different gender categories pass through
+        const diff = userOrden - cat.orden;
+        return diff >= 0 && diff <= 1; // Same level or 1 above
+      });
+    }
+
+    // REGLA: MIXTO y SUMA no tienen restricción de género/nivel en frontend
 
     // Ordenar de mayor a menor (1ra primero, 8va último)
     filtered.sort((a, b) => {
@@ -389,6 +399,17 @@ export default function NuevaInscripcionPage() {
         {step === 2 && (
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-6">Paso 2: Categoría y Modalidad</h2>
+
+            {/* Info: categoría actual del jugador */}
+            {user?.categoriaActual && selectedModalidad === 'TRADICIONAL' && (
+              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  <strong>Tu categoría actual:</strong> {user.categoriaActual.nombre}.
+                  {' '}Podés inscribirte en tu categoría
+                  {user.categoriaActual.orden > 1 && ' o aspirar a la categoría inmediata superior'}.
+                </p>
+              </div>
+            )}
 
             {/* Modalidad - Solo si hay más de una */}
             {tournament.modalidades && tournament.modalidades.length > 1 && (

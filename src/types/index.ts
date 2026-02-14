@@ -105,6 +105,8 @@ export interface User {
   bio?: string;
   fotoUrl?: string;
   esPremium: boolean;
+  categoriaActualId?: string;
+  categoriaActual?: Category;
   roles: string[] | Role[];
   emailVerified?: boolean;
   createdAt?: string;
@@ -381,6 +383,7 @@ export interface RegisterDto {
   genero: Gender;
   fechaNacimiento?: string;
   ciudad?: string;
+  categoriaActualId?: string;
 }
 
 export interface VerifyEmailDto {
@@ -724,4 +727,56 @@ export interface CreateCircuitoDto {
   fechaInicio: string;
   fechaFin: string;
   logoUrl?: string;
+}
+
+// ═══════════════════════════════════════════
+// CATEGORÍAS Y ASCENSOS
+// ═══════════════════════════════════════════
+
+export type TipoCambioCategoria =
+  | 'ASCENSO_AUTOMATICO'
+  | 'ASCENSO_POR_DEMOSTRACION'
+  | 'ASCENSO_MANUAL'
+  | 'DESCENSO_MANUAL'
+  | 'ASIGNACION_INICIAL';
+
+export interface ReglaAscenso {
+  id: string;
+  categoriaOrigenId: string;
+  categoriaDestinoId: string;
+  campeonatosConsecutivos?: number | null;
+  campeonatosAlternados?: number | null;
+  finalistaCalifica: boolean;
+  activa: boolean;
+  categoriaOrigen?: Category;
+  categoriaDestino?: Category;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface HistorialCategoria {
+  id: string;
+  userId: string;
+  categoriaAnteriorId?: string | null;
+  categoriaNuevaId: string;
+  tipo: TipoCambioCategoria;
+  motivo: string;
+  tournamentId?: string | null;
+  realizadoPor?: string | null;
+  createdAt?: string;
+  user?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    documento: string;
+    genero: Gender;
+  };
+}
+
+export interface PromocionResult {
+  jugadorId: string;
+  jugadorNombre: string;
+  categoriaAnterior: string;
+  categoriaNueva: string;
+  tipo: string;
 }

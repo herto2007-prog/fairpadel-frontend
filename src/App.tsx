@@ -20,6 +20,7 @@ import AdminModeracionPage from '@/features/admin/pages/AdminModeracionPage';
 import AdminSuscripcionesPage from '@/features/admin/pages/AdminSuscripcionesPage';
 import AdminConfiguracionPage from '@/features/admin/pages/AdminConfiguracionPage';
 import AdminCircuitosPage from '@/features/admin/pages/AdminCircuitosPage';
+import AdminCategoriasPage from '@/features/admin/pages/AdminCategoriasPage';
 import ManageTournamentPage from '@/features/tournaments/pages/ManageTournamentPage';
 import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage';
 import CircuitosListPage from '@/features/circuitos/pages/CircuitosListPage';
@@ -102,6 +103,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminCircuitosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/categorias"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminCategoriasPage />
                 </ProtectedRoute>
               }
             />

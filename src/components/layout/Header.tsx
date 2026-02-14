@@ -17,6 +17,7 @@ import {
   UserPlus,
   Shield,
   CreditCard,
+  Layers,
 } from 'lucide-react';
 
 const Header = () => {
@@ -169,6 +170,14 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
                           Circuitos
                         </Link>
                         <Link
+                          to="/admin/categorias"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <Layers className="h-4 w-4" />
+                          Categorías
+                        </Link>
+                        <Link
                           to="/admin/configuracion"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
@@ -312,6 +321,14 @@ const isOrganizador = hasRole('organizador') || isAdmin; // Admin tiene todos lo
                       >
                         <Trophy className="h-5 w-5" />
                         Circuitos
+                      </Link>
+                      <Link
+                        to="/admin/categorias"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Layers className="h-5 w-5" />
+                        Categorías
                       </Link>
                       <Link
                         to="/admin/configuracion"
