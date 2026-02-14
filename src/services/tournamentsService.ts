@@ -84,6 +84,12 @@ export const tournamentsService = {
     return response.data;
   },
 
+  // POST /tournaments/:id/finalizar - Finalizar torneo
+  finalizarTorneo: async (id: string) => {
+    const response = await api.post(`/tournaments/${id}/finalizar`);
+    return response.data;
+  },
+
   // Ayudantes
   getAyudantes: async (tournamentId: string) => {
     const response = await api.get(`/tournaments/${tournamentId}/ayudantes`);

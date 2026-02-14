@@ -73,6 +73,20 @@ class MatchesService {
     return response.data;
   }
 
+  async obtenerStandings(tournamentId: string, categoryId: string): Promise<any> {
+    const response = await api.get(
+      `/matches/torneo/${tournamentId}/categoria/${categoryId}/standings`,
+    );
+    return response.data;
+  }
+
+  async finalizarCategoria(tournamentId: string, categoryId: string): Promise<any> {
+    const response = await api.post(
+      `/matches/torneo/${tournamentId}/categoria/${categoryId}/finalizar`,
+    );
+    return response.data;
+  }
+
   async getMyMatches(): Promise<Match[]> {
     const response = await api.get<Match[]>('/matches/my');
     return response.data;

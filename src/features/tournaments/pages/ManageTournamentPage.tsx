@@ -34,7 +34,11 @@ import {
   Eye,
   Send,
   ClipboardCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Award,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 type Tab = 'resumen' | 'editar' | 'inscripciones' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
 
@@ -169,7 +173,7 @@ export default function ManageTournamentPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} />}
+        {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} onRefresh={loadData} />}
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
         {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
@@ -195,9 +199,67 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 // ===================== TAB: RESUMEN =====================
 
-function ResumenTab({ tournament, stats }: { tournament: Tournament; stats: TournamentStats | null }) {
+function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; stats: TournamentStats | null; onRefresh: () => Promise<void> }) {
+  const [finalizingTorneo, setFinalizingTorneo] = useState(false);
+  const [showFinalizarTorneo, setShowFinalizarTorneo] = useState(false);
+
+  const categoriasFinalizadas = stats?.categorias?.filter((tc) => tc.estado === 'FINALIZADA').length || 0;
+  const totalCategorias = stats?.categorias?.length || 0;
+  const todasFinalizadas = totalCategorias > 0 && categoriasFinalizadas === totalCategorias;
+  const puedeFinalizarTorneo = todasFinalizadas && tournament.estado === 'EN_CURSO';
+
+  const handleFinalizarTorneo = async () => {
+    setFinalizingTorneo(true);
+    try {
+      await tournamentsService.finalizarTorneo(tournament.id);
+      toast.success('Torneo finalizado exitosamente');
+      setShowFinalizarTorneo(false);
+      await onRefresh();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al finalizar torneo');
+    } finally {
+      setFinalizingTorneo(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Banner de finalización */}
+      {puedeFinalizarTorneo && (
+        <div className="p-4 bg-green-900/30 border border-green-500/50 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6 text-green-400" />
+            <div>
+              <p className="font-bold text-green-400">Todas las categorías están finalizadas</p>
+              <p className="text-sm text-green-400/70">Puedes finalizar el torneo para cerrar el ciclo y consolidar resultados.</p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            className="bg-green-600 hover:bg-green-700"
+            onClick={() => setShowFinalizarTorneo(true)}
+          >
+            <Trophy className="w-4 h-4 mr-2" /> Finalizar Torneo
+          </Button>
+        </div>
+      )}
+
+      {/* Progreso de categorías */}
+      {tournament.estado === 'EN_CURSO' && totalCategorias > 0 && !todasFinalizadas && (
+        <div className="p-4 bg-blue-900/30 border border-blue-500/50 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-blue-400">Progreso de Finalización</p>
+            <p className="text-sm text-blue-400">{categoriasFinalizadas} / {totalCategorias} categorías</p>
+          </div>
+          <div className="w-full bg-dark-surface rounded-full h-2">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all"
+              style={{ width: `${(categoriasFinalizadas / totalCategorias) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-5">
           <div className="flex items-center gap-3">
@@ -282,6 +344,52 @@ function ResumenTab({ tournament, stats }: { tournament: Tournament; stats: Tour
           )}
         </Card>
       </div>
+
+      {/* Modal confirmar finalizar torneo */}
+      {showFinalizarTorneo && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowFinalizarTorneo(false)}>
+          <div className="bg-dark-card rounded-xl border border-dark-border max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                Finalizar Torneo
+              </h3>
+              <p className="text-sm text-light-secondary mb-4">
+                ¿Estás seguro de que deseas finalizar <strong>{tournament.nombre}</strong>?
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-green-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {totalCategorias} categorías finalizadas
+                </div>
+                <div className="flex items-center gap-2 text-sm text-green-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Rankings y puntos registrados
+                </div>
+              </div>
+              <div className="p-3 bg-orange-900/30 border border-orange-500/50 rounded-lg mb-4">
+                <p className="text-sm text-orange-400 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  El torneo pasará a estado FINALIZADO y no podrá editarse.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setShowFinalizarTorneo(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={handleFinalizarTorneo}
+                  loading={finalizingTorneo}
+                >
+                  <Trophy className="w-4 h-4 mr-1" /> Finalizar Torneo
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1105,6 +1213,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const [swapping, setSwapping] = useState(false);
   const [torneoCanchas, setTorneoCanchas] = useState<TorneoCancha[]>([]);
   const [scoreModalMatch, setScoreModalMatch] = useState<Match | null>(null);
+  const [finalizingCategory, setFinalizingCategory] = useState<string | null>(null);
+  const [standingsData, setStandingsData] = useState<any>(null);
+  const [showStandingsModal, setShowStandingsModal] = useState<string | null>(null);
+  const [loadingStandings, setLoadingStandings] = useState(false);
 
   const categorias = stats?.categorias || [];
   const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
@@ -1255,6 +1367,47 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     }
   };
 
+  const handleShowStandings = async (categoryId: string) => {
+    setLoadingStandings(true);
+    setShowStandingsModal(categoryId);
+    try {
+      const data = await matchesService.obtenerStandings(tournament.id, categoryId);
+      setStandingsData(data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al cargar standings');
+      setShowStandingsModal(null);
+    } finally {
+      setLoadingStandings(false);
+    }
+  };
+
+  const handleFinalizarCategoria = async (categoryId: string) => {
+    setFinalizingCategory(categoryId);
+    try {
+      await matchesService.finalizarCategoria(tournament.id, categoryId);
+      toast.success('Categoría finalizada exitosamente. Rankings actualizados.');
+      setShowStandingsModal(null);
+      setStandingsData(null);
+      await onRefresh();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al finalizar categoría');
+    } finally {
+      setFinalizingCategory(null);
+    }
+  };
+
+  /**
+   * Checks if all matches in the currently loaded fixture are finalized.
+   * Used to determine whether to show the "Finalizar" button for a category.
+   */
+  const isCategoryComplete = (categoryId: string): boolean => {
+    if (selectedCategory !== categoryId || fixtureData.length === 0) return false;
+    // All matches with both parejas assigned must be FINALIZADO or WO
+    const matchesConParejas = fixtureData.filter((m) => m.pareja1Id);
+    if (matchesConParejas.length === 0) return false;
+    return matchesConParejas.every((m) => m.estado === 'FINALIZADO' || m.estado === 'WO' || m.estado === 'CANCELADO');
+  };
+
   const getEstadoBadge = (estado: string) => {
     const config: Record<string, { bg: string; text: string; label: string }> = {
       INSCRIPCIONES_ABIERTAS: { bg: 'bg-green-900/30', text: 'text-green-400', label: 'Inscripciones Abiertas' },
@@ -1337,8 +1490,21 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
         {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 2 && !hasCanchas && (
           <span className="text-xs text-orange-400">Configura canchas y horarios primero</span>
         )}
+        {/* Botón Finalizar — visible cuando fixture está cargado y todos los matches completos */}
+        {['SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && isCategoryComplete(tc.categoryId) && (
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => handleShowStandings(tc.categoryId)}
+            loading={loadingStandings && showStandingsModal === tc.categoryId}
+          >
+            <Award className="w-4 h-4 mr-1" /> Finalizar
+          </Button>
+        )}
         {tc.estado === 'FINALIZADA' && (
-          <span className="text-xs text-gray-400">Finalizada</span>
+          <span className="text-xs text-gray-400 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Finalizada
+          </span>
         )}
       </div>
     </div>
@@ -1640,6 +1806,91 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
             setScoreModalMatch(null);
           }}
         />
+      )}
+
+      {/* Modal de Standings + Confirmar Finalización */}
+      {showStandingsModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => { setShowStandingsModal(null); setStandingsData(null); }}>
+          <div className="bg-dark-card rounded-xl border border-dark-border max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-400" />
+                Finalizar Categoría
+              </h3>
+              <p className="text-sm text-light-secondary mb-4">
+                {(() => {
+                  const cat = categorias.find((c) => c.categoryId === showStandingsModal);
+                  return cat?.category?.nombre || '';
+                })()}
+              </p>
+
+              {loadingStandings ? (
+                <div className="flex justify-center py-8"><Loading size="lg" /></div>
+              ) : standingsData?.standings ? (
+                <>
+                  <div className="space-y-2 mb-4">
+                    {standingsData.standings.map((entry: any, idx: number) => (
+                      <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                        entry.orden === 1 ? 'border-amber-500/50 bg-amber-900/20' :
+                        entry.orden === 2 ? 'border-gray-400/50 bg-gray-900/20' :
+                        'border-dark-border bg-dark-surface'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            entry.orden === 1 ? 'bg-amber-500/30 text-amber-400' :
+                            entry.orden === 2 ? 'bg-gray-500/30 text-gray-300' :
+                            'bg-dark-card text-light-secondary'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {entry.pareja?.jugador1 ? `${entry.pareja.jugador1.nombre} ${entry.pareja.jugador1.apellido}` : ''}
+                              {entry.pareja?.jugador2 ? ` / ${entry.pareja.jugador2.nombre} ${entry.pareja.jugador2.apellido}` : ''}
+                            </p>
+                            <p className="text-xs text-light-secondary">{entry.posicion}</p>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-bold ${
+                          entry.orden === 1 ? 'text-amber-400' : entry.orden === 2 ? 'text-gray-300' : 'text-light-secondary'
+                        }`}>
+                          +{entry.puntos} pts
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-3 bg-orange-900/30 border border-orange-500/50 rounded-lg mb-4">
+                    <p className="text-sm text-orange-400 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      Esta acción asignará los puntos a los rankings y no se puede deshacer.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => { setShowStandingsModal(null); setStandingsData(null); }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="primary"
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => handleFinalizarCategoria(showStandingsModal)}
+                      loading={finalizingCategory === showStandingsModal}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-1" /> Confirmar Finalización
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-light-secondary text-center py-4">No hay datos disponibles</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
