@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, UpdateProfileDto } from '@/types';
+import type { User, UpdateProfileDto, PerfilCompleto } from '@/types';
 
 class UsersService {
   async getById(id: string): Promise<User> {
@@ -17,6 +17,11 @@ class UsersService {
     return response.data;
   }
 
+  async getPerfilCompleto(id: string): Promise<PerfilCompleto> {
+    const response = await api.get<PerfilCompleto>(`/users/${id}/perfil-completo`);
+    return response.data;
+  }
+
   async updateMyProfile(data: UpdateProfileDto): Promise<User> {
     const response = await api.patch<User>('/users/profile', data);
     return response.data;
@@ -25,7 +30,7 @@ class UsersService {
   async updateFoto(file: File): Promise<{ fotoUrl: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await api.post<{ fotoUrl: string }>('/users/foto', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

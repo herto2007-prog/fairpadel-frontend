@@ -19,15 +19,15 @@ export const rankingsService = {
     return response.data;
   },
 
-  // GET /rankings/user/:userId - Obtener ranking de un usuario
+  // GET /rankings/jugador/:jugadorId - Obtener ranking de un usuario
   getByUser: async (userId: string): Promise<Ranking[]> => {
-    const response = await api.get(`/rankings/user/${userId}`);
+    const response = await api.get(`/rankings/jugador/${userId}`);
     return response.data;
   },
 
-  // GET /rankings/historial/:userId - Obtener historial de puntos
+  // GET /rankings/jugador/:jugadorId/historial - Obtener historial de puntos
   getHistorial: async (userId: string): Promise<HistorialPuntos[]> => {
-    const response = await api.get(`/rankings/historial/${userId}`);
+    const response = await api.get(`/rankings/jugador/${userId}/historial`);
     return response.data;
   },
 };

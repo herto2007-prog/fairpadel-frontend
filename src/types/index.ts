@@ -525,6 +525,142 @@ export interface CircuitoStanding {
   torneosJugados: number;
 }
 
+// ==================== PERFIL COMPLETO ====================
+
+export interface UserBrief {
+  id: string;
+  nombre: string;
+  apellido: string;
+  fotoUrl?: string;
+}
+
+export interface EstadisticasJugador {
+  efectividad: number;
+  consistencia: number;
+  potenciaOfensiva: number;
+  solidezDefensiva: number;
+  clutch: number;
+  regularidad: number;
+  overall: number;
+}
+
+export interface MatchResumen {
+  id: string;
+  fecha: string;
+  torneo: { id: string; nombre: string } | null;
+  categoria: { id: string; nombre: string } | null;
+  ronda: string;
+  resultado: {
+    set1: string | null;
+    set2: string | null;
+    set3: string | null;
+  };
+  companero: UserBrief | null;
+  oponentes: { jugador1: UserBrief | null; jugador2: UserBrief | null } | null;
+  victoria: boolean;
+  esWO: boolean;
+}
+
+export interface HistorialPuntosExtended {
+  id: string;
+  jugadorId: string;
+  tournamentId: string;
+  categoryId: string;
+  puntos: number;
+  posicionFinal: string;
+  fechaTorneo: string;
+  tournament: { id: string; nombre: string; ciudad: string; fechaInicio: string } | null;
+  category: { id: string; nombre: string } | null;
+}
+
+export interface FotoResumen {
+  id: string;
+  urlImagen: string;
+  urlThumbnail?: string;
+  descripcion?: string;
+  likesCount: number;
+  comentariosCount: number;
+  createdAt: string;
+}
+
+export interface PerfilCompleto {
+  usuario: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    genero: Gender;
+    ciudad?: string;
+    bio?: string;
+    fotoUrl?: string;
+    esPremium: boolean;
+    createdAt: string;
+  };
+  ranking: Ranking | null;
+  estadisticas: EstadisticasJugador;
+  partidosRecientes: MatchResumen[];
+  historialTorneos: HistorialPuntosExtended[];
+  social: {
+    seguidores: number;
+    siguiendo: number;
+    isFollowing: boolean;
+    isOwnProfile: boolean;
+  };
+  fotos: FotoResumen[];
+}
+
+// ==================== SOCIAL DTOs ====================
+
+export interface SeguirResponse {
+  message: string;
+}
+
+export interface MensajeDto {
+  receptorId: string;
+  contenido: string;
+}
+
+export interface SolicitudJugarDto {
+  receptorId: string;
+  mensaje?: string;
+  fechaPropuesta?: string;
+  lugarPropuesto?: string;
+}
+
+export interface MensajePrivado {
+  id: string;
+  emisorId: string;
+  receptorId: string;
+  contenido: string;
+  leido: boolean;
+  emisor?: UserBrief;
+  receptor?: UserBrief;
+  createdAt: string;
+}
+
+export interface Conversacion {
+  otroUsuario: UserBrief;
+  ultimoMensaje: MensajePrivado;
+  noLeidos: number;
+}
+
+export interface SolicitudJugar {
+  id: string;
+  solicitanteId: string;
+  receptorId: string;
+  mensaje?: string;
+  fechaPropuesta?: string;
+  lugarPropuesto?: string;
+  estado: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+  solicitante?: UserBrief;
+  receptor?: UserBrief;
+  createdAt: string;
+}
+
+export interface ReporteDto {
+  motivo: string;
+  descripcion?: string;
+}
+
 export interface CreateCircuitoDto {
   nombre: string;
   descripcion?: string;

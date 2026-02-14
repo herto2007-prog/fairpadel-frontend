@@ -1,65 +1,80 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { usersService } from '@/services/usersService';
-import { rankingsService } from '@/services/rankingsService';
-import { Loading, Card, CardContent, Badge, Button } from '@/components/ui';
-import type { User, Ranking } from '@/types';
-import { Edit, Trophy, Calendar, MapPin, Mail, Phone } from 'lucide-react';
+import { Loading, Card, CardContent } from '@/components/ui';
+import type { PerfilCompleto } from '@/types';
+import ProfileHero from '../components/ProfileHero';
+import StatsRadarChart from '../components/StatsRadarChart';
+import QuickStatsRow from '../components/QuickStatsRow';
+import MatchHistoryList from '../components/MatchHistoryList';
+import TournamentHistoryList from '../components/TournamentHistoryList';
+import ProfilePhotoGallery from '../components/ProfilePhotoGallery';
+import FollowersModal from '../components/FollowersModal';
 
 const ProfilePage = () => {
   const { userId } = useParams<{ userId?: string }>();
   const { user: currentUser } = useAuthStore();
-  const [profile, setProfile] = useState<User | null>(null);
-  const [ranking, setRanking] = useState<Ranking | null>(null);
+
+  const [perfil, setPerfil] = useState<PerfilCompleto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const isOwnProfile = !userId || userId === currentUser?.id;
+  // Followers modal state
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followersTab, setFollowersTab] = useState<'seguidores' | 'siguiendo'>('seguidores');
 
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
+  const profileId = userId || currentUser?.id;
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
+    if (!profileId) return;
     setLoading(true);
+    setError(false);
     try {
-      const profileId = userId || currentUser?.id;
-      if (!profileId) return;
-
-      if (isOwnProfile && currentUser) {
-        setProfile(currentUser);
-      } else {
-        const userData = await usersService.getById(profileId);
-        setProfile(userData);
-      }
-
-      // Cargar ranking
-      const rankings = await rankingsService.getByUser(profileId);
-      if (rankings && rankings.length > 0) {
-        setRanking(rankings[0]);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
+      const data = await usersService.getPerfilCompleto(profileId);
+      setPerfil(data);
+    } catch (err) {
+      console.error('Error loading profile:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
+  }, [profileId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  const handleFollowToggle = () => {
+    // Reload profile to get updated social counts + isFollowing
+    loadProfile();
+  };
+
+  const handleShowFollowers = () => {
+    setFollowersTab('seguidores');
+    setFollowersModalOpen(true);
+  };
+
+  const handleShowFollowing = () => {
+    setFollowersTab('siguiendo');
+    setFollowersModalOpen(true);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
+      <div className="flex justify-center py-16">
         <Loading size="lg" text="Cargando perfil..." />
       </div>
     );
   }
 
-  if (!profile) {
+  if (error || !perfil) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="text-center py-12">
-            <h3 className="text-xl font-semibold mb-2">Usuario no encontrado</h3>
-            <p className="text-light-secondary">El perfil que buscas no existe</p>
+            <h3 className="text-xl font-semibold mb-2 text-white">Usuario no encontrado</h3>
+            <p className="text-light-secondary">El perfil que buscás no existe</p>
           </CardContent>
         </Card>
       </div>
@@ -67,114 +82,66 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar y datos principales */}
-            <div className="flex flex-col items-center md:items-start">
-              <div className="h-32 w-32 rounded-full bg-primary-500/20 flex items-center justify-center text-4xl font-bold text-primary-500 overflow-hidden">
-                {profile.fotoUrl ? (
-                  <img
-                    src={profile.fotoUrl}
-                    alt={profile.nombre}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  `${profile.nombre.charAt(0)}${profile.apellido.charAt(0)}`
-                )}
-              </div>
-              {isOwnProfile && (
-                <Link to="/profile/edit" className="mt-4">
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar perfil
-                  </Button>
-                </Link>
-              )}
-            </div>
+    <div className="min-h-screen bg-dark-bg">
+      {/* Hero section */}
+      <div className="container mx-auto px-4 pt-4">
+        <Card className="overflow-hidden">
+          <ProfileHero
+            perfil={perfil}
+            onFollowToggle={handleFollowToggle}
+            onShowFollowers={handleShowFollowers}
+            onShowFollowing={handleShowFollowing}
+          />
+        </Card>
+      </div>
 
-            {/* Información */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold">
-                  {profile.nombre} {profile.apellido}
-                </h1>
-                {profile.esPremium && (
-                  <Badge variant="premium">Premium</Badge>
-                )}
-              </div>
+      {/* Stats section */}
+      <div className="container mx-auto px-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Radar Chart */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 text-center">
+                Estadísticas del Jugador
+              </h3>
+              <StatsRadarChart stats={perfil.estadisticas} />
+            </CardContent>
+          </Card>
 
-              {profile.bio && (
-                <p className="text-light-secondary mb-4">{profile.bio}</p>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-light-secondary">
-                {profile.ciudad && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{profile.ciudad}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>{profile.email}</span>
-                </div>
-                {isOwnProfile && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    <span>{profile.telefono}</span>
-                  </div>
-                )}
-                {profile.fechaNacimiento && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {new Date(profile.fechaNacimiento).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Estadísticas */}
-            {ranking && (
-              <div className="bg-dark-surface rounded-lg p-4 min-w-[200px]">
-                <div className="flex items-center gap-2 mb-4">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
-                  <span className="font-semibold">Ranking</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-light-secondary">Posición</span>
-                    <span className="font-bold text-primary-500">#{ranking.posicion}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-light-secondary">Puntos</span>
-                    <span className="font-bold">{ranking.puntosTotales}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-light-secondary">Torneos</span>
-                    <span className="font-bold">{ranking.torneosJugados}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-light-secondary">V/D</span>
-                    <span className="font-bold">
-                      <span className="text-green-400">{ranking.victorias}</span>
-                      /
-                      <span className="text-red-400">{ranking.derrotas}</span>
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-light-secondary">Campeonatos</span>
-                    <span className="font-bold">{ranking.campeonatos}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+          {/* Quick Stats */}
+          <div className="lg:col-span-2">
+            <QuickStatsRow ranking={perfil.ranking} />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Match & Tournament History */}
+      <div className="container mx-auto px-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <MatchHistoryList matches={perfil.partidosRecientes} />
+          <TournamentHistoryList historial={perfil.historialTorneos} />
+        </div>
+      </div>
+
+      {/* Photo Gallery */}
+      {(perfil.fotos.length > 0 || perfil.social.isOwnProfile) && (
+        <div className="container mx-auto px-4 mt-4 pb-8">
+          <ProfilePhotoGallery
+            fotos={perfil.fotos}
+            isOwnProfile={perfil.social.isOwnProfile}
+          />
+        </div>
+      )}
+
+      {/* Followers Modal */}
+      {profileId && (
+        <FollowersModal
+          userId={profileId}
+          tab={followersTab}
+          isOpen={followersModalOpen}
+          onClose={() => setFollowersModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
