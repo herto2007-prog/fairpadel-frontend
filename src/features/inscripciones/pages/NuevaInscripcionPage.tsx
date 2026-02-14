@@ -6,8 +6,8 @@ import inscripcionesService, { CreateInscripcionDto } from '@/services/inscripci
 import usersService from '@/services/usersService';
 import { useAuthStore } from '@/store/authStore';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Tournament, Category, User } from '@/types';
-import { CheckCircle, AlertCircle, Search, CreditCard, Building, Banknote, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import type { Tournament, Category, User, CuentaBancaria } from '@/types';
+import { CheckCircle, AlertCircle, Search, CreditCard, Building, Banknote, ArrowLeft, ArrowRight, Loader2, Phone } from 'lucide-react';
 
 type Modalidad = 'TRADICIONAL' | 'MIXTO' | 'SUMA';
 type MetodoPago = 'BANCARD' | 'TRANSFERENCIA' | 'EFECTIVO';
@@ -70,6 +70,7 @@ export default function NuevaInscripcionPage() {
   
   // Formulario - Pago
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<MetodoPago | ''>('');
+  const [cuentasBancarias, setCuentasBancarias] = useState<CuentaBancaria[]>([]);
 
   // Resultado
   const [inscripcionResult, setInscripcionResult] = useState<any>(null);
@@ -92,12 +93,14 @@ export default function NuevaInscripcionPage() {
 
   const loadData = async () => {
     try {
-      const [tournamentData, categoriesData] = await Promise.all([
+      const [tournamentData, categoriesData, cuentas] = await Promise.all([
         tournamentsService.getById(tournamentId!),
         tournamentsService.getCategories(),
+        tournamentsService.getCuentasBancarias(tournamentId!),
       ]);
       setTournament(tournamentData);
-      
+      setCuentasBancarias(cuentas);
+
       // Filtrar categorías del torneo (solo las que tienen inscripción abierta)
       const openCategoryIds = (tournamentData.categorias || [])
         .filter((c: any) => c.inscripcionAbierta !== false)
@@ -569,27 +572,29 @@ export default function NuevaInscripcionPage() {
             </p>
 
             <div className="space-y-3 mb-6">
-              {/* Bancard */}
-              <label
-                className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors
-                  ${selectedMetodoPago === 'BANCARD'
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-dark-border hover:bg-dark-hover'}`}
-              >
-                <input
-                  type="radio"
-                  name="metodoPago"
-                  value="BANCARD"
-                  checked={selectedMetodoPago === 'BANCARD'}
-                  onChange={(e) => setSelectedMetodoPago(e.target.value as MetodoPago)}
-                  className="mr-4"
-                />
-                <CreditCard className="h-6 w-6 mr-3 text-blue-600" />
-                <div>
-                  <p className="font-medium">Tarjeta de crédito/débito (Bancard)</p>
-                  <p className="text-sm text-light-secondary">Pago inmediato y seguro</p>
-                </div>
-              </label>
+              {/* Bancard — solo si habilitado por el organizador */}
+              {tournament.habilitarBancard && (
+                <label
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors
+                    ${selectedMetodoPago === 'BANCARD'
+                      ? 'border-primary-500 bg-primary-500/10'
+                      : 'border-dark-border hover:bg-dark-hover'}`}
+                >
+                  <input
+                    type="radio"
+                    name="metodoPago"
+                    value="BANCARD"
+                    checked={selectedMetodoPago === 'BANCARD'}
+                    onChange={(e) => setSelectedMetodoPago(e.target.value as MetodoPago)}
+                    className="mr-4"
+                  />
+                  <CreditCard className="h-6 w-6 mr-3 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Tarjeta de crédito/débito (Bancard)</p>
+                    <p className="text-sm text-light-secondary">Pago inmediato y seguro</p>
+                  </div>
+                </label>
+              )}
 
               {/* Transferencia */}
               <label
@@ -609,7 +614,7 @@ export default function NuevaInscripcionPage() {
                 <Building className="h-6 w-6 mr-3 text-purple-600" />
                 <div>
                   <p className="font-medium">Transferencia bancaria</p>
-                  <p className="text-sm text-light-secondary">Sube tu comprobante después</p>
+                  <p className="text-sm text-light-secondary">Transferí y subí tu comprobante desde Mis Inscripciones</p>
                 </div>
               </label>
 
@@ -684,12 +689,36 @@ export default function NuevaInscripcionPage() {
             {selectedMetodoPago === 'TRANSFERENCIA' && (
               <div className="mb-6 p-4 bg-blue-900/30 rounded-lg text-left">
                 <h3 className="font-bold text-blue-400 mb-2">🏦 Próximos pasos</h3>
-                <ol className="text-sm text-blue-400 list-decimal list-inside space-y-1">
-                  <li>Realiza la transferencia por {formatCurrency(Number(tournament.costoInscripcion))}</li>
-                  <li>Ve a "Mis Inscripciones" en tu perfil</li>
-                  <li>Sube el comprobante de pago</li>
-                  <li>Espera la confirmación del organizador</li>
+                <ol className="text-sm text-blue-400 list-decimal list-inside space-y-1 mb-4">
+                  <li>Transferí {formatCurrency(Number(tournament.costoInscripcion))} a cualquiera de estas cuentas</li>
+                  <li>Andá a "Mis Inscripciones" en tu perfil</li>
+                  <li>Si querés, podés subir el comprobante (opcional)</li>
+                  <li>El organizador va a confirmar tu pago</li>
                 </ol>
+
+                {cuentasBancarias.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-blue-300 uppercase">Datos para transferir:</p>
+                    {cuentasBancarias.map((cuenta) => (
+                      <div key={cuenta.id} className="p-3 bg-blue-950/50 rounded-lg border border-blue-500/20">
+                        <p className="font-semibold text-blue-300">{cuenta.banco}</p>
+                        <p className="text-sm text-blue-400">Titular: {cuenta.titular}</p>
+                        <p className="text-sm text-blue-400">CI/RUC: {cuenta.cedulaRuc}</p>
+                        {cuenta.nroCuenta && <p className="text-sm text-blue-400">Cuenta: {cuenta.nroCuenta}</p>}
+                        {cuenta.aliasSpi && <p className="text-sm text-blue-300 font-medium">Alias SPI: {cuenta.aliasSpi}</p>}
+                        {cuenta.telefonoComprobante && (
+                          <p className="text-sm text-blue-400 flex items-center gap-1 mt-1">
+                            <Phone className="w-3 h-3" /> Comprobante por WhatsApp: {cuenta.telefonoComprobante}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-blue-400/70">
+                    El organizador aún no configuró datos bancarios. Contactalo directamente para coordinar la transferencia.
+                  </p>
+                )}
               </div>
             )}
 

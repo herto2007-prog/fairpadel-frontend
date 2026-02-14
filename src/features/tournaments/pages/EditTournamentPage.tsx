@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Checkbox, Loading } from '@/components/ui';
-import type { Category, Sede } from '@/types';
+import type { Category, Sede, CuentaBancaria } from '@/types';
 import { Modalidad } from '@/types';
 import SedeSelector from '../components/SedeSelector';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Building2, Phone } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function EditTournamentPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,18 @@ export default function EditTournamentPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedModalidades, setSelectedModalidades] = useState<Modalidad[]>([]);
   const [selectedSede, setSelectedSede] = useState<Sede | null>(null);
+  const [habilitarBancard, setHabilitarBancard] = useState(false);
+  const [cuentasBancarias, setCuentasBancarias] = useState<CuentaBancaria[]>([]);
+  const [showNewCuenta, setShowNewCuenta] = useState(false);
+  const [newCuenta, setNewCuenta] = useState({
+    banco: '',
+    titular: '',
+    cedulaRuc: '',
+    nroCuenta: '',
+    aliasSpi: '',
+    telefonoComprobante: '',
+  });
+  const [savingCuenta, setSavingCuenta] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -39,9 +52,10 @@ export default function EditTournamentPage() {
 
   const loadData = async () => {
     try {
-      const [tournament, cats] = await Promise.all([
+      const [tournament, cats, cuentas] = await Promise.all([
         tournamentsService.getById(id!),
         tournamentsService.getCategories(),
+        tournamentsService.getCuentasBancarias(id!),
       ]);
 
       setCategories(cats);
@@ -50,6 +64,8 @@ export default function EditTournamentPage() {
       if (tournament.sedePrincipal) {
         setSelectedSede(tournament.sedePrincipal);
       }
+      setHabilitarBancard(tournament.habilitarBancard || false);
+      setCuentasBancarias(cuentas);
 
       setFormData({
         nombre: tournament.nombre,
@@ -139,6 +155,7 @@ export default function EditTournamentPage() {
         fechaLimiteInscripcion: formData.fechaLimiteInscripcion,
         flyerUrl: formData.flyerUrl,
         costoInscripcion: Number(formData.costoInscripcion),
+        habilitarBancard,
         sedeId: selectedSede?.id || undefined,
         sede: selectedSede?.nombre || undefined,
         direccion: selectedSede?.direccion || undefined,
@@ -232,6 +249,211 @@ export default function EditTournamentPage() {
                 required
               />
             </div>
+
+            {/* Configuración de Pagos */}
+            {Number(formData.costoInscripcion) > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Configuración de Pagos</h3>
+
+                <Checkbox
+                  label="Habilitar pagos con Bancard (tarjeta de crédito/débito)"
+                  checked={habilitarBancard}
+                  onChange={() => setHabilitarBancard(!habilitarBancard)}
+                />
+                <p className="text-xs text-light-secondary -mt-2 ml-6">
+                  Si se habilita, los jugadores podrán pagar con tarjeta al inscribirse.
+                </p>
+
+                {/* Cuentas Bancarias para Transferencia */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-light-text flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Datos bancarios para transferencia
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCuenta(!showNewCuenta)}
+                      className="text-xs px-3 py-1.5 bg-primary-500/20 text-primary-400 rounded-full hover:bg-primary-500/30 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Agregar cuenta
+                    </button>
+                  </div>
+                  <p className="text-xs text-light-secondary mb-3">
+                    Estos datos se muestran a los jugadores para que sepan a dónde transferir. Podés agregar más de un banco.
+                  </p>
+
+                  {/* Lista de cuentas existentes */}
+                  {cuentasBancarias.length > 0 && (
+                    <div className="space-y-2 mb-4">
+                      {cuentasBancarias.map((cuenta) => (
+                        <div
+                          key={cuenta.id}
+                          className="p-3 bg-dark-surface border border-dark-border rounded-lg flex items-start justify-between gap-3"
+                        >
+                          <div className="flex-1 text-sm">
+                            <div className="font-medium text-light-text">{cuenta.banco}</div>
+                            <div className="text-light-secondary">
+                              Titular: {cuenta.titular} | CI/RUC: {cuenta.cedulaRuc}
+                            </div>
+                            {cuenta.nroCuenta && (
+                              <div className="text-light-secondary">Cuenta: {cuenta.nroCuenta}</div>
+                            )}
+                            {cuenta.aliasSpi && (
+                              <div className="text-primary-400">Alias SPI: {cuenta.aliasSpi}</div>
+                            )}
+                            {cuenta.telefonoComprobante && (
+                              <div className="text-light-secondary flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {cuenta.telefonoComprobante}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await tournamentsService.deleteCuentaBancaria(id!, cuenta.id);
+                                setCuentasBancarias((prev) => prev.filter((c) => c.id !== cuenta.id));
+                                toast.success('Cuenta eliminada');
+                              } catch {
+                                toast.error('Error al eliminar cuenta');
+                              }
+                            }}
+                            className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {cuentasBancarias.length === 0 && !showNewCuenta && (
+                    <div className="p-4 bg-dark-surface border border-dark-border rounded-lg text-center text-light-secondary text-sm">
+                      No hay cuentas bancarias configuradas. Los jugadores que elijan transferencia no verán datos de cuenta.
+                    </div>
+                  )}
+
+                  {/* Form para nueva cuenta */}
+                  {showNewCuenta && (
+                    <div className="p-4 bg-dark-surface border border-primary-500/30 rounded-lg space-y-3">
+                      <h5 className="font-medium text-sm text-primary-400">Nueva cuenta bancaria</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-light-secondary mb-1">Banco *</label>
+                          <select
+                            className="w-full rounded-md border border-dark-border bg-dark-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            value={newCuenta.banco}
+                            onChange={(e) => setNewCuenta({ ...newCuenta, banco: e.target.value })}
+                          >
+                            <option value="">Seleccionar banco...</option>
+                            <option value="Banco Itaú">Banco Itaú</option>
+                            <option value="Banco Continental">Banco Continental</option>
+                            <option value="Sudameris">Sudameris</option>
+                            <option value="Banco Atlas">Banco Atlas</option>
+                            <option value="Banco Regional">Banco Regional</option>
+                            <option value="Visión Banco">Visión Banco</option>
+                            <option value="Banco Familiar">Banco Familiar</option>
+                            <option value="Banco Nacional de Fomento">Banco Nacional de Fomento</option>
+                            <option value="Bancop">Bancop</option>
+                            <option value="Banco GNB">Banco GNB</option>
+                            <option value="Banco BASA">Banco BASA</option>
+                            <option value="Banco do Brasil">Banco do Brasil</option>
+                            <option value="ueno">ueno</option>
+                            <option value="Tigo Money">Tigo Money</option>
+                            <option value="Personal Pay">Personal Pay</option>
+                            <option value="Otro">Otro</option>
+                          </select>
+                        </div>
+                        <Input
+                          label="Titular *"
+                          type="text"
+                          value={newCuenta.titular}
+                          onChange={(e) => setNewCuenta({ ...newCuenta, titular: e.target.value })}
+                          placeholder="Nombre del titular"
+                        />
+                        <Input
+                          label="Cédula / RUC *"
+                          type="text"
+                          value={newCuenta.cedulaRuc}
+                          onChange={(e) => setNewCuenta({ ...newCuenta, cedulaRuc: e.target.value })}
+                          placeholder="Ej: 4.567.890"
+                        />
+                        <Input
+                          label="Nro. de Cuenta"
+                          type="text"
+                          value={newCuenta.nroCuenta}
+                          onChange={(e) => setNewCuenta({ ...newCuenta, nroCuenta: e.target.value })}
+                          placeholder="Opcional"
+                        />
+                        <Input
+                          label="Alias SPI"
+                          type="text"
+                          value={newCuenta.aliasSpi}
+                          onChange={(e) => setNewCuenta({ ...newCuenta, aliasSpi: e.target.value })}
+                          placeholder="Cédula, teléfono o email"
+                        />
+                        <Input
+                          label="Teléfono (WhatsApp)"
+                          type="text"
+                          value={newCuenta.telefonoComprobante}
+                          onChange={(e) => setNewCuenta({ ...newCuenta, telefonoComprobante: e.target.value })}
+                          placeholder="Para enviar comprobante"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowNewCuenta(false);
+                            setNewCuenta({ banco: '', titular: '', cedulaRuc: '', nroCuenta: '', aliasSpi: '', telefonoComprobante: '' });
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          loading={savingCuenta}
+                          onClick={async () => {
+                            if (!newCuenta.banco || !newCuenta.titular || !newCuenta.cedulaRuc) {
+                              toast.error('Banco, titular y cédula/RUC son obligatorios');
+                              return;
+                            }
+                            setSavingCuenta(true);
+                            try {
+                              const created = await tournamentsService.createCuentaBancaria(id!, {
+                                banco: newCuenta.banco,
+                                titular: newCuenta.titular,
+                                cedulaRuc: newCuenta.cedulaRuc,
+                                nroCuenta: newCuenta.nroCuenta || undefined,
+                                aliasSpi: newCuenta.aliasSpi || undefined,
+                                telefonoComprobante: newCuenta.telefonoComprobante || undefined,
+                              });
+                              setCuentasBancarias((prev) => [...prev, created]);
+                              setNewCuenta({ banco: '', titular: '', cedulaRuc: '', nroCuenta: '', aliasSpi: '', telefonoComprobante: '' });
+                              setShowNewCuenta(false);
+                              toast.success('Cuenta bancaria agregada');
+                            } catch {
+                              toast.error('Error al agregar cuenta bancaria');
+                            } finally {
+                              setSavingCuenta(false);
+                            }
+                          }}
+                        >
+                          Guardar Cuenta
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Ubicación */}
             <div className="space-y-4">

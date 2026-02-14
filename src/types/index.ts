@@ -67,6 +67,18 @@ export enum CircuitoEstado {
   CANCELADO = 'CANCELADO',
 }
 
+export enum PagoEstado {
+  PENDIENTE = 'PENDIENTE',
+  CONFIRMADO = 'CONFIRMADO',
+  RECHAZADO = 'RECHAZADO',
+}
+
+export enum ModerationStatus {
+  PENDIENTE = 'PENDIENTE',
+  APROBADA = 'APROBADA',
+  RECHAZADA = 'RECHAZADA',
+}
+
 export enum TipoCancha {
   INDOOR = 'INDOOR',
   OUTDOOR = 'OUTDOOR',
@@ -220,6 +232,9 @@ export interface Tournament {
   // Circuito
   circuitoId?: string;
   circuito?: Circuito;
+  // Pagos
+  habilitarBancard?: boolean;
+  cuentasBancarias?: CuentaBancaria[];
   estado: TournamentStatus;
   organizadorId: string;
   organizador?: Partial<User>;
@@ -238,6 +253,41 @@ export interface Pareja {
   jugador2?: User;
 }
 
+export interface Pago {
+  id: string;
+  inscripcionId: string;
+  metodoPago: MetodoPago;
+  monto: number;
+  comision: number;
+  estado: PagoEstado;
+  transactionId?: string;
+  fechaPago?: string;
+  fechaConfirm?: string;
+  createdAt?: string;
+}
+
+export interface ComprobantePago {
+  id: string;
+  inscripcionId: string;
+  url: string;
+  estado: ModerationStatus;
+  motivoRechazo?: string;
+  createdAt?: string;
+}
+
+export interface CuentaBancaria {
+  id: string;
+  tournamentId: string;
+  banco: string;
+  titular: string;
+  cedulaRuc: string;
+  nroCuenta?: string;
+  aliasSpi?: string;
+  telefonoComprobante?: string;
+  activa: boolean;
+  createdAt?: string;
+}
+
 export interface Inscripcion {
   id: string;
   tournamentId: string;
@@ -246,6 +296,8 @@ export interface Inscripcion {
   estado: InscripcionEstado;
   metodoPago?: MetodoPago;
   pagoId?: string;
+  pago?: Pago;
+  comprobantes?: ComprobantePago[];
   tournament?: Tournament;
   category?: Category;
   pareja?: Pareja;
@@ -383,6 +435,7 @@ export interface UpdateTournamentDto {
   fechaLimiteInscripcion?: string;
   flyerUrl?: string;
   costoInscripcion?: number;
+  habilitarBancard?: boolean;
   sede?: string;
   direccion?: string;
   mapsUrl?: string;

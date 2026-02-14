@@ -1,5 +1,5 @@
 import api from './api';
-import type { Tournament, Category, CreateTournamentDto, UpdateTournamentDto } from '@/types';
+import type { Tournament, Category, CreateTournamentDto, UpdateTournamentDto, CuentaBancaria } from '@/types';
 
 export const tournamentsService = {
   // GET /tournaments - Obtener todos los torneos (público)
@@ -104,6 +104,40 @@ export const tournamentsService = {
   removeAyudante: async (tournamentId: string, ayudanteId: string) => {
     const response = await api.delete(`/tournaments/${tournamentId}/ayudantes/${ayudanteId}`);
     return response.data;
+  },
+
+  // Cuentas bancarias
+  getCuentasBancarias: async (tournamentId: string): Promise<CuentaBancaria[]> => {
+    const response = await api.get<CuentaBancaria[]>(`/tournaments/${tournamentId}/cuentas-bancarias`);
+    return response.data;
+  },
+
+  createCuentaBancaria: async (
+    tournamentId: string,
+    data: {
+      banco: string;
+      titular: string;
+      cedulaRuc: string;
+      nroCuenta?: string;
+      aliasSpi?: string;
+      telefonoComprobante?: string;
+    },
+  ): Promise<CuentaBancaria> => {
+    const response = await api.post<CuentaBancaria>(`/tournaments/${tournamentId}/cuentas-bancarias`, data);
+    return response.data;
+  },
+
+  updateCuentaBancaria: async (
+    tournamentId: string,
+    cuentaId: string,
+    data: Partial<CuentaBancaria>,
+  ): Promise<CuentaBancaria> => {
+    const response = await api.put<CuentaBancaria>(`/tournaments/${tournamentId}/cuentas-bancarias/${cuentaId}`, data);
+    return response.data;
+  },
+
+  deleteCuentaBancaria: async (tournamentId: string, cuentaId: string): Promise<void> => {
+    await api.delete(`/tournaments/${tournamentId}/cuentas-bancarias/${cuentaId}`);
   },
 };
 

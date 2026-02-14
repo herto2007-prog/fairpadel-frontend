@@ -4,9 +4,10 @@ import { Card, Button, Loading, Checkbox } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
 import { matchesService } from '@/services/matchesService';
+import inscripcionesService from '@/services/inscripcionesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda, Match, Pareja } from '@/types';
+import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda, Match, Pareja, Inscripcion } from '@/types';
 import { BracketView } from '@/features/matches/components/BracketView';
 import { ScoreModal } from '@/features/matches/components/ScoreModal';
 import {
@@ -40,7 +41,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -119,6 +120,7 @@ export default function ManageTournamentPage() {
     { key: 'resumen', label: 'Resumen', icon: <LayoutDashboard className="w-4 h-4" /> },
     { key: 'editar', label: 'Editar', icon: <Edit3 className="w-4 h-4" /> },
     { key: 'inscripciones', label: 'Inscripciones', icon: <Users className="w-4 h-4" /> },
+    { key: 'pagos', label: 'Pagos', icon: <DollarSign className="w-4 h-4" /> },
     { key: 'sorteo', label: 'Sorteo', icon: <Trophy className="w-4 h-4" /> },
     { key: 'canchas', label: 'Canchas y Horarios', icon: <Layers className="w-4 h-4" /> },
     { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
@@ -176,6 +178,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} onRefresh={loadData} />}
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
         {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} />}
+        {activeTab === 'pagos' && <PagosTab tournament={tournament} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} />}
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
@@ -1191,6 +1194,264 @@ function DashboardPremiumTab({ tournament, stats, isPremium }: { tournament: Tou
           </div>
         ) : <p className="text-light-secondary text-sm text-center py-4">Sin datos</p>}
       </Card>
+    </div>
+  );
+}
+
+// ===================== PAGOS TAB =====================
+
+function PagosTab({ tournament }: { tournament: Tournament }) {
+  const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'todas' | 'pendientes' | 'confirmadas' | 'rechazadas'>('todas');
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectMotivo, setRejectMotivo] = useState<Record<string, string>>({});
+  const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadInscripciones();
+  }, [tournament.id]);
+
+  const loadInscripciones = async () => {
+    try {
+      const data = await inscripcionesService.getByTournament(tournament.id);
+      setInscripciones(data);
+    } catch (err) {
+      console.error('Error loading inscripciones:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmar = async (inscripcionId: string) => {
+    setProcessingId(inscripcionId);
+    try {
+      await inscripcionesService.confirmarPago(tournament.id, inscripcionId);
+      toast.success('Pago confirmado');
+      await loadInscripciones();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al confirmar pago');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRechazar = async (inscripcionId: string) => {
+    const motivo = rejectMotivo[inscripcionId] || '';
+    setProcessingId(inscripcionId);
+    try {
+      await inscripcionesService.rechazarPago(tournament.id, inscripcionId, motivo || undefined);
+      toast.success('Pago rechazado');
+      setShowRejectInput(null);
+      await loadInscripciones();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al rechazar pago');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const pendientes = inscripciones.filter((i) =>
+    ['PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'PENDIENTE_PAGO_PRESENCIAL'].includes(i.estado),
+  );
+  const confirmadas = inscripciones.filter((i) => i.estado === 'CONFIRMADA');
+  const rechazadas = inscripciones.filter((i) => i.estado === 'RECHAZADA');
+
+  const filteredInscripciones =
+    filter === 'pendientes'
+      ? pendientes
+      : filter === 'confirmadas'
+        ? confirmadas
+        : filter === 'rechazadas'
+          ? rechazadas
+          : inscripciones;
+
+  const getEstadoBadge = (estado: string) => {
+    const colors: Record<string, string> = {
+      PENDIENTE_PAGO: 'bg-yellow-900/30 text-yellow-400',
+      PENDIENTE_CONFIRMACION: 'bg-blue-900/30 text-blue-400',
+      PENDIENTE_PAGO_PRESENCIAL: 'bg-orange-900/30 text-orange-400',
+      CONFIRMADA: 'bg-green-900/30 text-green-400',
+      RECHAZADA: 'bg-red-900/30 text-red-400',
+      CANCELADA: 'bg-dark-surface text-light-secondary',
+    };
+    const labels: Record<string, string> = {
+      PENDIENTE_PAGO: 'Pago pendiente',
+      PENDIENTE_CONFIRMACION: 'Comprobante enviado',
+      PENDIENTE_PAGO_PRESENCIAL: 'Presencial pendiente',
+      CONFIRMADA: 'Confirmada',
+      RECHAZADA: 'Rechazada',
+      CANCELADA: 'Cancelada',
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[estado] || 'bg-dark-surface text-light-secondary'}`}>
+        {labels[estado] || estado}
+      </span>
+    );
+  };
+
+  const getMetodoBadge = (metodo?: string) => {
+    if (!metodo) return null;
+    const colors: Record<string, string> = {
+      BANCARD: 'text-blue-400',
+      TRANSFERENCIA: 'text-purple-400',
+      EFECTIVO: 'text-green-400',
+    };
+    return <span className={`text-xs font-medium ${colors[metodo] || ''}`}>{metodo}</span>;
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><Loading size="lg" text="Cargando pagos..." /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-400">{pendientes.length}</p>
+          <p className="text-xs text-light-secondary">Pendientes</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-green-400">{confirmadas.length}</p>
+          <p className="text-xs text-light-secondary">Confirmadas</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-red-400">{rechazadas.length}</p>
+          <p className="text-xs text-light-secondary">Rechazadas</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-light-text">{inscripciones.length}</p>
+          <p className="text-xs text-light-secondary">Total</p>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        {(['todas', 'pendientes', 'confirmadas', 'rechazadas'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              filter === f ? 'bg-primary-500/20 text-primary-400' : 'bg-dark-surface text-light-secondary hover:bg-dark-hover'
+            }`}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      {filteredInscripciones.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-light-secondary">No hay inscripciones en esta categoría</p>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-dark-border text-left">
+                  <th className="px-4 py-3 text-light-secondary font-medium">Pareja</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Categoría</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Método</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Estado</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Comprobante</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInscripciones.map((insc) => {
+                  const isPendiente = ['PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'PENDIENTE_PAGO_PRESENCIAL'].includes(insc.estado);
+                  const j1 = insc.pareja?.jugador1;
+                  const j2 = insc.pareja?.jugador2;
+                  const comprobante = insc.comprobantes && insc.comprobantes.length > 0 ? insc.comprobantes[insc.comprobantes.length - 1] : null;
+
+                  return (
+                    <tr key={insc.id} className="border-b border-dark-border/50 hover:bg-dark-hover/30">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-light-text">
+                          {j1 ? `${j1.nombre} ${j1.apellido}` : '—'}
+                        </div>
+                        <div className="text-light-secondary text-xs">
+                          {j2 ? `${j2.nombre} ${j2.apellido}` : insc.pareja?.jugador2Documento ? `Doc: ${insc.pareja.jugador2Documento}` : '—'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-light-secondary">
+                        {insc.category?.nombre || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getMetodoBadge(insc.pago?.metodoPago)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getEstadoBadge(insc.estado)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {comprobante ? (
+                          <a
+                            href={comprobante.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-400 hover:underline text-xs"
+                          >
+                            Ver
+                          </a>
+                        ) : (
+                          <span className="text-light-secondary text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isPendiente && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleConfirmar(insc.id)}
+                              disabled={processingId === insc.id}
+                              className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {processingId === insc.id ? '...' : '✓ Confirmar'}
+                            </button>
+                            {showRejectInput === insc.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={rejectMotivo[insc.id] || ''}
+                                  onChange={(e) => setRejectMotivo((prev) => ({ ...prev, [insc.id]: e.target.value }))}
+                                  placeholder="Motivo (opcional)"
+                                  className="w-32 px-2 py-1 text-xs bg-dark-card border border-dark-border rounded focus:outline-none focus:ring-1 focus:ring-red-500"
+                                />
+                                <button
+                                  onClick={() => handleRechazar(insc.id)}
+                                  disabled={processingId === insc.id}
+                                  className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                                >
+                                  {processingId === insc.id ? '...' : 'Enviar'}
+                                </button>
+                                <button
+                                  onClick={() => setShowRejectInput(null)}
+                                  className="text-light-secondary text-xs hover:text-light-text"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setShowRejectInput(insc.id)}
+                                className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
+                              >
+                                ✗ Rechazar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

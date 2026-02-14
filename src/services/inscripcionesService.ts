@@ -1,5 +1,5 @@
 import api from './api';
-import type { Inscripcion, MetodoPago } from '@/types';
+import type { Inscripcion } from '@/types';
 
 export interface CreateInscripcionDto {
   tournamentId: string;
@@ -7,13 +7,6 @@ export interface CreateInscripcionDto {
   modalidad: 'TRADICIONAL' | 'MIXTO' | 'SUMA';
   jugador2Documento: string;
   metodoPago: 'BANCARD' | 'TRANSFERENCIA' | 'EFECTIVO';
-}
-
-export interface PaymentResponse {
-  success: boolean;
-  redirectUrl?: string;
-  checkoutUrl?: string;
-  message?: string;
 }
 
 class InscripcionesService {
@@ -56,11 +49,20 @@ class InscripcionesService {
     return response.data;
   }
 
-  // Iniciar proceso de pago (para Bancard o registrar método seleccionado)
-  async initPayment(inscripcionId: string, metodoPago: MetodoPago): Promise<PaymentResponse> {
-    const response = await api.post<PaymentResponse>(`/inscripciones/${inscripcionId}/pago`, {
-      metodoPago,
-    });
+  // Confirmar pago (organizador/admin)
+  async confirmarPago(tournamentId: string, inscripcionId: string): Promise<Inscripcion> {
+    const response = await api.put<Inscripcion>(
+      `/inscripciones/torneo/${tournamentId}/inscripcion/${inscripcionId}/confirmar-pago`,
+    );
+    return response.data;
+  }
+
+  // Rechazar pago (organizador/admin)
+  async rechazarPago(tournamentId: string, inscripcionId: string, motivo?: string): Promise<Inscripcion> {
+    const response = await api.put<Inscripcion>(
+      `/inscripciones/torneo/${tournamentId}/inscripcion/${inscripcionId}/rechazar-pago`,
+      { motivo },
+    );
     return response.data;
   }
 }
