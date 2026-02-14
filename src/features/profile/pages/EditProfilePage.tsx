@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { usersService } from '@/services/usersService';
+import { notificacionesService } from '@/services/notificacionesService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import type { UpdateProfileDto } from '@/types';
-import { Camera } from 'lucide-react';
+import type { UpdateProfileDto, PreferenciaNotificacion, TipoNotificacion } from '@/types';
+import { Camera, Crown, Bell, Mail, MessageSquare } from 'lucide-react';
+
+// Labels legibles por tipo de notificacion
+const TIPO_LABELS: Record<string, string> = {
+  SISTEMA: 'Sistema',
+  TORNEO: 'Torneos',
+  INSCRIPCION: 'Inscripciones',
+  PARTIDO: 'Partidos',
+  RANKING: 'Rankings y Categorias',
+  SOCIAL: 'Social',
+  PAGO: 'Pagos',
+  MENSAJE: 'Mensajes',
+};
 
 const EditProfilePage = () => {
   const navigate = useNavigate();
@@ -13,7 +26,12 @@ const EditProfilePage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  
+
+  // Notification preferences
+  const [preferencias, setPreferencias] = useState<PreferenciaNotificacion[]>([]);
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [savingPref, setSavingPref] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<UpdateProfileDto>({
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
@@ -22,6 +40,44 @@ const EditProfilePage = () => {
     ciudad: user?.ciudad || '',
     bio: user?.bio || '',
   });
+
+  // Load notification preferences
+  useEffect(() => {
+    const loadPrefs = async () => {
+      try {
+        const data = await notificacionesService.obtenerPreferencias();
+        setPreferencias(data);
+      } catch {
+        // ignore
+      } finally {
+        setLoadingPrefs(false);
+      }
+    };
+    loadPrefs();
+  }, []);
+
+  const handleTogglePref = async (
+    tipo: TipoNotificacion | string,
+    campo: 'recibirEmail' | 'recibirSms',
+    value: boolean,
+  ) => {
+    setSavingPref(`${tipo}-${campo}`);
+    try {
+      await notificacionesService.actualizarPreferencia({
+        tipoNotificacion: tipo,
+        [campo]: value,
+      });
+      setPreferencias((prev) =>
+        prev.map((p) =>
+          p.tipoNotificacion === tipo ? { ...p, [campo]: value } : p,
+        ),
+      );
+    } catch {
+      // revert on error
+    } finally {
+      setSavingPref(null);
+    }
+  };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,7 +121,7 @@ const EditProfilePage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 py-8 max-w-2xl space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Editar Perfil</CardTitle>
@@ -131,7 +187,7 @@ const EditProfilePage = () => {
             </div>
 
             <Input
-              label="Teléfono"
+              label="Telefono"
               type="tel"
               value={formData.telefono}
               onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
@@ -154,13 +210,13 @@ const EditProfilePage = () => {
 
             <div>
               <label className="block text-sm font-medium text-light-text mb-1">
-                Biografía
+                Biografia
               </label>
               <textarea
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 rows={3}
                 maxLength={500}
-                placeholder="Cuéntanos sobre ti..."
+                placeholder="Cuentanos sobre ti..."
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               />
@@ -187,6 +243,100 @@ const EditProfilePage = () => {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Preferencias de Notificaciones */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary-400" />
+            Preferencias de Notificaciones
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-light-secondary mb-4">
+            Controla como quieres recibir notificaciones. La campanita in-app siempre esta activa.
+          </p>
+
+          {loadingPrefs ? (
+            <div className="text-center text-light-muted py-6 text-sm">Cargando preferencias...</div>
+          ) : (
+            <div className="space-y-1">
+              {/* Header */}
+              <div className="grid grid-cols-[1fr_80px_80px] gap-2 px-3 py-2 text-xs font-semibold text-light-muted uppercase">
+                <span>Tipo</span>
+                <span className="text-center flex items-center justify-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  Email
+                </span>
+                <span className="text-center flex items-center justify-center gap-1">
+                  <MessageSquare className="h-3 w-3" />
+                  SMS
+                </span>
+              </div>
+
+              {preferencias.map((pref) => (
+                <div
+                  key={pref.tipoNotificacion}
+                  className="grid grid-cols-[1fr_80px_80px] gap-2 px-3 py-2.5 rounded-lg hover:bg-dark-hover/50 items-center"
+                >
+                  <span className="text-sm text-light-text">
+                    {TIPO_LABELS[pref.tipoNotificacion] || pref.tipoNotificacion}
+                  </span>
+
+                  {/* Email toggle */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => handleTogglePref(pref.tipoNotificacion, 'recibirEmail', !pref.recibirEmail)}
+                      disabled={savingPref === `${pref.tipoNotificacion}-recibirEmail`}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${
+                        pref.recibirEmail ? 'bg-primary-500' : 'bg-dark-border'
+                      } ${savingPref === `${pref.tipoNotificacion}-recibirEmail` ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          pref.recibirEmail ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* SMS toggle (only visible/enabled for premium) */}
+                  <div className="flex justify-center">
+                    {user?.esPremium ? (
+                      <button
+                        onClick={() => handleTogglePref(pref.tipoNotificacion, 'recibirSms', !pref.recibirSms)}
+                        disabled={savingPref === `${pref.tipoNotificacion}-recibirSms`}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                          pref.recibirSms ? 'bg-primary-500' : 'bg-dark-border'
+                        } ${savingPref === `${pref.tipoNotificacion}-recibirSms` ? 'opacity-50' : ''}`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                            pref.recibirSms ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 text-light-muted" title="Solo para Premium">
+                        <Crown className="h-3 w-3 text-yellow-500" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!user?.esPremium && (
+            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg flex items-center gap-2">
+              <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+              <p className="text-xs text-yellow-400">
+                Las notificaciones por SMS estan disponibles solo para usuarios Premium.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

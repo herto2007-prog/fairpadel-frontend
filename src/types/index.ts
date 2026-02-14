@@ -780,3 +780,35 @@ export interface PromocionResult {
   categoriaNueva: string;
   tipo: string;
 }
+
+// ==================== NOTIFICACIONES ====================
+
+export enum TipoNotificacion {
+  SISTEMA = 'SISTEMA',
+  TORNEO = 'TORNEO',
+  INSCRIPCION = 'INSCRIPCION',
+  PARTIDO = 'PARTIDO',
+  RANKING = 'RANKING',
+  SOCIAL = 'SOCIAL',
+  PAGO = 'PAGO',
+  MENSAJE = 'MENSAJE',
+}
+
+export interface Notificacion {
+  id: string;
+  userId: string;
+  tipo: TipoNotificacion;
+  titulo: string | null;
+  contenido: string;
+  enlace: string | null;
+  leida: boolean;
+  emailEnviado: boolean;
+  smsEnviado: boolean;
+  createdAt: string;
+}
+
+export interface PreferenciaNotificacion {
+  tipoNotificacion: TipoNotificacion;
+  recibirEmail: boolean;
+  recibirSms: boolean;
+}
