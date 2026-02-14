@@ -46,13 +46,13 @@ const CargarResultadoPage = () => {
 
     try {
       const resultData: CargarResultadoDto = {
-        matchId: matchId!,
         set1Pareja1: formData.set1Pareja1,
         set1Pareja2: formData.set1Pareja2,
         set2Pareja1: formData.set2Pareja1,
         set2Pareja2: formData.set2Pareja2,
         set3Pareja1: formData.set3Pareja1 || undefined,
         set3Pareja2: formData.set3Pareja2 || undefined,
+        esWalkOver: false,
         observaciones: formData.observaciones || undefined,
       };
 
@@ -101,7 +101,11 @@ const CargarResultadoPage = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 bg-dark-surface rounded-lg">
-            <p className="text-sm text-light-secondary mb-2">{match.ronda}</p>
+            <p className="text-sm text-light-secondary mb-2">{
+              match.ronda === 'ACOMODACION_1' ? 'Acomodación 1' :
+              match.ronda === 'ACOMODACION_2' ? 'Acomodación 2' :
+              match.ronda.replace('_', ' ')
+            }</p>
             <div className="flex justify-between items-center">
               <span className="font-medium">{pareja1Name}</span>
               <span className="text-light-secondary">vs</span>

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda, Match, Pareja } from '@/types';
 import { BracketView } from '@/features/matches/components/BracketView';
+import { ScoreModal } from '@/features/matches/components/ScoreModal';
 import {
   ArrowLeft,
   BarChart3,
@@ -32,6 +33,7 @@ import {
   ArrowRightLeft,
   Eye,
   Send,
+  ClipboardCheck,
 } from 'lucide-react';
 
 type Tab = 'resumen' | 'editar' | 'inscripciones' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
@@ -1102,6 +1104,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const [swapSelection, setSwapSelection] = useState<string[]>([]);
   const [swapping, setSwapping] = useState(false);
   const [torneoCanchas, setTorneoCanchas] = useState<TorneoCancha[]>([]);
+  const [scoreModalMatch, setScoreModalMatch] = useState<Match | null>(null);
 
   const categorias = stats?.categorias || [];
   const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
@@ -1425,7 +1428,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
               <Loading size="lg" />
             </div>
           ) : fixtureData.length > 0 ? (
-            <BracketView matches={fixtureData} />
+            <BracketView matches={fixtureData} onMatchClick={setScoreModalMatch} />
           ) : (
             <div className="text-center py-8 text-light-secondary">
               <p>No se encontraron partidos para esta categoría</p>
@@ -1495,7 +1498,17 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                             <input type="checkbox" checked={isSelected} readOnly className="rounded" />
                           </td>
                         )}
-                        <td className="py-2 px-3 font-medium">{match.ronda}</td>
+                        <td className="py-2 px-3 font-medium">{
+                          {
+                            ACOMODACION_1: 'Acomodación 1',
+                            ACOMODACION_2: 'Acomodación 2',
+                            DIECISEISAVOS: 'Dieciseisavos',
+                            OCTAVOS: 'Octavos',
+                            CUARTOS: 'Cuartos',
+                            SEMIFINAL: 'Semifinal',
+                            FINAL: 'Final',
+                          }[match.ronda] || match.ronda
+                        }</td>
                         <td className="py-2 px-3">{getParejaLabel(match.pareja1)}</td>
                         <td className="py-2 px-3">{getParejaLabel(match.pareja2)}</td>
                         <td className="py-2 px-3">
@@ -1561,9 +1574,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                           </span>
                         </td>
                         <td className="py-2 px-3 text-center">
+                          <div className="flex gap-1 justify-center">
                           {!swapMode && match.estado !== 'FINALIZADO' && match.estado !== 'WO' && (
                             isEditing ? (
-                              <div className="flex gap-1 justify-center">
+                              <>
                                 <Button size="sm" variant="primary" onClick={() => handleReprogramar(match.id)} loading={savingSchedule === match.id}>
                                   <Save className="w-3 h-3" />
                                 </Button>
@@ -1574,7 +1588,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                                 })}>
                                   ✕
                                 </Button>
-                              </div>
+                              </>
                             ) : (
                               <Button size="sm" variant="outline" onClick={() => setEditingSchedule((prev) => ({
                                 ...prev,
@@ -1588,6 +1602,21 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                               </Button>
                             )
                           )}
+                          {/* Botón Cargar Resultado — visible si tiene ambas parejas y no está finalizado */}
+                          {match.pareja1Id && match.pareja2Id
+                            && match.estado !== 'FINALIZADO' && match.estado !== 'WO' && match.estado !== 'CANCELADO'
+                            && !swapMode && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setScoreModalMatch(match)}
+                              title="Cargar resultado"
+                              className="text-green-400 border-green-500/30 hover:bg-green-500/10"
+                            >
+                              <ClipboardCheck className="w-3 h-3" />
+                            </Button>
+                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1598,6 +1627,19 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           </div>
           )}
         </Card>
+      )}
+
+      {/* Score Modal para cargar resultados */}
+      {scoreModalMatch && (
+        <ScoreModal
+          isOpen={!!scoreModalMatch}
+          onClose={() => setScoreModalMatch(null)}
+          match={scoreModalMatch}
+          onResultSaved={() => {
+            if (selectedCategory) loadFixture(selectedCategory);
+            setScoreModalMatch(null);
+          }}
+        />
       )}
     </div>
   );

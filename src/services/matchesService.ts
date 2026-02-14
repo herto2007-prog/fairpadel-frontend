@@ -18,7 +18,7 @@ class MatchesService {
   }
 
   async cargarResultado(matchId: string, data: CargarResultadoDto): Promise<Match> {
-    const response = await api.patch<Match>(`/matches/${matchId}/resultado`, data);
+    const response = await api.put<Match>(`/matches/${matchId}/cargar-resultado`, data);
     return response.data;
   }
 

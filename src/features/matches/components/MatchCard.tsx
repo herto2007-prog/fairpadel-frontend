@@ -69,7 +69,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       <CardContent className="p-0">
         {/* Header */}
         <div className="flex justify-between items-center px-4 py-2 bg-dark-surface border-b border-dark-border">
-          <span className="text-sm font-medium">{match.ronda}</span>
+          <span className="text-sm font-medium">{
+            match.ronda === 'ACOMODACION_1' ? 'Acomodación 1' :
+            match.ronda === 'ACOMODACION_2' ? 'Acomodación 2' :
+            match.ronda.replace('_', ' ')
+          }</span>
           {getStatusBadge(match.estado)}
         </div>
 

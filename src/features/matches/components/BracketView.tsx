@@ -46,20 +46,26 @@ const PlayerAvatar = ({ player, size = 24 }: { player?: User | null; size?: numb
 
 interface BracketViewProps {
   matches: Match[];
+  /** Callback al hacer click en un match (para cargar resultado). Si no se provee, los matches no son clickeables. */
+  onMatchClick?: (match: Match) => void;
 }
 
 // Orden de rondas para visualización del bracket
 const ROUND_ORDER: Record<string, number> = {
-  DIECISEISAVOS: 1,
-  RONDA_6: 1,
-  RONDA_5: 1,
-  OCTAVOS: 2,
-  CUARTOS: 3,
-  SEMIFINAL: 4,
-  FINAL: 5,
+  ACOMODACION_1: 1,
+  ACOMODACION_2: 2,
+  DIECISEISAVOS: 3,
+  RONDA_6: 3,
+  RONDA_5: 3,
+  OCTAVOS: 4,
+  CUARTOS: 5,
+  SEMIFINAL: 6,
+  FINAL: 7,
 };
 
 const ROUND_LABELS: Record<string, string> = {
+  ACOMODACION_1: 'Acomodación 1',
+  ACOMODACION_2: 'Acomodación 2',
   DIECISEISAVOS: 'Dieciseisavos',
   OCTAVOS: 'Octavos',
   CUARTOS: 'Cuartos',
@@ -67,9 +73,9 @@ const ROUND_LABELS: Record<string, string> = {
   FINAL: 'Final',
 };
 
-export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
+export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick }) => {
   const bracketRef = useRef<HTMLDivElement>(null);
-  const [connectors, setConnectors] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
+  const [connectors, setConnectors] = useState<{ x1: number; y1: number; x2: number; y2: number; type: 'winner' | 'loser' }[]>([]);
 
   // Agrupar partidos por ronda (string) en vez de numeroRonda (secuencial)
   const matchesByRound = useMemo(() => {
@@ -169,11 +175,12 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
     }
 
     const calculateConnectors = () => {
-      const newConnectors: { x1: number; y1: number; x2: number; y2: number }[] = [];
+      const newConnectors: { x1: number; y1: number; x2: number; y2: number; type: 'winner' | 'loser' }[] = [];
       const container = bracketRef.current;
       if (!container) return;
 
       const containerRect = container.getBoundingClientRect();
+      const allMatchesFlat = Object.values(matchesByRound).flat();
 
       for (let i = 0; i < rounds.length - 1; i++) {
         const currentRound = rounds[i];
@@ -181,7 +188,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
         const currentMatches = matchesByRound[currentRound] || [];
         const nextMatches = matchesByRound[nextRound] || [];
 
-        // Para cada match de la ronda siguiente, buscar sus 2 matches alimentadores
+        // Para cada match de la ronda siguiente, buscar sus matches alimentadores
         for (let nIdx = 0; nIdx < nextMatches.length; nIdx++) {
           const nextMatch = nextMatches[nIdx];
           const nextEl = container.querySelector(`[data-match-id="${nextMatch.id}"]`) as HTMLElement;
@@ -191,10 +198,10 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
           const nextY = nextRect.top + nextRect.height / 2 - containerRect.top;
           const nextX = nextRect.left - containerRect.left;
 
-          // Buscar matches que alimentan a este (por partidoSiguienteId)
-          const feeders = currentMatches.filter(m => m.partidoSiguienteId === nextMatch.id);
+          // Buscar feeders de ganadores (por partidoSiguienteId)
+          const winnerFeeders = currentMatches.filter(m => m.partidoSiguienteId === nextMatch.id);
 
-          for (const feeder of feeders) {
+          for (const feeder of winnerFeeders) {
             const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
             if (!feederEl) continue;
 
@@ -203,10 +210,27 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
             const feederX = feederRect.right - containerRect.left;
 
             newConnectors.push({
-              x1: feederX,
-              y1: feederY,
-              x2: nextX,
-              y2: nextY,
+              x1: feederX, y1: feederY,
+              x2: nextX, y2: nextY,
+              type: 'winner',
+            });
+          }
+
+          // Buscar feeders de perdedores (por partidoPerdedorSiguienteId) — cross-ronda
+          const loserFeeders = allMatchesFlat.filter(m => m.partidoPerdedorSiguienteId === nextMatch.id);
+
+          for (const feeder of loserFeeders) {
+            const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
+            if (!feederEl) continue;
+
+            const feederRect = feederEl.getBoundingClientRect();
+            const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
+            const feederX = feederRect.right - containerRect.left;
+
+            newConnectors.push({
+              x1: feederX, y1: feederY,
+              x2: nextX, y2: nextY,
+              type: 'loser',
             });
           }
         }
@@ -223,10 +247,19 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
   const renderMatchCard = (match: Match) => {
     const canchaLabel = getCanchaLabel(match);
     const isBye = match.estado === MatchStatus.WO && match.observaciones?.includes('BYE');
+    // Clickeable si: tiene handler, ambas parejas asignadas, y no está finalizado/WO/cancelado
+    const isClickable = onMatchClick
+      && match.pareja1Id && match.pareja2Id
+      && ![MatchStatus.FINALIZADO, MatchStatus.WO, MatchStatus.CANCELADO].includes(match.estado);
 
     return (
-      <div key={match.id} data-match-id={match.id}>
-        <Card className={`overflow-hidden ${isBye ? 'opacity-60' : ''}`}>
+      <div
+        key={match.id}
+        data-match-id={match.id}
+        onClick={isClickable ? () => onMatchClick(match) : undefined}
+        className={isClickable ? 'cursor-pointer group' : ''}
+      >
+        <Card className={`overflow-hidden ${isBye ? 'opacity-60' : ''} ${isClickable ? 'group-hover:ring-1 group-hover:ring-primary-500/50 transition-shadow' : ''}`}>
           <CardContent className="p-0">
             {/* Header con cancha + fecha + hora + estado */}
             <div className="flex justify-between items-center px-3 py-1.5 bg-dark-surface border-b border-dark-border gap-2">
@@ -305,12 +338,16 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
             >
               {connectors.map((c, idx) => {
                 const midX = (c.x1 + c.x2) / 2;
+                const strokeColor = c.type === 'loser'
+                  ? 'rgba(239, 68, 68, 0.4)'   // rojo para perdedores
+                  : 'rgba(99, 102, 241, 0.4)';  // azul para ganadores
                 return (
                   <path
                     key={idx}
                     d={`M ${c.x1} ${c.y1} H ${midX} V ${c.y2} H ${c.x2}`}
-                    stroke="rgba(99, 102, 241, 0.4)"
+                    stroke={strokeColor}
                     strokeWidth="2"
+                    strokeDasharray={c.type === 'loser' ? '6 3' : undefined}
                     fill="none"
                   />
                 );
@@ -323,7 +360,12 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches }) => {
             {rounds.map((roundKey, roundIdx) => {
               const roundMatches = matchesByRound[roundKey] || [];
               // Calcular espaciado vertical progresivo para alinear con bracket
-              const spacingMultiplier = Math.pow(2, roundIdx);
+              // Las rondas de acomodación tienen spacing fijo (no son parte del bracket)
+              const isAcomodacion = roundKey.startsWith('ACOMODACION');
+              // Para rondas de bracket, el índice efectivo empieza desde 0 después de acomodación
+              const acomodacionRounds = rounds.filter(r => r.startsWith('ACOMODACION')).length;
+              const bracketRoundIdx = roundIdx - acomodacionRounds;
+              const spacingMultiplier = isAcomodacion ? 1 : Math.pow(2, Math.max(0, bracketRoundIdx));
 
               return (
                 <div key={roundKey} className="flex flex-col min-w-[300px]">

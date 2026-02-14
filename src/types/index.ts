@@ -274,6 +274,9 @@ export interface Match {
   torneoCancha?: TorneoCancha;
   partidoSiguienteId?: string;
   posicionEnSiguiente?: number;
+  // Routing de perdedores (acomodación)
+  partidoPerdedorSiguienteId?: string;
+  posicionEnPerdedor?: number;
   observaciones?: string;
   estado: MatchStatus;
   pareja1?: Pareja;
@@ -462,13 +465,15 @@ export interface UpdateProfileDto {
 
 // Match DTOs
 export interface CargarResultadoDto {
-  matchId: string;
-  set1Pareja1: number;
-  set1Pareja2: number;
-  set2Pareja1: number;
-  set2Pareja2: number;
+  set1Pareja1?: number;
+  set1Pareja2?: number;
+  set2Pareja1?: number;
+  set2Pareja2?: number;
   set3Pareja1?: number;
   set3Pareja2?: number;
+  esWalkOver: boolean;
+  esRetiro?: boolean;
+  parejaGanadoraId?: string;
   observaciones?: string;
 }
 
