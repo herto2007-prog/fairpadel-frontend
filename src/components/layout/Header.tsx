@@ -26,7 +26,9 @@ import {
   Swords,
   TrendingUp,
   ClipboardCheck,
+  Megaphone,
 } from 'lucide-react';
+import logoIcon from '@/assets/Asset 4fair padel.png';
 
 // ═══════════════════════════════════════════
 // HELPER: formatTimeAgo
@@ -162,8 +164,8 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🎾</span>
-            <span className="font-bold text-xl text-primary-500">FairPadel</span>
+            <img src={logoIcon} alt="FairPadel" className="h-8 w-8" />
+            <span className="font-bold text-xl text-primary-500">Fair<span className="text-light-text">Padel</span></span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -380,6 +382,14 @@ const Header = () => {
                           >
                             <Layers className="h-4 w-4" />
                             Categorías
+                          </Link>
+                          <Link
+                            to="/admin/publicidad"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                          >
+                            <Megaphone className="h-4 w-4" />
+                            Publicidad
                           </Link>
                           <Link
                             to="/admin/configuracion"
@@ -614,6 +624,14 @@ const Header = () => {
                       >
                         <Layers className="h-5 w-5" />
                         Categorías
+                      </Link>
+                      <Link
+                        to="/admin/publicidad"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <Megaphone className="h-5 w-5" />
+                        Publicidad
                       </Link>
                       <Link
                         to="/admin/configuracion"

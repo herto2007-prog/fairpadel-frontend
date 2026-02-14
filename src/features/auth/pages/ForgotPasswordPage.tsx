@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import logoRed from '@/assets/Asset 2fair padel.png';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -48,6 +49,9 @@ const ForgotPasswordPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex justify-center">
+            <img src={logoRed} alt="FairPadel" className="h-16 w-auto" />
+          </div>
           <CardTitle>Recuperar Contraseña</CardTitle>
         </CardHeader>
         <CardContent>

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import type { LoginDto } from '@/types';
+import logoRed from '@/assets/Asset 2fair padel.png';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,8 +37,8 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <span className="text-3xl font-bold text-primary-500">FairPadel</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <img src={logoRed} alt="FairPadel" className="h-16 w-auto" />
           </div>
           <CardTitle>Iniciar Sesión</CardTitle>
         </CardHeader>

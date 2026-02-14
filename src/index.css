@@ -2,22 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Animaciones personalizadas */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
-
 /* ═══════════════════════════════════════════
    DARK THEME - Inspirado en Daphne Dark UI Kit
    ═══════════════════════════════════════════ */
@@ -35,6 +19,11 @@
   --accent: #e63946;
   --accent-hover: #c1121f;
   --accent-light: #f87171;
+}
+
+/* Smooth scroll global */
+html {
+  scroll-behavior: smooth;
 }
 
 /* Estilos base */
@@ -62,14 +51,20 @@
   }
 }
 
+/* Selection color */
+::selection {
+  background-color: rgba(230, 57, 70, 0.3);
+  color: #f1f1f1;
+}
+
 /* Scrollbar personalizado - Dark */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--bg-primary);
+  background-color: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -81,12 +76,53 @@
   background-color: var(--bg-hover);
 }
 
-/* Transitions suaves */
+/* Firefox scrollbar */
 * {
-  @apply transition-colors duration-200;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 /* Override default input/select styles for dark theme */
 input, select, textarea {
   color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════
+   COMPONENT ENHANCEMENTS
+   ═══════════════════════════════════════════ */
+
+/* Card hover effect */
+@layer components {
+  .card-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-hover:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 8px 30px -4px rgba(230, 57, 70, 0.1),
+                0 4px 10px -4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Animated gradient background for hero */
+  .hero-gradient {
+    background: linear-gradient(135deg, #c1121f 0%, #e63946 25%, #991b1b 50%, #e63946 75%, #c1121f 100%);
+    background-size: 300% 300%;
+    animation: gradient-shift 6s ease infinite;
+  }
+
+  /* Glass effect for overlays */
+  .glass {
+    backdrop-filter: blur(8px);
+    background-color: rgba(15, 15, 19, 0.7);
+  }
+}
+
+/* Smooth fade for route transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }

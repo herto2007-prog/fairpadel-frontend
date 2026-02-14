@@ -43,19 +43,24 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({ tournament }) =>
   const categoryNames = getCategoryNames();
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      {tournament.flyerUrl && (
-        <div className="aspect-video relative overflow-hidden">
+    <Card className="overflow-hidden card-hover group">
+      <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-primary-900/40 to-dark-surface">
+        {tournament.flyerUrl ? (
           <img
             src={tournament.flyerUrl}
             alt={tournament.nombre}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute top-2 right-2">
-            {getStatusBadge(tournament.estado)}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Calendar className="h-12 w-12 text-primary-500/30" />
           </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-dark-card/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute top-2 right-2">
+          {getStatusBadge(tournament.estado)}
         </div>
-      )}
+      </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-1">{tournament.nombre}</h3>
         

@@ -5,6 +5,7 @@ import tournamentsService from '@/services/tournamentsService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Select } from '@/components/ui';
 import type { RegisterDto, Category } from '@/types';
 import { Gender } from '@/types';
+import logoRed from '@/assets/Asset 2fair padel.png';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -96,8 +97,8 @@ const RegisterPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-dark-bg px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <span className="text-3xl font-bold text-primary-500">FairPadel</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <img src={logoRed} alt="FairPadel" className="h-16 w-auto" />
           </div>
           <CardTitle>Crear Cuenta</CardTitle>
         </CardHeader>

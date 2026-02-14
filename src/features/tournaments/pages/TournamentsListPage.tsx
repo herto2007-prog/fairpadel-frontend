@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
 import { Loading, Card, CardContent } from '@/components/ui';
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import type { Tournament, TournamentFilters as Filters } from '@/types';
 import { TournamentStatus } from '@/types';
 import { Plus } from 'lucide-react';
+import BannerZone from '@/components/BannerZone';
 
 const TournamentsListPage = () => {
   const navigate = useNavigate();
@@ -81,8 +82,16 @@ const TournamentsListPage = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tournaments.map((tournament) => (
-            <TournamentCard key={tournament.id} tournament={tournament} />
+          {tournaments.map((tournament, index) => (
+            <React.Fragment key={tournament.id}>
+              <TournamentCard tournament={tournament} />
+              {/* Insert banner after every 6th card */}
+              {(index + 1) % 6 === 0 && (
+                <div className="col-span-full">
+                  <BannerZone zona="ENTRE_TORNEOS" layout="single" />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       )}
