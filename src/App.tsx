@@ -6,7 +6,7 @@ import NuevaInscripcionPage from './features/inscripciones/pages/NuevaInscripcio
 
 // Pages
 import HomePage from '@/features/home/HomePage';
-import { LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage } from '@/features/auth/pages';
+import { LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/pages';
 import { TournamentsListPage, MyTournamentsPage, CreateTournamentPage } from '@/features/tournaments/pages';
 import RankingsPage from '@/features/rankings/pages/RankingsPage';
 import MisInscripcionesPage from '@/features/inscripciones/pages/MisInscripcionesPage';
@@ -37,6 +37,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Routes with layout */}
           <Route element={<Layout />}>
