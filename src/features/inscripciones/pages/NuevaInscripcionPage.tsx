@@ -64,6 +64,11 @@ export default function NuevaInscripcionPage() {
   const [jugador2Loading, setJugador2Loading] = useState(false);
   const [jugador2NotFound, setJugador2NotFound] = useState(false);
   const [acceptNotRegistered, setAcceptNotRegistered] = useState(false);
+  const [searchMode, setSearchMode] = useState<'documento' | 'nombre'>('documento');
+  const [nombreSearch, setNombreSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [searchingNombre, setSearchingNombre] = useState(false);
+  const [consentCompanero, setConsentCompanero] = useState(false);
   
   // Formulario - Categoría y Modalidad
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -165,12 +170,13 @@ export default function NuevaInscripcionPage() {
 
   const buscarJugador2 = async () => {
     if (!jugador2Documento.trim()) return;
-    
+
     setJugador2Loading(true);
     setJugador2(null);
     setJugador2NotFound(false);
     setAcceptNotRegistered(false);
-    
+    setSearchResults([]);
+
     try {
       const userData = await usersService.getByDocumento(jugador2Documento);
       setJugador2(userData);
@@ -179,6 +185,36 @@ export default function NuevaInscripcionPage() {
     } finally {
       setJugador2Loading(false);
     }
+  };
+
+  const buscarPorNombre = async () => {
+    if (!nombreSearch.trim() || nombreSearch.trim().length < 2) return;
+
+    setSearchingNombre(true);
+    setSearchResults([]);
+    setJugador2(null);
+    setJugador2NotFound(false);
+
+    try {
+      const results = await usersService.search(nombreSearch.trim());
+      // Filter out current user
+      const filtered = results.filter((u: User) => u.id !== user?.id);
+      setSearchResults(filtered);
+      if (filtered.length === 0) {
+        setJugador2NotFound(true);
+      }
+    } catch {
+      setJugador2NotFound(true);
+    } finally {
+      setSearchingNombre(false);
+    }
+  };
+
+  const selectJugadorFromResults = (selected: User) => {
+    setJugador2(selected);
+    setJugador2Documento(selected.documento || '');
+    setSearchResults([]);
+    setJugador2NotFound(false);
   };
 
   const validarGenero = (): { valid: boolean; message: string } => {
@@ -208,7 +244,7 @@ export default function NuevaInscripcionPage() {
   };
 
   // Validaciones de pasos
-  const canProceedStep1 = jugador2Documento.trim().length > 0 && (jugador2 || (jugador2NotFound && acceptNotRegistered));
+  const canProceedStep1 = jugador2Documento.trim().length > 0 && (jugador2 || (jugador2NotFound && acceptNotRegistered)) && consentCompanero;
   const canProceedStep2 = selectedCategory && selectedModalidad && validarGenero().valid;
   const canProceedStep3 = Number(tournament?.costoInscripcion) === 0 || selectedMetodoPago !== '';
 
@@ -357,29 +393,98 @@ export default function NuevaInscripcionPage() {
             {/* Jugador 2 (Búsqueda) */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-light-text mb-2">
-                👥 JUGADOR 2 - Documento de tu compañero/a
+                👥 JUGADOR 2 - Buscar compañero/a
               </label>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Ej: 4567890"
-                  value={jugador2Documento}
-                  onChange={(e) => {
-                    setJugador2Documento(e.target.value);
-                    setJugador2(null);
-                    setJugador2NotFound(false);
-                    setAcceptNotRegistered(false);
-                  }}
-                  className="flex-1"
-                />
-                <Button
+
+              {/* Search mode toggle */}
+              <div className="flex gap-1 mb-3">
+                <button
                   type="button"
-                  onClick={buscarJugador2}
-                  disabled={!jugador2Documento.trim() || jugador2Loading}
+                  onClick={() => { setSearchMode('documento'); setSearchResults([]); setJugador2NotFound(false); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${searchMode === 'documento' ? 'bg-primary-500/20 text-primary-400' : 'bg-dark-surface text-light-secondary hover:bg-dark-hover'}`}
                 >
-                  {jugador2Loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
+                  Por Documento
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSearchMode('nombre'); setSearchResults([]); setJugador2NotFound(false); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${searchMode === 'nombre' ? 'bg-primary-500/20 text-primary-400' : 'bg-dark-surface text-light-secondary hover:bg-dark-hover'}`}
+                >
+                  Por Nombre
+                </button>
               </div>
+
+              {searchMode === 'documento' ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Ej: 4567890"
+                    value={jugador2Documento}
+                    onChange={(e) => {
+                      setJugador2Documento(e.target.value);
+                      setJugador2(null);
+                      setJugador2NotFound(false);
+                      setAcceptNotRegistered(false);
+                      setConsentCompanero(false);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={buscarJugador2}
+                    disabled={!jugador2Documento.trim() || jugador2Loading}
+                  >
+                    {jugador2Loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Nombre o apellido..."
+                      value={nombreSearch}
+                      onChange={(e) => setNombreSearch(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarPorNombre(); } }}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={buscarPorNombre}
+                      disabled={nombreSearch.trim().length < 2 || searchingNombre}
+                    >
+                      {searchingNombre ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {/* Search results dropdown */}
+                  {searchResults.length > 0 && !jugador2 && (
+                    <div className="mt-2 bg-dark-card border border-dark-border rounded-lg max-h-48 overflow-y-auto">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => selectJugadorFromResults(result)}
+                          className="w-full px-4 py-2.5 text-left hover:bg-dark-hover transition-colors border-b border-dark-border/50 last:border-0 flex items-center gap-3"
+                        >
+                          {result.fotoUrl ? (
+                            <img src={result.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-xs font-bold text-primary-400">
+                              {result.nombre?.[0]}{result.apellido?.[0]}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium text-sm">{result.nombre} {result.apellido}</p>
+                            <p className="text-xs text-light-secondary">
+                              Doc: {result.documento} · {result.genero} {result.ciudad ? `· ${result.ciudad}` : ''}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Resultado búsqueda - Encontrado */}
@@ -417,6 +522,23 @@ export default function NuevaInscripcionPage() {
                     className="w-4 h-4 text-primary-500 rounded"
                   />
                   <span className="text-sm text-yellow-400">Entiendo y deseo continuar</span>
+                </label>
+              </div>
+            )}
+
+            {/* Consent disclaimer — shown when partner is selected */}
+            {(jugador2 || (jugador2NotFound && acceptNotRegistered)) && (
+              <div className="mb-6 p-4 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentCompanero}
+                    onChange={(e) => setConsentCompanero(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 text-primary-500 rounded flex-shrink-0"
+                  />
+                  <span className="text-sm text-amber-400">
+                    Confirmo que mi compañero/a <strong>{jugador2 ? `${jugador2.nombre} ${jugador2.apellido}` : `(Doc: ${jugador2Documento})`}</strong> ha autorizado esta inscripción y está de acuerdo en participar del torneo.
+                  </span>
                 </label>
               </div>
             )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, Badge, Button, Loading } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import inscripcionesService from '@/services/inscripcionesService';
@@ -7,7 +7,7 @@ import { matchesService } from '@/services/matchesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament, Match } from '@/types';
-import { Settings, Users, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
+import { Settings, Users, ChevronDown, ChevronUp, Trophy, ChevronRight } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
 import { BracketView } from '@/features/matches/components/BracketView';
 
@@ -156,6 +156,23 @@ export default function TournamentDetailPage() {
 
   return (
     <div className="min-h-screen bg-dark-surface">
+      {/* Circuit breadcrumb */}
+      {tournament.circuito && (
+        <div className="bg-dark-card border-b border-dark-border">
+          <div className="container mx-auto px-4 py-2.5 flex items-center gap-2 text-sm">
+            <Link to="/circuitos" className="text-light-secondary hover:text-primary-400 transition-colors">
+              Circuitos
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-light-secondary" />
+            <Link to={`/circuitos/${tournament.circuito.id}`} className="text-primary-400 hover:text-primary-300 transition-colors font-medium">
+              {tournament.circuito.nombre}
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-light-secondary" />
+            <span className="text-light-text truncate">{tournament.nombre}</span>
+          </div>
+        </div>
+      )}
+
       {/* Hero Image */}
       <div className="relative h-48 sm:h-64 md:h-96 bg-gray-900">
         <img
@@ -546,6 +563,29 @@ export default function TournamentDetailPage() {
                   : `ID: ${tournament.organizadorId?.slice(0, 8)}...`}
               </p>
             </Card>
+
+            {/* Circuit Card */}
+            {tournament.circuito && (
+              <Card className="p-4 sm:p-6">
+                <h3 className="font-bold text-lg mb-3 sm:mb-4">Circuito</h3>
+                <Link
+                  to={`/circuitos/${tournament.circuito.id}`}
+                  className="flex items-center gap-3 p-3 bg-primary-500/10 rounded-lg border border-primary-500/30 hover:bg-primary-500/20 transition-colors"
+                >
+                  {tournament.circuito.logoUrl ? (
+                    <img src={tournament.circuito.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-primary-400" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium text-primary-400">{tournament.circuito.nombre}</p>
+                    <p className="text-xs text-light-secondary">{tournament.circuito.temporada}</p>
+                  </div>
+                </Link>
+              </Card>
+            )}
 
             {/* Banner: Sidebar */}
             <BannerZone zona="SIDEBAR" layout="carousel" torneoId={id} />

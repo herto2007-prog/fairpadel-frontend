@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Select, Input, Button } from '@/components/ui';
-import type { TournamentFilters as Filters } from '@/types';
+import type { TournamentFilters as Filters, Circuito } from '@/types';
 import { TournamentStatus, Modalidad } from '@/types';
 import { X, Search } from 'lucide-react';
+import { circuitosService } from '@/services/circuitosService';
 
 interface TournamentFiltersProps {
   filters: Filters;
@@ -9,6 +11,12 @@ interface TournamentFiltersProps {
 }
 
 export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, onChange }) => {
+  const [circuitos, setCircuitos] = useState<Circuito[]>([]);
+
+  useEffect(() => {
+    circuitosService.getAll().then(setCircuitos).catch(() => {});
+  }, []);
+
   const handleReset = () => {
     onChange({
       estado: TournamentStatus.PUBLICADO,
@@ -31,7 +39,7 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
         <Select
           label="Estado"
           value={filters.estado || ''}
@@ -67,6 +75,21 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
           <option value={Modalidad.MIXTO}>Mixto</option>
           <option value={Modalidad.SUMA}>Suma</option>
         </Select>
+
+        {circuitos.length > 0 && (
+          <Select
+            label="Circuito"
+            value={filters.circuitoId || ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              onChange({ ...filters, circuitoId: e.target.value || undefined })
+            }
+          >
+            <option value="">Todos</option>
+            {circuitos.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </Select>
+        )}
 
         <div className="flex items-end gap-2">
           <Button variant="outline" onClick={handleReset} className="flex-1">

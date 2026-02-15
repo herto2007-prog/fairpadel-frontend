@@ -503,6 +503,7 @@ export interface TournamentFilters {
   estado?: TournamentStatus;
   modalidad?: Modalidad;
   nombre?: string;
+  circuitoId?: string;
 }
 
 // Inscripcion DTOs
