@@ -83,7 +83,7 @@ const Header = () => {
   const isAdmin = hasRole('admin');
   const isOrganizador = hasRole('organizador') || isAdmin;
 
-  // Poll for unread count every 30s
+  // Fetch unread count on demand
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
@@ -94,20 +94,49 @@ const Header = () => {
     }
   }, [isAuthenticated]);
 
+  // SSE real-time stream + fallback polling
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+    if (!isAuthenticated) return;
 
-  // Load notifications when dropdown opens
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Try SSE for real-time updates
+    const token = localStorage.getItem('token');
+    let eventSource: EventSource | null = null;
+    let sseConnected = false;
+
+    if (token) {
+      eventSource = notificacionesService.connectStream(token, (data) => {
+        sseConnected = true;
+        setNotifCount(data.count);
+      });
+    }
+
+    // Fallback polling every 60s (longer since SSE handles instant updates)
+    const interval = setInterval(() => {
+      if (!sseConnected) {
+        fetchUnreadCount();
+      }
+    }, 60000);
+
+    return () => {
+      clearInterval(interval);
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [isAuthenticated, fetchUnreadCount]);
+
+  // Load notifications when dropdown opens (only unread)
   const openNotifDropdown = async () => {
     setNotifDropdownOpen(true);
     setUserMenuOpen(false);
     setLoadingNotifs(true);
     try {
       const data = await notificacionesService.obtenerNotificaciones();
-      setNotifications(data);
+      // Only show unread notifications in the dropdown
+      setNotifications(data.filter((n: Notificacion) => !n.leida));
     } catch {
       // silently ignore
     } finally {
@@ -120,9 +149,8 @@ const Header = () => {
       try {
         await notificacionesService.marcarComoLeida(notif.id);
         setNotifCount((c) => Math.max(0, c - 1));
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, leida: true } : n)),
-        );
+        // Remove from list since read notifications disappear
+        setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
       } catch {
         // ignore
       }
@@ -137,7 +165,8 @@ const Header = () => {
     try {
       await notificacionesService.marcarTodasComoLeidas();
       setNotifCount(0);
-      setNotifications((prev) => prev.map((n) => ({ ...n, leida: true })));
+      // Remove read notifications from dropdown
+      setNotifications([]);
     } catch {
       // ignore
     }
@@ -234,7 +263,7 @@ const Header = () => {
                           <div className="px-4 py-6 text-center text-light-muted text-sm">Cargando...</div>
                         ) : notifications.length === 0 ? (
                           <div className="px-4 py-6 text-center text-light-muted text-sm">
-                            Sin notificaciones
+                            No tenés notificaciones nuevas
                           </div>
                         ) : (
                           notifications.slice(0, 15).map((notif) => {
@@ -495,7 +524,7 @@ const Header = () => {
               {loadingNotifs ? (
                 <div className="px-4 py-6 text-center text-light-muted text-sm">Cargando...</div>
               ) : notifications.length === 0 ? (
-                <div className="px-4 py-6 text-center text-light-muted text-sm">Sin notificaciones</div>
+                <div className="px-4 py-6 text-center text-light-muted text-sm">No tenés notificaciones nuevas</div>
               ) : (
                 notifications.slice(0, 10).map((notif) => {
                   const Icon = getNotifIcon(notif.tipo);
