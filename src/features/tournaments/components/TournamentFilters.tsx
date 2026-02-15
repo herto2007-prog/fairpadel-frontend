@@ -1,7 +1,7 @@
 import { Select, Input, Button } from '@/components/ui';
 import type { TournamentFilters as Filters } from '@/types';
 import { TournamentStatus, Modalidad } from '@/types';
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 interface TournamentFiltersProps {
   filters: Filters;
@@ -17,11 +17,25 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
 
   return (
     <div className="bg-dark-card p-3 sm:p-4 rounded-lg shadow mb-4 sm:mb-6">
+      {/* Search bar */}
+      <div className="mb-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-light-secondary" />
+          <input
+            type="text"
+            placeholder="Buscar torneo por nombre..."
+            value={filters.nombre || ''}
+            onChange={(e) => onChange({ ...filters, nombre: e.target.value || undefined })}
+            className="w-full pl-10 pr-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-light-text placeholder-light-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Select
           label="Estado"
           value={filters.estado || ''}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
             onChange({ ...filters, estado: e.target.value as TournamentStatus || undefined })
           }
         >
@@ -36,7 +50,7 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
           type="text"
           placeholder="Ej: Ciudad del Este"
           value={filters.ciudad || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             onChange({ ...filters, ciudad: e.target.value || undefined })
           }
         />
@@ -44,7 +58,7 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
         <Select
           label="Modalidad"
           value={filters.modalidad || ''}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
             onChange({ ...filters, modalidad: e.target.value as Modalidad || undefined })
           }
         >

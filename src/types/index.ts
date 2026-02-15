@@ -498,6 +498,7 @@ export interface TournamentFilters {
   ciudad?: string;
   estado?: TournamentStatus;
   modalidad?: Modalidad;
+  nombre?: string;
 }
 
 // Inscripcion DTOs

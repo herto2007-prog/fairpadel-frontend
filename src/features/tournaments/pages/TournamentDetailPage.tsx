@@ -116,7 +116,7 @@ export default function TournamentDetailPage() {
 
   const handleInscribirse = () => {
     if (!isAuthenticated) {
-      navigate('/auth/login', { state: { from: `/torneos/${id}` } });
+      navigate('/login', { state: { from: `/tournaments/${id}` } });
       return;
     }
     navigate(`/inscripciones/nueva?tournamentId=${id}`);
@@ -135,7 +135,7 @@ export default function TournamentDetailPage() {
       <div className="container mx-auto px-4 py-8">
         <Card className="p-12 text-center">
           <p className="text-light-secondary">Torneo no encontrado</p>
-          <Button className="mt-4" onClick={() => navigate('/torneos')}>
+          <Button className="mt-4" onClick={() => navigate('/tournaments')}>
             Volver a Torneos
           </Button>
         </Card>
@@ -236,23 +236,41 @@ export default function TournamentDetailPage() {
             </Card>
 
             {/* Sede */}
-            {tournament.sede && (
+            {(tournament.sedePrincipal || tournament.sede) && (
               <Card className="p-4 sm:p-6">
                 <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Sede</h2>
                 <div className="space-y-2">
-                  <p className="font-medium">{tournament.sede}</p>
-                  {tournament.direccion && (
-                    <p className="text-light-secondary">{tournament.direccion}</p>
+                  <p className="font-medium">
+                    {tournament.sedePrincipal?.nombre || tournament.sede}
+                  </p>
+                  {(tournament.sedePrincipal?.direccion || tournament.direccion) && (
+                    <p className="text-light-secondary">
+                      {tournament.sedePrincipal?.direccion || tournament.direccion}
+                    </p>
                   )}
-                  {tournament.mapsUrl && (
+                  {(tournament.sedePrincipal?.mapsUrl || tournament.mapsUrl) && (
                     <a
-                      href={tournament.mapsUrl}
+                      href={tournament.sedePrincipal?.mapsUrl || tournament.mapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary-600 hover:underline flex items-center gap-1"
                     >
                       Ver en Google Maps
                     </a>
+                  )}
+                  {tournament.sedePrincipal?.canchas && tournament.sedePrincipal.canchas.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-dark-border">
+                      <p className="text-sm text-light-secondary mb-2">
+                        {tournament.sedePrincipal.canchas.length} cancha{tournament.sedePrincipal.canchas.length !== 1 ? 's' : ''} disponible{tournament.sedePrincipal.canchas.length !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {tournament.sedePrincipal.canchas.filter(c => c.activa).map(cancha => (
+                          <span key={cancha.id} className="text-xs px-2 py-1 bg-dark-bg rounded-md text-light-secondary">
+                            {cancha.nombre} ({cancha.tipo.toLowerCase().replace('_', ' ')})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </Card>

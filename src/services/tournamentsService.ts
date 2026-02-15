@@ -3,12 +3,13 @@ import type { Tournament, Category, CreateTournamentDto, UpdateTournamentDto, Cu
 
 export const tournamentsService = {
   // GET /tournaments - Obtener todos los torneos (público)
-  getAll: async (filters?: { pais?: string; ciudad?: string; estado?: string }): Promise<Tournament[]> => {
+  getAll: async (filters?: { pais?: string; ciudad?: string; estado?: string; nombre?: string }): Promise<Tournament[]> => {
     const params = new URLSearchParams();
     if (filters?.pais) params.append('pais', filters.pais);
     if (filters?.ciudad) params.append('ciudad', filters.ciudad);
     if (filters?.estado) params.append('estado', filters.estado);
-    
+    if (filters?.nombre) params.append('nombre', filters.nombre);
+
     const response = await api.get(`/tournaments?${params.toString()}`);
     return response.data;
   },
@@ -87,6 +88,12 @@ export const tournamentsService = {
   // POST /tournaments/:id/finalizar - Finalizar torneo
   finalizarTorneo: async (id: string) => {
     const response = await api.post(`/tournaments/${id}/finalizar`);
+    return response.data;
+  },
+
+  // PUT /tournaments/:id/cancelar - Cancelar torneo
+  cancelarTorneo: async (id: string, motivo: string): Promise<{ message: string; inscripcionesCanceladas: number }> => {
+    const response = await api.put(`/tournaments/${id}/cancelar`, { motivo });
     return response.data;
   },
 
