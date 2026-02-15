@@ -146,8 +146,8 @@ export default function TournamentDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Banner: Torneo Detalle — full width above content */}
-        <BannerZone zona="TORNEO_DETALLE" className="mb-6" layout="single" />
+        {/* Banner: Torneo Detalle — individual por torneo */}
+        <BannerZone zona="TORNEO_DETALLE" className="mb-6" layout="single" torneoId={id} />
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -430,8 +430,8 @@ export default function TournamentDetailPage() {
               </p>
             </Card>
 
-            {/* Banner: Sidebar — sticky ads in sidebar */}
-            <BannerZone zona="SIDEBAR" layout="carousel" />
+            {/* Banner: Sidebar — individual por torneo */}
+            <BannerZone zona="SIDEBAR" layout="carousel" torneoId={id} />
           </div>
         </div>
       </div>

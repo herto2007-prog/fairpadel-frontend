@@ -14,6 +14,8 @@ export interface Banner {
   clicks: number;
   impresiones: number;
   anunciante?: string;
+  torneoId?: string;
+  torneo?: { id: string; nombre: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +43,7 @@ export interface BannerStats {
     clicks: number;
     impresiones: number;
     ctr: string;
+    torneoNombre?: string | null;
   }[];
 }
 
@@ -80,8 +83,9 @@ class PublicidadService {
   }
 
   // Público
-  async obtenerBannersActivos(zona: string): Promise<BannerPublico[]> {
-    const response = await api.get<BannerPublico[]>(`/publicidad/activos/${zona}`);
+  async obtenerBannersActivos(zona: string, torneoId?: string): Promise<BannerPublico[]> {
+    const params = torneoId ? { torneoId } : {};
+    const response = await api.get<BannerPublico[]>(`/publicidad/activos/${zona}`, { params });
     return response.data;
   }
 

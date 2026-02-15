@@ -4,6 +4,7 @@ import { Loading, Card, CardContent, Badge, Select } from '@/components/ui';
 import type { Ranking } from '@/types';
 import { Gender, TipoRanking } from '@/types';
 import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import BannerZone from '@/components/BannerZone';
 
 const RankingsPage = () => {
   const [rankings, setRankings] = useState<Ranking[]>([]);
@@ -78,6 +79,9 @@ const RankingsPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Banner: Header zone — slim strip, solo en rankings */}
+      <BannerZone zona="HEADER" className="mb-6" layout="single" />
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-light-text flex items-center gap-2">
           <Trophy className="h-8 w-8 text-yellow-500" />

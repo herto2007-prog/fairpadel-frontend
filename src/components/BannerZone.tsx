@@ -1,13 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { publicidadService, type BannerPublico } from '@/services/publicidadService';
 
+// Aspect ratios per zone (height/width) for placeholder sizing
+const ZONE_ASPECT: Record<string, string> = {
+  HOME_HERO: 'aspect-[1200/200]',      // 1200x200
+  HOME_MEDIO: 'aspect-[1200/150]',     // 1200x150
+  ENTRE_TORNEOS: 'aspect-[1200/150]',  // 1200x150
+  HEADER: 'aspect-[1200/90]',          // 1200x90
+  FOOTER: 'aspect-[1200/90]',          // 1200x90
+  TORNEO_DETALLE: 'aspect-[1200/100]', // 1200x100
+  SIDEBAR: '',                          // libre
+};
+
 interface BannerZoneProps {
   zona: string;
   className?: string;
   layout?: 'single' | 'carousel';
+  torneoId?: string;
 }
 
-const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 'single' }) => {
+const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 'single', torneoId }) => {
   const [banners, setBanners] = useState<BannerPublico[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -16,13 +28,13 @@ const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 
 
   // Fetch banners
   useEffect(() => {
-    publicidadService.obtenerBannersActivos(zona)
+    publicidadService.obtenerBannersActivos(zona, torneoId)
       .then((data) => {
         setBanners(data);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-  }, [zona]);
+  }, [zona, torneoId]);
 
   // Carousel rotation
   useEffect(() => {
@@ -67,6 +79,8 @@ const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 
   if (loaded && banners.length === 0) return null;
   if (!loaded) return null;
 
+  const aspectClass = ZONE_ASPECT[zona] || '';
+
   // Single banner
   if (layout === 'single' || banners.length === 1) {
     const banner = banners[0];
@@ -76,13 +90,13 @@ const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 
       <div ref={containerRef} className={`relative overflow-hidden rounded-lg ${className}`}>
         <button
           onClick={() => handleClick(banner)}
-          className="w-full block cursor-pointer group"
+          className={`w-full block cursor-pointer group ${aspectClass}`}
           title={banner.anunciante ? `Publicidad: ${banner.anunciante}` : 'Publicidad'}
         >
           <img
             src={banner.imagenUrl}
             alt={banner.titulo}
-            className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             loading="lazy"
           />
         </button>
@@ -96,7 +110,7 @@ const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 
   // Carousel
   return (
     <div ref={containerRef} className={`relative overflow-hidden rounded-lg ${className}`}>
-      <div className="relative">
+      <div className={`relative ${aspectClass}`}>
         {banners.map((banner, index) => (
           <div
             key={banner.id}
@@ -106,13 +120,13 @@ const BannerZone: React.FC<BannerZoneProps> = ({ zona, className = '', layout = 
           >
             <button
               onClick={() => handleClick(banner)}
-              className="w-full block cursor-pointer group"
+              className="w-full h-full block cursor-pointer group"
               title={banner.anunciante ? `Publicidad: ${banner.anunciante}` : 'Publicidad'}
             >
               <img
                 src={banner.imagenUrl}
                 alt={banner.titulo}
-                className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 loading="lazy"
               />
             </button>

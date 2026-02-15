@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { publicidadService, type Banner, type BannerStats } from '@/services/publicidadService';
+import { tournamentsService } from '@/services/tournamentsService';
 import { Button, Card, CardContent } from '@/components/ui';
 import {
   Plus,
@@ -13,28 +14,47 @@ import {
   MousePointer2,
   Eye,
   X,
+  Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ZONAS = [
-  'HEADER',
-  'SIDEBAR',
-  'ENTRE_TORNEOS',
-  'FOOTER',
   'HOME_HERO',
   'HOME_MEDIO',
+  'ENTRE_TORNEOS',
+  'HEADER',
+  'FOOTER',
   'TORNEO_DETALLE',
+  'SIDEBAR',
 ];
 
 const ZONA_LABELS: Record<string, string> = {
-  HEADER: 'Header',
-  SIDEBAR: 'Sidebar',
+  HEADER: 'Ranking (Header)',
+  SIDEBAR: 'Sidebar Torneo',
   ENTRE_TORNEOS: 'Entre Torneos',
   FOOTER: 'Footer',
   HOME_HERO: 'Home Hero',
   HOME_MEDIO: 'Home Medio',
   TORNEO_DETALLE: 'Detalle Torneo',
 };
+
+const ZONA_SIZES: Record<string, string> = {
+  HOME_HERO: '1200 x 200 px',
+  HOME_MEDIO: '1200 x 150 px',
+  ENTRE_TORNEOS: '1200 x 150 px',
+  HEADER: '1200 x 90 px',
+  FOOTER: '1200 x 90 px',
+  TORNEO_DETALLE: '1200 x 100 px',
+  SIDEBAR: 'Libre',
+};
+
+// Zonas que requieren seleccionar un torneo
+const ZONAS_POR_TORNEO = ['TORNEO_DETALLE', 'SIDEBAR'];
+
+interface TorneoOption {
+  id: string;
+  nombre: string;
+}
 
 const AdminPublicidadPage = () => {
   const [tab, setTab] = useState<'banners' | 'stats'>('banners');
@@ -44,6 +64,7 @@ const AdminPublicidadPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [saving, setSaving] = useState(false);
+  const [torneos, setTorneos] = useState<TorneoOption[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -56,12 +77,16 @@ const AdminPublicidadPage = () => {
     fechaFin: '',
     orden: 0,
     anunciante: '',
+    torneoId: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  const needsTorneo = ZONAS_POR_TORNEO.includes(formData.zona);
+
   useEffect(() => {
     loadBanners();
+    loadTorneos();
   }, []);
 
   useEffect(() => {
@@ -80,12 +105,21 @@ const AdminPublicidadPage = () => {
     }
   };
 
+  const loadTorneos = async () => {
+    try {
+      const data = await tournamentsService.getAll({});
+      setTorneos(data.map((t: any) => ({ id: t.id, nombre: t.nombre })));
+    } catch {
+      // Silent — torneos list is optional
+    }
+  };
+
   const loadStats = async () => {
     try {
       const data = await publicidadService.obtenerEstadisticas();
       setStats(data);
     } catch {
-      toast.error('Error cargando estadísticas');
+      toast.error('Error cargando estadisticas');
     }
   };
 
@@ -99,6 +133,7 @@ const AdminPublicidadPage = () => {
       fechaFin: '',
       orden: 0,
       anunciante: '',
+      torneoId: '',
     });
     setSelectedFile(null);
     setPreviewUrl(null);
@@ -122,6 +157,7 @@ const AdminPublicidadPage = () => {
       fechaFin: banner.fechaFin ? banner.fechaFin.substring(0, 10) : '',
       orden: banner.orden,
       anunciante: banner.anunciante || '',
+      torneoId: banner.torneoId || '',
     });
     setPreviewUrl(banner.imagenUrl);
     setSelectedFile(null);
@@ -143,6 +179,11 @@ const AdminPublicidadPage = () => {
       return;
     }
 
+    if (needsTorneo && !formData.torneoId) {
+      toast.error('Debes seleccionar un torneo para esta zona');
+      return;
+    }
+
     setSaving(true);
     try {
       const fd = new FormData();
@@ -154,6 +195,7 @@ const AdminPublicidadPage = () => {
       if (formData.fechaFin) fd.append('fechaFin', new Date(formData.fechaFin).toISOString());
       fd.append('orden', String(formData.orden));
       if (formData.anunciante) fd.append('anunciante', formData.anunciante);
+      if (formData.torneoId) fd.append('torneoId', formData.torneoId);
       if (selectedFile) fd.append('file', selectedFile);
 
       if (editingBanner) {
@@ -185,7 +227,7 @@ const AdminPublicidadPage = () => {
   };
 
   const handleDelete = async (banner: Banner) => {
-    if (!confirm(`¿Eliminar banner "${banner.titulo}"?`)) return;
+    if (!confirm(`Eliminar banner "${banner.titulo}"?`)) return;
     try {
       await publicidadService.eliminarBanner(banner.id);
       setBanners((prev) => prev.filter((b) => b.id !== banner.id));
@@ -227,7 +269,7 @@ const AdminPublicidadPage = () => {
           }`}
         >
           <BarChart2 className="h-4 w-4 inline-block mr-1" />
-          Estadísticas
+          Estadisticas
         </button>
       </div>
 
@@ -247,7 +289,7 @@ const AdminPublicidadPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-light-secondary mb-1">Título</label>
+                  <label className="block text-sm font-medium text-light-secondary mb-1">Titulo</label>
                   <input
                     type="text"
                     value={formData.titulo}
@@ -260,14 +302,41 @@ const AdminPublicidadPage = () => {
                   <label className="block text-sm font-medium text-light-secondary mb-1">Zona</label>
                   <select
                     value={formData.zona}
-                    onChange={(e) => setFormData({ ...formData, zona: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, zona: e.target.value, torneoId: '' })}
                     className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-light-text"
                   >
                     {ZONAS.map((z) => (
-                      <option key={z} value={z}>{ZONA_LABELS[z]}</option>
+                      <option key={z} value={z}>
+                        {ZONA_LABELS[z]} ({ZONA_SIZES[z]})
+                      </option>
                     ))}
                   </select>
                 </div>
+
+                {/* Torneo selector — only for per-tournament zones */}
+                {needsTorneo && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-light-secondary mb-1">
+                      <Trophy className="h-3.5 w-3.5 inline-block mr-1" />
+                      Torneo *
+                    </label>
+                    <select
+                      value={formData.torneoId}
+                      onChange={(e) => setFormData({ ...formData, torneoId: e.target.value })}
+                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-light-text"
+                      required
+                    >
+                      <option value="">-- Seleccionar torneo --</option>
+                      {torneos.map((t) => (
+                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-light-muted mt-1">
+                      Este banner solo aparecera en la pagina de este torneo
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-light-secondary mb-1">Link URL (opcional)</label>
                   <input
@@ -331,6 +400,9 @@ const AdminPublicidadPage = () => {
               <div>
                 <label className="block text-sm font-medium text-light-secondary mb-1">
                   Imagen {!editingBanner && '*'}
+                  {ZONA_SIZES[formData.zona] && (
+                    <span className="text-light-muted ml-2">({ZONA_SIZES[formData.zona]})</span>
+                  )}
                 </label>
                 <div className="flex items-center gap-4">
                   <button
@@ -409,8 +481,14 @@ const AdminPublicidadPage = () => {
                             {banner.activo ? 'Activo' : 'Inactivo'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-light-muted">
+                        <div className="flex items-center gap-3 text-xs text-light-muted flex-wrap">
                           <span className="bg-dark-bg px-2 py-0.5 rounded">{ZONA_LABELS[banner.zona] || banner.zona}</span>
+                          {banner.torneo && (
+                            <span className="bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded flex items-center gap-1">
+                              <Trophy className="h-3 w-3" />
+                              {banner.torneo.nombre}
+                            </span>
+                          )}
                           {banner.anunciante && <span>{banner.anunciante}</span>}
                           <span className="flex items-center gap-1">
                             <MousePointer2 className="h-3 w-3" />
@@ -504,8 +582,9 @@ const AdminPublicidadPage = () => {
                   <tr className="border-b border-dark-border">
                     <th className="text-left px-4 py-3 text-light-muted font-medium">Banner</th>
                     <th className="text-center px-4 py-3 text-light-muted font-medium">Zona</th>
+                    <th className="text-center px-4 py-3 text-light-muted font-medium">Torneo</th>
                     <th className="text-center px-4 py-3 text-light-muted font-medium">Clicks</th>
-                    <th className="text-center px-4 py-3 text-light-muted font-medium">Impresiones</th>
+                    <th className="text-center px-4 py-3 text-light-muted font-medium">Impr.</th>
                     <th className="text-center px-4 py-3 text-light-muted font-medium">CTR</th>
                   </tr>
                 </thead>
@@ -520,6 +599,9 @@ const AdminPublicidadPage = () => {
                       </td>
                       <td className="text-center px-4 py-3 text-light-secondary">
                         <span className="bg-dark-bg px-2 py-0.5 rounded text-xs">{ZONA_LABELS[b.zona] || b.zona}</span>
+                      </td>
+                      <td className="text-center px-4 py-3 text-light-secondary text-xs">
+                        {b.torneoNombre || <span className="text-light-muted">Global</span>}
                       </td>
                       <td className="text-center px-4 py-3 text-light-text">{b.clicks.toLocaleString()}</td>
                       <td className="text-center px-4 py-3 text-light-text">{b.impresiones.toLocaleString()}</td>

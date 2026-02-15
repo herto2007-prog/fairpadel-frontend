@@ -7,8 +7,6 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col">
       <Header />
-      {/* Banner: Header zone — thin strip below nav */}
-      <BannerZone zona="HEADER" className="w-full" layout="single" />
       <main className="flex-1">
         <Outlet />
       </main>
