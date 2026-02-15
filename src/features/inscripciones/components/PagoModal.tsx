@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal, Button } from '@/components/ui';
 import { inscripcionesService } from '@/services/inscripcionesService';
 import tournamentsService from '@/services/tournamentsService';
 import type { Inscripcion, CuentaBancaria } from '@/types';
 import { MetodoPago } from '@/types';
-import { CreditCard, Building2, Banknote, Phone } from 'lucide-react';
+import { CreditCard, Building2, Banknote, Phone, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PagoModalProps {
@@ -24,14 +24,23 @@ export const PagoModal: React.FC<PagoModalProps> = ({
   const [error, setError] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<MetodoPago | null>(null);
   const [cuentasBancarias, setCuentasBancarias] = useState<CuentaBancaria[]>([]);
-  const [comprobanteUrl, setComprobanteUrl] = useState('');
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
+  const [comprobantePreview, setComprobantePreview] = useState<string | null>(null);
   const [showCuentas, setShowCuentas] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen && inscripcion.tournamentId) {
       tournamentsService.getCuentasBancarias(inscripcion.tournamentId).then(setCuentasBancarias).catch(() => {});
     }
   }, [isOpen, inscripcion.tournamentId]);
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
+    };
+  }, [comprobantePreview]);
 
   const habilitarBancard = inscripcion.tournament?.habilitarBancard;
 
@@ -49,7 +58,7 @@ export const PagoModal: React.FC<PagoModalProps> = ({
     {
       id: MetodoPago.TRANSFERENCIA,
       name: 'Transferencia Bancaria',
-      description: 'Transferí y opcionalmente subí tu comprobante',
+      description: 'Transferí y subí tu comprobante',
       icon: Building2,
     },
     {
@@ -62,8 +71,33 @@ export const PagoModal: React.FC<PagoModalProps> = ({
 
   const monto = inscripcion.tournament?.costoInscripcion || 0;
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('El archivo no puede superar 5MB');
+      return;
+    }
+
+    setComprobanteFile(file);
+    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
+    setComprobantePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveFile = () => {
+    setComprobanteFile(null);
+    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
+    setComprobantePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSubmitComprobante = async () => {
-    if (!comprobanteUrl.trim()) {
+    if (!comprobanteFile) {
       // Just close — comprobante is optional
       toast.success('Inscripción registrada. Podés subir el comprobante más tarde.');
       onSuccess?.();
@@ -74,7 +108,7 @@ export const PagoModal: React.FC<PagoModalProps> = ({
     setLoading(true);
     setError('');
     try {
-      await inscripcionesService.uploadComprobante(inscripcion.id, comprobanteUrl);
+      await inscripcionesService.uploadComprobante(inscripcion.id, comprobanteFile);
       toast.success('Comprobante enviado. Esperá la confirmación del organizador.');
       onSuccess?.();
       onClose();
@@ -166,7 +200,7 @@ export const PagoModal: React.FC<PagoModalProps> = ({
             </div>
           </>
         ) : (
-          /* Transferencia — Show bank accounts + optional comprobante */
+          /* Transferencia — Show bank accounts + file upload for comprobante */
           <>
             <div className="space-y-3">
               <p className="font-medium text-primary-400">Datos para transferir:</p>
@@ -191,16 +225,46 @@ export const PagoModal: React.FC<PagoModalProps> = ({
                 </p>
               )}
 
+              {/* File upload for comprobante */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-light-text mb-1">
-                  URL del comprobante (opcional)
+                <label className="block text-sm font-medium text-light-text mb-2">
+                  Foto del comprobante (opcional)
                 </label>
+
+                {comprobantePreview ? (
+                  <div className="relative">
+                    <img
+                      src={comprobantePreview}
+                      alt="Comprobante"
+                      className="w-full max-h-48 object-contain rounded-lg border border-dark-border bg-dark-surface"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      className="absolute top-2 right-2 p-1 bg-red-500/80 text-white rounded-full hover:bg-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <p className="text-xs text-light-secondary mt-1">{comprobanteFile?.name}</p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full p-6 border-2 border-dashed border-dark-border rounded-lg hover:border-primary-500/50 hover:bg-primary-500/5 transition-colors flex flex-col items-center gap-2 text-light-secondary"
+                  >
+                    <Upload className="w-8 h-8" />
+                    <span className="text-sm font-medium">Toca para subir imagen</span>
+                    <span className="text-xs">JPG, PNG (máx. 5MB)</span>
+                  </button>
+                )}
+
                 <input
-                  type="url"
-                  value={comprobanteUrl}
-                  onChange={(e) => setComprobanteUrl(e.target.value)}
-                  placeholder="https://... (link a imagen del comprobante)"
-                  className="w-full rounded-md border border-dark-border bg-dark-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
                 <p className="text-xs text-light-secondary mt-1">
                   Podés subir el comprobante más tarde desde "Mis Inscripciones"
@@ -219,7 +283,7 @@ export const PagoModal: React.FC<PagoModalProps> = ({
                 loading={loading}
                 className="flex-1"
               >
-                {comprobanteUrl.trim() ? 'Enviar Comprobante' : 'Continuar sin comprobante'}
+                {comprobanteFile ? 'Enviar Comprobante' : 'Continuar sin comprobante'}
               </Button>
             </div>
           </>

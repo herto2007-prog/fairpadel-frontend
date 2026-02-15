@@ -27,6 +27,7 @@ import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage'
 import CircuitosListPage from '@/features/circuitos/pages/CircuitosListPage';
 import CircuitoDetailPage from '@/features/circuitos/pages/CircuitoDetailPage';
 import FixturePage from '@/features/matches/pages/FixturePage';
+import TournamentSlugRedirect from '@/features/tournaments/pages/TournamentSlugRedirect';
 import PremiumPage from '@/features/suscripciones/pages/PremiumPage';
 import SuscripcionConfirmacionPage from '@/features/suscripciones/pages/SuscripcionConfirmacionPage';
 import SuscripcionCanceladoPage from '@/features/suscripciones/pages/SuscripcionCanceladoPage';
@@ -55,6 +56,7 @@ function App() {
             <Route path="/circuitos" element={<CircuitosListPage />} />
             <Route path="/circuitos/:id" element={<CircuitoDetailPage />} />
             <Route path="/tournaments/:tournamentId/fixture" element={<FixturePage />} />
+            <Route path="/t/:slug" element={<TournamentSlugRedirect />} />
             <Route path="/premium" element={<PremiumPage />} />
             <Route path="/suscripcion/confirmacion" element={<SuscripcionConfirmacionPage />} />
             <Route path="/suscripcion/cancelado" element={<SuscripcionCanceladoPage />} />

@@ -237,6 +237,8 @@ export interface Tournament {
   // Pagos
   habilitarBancard?: boolean;
   cuentasBancarias?: CuentaBancaria[];
+  // Shortlink
+  slug?: string;
   estado: TournamentStatus;
   organizadorId: string;
   organizador?: Partial<User>;

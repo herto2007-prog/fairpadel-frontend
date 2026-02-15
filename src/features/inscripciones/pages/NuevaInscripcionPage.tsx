@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Loading, Badge, Input } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
@@ -7,7 +7,8 @@ import usersService from '@/services/usersService';
 import { useAuthStore } from '@/store/authStore';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Tournament, Category, User, CuentaBancaria } from '@/types';
-import { CheckCircle, AlertCircle, Search, CreditCard, Building, Banknote, ArrowLeft, ArrowRight, Loader2, Phone } from 'lucide-react';
+import { CheckCircle, AlertCircle, Search, CreditCard, Building, Banknote, ArrowLeft, ArrowRight, Loader2, Phone, Upload, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 type Modalidad = 'TRADICIONAL' | 'MIXTO' | 'SUMA';
 type MetodoPago = 'BANCARD' | 'TRANSFERENCIA' | 'EFECTIVO';
@@ -74,6 +75,13 @@ export default function NuevaInscripcionPage() {
 
   // Resultado
   const [inscripcionResult, setInscripcionResult] = useState<any>(null);
+
+  // Comprobante upload (Step 5 — transferencia)
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
+  const [comprobantePreview, setComprobantePreview] = useState<string | null>(null);
+  const [uploadingComprobante, setUploadingComprobante] = useState(false);
+  const [comprobanteUploaded, setComprobanteUploaded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (tournamentId) {
@@ -203,6 +211,37 @@ export default function NuevaInscripcionPage() {
   const canProceedStep1 = jugador2Documento.trim().length > 0 && (jugador2 || (jugador2NotFound && acceptNotRegistered));
   const canProceedStep2 = selectedCategory && selectedModalidad && validarGenero().valid;
   const canProceedStep3 = Number(tournament?.costoInscripcion) === 0 || selectedMetodoPago !== '';
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Solo se permiten imágenes'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+    setComprobanteFile(file);
+    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
+    setComprobantePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveFile = () => {
+    setComprobanteFile(null);
+    if (comprobantePreview) URL.revokeObjectURL(comprobantePreview);
+    setComprobantePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleUploadComprobante = async () => {
+    if (!comprobanteFile || !inscripcionResult) return;
+    setUploadingComprobante(true);
+    try {
+      await inscripcionesService.uploadComprobante(inscripcionResult.id, comprobanteFile);
+      toast.success('Comprobante enviado');
+      setComprobanteUploaded(true);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al subir comprobante');
+    } finally {
+      setUploadingComprobante(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!tournament || (!canProceedStep3 && Number(tournament.costoInscripcion) > 0)) return;
@@ -712,13 +751,12 @@ export default function NuevaInscripcionPage() {
                 <h3 className="font-bold text-blue-400 mb-2">🏦 Próximos pasos</h3>
                 <ol className="text-sm text-blue-400 list-decimal list-inside space-y-1 mb-4">
                   <li>Transferí {formatCurrency(Number(tournament.costoInscripcion))} a cualquiera de estas cuentas</li>
-                  <li>Andá a "Mis Inscripciones" en tu perfil</li>
-                  <li>Si querés, podés subir el comprobante (opcional)</li>
+                  <li>Subí la foto del comprobante acá abajo</li>
                   <li>El organizador va a confirmar tu pago</li>
                 </ol>
 
                 {cuentasBancarias.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     <p className="text-xs font-semibold text-blue-300 uppercase">Datos para transferir:</p>
                     {cuentasBancarias.map((cuenta) => (
                       <div key={cuenta.id} className="p-3 bg-blue-950/50 rounded-lg border border-blue-500/20">
@@ -736,9 +774,72 @@ export default function NuevaInscripcionPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-blue-400/70">
+                  <p className="text-xs text-blue-400/70 mb-4">
                     El organizador aún no configuró datos bancarios. Contactalo directamente para coordinar la transferencia.
                   </p>
+                )}
+
+                {/* Upload comprobante inline */}
+                {!comprobanteUploaded ? (
+                  <div className="mt-3 pt-3 border-t border-blue-500/20">
+                    <p className="text-sm font-medium text-blue-300 mb-2">📷 Subir comprobante de transferencia</p>
+                    {comprobantePreview ? (
+                      <div className="relative mb-2">
+                        <img
+                          src={comprobantePreview}
+                          alt="Comprobante"
+                          className="w-full max-h-40 object-contain rounded-lg border border-blue-500/20 bg-blue-950/30"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          className="absolute top-2 right-2 p-1 bg-red-500/80 text-white rounded-full hover:bg-red-500 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full p-4 border-2 border-dashed border-blue-500/30 rounded-lg hover:border-blue-500/60 hover:bg-blue-500/5 transition-colors flex flex-col items-center gap-1 text-blue-400"
+                      >
+                        <Upload className="w-6 h-6" />
+                        <span className="text-sm font-medium">Toca para subir imagen</span>
+                        <span className="text-xs opacity-70">JPG, PNG (máx. 5MB)</span>
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    {comprobanteFile && (
+                      <Button
+                        onClick={handleUploadComprobante}
+                        disabled={uploadingComprobante}
+                        className="w-full mt-2"
+                      >
+                        {uploadingComprobante ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Subiendo...</>
+                        ) : (
+                          <>Enviar Comprobante</>
+                        )}
+                      </Button>
+                    )}
+                    <p className="text-xs text-blue-400/60 mt-1">
+                      También podés subir el comprobante después desde "Mis Inscripciones"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 pt-3 border-t border-blue-500/20">
+                    <div className="flex items-center gap-2 text-green-400">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="text-sm font-medium">Comprobante enviado correctamente</span>
+                    </div>
+                  </div>
                 )}
               </div>
             )}

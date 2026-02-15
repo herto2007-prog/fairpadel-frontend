@@ -38,6 +38,12 @@ export const tournamentsService = {
     return response.data;
   },
 
+  // GET /tournaments/slug/:slug - Obtener torneo por slug (público)
+  getBySlug: async (slug: string): Promise<Tournament> => {
+    const response = await api.get(`/tournaments/slug/${slug}`);
+    return response.data;
+  },
+
   // POST /tournaments - Crear torneo (requiere auth + organizador/admin)
   create: async (data: CreateTournamentDto): Promise<Tournament> => {
     const response = await api.post('/tournaments', data);
@@ -71,6 +77,28 @@ export const tournamentsService = {
   getStats: async (tournamentId: string) => {
     const response = await api.get(`/tournaments/${tournamentId}/stats`);
     return response.data;
+  },
+
+  // GET /tournaments/:id/financiero — Dashboard financiero
+  getDashboardFinanciero: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/financiero`);
+    return response.data;
+  },
+
+  // GET /tournaments/:id/inscripciones/excel — Export inscripciones to Excel
+  exportInscripcionesExcel: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/inscripciones/excel`, {
+      responseType: 'blob',
+    });
+    // Trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `inscripciones-${tournamentId.substring(0, 8)}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // GET /tournaments/:id/pelotas-ronda

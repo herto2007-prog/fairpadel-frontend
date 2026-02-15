@@ -41,11 +41,23 @@ class InscripcionesService {
     return response.data;
   }
 
-  // Subir comprobante de pago
-  async uploadComprobante(inscripcionId: string, comprobanteUrl: string): Promise<Inscripcion> {
-    const response = await api.post<Inscripcion>(`/inscripciones/${inscripcionId}/comprobante`, {
-      comprobanteUrl,
-    });
+  // Subir comprobante de pago (archivo o URL)
+  async uploadComprobante(inscripcionId: string, fileOrUrl: File | string): Promise<Inscripcion> {
+    if (typeof fileOrUrl === 'string') {
+      // Legacy: send URL
+      const response = await api.post<Inscripcion>(`/inscripciones/${inscripcionId}/comprobante`, {
+        comprobanteUrl: fileOrUrl,
+      });
+      return response.data;
+    }
+    // File upload via FormData
+    const formData = new FormData();
+    formData.append('file', fileOrUrl);
+    const response = await api.post<Inscripcion>(
+      `/inscripciones/${inscripcionId}/comprobante`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
     return response.data;
   }
 

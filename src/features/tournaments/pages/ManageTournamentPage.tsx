@@ -39,10 +39,11 @@ import {
   AlertTriangle,
   Award,
   Search,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -122,6 +123,7 @@ export default function ManageTournamentPage() {
     { key: 'editar', label: 'Editar', icon: <Edit3 className="w-4 h-4" /> },
     { key: 'inscripciones', label: 'Inscripciones', icon: <Users className="w-4 h-4" /> },
     { key: 'pagos', label: 'Pagos', icon: <DollarSign className="w-4 h-4" /> },
+    { key: 'finanzas', label: 'Finanzas', icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'sorteo', label: 'Sorteo', icon: <Trophy className="w-4 h-4" /> },
     { key: 'canchas', label: 'Canchas y Horarios', icon: <Layers className="w-4 h-4" /> },
     { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
@@ -182,6 +184,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
         {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} />}
         {activeTab === 'pagos' && <PagosTab tournament={tournament} />}
+        {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} />}
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
@@ -310,6 +313,27 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
             <InfoRow label="Límite Inscripción" value={formatDate(tournament.fechaLimiteInscr)} />
             <InfoRow label="Costo" value={formatCurrency(Number(tournament.costoInscripcion))} />
           </div>
+
+          {/* Shortlink copiable */}
+          {tournament.slug && (
+            <div className="mt-4 pt-4 border-t border-dark-border">
+              <p className="text-xs text-light-secondary mb-1">Link de inscripción:</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-dark-surface px-3 py-2 rounded-lg text-primary-400 truncate">
+                  {window.location.origin}/t/{tournament.slug}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/t/${tournament.slug}`);
+                    toast.success('Link copiado');
+                  }}
+                  className="px-3 py-2 bg-primary-500/20 text-primary-400 rounded-lg text-xs font-medium hover:bg-primary-500/30 transition-colors whitespace-nowrap"
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
         <Card className="p-6">
           <h3 className="font-bold text-lg mb-4">Categorías</h3>
@@ -1584,6 +1608,171 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                   );
                 })}
               </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ===================== FINANZAS TAB =====================
+
+interface DashboardFinanciero {
+  costoInscripcion: number;
+  totalInscripciones: number;
+  totalRecaudado: number;
+  totalComisiones: number;
+  totalNeto: number;
+  pagosConfirmados: number;
+  pagosPendientes: number;
+  pagosRechazados: number;
+  inscripcionesGratis: number;
+  porCategoria: {
+    categoryId: string;
+    categoryNombre: string;
+    totalInscritas: number;
+    confirmadas: number;
+    pendientes: number;
+    rechazadas: number;
+    montoRecaudado: number;
+    montoComisiones: number;
+  }[];
+}
+
+function FinanzasTab({ tournament }: { tournament: Tournament }) {
+  const [data, setData] = useState<DashboardFinanciero | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    tournamentsService.getDashboardFinanciero(tournament.id)
+      .then(setData)
+      .catch(() => toast.error('Error al cargar datos financieros'))
+      .finally(() => setLoading(false));
+  }, [tournament.id]);
+
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      await tournamentsService.exportInscripcionesExcel(tournament.id);
+      toast.success('Excel descargado');
+    } catch {
+      toast.error('Error al exportar Excel');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loading size="lg" text="Cargando finanzas..." /></div>;
+  if (!data) return <Card className="p-8 text-center"><p className="text-light-secondary">No se pudieron cargar los datos financieros</p></Card>;
+
+  return (
+    <div className="space-y-6">
+      {/* Header with export button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Dashboard Financiero</h2>
+        <Button
+          variant="outline"
+          onClick={handleExportExcel}
+          disabled={exporting}
+          className="flex items-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          {exporting ? 'Exportando...' : 'Exportar Excel'}
+        </Button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-green-400">{formatCurrency(data.totalRecaudado)}</p>
+          <p className="text-xs text-light-secondary">Recaudado</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-red-400">{formatCurrency(data.totalComisiones)}</p>
+          <p className="text-xs text-light-secondary">Comisiones</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-primary-400">{formatCurrency(data.totalNeto)}</p>
+          <p className="text-xs text-light-secondary">Neto</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-light-text">{data.totalInscripciones}</p>
+          <p className="text-xs text-light-secondary">Inscripciones</p>
+        </Card>
+      </div>
+
+      {/* Status breakdown */}
+      <Card className="p-6">
+        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-primary-500" /> Resumen de Pagos
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="p-3 bg-green-900/20 rounded-lg text-center">
+            <p className="text-xl font-bold text-green-400">{data.pagosConfirmados}</p>
+            <p className="text-xs text-green-400/70">Confirmados</p>
+          </div>
+          <div className="p-3 bg-yellow-900/20 rounded-lg text-center">
+            <p className="text-xl font-bold text-yellow-400">{data.pagosPendientes}</p>
+            <p className="text-xs text-yellow-400/70">Pendientes</p>
+          </div>
+          <div className="p-3 bg-red-900/20 rounded-lg text-center">
+            <p className="text-xl font-bold text-red-400">{data.pagosRechazados}</p>
+            <p className="text-xs text-red-400/70">Rechazados</p>
+          </div>
+          {data.inscripcionesGratis > 0 && (
+            <div className="p-3 bg-blue-900/20 rounded-lg text-center">
+              <p className="text-xl font-bold text-blue-400">{data.inscripcionesGratis}</p>
+              <p className="text-xs text-blue-400/70">Gratis</p>
+            </div>
+          )}
+        </div>
+        <div className="text-sm text-light-secondary">
+          Costo por inscripción: <strong className="text-light-text">{formatCurrency(data.costoInscripcion)}</strong>
+        </div>
+      </Card>
+
+      {/* Per-category breakdown */}
+      {data.porCategoria.length > 0 && (
+        <Card className="p-6">
+          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-primary-500" /> Desglose por Categoría
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-dark-border text-left">
+                  <th className="px-3 py-2 text-light-secondary font-medium">Categoría</th>
+                  <th className="px-3 py-2 text-light-secondary font-medium text-center">Inscritas</th>
+                  <th className="px-3 py-2 text-light-secondary font-medium text-center">Confirmadas</th>
+                  <th className="px-3 py-2 text-light-secondary font-medium text-center">Pendientes</th>
+                  <th className="px-3 py-2 text-light-secondary font-medium text-right">Recaudado</th>
+                  <th className="px-3 py-2 text-light-secondary font-medium text-right">Comisiones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.porCategoria.map((cat) => (
+                  <tr key={cat.categoryId} className="border-b border-dark-border/50 hover:bg-dark-hover/30">
+                    <td className="px-3 py-2 font-medium text-light-text">{cat.categoryNombre}</td>
+                    <td className="px-3 py-2 text-center">{cat.totalInscritas}</td>
+                    <td className="px-3 py-2 text-center text-green-400">{cat.confirmadas}</td>
+                    <td className="px-3 py-2 text-center text-yellow-400">{cat.pendientes}</td>
+                    <td className="px-3 py-2 text-right text-green-400">{formatCurrency(cat.montoRecaudado)}</td>
+                    <td className="px-3 py-2 text-right text-red-400">{formatCurrency(cat.montoComisiones)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-dark-border font-bold">
+                  <td className="px-3 py-2">Total</td>
+                  <td className="px-3 py-2 text-center">{data.totalInscripciones}</td>
+                  <td className="px-3 py-2 text-center text-green-400">{data.pagosConfirmados + data.inscripcionesGratis}</td>
+                  <td className="px-3 py-2 text-center text-yellow-400">{data.pagosPendientes}</td>
+                  <td className="px-3 py-2 text-right text-green-400">{formatCurrency(data.totalRecaudado)}</td>
+                  <td className="px-3 py-2 text-right text-red-400">{formatCurrency(data.totalComisiones)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </Card>
