@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'dashboard';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'acreditacion' | 'dashboard';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -128,6 +128,7 @@ export default function ManageTournamentPage() {
     { key: 'canchas', label: 'Canchas y Horarios', icon: <Layers className="w-4 h-4" /> },
     { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
     { key: 'ayudantes', label: 'Ayudantes', icon: <UserPlus className="w-4 h-4" /> },
+    { key: 'acreditacion', label: 'Acreditación', icon: <ClipboardCheck className="w-4 h-4" /> },
     { key: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, premium: true },
   ];
 
@@ -182,13 +183,14 @@ export default function ManageTournamentPage() {
       <div className="container mx-auto px-4 py-6">
         {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} onRefresh={loadData} />}
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
-        {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} />}
+        {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} tournament={tournament} onRefresh={loadData} />}
         {activeTab === 'pagos' && <PagosTab tournament={tournament} />}
         {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} />}
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
+        {activeTab === 'acreditacion' && <AcreditacionTab tournament={tournament} />}
         {activeTab === 'dashboard' && <DashboardPremiumTab tournament={tournament} stats={stats} isPremium={isPremium} />}
       </div>
     </div>
@@ -537,15 +539,91 @@ function EditarTab({ tournament, canEdit, navigate }: { tournament: Tournament; 
 
 // ===================== TAB: INSCRIPCIONES =====================
 
-function InscripcionesTab({ stats, onToggle, togglingCategory }: { stats: TournamentStats | null; onToggle: (id: string) => void; togglingCategory: string | null }) {
+function InscripcionesTab({ stats, onToggle, togglingCategory, tournament, onRefresh }: { stats: TournamentStats | null; onToggle: (id: string) => void; togglingCategory: string | null; tournament: Tournament; onRefresh: () => Promise<void> }) {
   const categorias = stats?.categorias || [];
+  const [closingAll, setClosingAll] = useState(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+
+  const openCount = categorias.filter((c) => c.inscripcionAbierta && c.estado === 'INSCRIPCIONES_ABIERTAS').length;
+
+  const handleCerrarTodas = async () => {
+    setClosingAll(true);
+    try {
+      const result = await tournamentsService.cerrarTodasLasInscripciones(tournament.id);
+      toast.success(result.message);
+      setShowConfirmClose(false);
+      await onRefresh();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al cerrar inscripciones');
+    } finally {
+      setClosingAll(false);
+    }
+  };
+
+  // Inscription deadline info
+  const deadline = tournament.fechaLimiteInscr ? new Date(tournament.fechaLimiteInscr) : null;
+  const deadlinePassed = deadline ? new Date() > deadline : false;
+
   return (
     <Card className="p-6">
+      {/* Deadline alert */}
+      {deadline && (
+        <div className={`mb-4 p-3 rounded-lg flex items-center gap-3 ${deadlinePassed ? 'bg-red-900/30 border border-red-500/50' : 'bg-blue-900/30 border border-blue-500/50'}`}>
+          <Clock className={`w-5 h-5 flex-shrink-0 ${deadlinePassed ? 'text-red-400' : 'text-blue-400'}`} />
+          <div>
+            <p className={`text-sm font-medium ${deadlinePassed ? 'text-red-400' : 'text-blue-400'}`}>
+              {deadlinePassed ? 'Fecha límite vencida' : 'Fecha límite de inscripción'}
+            </p>
+            <p className={`text-xs ${deadlinePassed ? 'text-red-400/70' : 'text-blue-400/70'}`}>
+              {formatDate(tournament.fechaLimiteInscr)}
+              {deadlinePassed && ' — Las nuevas inscripciones serán rechazadas automáticamente'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-lg">Gestión de Inscripciones por Categoría</h3>
-        <span className="text-sm text-light-secondary">Total: {stats?.inscripcionesTotal || 0} parejas inscritas</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-light-secondary">Total: {stats?.inscripcionesTotal || 0} parejas inscritas</span>
+          {openCount > 0 && (
+            <button
+              onClick={() => setShowConfirmClose(true)}
+              className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-colors flex items-center gap-1.5"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Cerrar Todas ({openCount})
+            </button>
+          )}
+        </div>
       </div>
       <p className="text-sm text-light-secondary mb-6">Habilita o deshabilita las inscripciones para cada categoría individualmente.</p>
+
+      {/* Confirm close all modal */}
+      {showConfirmClose && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowConfirmClose(false)}>
+          <div className="bg-dark-card rounded-xl border border-dark-border max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-red-400" />
+                Cerrar Todas las Inscripciones
+              </h3>
+              <p className="text-sm text-light-secondary mb-4">
+                ¿Estás seguro de que deseas cerrar las inscripciones de las <strong>{openCount} categoría(s)</strong> que están abiertas?
+              </p>
+              <p className="text-xs text-light-secondary mb-4">
+                Las categorías que ya tienen sorteo o están en curso no serán afectadas. Puedes reabrir categorías individualmente después.
+              </p>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setShowConfirmClose(false)}>Cancelar</Button>
+                <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700" onClick={handleCerrarTodas} loading={closingAll}>
+                  <Lock className="w-4 h-4 mr-1" /> Cerrar Todas
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {categorias.length === 0 ? (
         <div className="text-center py-8 text-light-secondary"><Users className="w-12 h-12 mx-auto mb-3 opacity-50" /><p>No hay categorías configuradas</p></div>
       ) : (
@@ -1218,6 +1296,242 @@ function AyudantesTab({ tournament }: { tournament: Tournament }) {
   );
 }
 
+// ===================== TAB: ACREDITACIÓN (Mesa de Acreditación) =====================
+
+function AcreditacionTab({ tournament }: { tournament: Tournament }) {
+  const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterCategory, setFilterCategory] = useState<string>('todas');
+  const [filterEstado, setFilterEstado] = useState<'todas' | 'pendientes' | 'confirmadas'>('todas');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [presenteIds, setPresenteIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    loadInscripciones();
+  }, [tournament.id]);
+
+  const loadInscripciones = async () => {
+    try {
+      const data = await inscripcionesService.getByTournament(tournament.id);
+      setInscripciones(data);
+      // Auto-mark confirmed ones as presente by default (can be toggled)
+      const confirmed = new Set(data.filter((i) => i.estado === 'CONFIRMADA').map((i) => i.id));
+      setPresenteIds(confirmed);
+    } catch (err) {
+      console.error('Error loading inscripciones:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmarRapido = async (inscripcionId: string) => {
+    setProcessingId(inscripcionId);
+    try {
+      await inscripcionesService.confirmarPago(tournament.id, inscripcionId);
+      toast.success('Pago confirmado');
+      setPresenteIds((prev) => new Set(prev).add(inscripcionId));
+      await loadInscripciones();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al confirmar');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const togglePresente = (id: string) => {
+    setPresenteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Get unique categories from inscriptions
+  const categories = useMemo(() => {
+    const cats = new Map<string, string>();
+    inscripciones.forEach((i) => {
+      if (i.category) cats.set(i.categoryId, i.category.nombre);
+    });
+    return Array.from(cats.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [inscripciones]);
+
+  const filteredInscripciones = useMemo(() => {
+    let result = inscripciones;
+
+    // Filter out cancelled
+    result = result.filter((i) => i.estado !== 'CANCELADA');
+
+    if (filterCategory !== 'todas') {
+      result = result.filter((i) => i.categoryId === filterCategory);
+    }
+
+    if (filterEstado === 'pendientes') {
+      result = result.filter((i) => ['PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'PENDIENTE_PAGO_PRESENCIAL'].includes(i.estado));
+    } else if (filterEstado === 'confirmadas') {
+      result = result.filter((i) => i.estado === 'CONFIRMADA');
+    }
+
+    if (searchTerm.trim()) {
+      const search = searchTerm.trim().toLowerCase();
+      result = result.filter((insc) => {
+        const j1 = insc.pareja?.jugador1;
+        const j2 = insc.pareja?.jugador2;
+        const j1Name = j1 ? `${j1.nombre} ${j1.apellido}`.toLowerCase() : '';
+        const j2Name = j2 ? `${j2.nombre} ${j2.apellido}`.toLowerCase() : '';
+        const j1Doc = j1?.documento?.toLowerCase() || '';
+        const j2Doc = j2?.documento?.toLowerCase() || insc.pareja?.jugador2Documento?.toLowerCase() || '';
+        return j1Name.includes(search) || j2Name.includes(search) || j1Doc.includes(search) || j2Doc.includes(search);
+      });
+    }
+
+    return result;
+  }, [inscripciones, filterCategory, filterEstado, searchTerm]);
+
+  const totalPresentes = filteredInscripciones.filter((i) => presenteIds.has(i.id)).length;
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><Loading size="lg" text="Cargando acreditación..." /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header with stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-green-400">{totalPresentes}</p>
+          <p className="text-[10px] text-light-secondary">Presentes</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-yellow-400">{filteredInscripciones.length - totalPresentes}</p>
+          <p className="text-[10px] text-light-secondary">Pendientes</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-light-text">{filteredInscripciones.length}</p>
+          <p className="text-[10px] text-light-secondary">Total</p>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-light-secondary" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Buscar por nombre o cédula..."
+          className="w-full pl-10 pr-4 py-2.5 bg-dark-card border border-dark-border rounded-lg text-sm text-light-text placeholder-light-secondary focus:outline-none focus:ring-1 focus:ring-primary-500"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="px-3 py-1.5 bg-dark-card border border-dark-border rounded-lg text-xs text-light-text focus:outline-none focus:ring-1 focus:ring-primary-500"
+        >
+          <option value="todas">Todas las categorías</option>
+          {categories.map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
+        <div className="flex gap-1">
+          {(['todas', 'pendientes', 'confirmadas'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilterEstado(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                filterEstado === f ? 'bg-primary-500/20 text-primary-400' : 'bg-dark-surface text-light-secondary hover:bg-dark-hover'
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Inscriptions list — card layout optimized for tablet/mobile */}
+      <div className="space-y-2">
+        {filteredInscripciones.length === 0 ? (
+          <Card className="p-8 text-center">
+            <ClipboardCheck className="w-12 h-12 text-light-secondary mx-auto mb-3 opacity-50" />
+            <p className="text-light-secondary">No hay inscripciones para mostrar</p>
+          </Card>
+        ) : (
+          filteredInscripciones.map((insc) => {
+            const j1 = insc.pareja?.jugador1;
+            const j2 = insc.pareja?.jugador2;
+            const isPresente = presenteIds.has(insc.id);
+            const isPendiente = ['PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'PENDIENTE_PAGO_PRESENCIAL'].includes(insc.estado);
+
+            return (
+              <Card
+                key={insc.id}
+                className={`p-3 transition-colors ${isPresente ? 'border-green-500/30 bg-green-900/10' : ''}`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Checkbox presente */}
+                  <button
+                    onClick={() => togglePresente(insc.id)}
+                    className={`w-7 h-7 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isPresente
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'border-dark-border hover:border-primary-500'
+                    }`}
+                  >
+                    {isPresente && <CheckCircle2 className="w-4 h-4" />}
+                  </button>
+
+                  {/* Player info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">
+                        {j1 ? `${j1.nombre} ${j1.apellido}` : '—'}
+                      </p>
+                      <span className="text-[10px] text-light-secondary bg-dark-surface px-1.5 py-0.5 rounded">
+                        {insc.category?.nombre?.replace(' Caballeros', ' ♂').replace(' Damas', ' ♀') || '—'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-light-secondary truncate">
+                      {j2 ? `${j2.nombre} ${j2.apellido}` : insc.pareja?.jugador2Documento || '—'}
+                    </p>
+                  </div>
+
+                  {/* Estado + Action */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {insc.estado === 'CONFIRMADA' ? (
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-green-900/30 text-green-400 font-medium">
+                        Pagó
+                      </span>
+                    ) : isPendiente ? (
+                      <button
+                        onClick={() => handleConfirmarRapido(insc.id)}
+                        disabled={processingId === insc.id}
+                        className="px-2.5 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                      >
+                        {processingId === insc.id ? '...' : '✓ Pago'}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-red-900/30 text-red-400">
+                        {insc.estado.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ===================== TAB: DASHBOARD PREMIUM =====================
 
 function DashboardPremiumTab({ tournament, stats, isPremium }: { tournament: Tournament; stats: TournamentStats | null; isPremium: boolean }) {
@@ -1517,6 +1831,7 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                   <th className="px-4 py-3 text-light-secondary font-medium">Método</th>
                   <th className="px-4 py-3 text-light-secondary font-medium">Estado</th>
                   <th className="px-4 py-3 text-light-secondary font-medium">Comprobante</th>
+                  <th className="px-4 py-3 text-light-secondary font-medium">Fecha</th>
                   <th className="px-4 py-3 text-light-secondary font-medium">Acciones</th>
                 </tr>
               </thead>
@@ -1548,17 +1863,34 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                       </td>
                       <td className="px-4 py-3">
                         {comprobante ? (
-                          <a
-                            href={comprobante.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-400 hover:underline text-xs"
-                          >
-                            Ver
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a href={comprobante.url} target="_blank" rel="noopener noreferrer" className="block">
+                              <img src={comprobante.url} alt="Comprobante" className="w-10 h-10 object-cover rounded border border-dark-border hover:opacity-80 transition-opacity" />
+                            </a>
+                            <div>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${comprobante.estado === 'APROBADA' ? 'bg-green-900/30 text-green-400' : comprobante.estado === 'RECHAZADA' ? 'bg-red-900/30 text-red-400' : 'bg-yellow-900/30 text-yellow-400'}`}>
+                                {comprobante.estado}
+                              </span>
+                              {comprobante.motivoRechazo && (
+                                <p className="text-[10px] text-red-400/70 mt-0.5 max-w-[120px] truncate" title={comprobante.motivoRechazo}>
+                                  {comprobante.motivoRechazo}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-light-secondary text-xs">—</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-xs text-light-secondary space-y-0.5">
+                          <p title="Fecha de inscripción">{new Date(insc.createdAt || '').toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}</p>
+                          {insc.pago?.fechaConfirm && (
+                            <p className="text-green-400" title="Fecha de confirmación">
+                              ✓ {new Date(insc.pago.fechaConfirm).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         {isPendiente && (

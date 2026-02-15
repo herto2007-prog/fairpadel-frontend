@@ -297,6 +297,7 @@ export interface Inscripcion {
   tournamentId: string;
   categoryId: string;
   parejaId: string;
+  modalidad?: Modalidad;
   estado: InscripcionEstado;
   metodoPago?: MetodoPago;
   pagoId?: string;
@@ -306,6 +307,7 @@ export interface Inscripcion {
   category?: Category;
   pareja?: Pareja;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Match {

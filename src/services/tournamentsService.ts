@@ -67,6 +67,12 @@ export const tournamentsService = {
     await api.delete(`/tournaments/${id}`);
   },
 
+  // POST /tournaments/:id/cerrar-todas-inscripciones - Batch close all categories
+  cerrarTodasLasInscripciones: async (tournamentId: string): Promise<{ message: string; categoriasCerradas: number }> => {
+    const response = await api.post(`/tournaments/${tournamentId}/cerrar-todas-inscripciones`);
+    return response.data;
+  },
+
   // PATCH /tournaments/:id/categorias/:tcId/toggle-inscripcion
   toggleInscripcionCategoria: async (tournamentId: string, tournamentCategoryId: string) => {
     const response = await api.patch(`/tournaments/${tournamentId}/categorias/${tournamentCategoryId}/toggle-inscripcion`);
