@@ -81,18 +81,18 @@ const FixturePage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">{tournament.nombre}</h1>
-        <p className="text-light-secondary mt-2">Fixture del torneo</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-3xl font-bold text-light-text line-clamp-2">{tournament.nombre}</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Fixture del torneo</p>
       </div>
 
       {categories.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Select
             label="Categoría"
             value={selectedCategory}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCategory(e.target.value)}
-            className="w-64"
+            className="w-full sm:w-64"
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>

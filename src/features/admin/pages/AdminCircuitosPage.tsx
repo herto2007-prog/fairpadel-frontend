@@ -801,11 +801,11 @@ const AdminCircuitosPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-light-text flex items-center gap-3">
-            <Globe className="h-8 w-8 text-primary-400" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-light-text flex items-center gap-2 sm:gap-3">
+            <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-primary-400" />
             Gestionar Circuitos
           </h1>
-          <p className="text-light-secondary mt-1">
+          <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">
             Administra circuitos, asocia torneos y consulta standings
           </p>
         </div>

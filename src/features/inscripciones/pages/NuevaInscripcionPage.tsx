@@ -471,7 +471,7 @@ export default function NuevaInscripcionPage() {
                   No hay categorías disponibles para esta configuración
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {filteredAndSortedCategories.map((cat) => (
                     <label
                       key={cat.id}

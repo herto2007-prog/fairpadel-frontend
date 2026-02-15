@@ -98,9 +98,9 @@ const MisInscripcionesPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">Mis Inscripciones</h1>
-        <p className="text-light-secondary mt-2">Revisá el estado de tus inscripciones a torneos</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Mis Inscripciones</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Revisá el estado de tus inscripciones a torneos</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -153,11 +153,11 @@ const MisInscripcionesPage = () => {
 
             return (
               <Card key={inscripcion.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col md:flex-row justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+                        <h3 className="text-base sm:text-xl font-semibold truncate">
                           {inscripcion.tournament?.nombre || 'Torneo'}
                         </h3>
                         {getStatusBadge(inscripcion.estado)}

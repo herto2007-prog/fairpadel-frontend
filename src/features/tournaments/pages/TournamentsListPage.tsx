@@ -50,20 +50,21 @@ const TournamentsListPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-light-text">Torneos</h1>
-          <p className="text-light-secondary mt-2">
-            Encuentra y participa en los mejores torneos de pádel
+      <div className="mb-6 sm:mb-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Torneos</h1>
+          <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">
+            Encuentra y participa en los mejores torneos
           </p>
         </div>
         {canCreate && (
           <button
             onClick={() => navigate('/tournaments/create')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors shadow-sm text-sm sm:text-base flex-shrink-0"
           >
-            <Plus className="w-5 h-5" />
-            Crear Torneo
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Crear Torneo</span>
+            <span className="sm:hidden">Crear</span>
           </button>
         )}
       </div>

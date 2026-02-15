@@ -157,20 +157,20 @@ export default function TournamentDetailPage() {
   return (
     <div className="min-h-screen bg-dark-surface">
       {/* Hero Image */}
-      <div className="relative h-96 bg-gray-900">
+      <div className="relative h-48 sm:h-64 md:h-96 bg-gray-900">
         <img
           src={tournament.flyerUrl || 'https://via.placeholder.com/1200x400'}
           alt={tournament.nombre}
           className="w-full h-full object-cover opacity-80"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
           <div className="container mx-auto">
-            <Badge className="mb-4">{tournament.estado}</Badge>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <Badge className="mb-2 sm:mb-4">{tournament.estado}</Badge>
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 sm:mb-2 line-clamp-2">
               {tournament.nombre}
             </h1>
-            <p className="text-white/90 text-lg">
+            <p className="text-white/90 text-sm sm:text-lg">
               {tournament.ciudad}, {tournament.pais}
             </p>
           </div>
@@ -185,16 +185,16 @@ export default function TournamentDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Descripcion */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Descripcion</h2>
+            <Card className="p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Descripcion</h2>
               <p className="text-light-text whitespace-pre-line">
                 {tournament.descripcion || 'Sin descripcion disponible'}
               </p>
             </Card>
 
             {/* Categorias */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Categorias</h2>
+            <Card className="p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Categorias</h2>
               {tournament.categorias && tournament.categorias.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -224,8 +224,8 @@ export default function TournamentDetailPage() {
             </Card>
 
             {/* Modalidades */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Modalidades</h2>
+            <Card className="p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Modalidades</h2>
               <div className="flex flex-wrap gap-2">
                 {tournament.modalidades?.map((mod: any) => (
                   <Badge key={mod.id} variant="outline">
@@ -237,8 +237,8 @@ export default function TournamentDetailPage() {
 
             {/* Sede */}
             {tournament.sede && (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Sede</h2>
+              <Card className="p-4 sm:p-6">
+                <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Sede</h2>
                 <div className="space-y-2">
                   <p className="font-medium">{tournament.sede}</p>
                   {tournament.direccion && (
@@ -260,10 +260,10 @@ export default function TournamentDetailPage() {
 
             {/* Inscriptos */}
             {inscripciones.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                  <Users className="w-6 h-6 text-primary-500" />
-                  Inscriptos ({inscripciones.length} parejas)
+              <Card className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
+                  Inscriptos ({inscripciones.length})
                 </h2>
                 {(() => {
                   const grouped: Record<string, any[]> = {};
@@ -382,9 +382,9 @@ export default function TournamentDetailPage() {
 
             {/* Fixtures */}
             {hasFixtures && (
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                  <Trophy className="w-6 h-6 text-primary-500" />
+              <Card className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
                   Fixture
                 </h2>
 
@@ -439,7 +439,7 @@ export default function TournamentDetailPage() {
                     <Loading size="md" text="Cargando fixture..." />
                   </div>
                 ) : fixtureMatches.length > 0 ? (
-                  <div className="overflow-x-auto -mx-6 px-6">
+                  <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
                     <BracketView matches={fixtureMatches} />
                   </div>
                 ) : (
@@ -454,8 +454,8 @@ export default function TournamentDetailPage() {
           {/* Sidebar — fully sticky */}
           <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
             {/* Info Card */}
-            <Card className="p-6">
-              <h3 className="font-bold text-lg mb-4">Informacion</h3>
+            <Card className="p-4 sm:p-6">
+              <h3 className="font-bold text-lg mb-3 sm:mb-4">Informacion</h3>
 
               <div className="space-y-4 mb-6">
                 <div>
@@ -520,8 +520,8 @@ export default function TournamentDetailPage() {
             )}
 
             {/* Organizador Card */}
-            <Card className="p-6">
-              <h3 className="font-bold text-lg mb-4">Organizador</h3>
+            <Card className="p-4 sm:p-6">
+              <h3 className="font-bold text-lg mb-3 sm:mb-4">Organizador</h3>
               <p className="text-light-secondary">
                 {tournament.organizador
                   ? `${tournament.organizador.nombre} ${tournament.organizador.apellido}`

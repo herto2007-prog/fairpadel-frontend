@@ -47,24 +47,24 @@ const HomePage = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section — Animated gradient */}
-      <section className="hero-gradient text-white py-20 relative overflow-hidden">
+      <section className="hero-gradient text-white py-12 sm:py-20 relative overflow-hidden">
         {/* Subtle pattern overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.05)_0%,transparent_60%)]" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <div className="opacity-0 animate-fade-up">
-              <img src={logoWhite} alt="FairPadel" className="h-16 w-auto mb-6" />
+              <img src={logoWhite} alt="FairPadel" className="h-12 sm:h-16 w-auto mb-4 sm:mb-6" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-4 opacity-0 animate-fade-up-delay-1 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-3 sm:mb-4 opacity-0 animate-fade-up-delay-1 leading-tight">
               Tu pádel,<br />
               <span className="text-red-200">tu ranking.</span>
             </h1>
-            <p className="text-lg md:text-xl text-red-100/80 mb-8 opacity-0 animate-fade-up-delay-2 max-w-xl">
+            <p className="text-base sm:text-lg md:text-xl text-red-100/80 mb-6 sm:mb-8 opacity-0 animate-fade-up-delay-2 max-w-xl">
               La plataforma líder para gestionar torneos de pádel en Paraguay.
               Inscríbete, compite y sigue tu progreso.
             </p>
-            <div className="flex gap-4 opacity-0 animate-fade-up-delay-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 opacity-0 animate-fade-up-delay-3">
               {!isAuthenticated ? (
                 <>
                   <Link to="/register">
@@ -101,9 +101,9 @@ const HomePage = () => {
       <BannerZone zona="HOME_HERO" className="container mx-auto px-4 mt-6" layout="carousel" />
 
       {/* Stats Section */}
-      <section className="py-12 bg-dark-surface">
+      <section className="py-8 sm:py-12 bg-dark-surface">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {[
               { icon: Trophy, value: '50+', label: 'Torneos' },
               { icon: Users, value: '500+', label: 'Jugadores' },
@@ -111,10 +111,10 @@ const HomePage = () => {
               { icon: TrendingUp, value: '16', label: 'Categorías' },
             ].map(({ icon: Icon, value, label }) => (
               <Card key={label} className="card-hover">
-                <CardContent className="text-center py-6">
-                  <Icon className="h-8 w-8 text-primary-500 mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-light-text">{value}</p>
-                  <p className="text-sm text-light-secondary">{label}</p>
+                <CardContent className="text-center py-4 sm:py-6">
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary-500 mx-auto mb-1.5 sm:mb-2" />
+                  <p className="text-2xl sm:text-3xl font-bold text-light-text">{value}</p>
+                  <p className="text-xs sm:text-sm text-light-secondary">{label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -123,15 +123,18 @@ const HomePage = () => {
       </section>
 
       {/* Próximos Torneos */}
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-light-text">Próximos Torneos</h2>
-              <p className="text-light-secondary">Inscríbete en los mejores torneos de pádel</p>
+          <div className="flex justify-between items-center mb-6 sm:mb-8 gap-4">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-light-text">Próximos Torneos</h2>
+              <p className="text-sm sm:text-base text-light-secondary">Inscríbete en los mejores torneos</p>
             </div>
-            <Link to="/tournaments">
-              <Button variant="outline">
+            <Link to="/tournaments" className="flex-shrink-0">
+              <Button variant="outline" size="sm" className="sm:hidden">
+                Ver todos
+              </Button>
+              <Button variant="outline" className="hidden sm:flex">
                 Ver todos
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -158,15 +161,18 @@ const HomePage = () => {
       <BannerZone zona="HOME_MEDIO" className="container mx-auto px-4 my-4" layout="single" />
 
       {/* Top 10 Rankings */}
-      <section className="py-12 bg-dark-surface">
+      <section className="py-8 sm:py-12 bg-dark-surface">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-light-text">Top 10 Ranking</h2>
-              <p className="text-light-secondary">Los mejores jugadores de la plataforma</p>
+          <div className="flex justify-between items-center mb-6 sm:mb-8 gap-4">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-light-text">Top 10 Ranking</h2>
+              <p className="text-sm sm:text-base text-light-secondary">Los mejores jugadores de la plataforma</p>
             </div>
-            <Link to="/rankings">
-              <Button variant="outline">
+            <Link to="/rankings" className="flex-shrink-0">
+              <Button variant="outline" size="sm" className="sm:hidden">
+                Ver ranking
+              </Button>
+              <Button variant="outline" className="hidden sm:flex">
                 Ver ranking completo
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -177,33 +183,33 @@ const HomePage = () => {
             <CardContent className="p-0">
               <div className="divide-y divide-dark-border">
                 {rankings.slice(0, 10).map((ranking, index) => (
-                  <div key={ranking.id} className="flex items-center gap-4 p-4 hover:bg-dark-hover transition-all duration-200 group">
-                    <div className="w-8 text-center font-bold text-lg">
+                  <div key={ranking.id} className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-4 py-3 sm:py-4 hover:bg-dark-hover transition-all duration-200 group">
+                    <div className="w-6 sm:w-8 text-center font-bold text-sm sm:text-lg flex-shrink-0">
                       {index === 0 && <span className="text-yellow-400">1</span>}
                       {index === 1 && <span className="text-gray-300">2</span>}
                       {index === 2 && <span className="text-amber-600">3</span>}
                       {index > 2 && <span className="text-light-muted">{index + 1}</span>}
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center overflow-hidden">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-500/20 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {ranking.jugador?.fotoUrl ? (
                         <img src={ranking.jugador.fotoUrl} alt="" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-primary-400 font-semibold">
+                        <span className="text-primary-400 font-semibold text-sm sm:text-base">
                           {ranking.jugador?.nombre?.charAt(0) || '?'}
                         </span>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-light-text group-hover:text-primary-400 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm sm:text-base text-light-text group-hover:text-primary-400 transition-colors truncate">
                         {ranking.jugador?.nombre} {ranking.jugador?.apellido}
                       </p>
-                      <p className="text-sm text-light-muted">
+                      <p className="text-xs sm:text-sm text-light-muted truncate">
                         {ranking.jugador?.ciudad || 'Sin ciudad'}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary-500">{ranking.puntosTotales} pts</p>
-                      <p className="text-sm text-light-muted">{ranking.torneosJugados} torneos</p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-primary-500 text-sm sm:text-base">{ranking.puntosTotales} pts</p>
+                      <p className="text-xs sm:text-sm text-light-muted">{ranking.torneosJugados} torneos</p>
                     </div>
                   </div>
                 ))}

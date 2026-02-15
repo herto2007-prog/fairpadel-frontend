@@ -186,7 +186,7 @@ const EditProfilePage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Nombre"
                 type="text"
@@ -280,22 +280,22 @@ const EditProfilePage = () => {
           ) : (
             <div className="space-y-1">
               {/* Header */}
-              <div className="grid grid-cols-[1fr_80px_80px] gap-2 px-3 py-2 text-xs font-semibold text-light-muted uppercase">
+              <div className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_80px_80px] gap-2 px-2 sm:px-3 py-2 text-xs font-semibold text-light-muted uppercase">
                 <span>Tipo</span>
                 <span className="text-center flex items-center justify-center gap-1">
                   <Mail className="h-3 w-3" />
-                  Email
+                  <span className="hidden sm:inline">Email</span>
                 </span>
                 <span className="text-center flex items-center justify-center gap-1">
                   <MessageSquare className="h-3 w-3" />
-                  SMS
+                  <span className="hidden sm:inline">SMS</span>
                 </span>
               </div>
 
               {preferencias.map((pref) => (
                 <div
                   key={pref.tipoNotificacion}
-                  className="grid grid-cols-[1fr_80px_80px] gap-2 px-3 py-2.5 rounded-lg hover:bg-dark-hover/50 items-center"
+                  className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_80px_80px] gap-2 px-2 sm:px-3 py-2.5 rounded-lg hover:bg-dark-hover/50 items-center"
                 >
                   <span className="text-sm text-light-text">
                     {TIPO_LABELS[pref.tipoNotificacion] || pref.tipoNotificacion}

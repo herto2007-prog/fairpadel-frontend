@@ -160,9 +160,9 @@ const AdminConfiguracionPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">Configuración del Sistema</h1>
-        <p className="text-light-secondary mt-2">Configura puntos de ranking y revisa estadísticas generales</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Configuración del Sistema</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Configura puntos de ranking y revisa estadísticas generales</p>
       </div>
 
       {/* Tabs */}

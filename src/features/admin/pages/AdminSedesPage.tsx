@@ -559,8 +559,8 @@ const AdminSedesPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-light-text">Gestion de Sedes</h1>
-          <p className="text-light-secondary mt-1">Administra sedes y canchas para los torneos</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestion de Sedes</h1>
+          <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Administra sedes y canchas para los torneos</p>
         </div>
         <Button
           variant="primary"

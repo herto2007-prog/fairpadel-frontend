@@ -82,21 +82,21 @@ const RankingsPage = () => {
       {/* Banner: Header zone — slim strip, solo en rankings */}
       <BannerZone zona="HEADER" className="mb-6" layout="single" />
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text flex items-center gap-2">
-          <Trophy className="h-8 w-8 text-yellow-500" />
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text flex items-center gap-2">
+          <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
           Rankings
         </h1>
-        <p className="text-light-secondary mt-2">
+        <p className="text-light-secondary mt-1 sm:mt-2 text-sm sm:text-base">
           Clasificación de los mejores jugadores de pádel
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Select
           value={genero}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenero(e.target.value as Gender)}
-          className="w-40"
+          className="w-32 sm:w-40"
         >
           <option value={Gender.MASCULINO}>Masculino</option>
           <option value={Gender.FEMENINO}>Femenino</option>
@@ -105,7 +105,7 @@ const RankingsPage = () => {
         <Select
           value={tipoRanking}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTipoRanking(e.target.value as TipoRanking)}
-          className="w-40"
+          className="w-28 sm:w-40"
         >
           <option value={TipoRanking.GLOBAL}>Global</option>
           <option value={TipoRanking.PAIS}>País</option>
@@ -126,7 +126,8 @@ const RankingsPage = () => {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-dark-surface border-b border-dark-border">
@@ -147,8 +148,12 @@ const RankingsPage = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold">
-                            {ranking.jugador?.nombre?.charAt(0) || '?'}
+                          <div className="h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold overflow-hidden">
+                            {ranking.jugador?.fotoUrl ? (
+                              <img src={ranking.jugador.fotoUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              ranking.jugador?.nombre?.charAt(0) || '?'
+                            )}
                           </div>
                           <div>
                             <p className="font-medium">
@@ -184,6 +189,36 @@ const RankingsPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-dark-border">
+              {rankings.map((ranking) => (
+                <div key={ranking.id} className="flex items-center gap-3 px-3 py-3">
+                  <div className="w-8 text-center flex-shrink-0">
+                    {getPositionBadge(ranking.posicion)}
+                  </div>
+                  <div className="h-9 w-9 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold text-sm flex-shrink-0 overflow-hidden">
+                    {ranking.jugador?.fotoUrl ? (
+                      <img src={ranking.jugador.fotoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      ranking.jugador?.nombre?.charAt(0) || '?'
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {ranking.jugador?.nombre} {ranking.jugador?.apellido}
+                    </p>
+                    <p className="text-xs text-light-secondary">
+                      {ranking.torneosJugados} torneos · <span className="text-green-400">{ranking.victorias}</span>/<span className="text-red-400">{ranking.derrotas}</span>
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-primary-500 text-sm">{ranking.puntosTotales} pts</p>
+                    <div className="text-xs">{getPositionChange(ranking)}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

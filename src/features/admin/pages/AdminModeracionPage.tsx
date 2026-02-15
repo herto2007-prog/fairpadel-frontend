@@ -176,9 +176,9 @@ const AdminModeracionPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">Moderación de Contenido</h1>
-        <p className="text-light-secondary mt-2">Revisa fotos pendientes y resuelve reportes de la comunidad</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Moderación de Contenido</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Revisa fotos pendientes y resuelve reportes de la comunidad</p>
       </div>
 
       {/* Tabs */}

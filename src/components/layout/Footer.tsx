@@ -5,10 +5,10 @@ import logoWhite from '@/assets/Asset 1fair padel.png';
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-dark-card border-t border-dark-border text-white mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {/* Logo y descripción */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-2 sm:col-span-2 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <img src={logoWhite} alt="FairPadel" className="h-10 w-auto" />
             </div>
@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-dark-border mt-8 pt-8 text-center text-sm text-light-muted">
+        <div className="border-t border-dark-border mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-xs sm:text-sm text-light-muted">
           <p>&copy; {new Date().getFullYear()} FairPadel. Todos los derechos reservados.</p>
         </div>
       </div>

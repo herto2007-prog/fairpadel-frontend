@@ -239,8 +239,8 @@ const AdminPublicidadPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-light-text">Publicidad</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Publicidad</h1>
         <Button variant="primary" onClick={openCreateForm}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Banner
@@ -576,7 +576,7 @@ const AdminPublicidadPage = () => {
 
           {/* Per-banner stats */}
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-dark-border">

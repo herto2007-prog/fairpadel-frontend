@@ -28,7 +28,7 @@ const AdminCategoriasPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-light-text">Gestión de Categorías</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestión de Categorías</h1>
 
       <div className="flex gap-2 mb-6 overflow-x-auto">
         {tabs.map((tab) => (

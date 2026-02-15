@@ -125,11 +125,11 @@ const CircuitoDetailPage = () => {
           <span className="text-sm text-light-text">{circuito.nombre}</span>
         </div>
 
-        <div className="bg-dark-card border border-dark-border rounded-xl p-6">
+        <div className="bg-dark-card border border-dark-border rounded-xl p-4 sm:p-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-light-text">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <h1 className="text-xl sm:text-3xl font-bold text-light-text">
                   {circuito.nombre}
                 </h1>
                 <Badge variant={getCircuitoEstadoBadgeVariant(circuito.estado)}>

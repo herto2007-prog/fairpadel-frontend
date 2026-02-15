@@ -142,9 +142,9 @@ const AdminSuscripcionesPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">Gestión de Suscripciones</h1>
-        <p className="text-light-secondary mt-2">Administra suscripciones premium, cupones y métricas de ingresos</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestión de Suscripciones</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Administra suscripciones premium, cupones y métricas de ingresos</p>
       </div>
 
       {/* Tabs */}
@@ -577,7 +577,7 @@ function MetricasTab({ metricas }: { metricas: MetricasIngresos }) {
             <div className="w-12 h-12 bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
               <DollarSign className="w-6 h-6 text-green-400" />
             </div>
-            <p className="text-3xl font-bold text-green-400">${metricas.mrr.toFixed(2)}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-green-400">${metricas.mrr.toFixed(2)}</p>
             <p className="text-sm text-light-secondary mt-1">MRR (Ingreso Mensual Recurrente)</p>
             <p className="text-xs text-light-secondary mt-0.5">De suscripciones activas</p>
           </CardContent>
@@ -588,7 +588,7 @@ function MetricasTab({ metricas }: { metricas: MetricasIngresos }) {
             <div className="w-12 h-12 bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
               <TrendingUp className="w-6 h-6 text-blue-400" />
             </div>
-            <p className="text-3xl font-bold text-blue-400">${metricas.totalComisiones.toFixed(2)}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-blue-400">${metricas.totalComisiones.toFixed(2)}</p>
             <p className="text-sm text-light-secondary mt-1">Total Comisiones</p>
             <p className="text-xs text-light-secondary mt-0.5">De pagos de inscripción</p>
           </CardContent>
@@ -599,7 +599,7 @@ function MetricasTab({ metricas }: { metricas: MetricasIngresos }) {
             <div className="w-12 h-12 bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6 text-yellow-400" />
             </div>
-            <p className="text-3xl font-bold text-yellow-400">{metricas.suscripcionesActivas}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-yellow-400">{metricas.suscripcionesActivas}</p>
             <p className="text-sm text-light-secondary mt-1">Suscripciones Activas</p>
             <p className="text-xs text-light-secondary mt-0.5">Usuarios premium actuales</p>
           </CardContent>

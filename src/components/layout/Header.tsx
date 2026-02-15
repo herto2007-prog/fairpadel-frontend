@@ -207,7 +207,7 @@ const Header = () => {
                   </button>
 
                   {notifDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-dark-surface rounded-lg shadow-xl border border-dark-border overflow-hidden z-50">
+                    <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-dark-surface rounded-lg shadow-xl border border-dark-border overflow-hidden z-50">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border">
                         <span className="font-semibold text-light-text text-sm">Notificaciones</span>
                         {notifCount > 0 && (

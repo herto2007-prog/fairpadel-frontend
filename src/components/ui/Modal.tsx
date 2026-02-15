@@ -21,11 +21,11 @@ const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
 }) => {
   const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+    sm: 'max-w-[calc(100vw-2rem)] sm:max-w-sm',
+    md: 'max-w-[calc(100vw-2rem)] sm:max-w-md',
+    lg: 'max-w-[calc(100vw-2rem)] sm:max-w-lg',
+    xl: 'max-w-[calc(100vw-2rem)] sm:max-w-xl',
+    '2xl': 'max-w-[calc(100vw-2rem)] sm:max-w-2xl',
   };
 
   React.useEffect(() => {

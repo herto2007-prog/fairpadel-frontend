@@ -72,36 +72,36 @@ const AdminPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-light-text">Panel de Administración</h1>
-        <p className="text-light-secondary mt-2">Gestiona torneos, usuarios y configuración</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Panel de Administración</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Gestiona torneos, usuarios y configuración</p>
       </div>
 
       {/* Métricas */}
       {metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-primary-500">{metrics.totalUsuarios}</p>
-              <p className="text-sm text-light-secondary">Usuarios</p>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-primary-500">{metrics.totalUsuarios}</p>
+              <p className="text-xs sm:text-sm text-light-secondary">Usuarios</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-yellow-600">{metrics.usuariosPremium}</p>
-              <p className="text-sm text-light-secondary">Premium</p>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{metrics.usuariosPremium}</p>
+              <p className="text-xs sm:text-sm text-light-secondary">Premium</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-blue-600">{metrics.totalTorneos}</p>
-              <p className="text-sm text-light-secondary">Torneos</p>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{metrics.totalTorneos}</p>
+              <p className="text-xs sm:text-sm text-light-secondary">Torneos</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-orange-600">{metrics.torneosPendientes}</p>
-              <p className="text-sm text-light-secondary">Pendientes</p>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600">{metrics.torneosPendientes}</p>
+              <p className="text-xs sm:text-sm text-light-secondary">Pendientes</p>
             </CardContent>
           </Card>
         </div>

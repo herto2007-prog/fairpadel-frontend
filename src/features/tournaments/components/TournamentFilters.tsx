@@ -16,8 +16,8 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
   };
 
   return (
-    <div className="bg-dark-card p-4 rounded-lg shadow mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="bg-dark-card p-3 sm:p-4 rounded-lg shadow mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Select
           label="Estado"
           value={filters.estado || ''}
