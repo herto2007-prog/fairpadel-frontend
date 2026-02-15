@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament } from '@/types';
 import { Settings, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import BannerZone from '@/components/BannerZone';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,9 @@ export default function TournamentDetailPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Banner: Torneo Detalle — full width above content */}
+        <BannerZone zona="TORNEO_DETALLE" className="mb-6" layout="single" />
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -425,6 +429,9 @@ export default function TournamentDetailPage() {
                   : `ID: ${tournament.organizadorId?.slice(0, 8)}...`}
               </p>
             </Card>
+
+            {/* Banner: Sidebar — sticky ads in sidebar */}
+            <BannerZone zona="SIDEBAR" layout="carousel" />
           </div>
         </div>
       </div>
