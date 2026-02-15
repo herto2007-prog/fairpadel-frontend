@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, Loading } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import inscripcionesService from '@/services/inscripcionesService';
+import { matchesService } from '@/services/matchesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import type { Tournament } from '@/types';
-import { Settings, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import type { Tournament, Match } from '@/types';
+import { Settings, Users, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
+import { BracketView } from '@/features/matches/components/BracketView';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +20,22 @@ export default function TournamentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
+  // Fixture state
+  const [fixtureData, setFixtureData] = useState<Record<string, any>>({});
+  const [fixtureGender, setFixtureGender] = useState<'caballeros' | 'damas'>('caballeros');
+  const [fixtureCategory, setFixtureCategory] = useState<string>('');
+  const [fixtureMatches, setFixtureMatches] = useState<Match[]>([]);
+  const [loadingFixture, setLoadingFixture] = useState(false);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   useEffect(() => {
     if (id) {
       loadTournament();
+      loadFixtureData();
     }
   }, [id]);
 
@@ -38,6 +53,54 @@ export default function TournamentDetailPage() {
       setLoading(false);
     }
   };
+
+  const loadFixtureData = async () => {
+    try {
+      const data = await matchesService.obtenerFixture(id!);
+      setFixtureData(data);
+    } catch {
+      // No fixture available yet
+    }
+  };
+
+  // Derive available fixture categories grouped by gender
+  const fixtureCategories = (() => {
+    const cats: { id: string; nombre: string; gender: string; matches: any[] }[] = [];
+    Object.entries(fixtureData).forEach(([catId, catData]: [string, any]) => {
+      const rondas = catData.rondas || {};
+      const allMatches = Object.values(rondas).flat() as any[];
+      if (allMatches.length > 0) {
+        const nombre = catData.category?.nombre || '';
+        const gender = nombre.toLowerCase().includes('damas') ? 'damas' : 'caballeros';
+        cats.push({ id: catId, nombre, gender, matches: allMatches });
+      }
+    });
+    return cats;
+  })();
+
+  const caballeroCats = fixtureCategories.filter((c) => c.gender === 'caballeros');
+  const damasCats = fixtureCategories.filter((c) => c.gender === 'damas');
+  const hasFixtures = fixtureCategories.length > 0;
+
+  // Auto-select first category when gender changes or data loads
+  useEffect(() => {
+    const cats = fixtureGender === 'caballeros' ? caballeroCats : damasCats;
+    if (cats.length > 0 && (!fixtureCategory || !cats.find((c) => c.id === fixtureCategory))) {
+      setFixtureCategory(cats[0].id);
+    }
+  }, [fixtureGender, fixtureData]);
+
+  // Load matches when selected category changes
+  useEffect(() => {
+    if (fixtureCategory && id) {
+      setLoadingFixture(true);
+      matchesService
+        .getByCategory(id, fixtureCategory)
+        .then((matches) => setFixtureMatches(matches))
+        .catch(() => setFixtureMatches([]))
+        .finally(() => setLoadingFixture(false));
+    }
+  }, [fixtureCategory, id]);
 
   const toggleCategory = (catName: string) => {
     setExpandedCategories((prev) => ({ ...prev, [catName]: !prev[catName] }));
@@ -72,7 +135,6 @@ export default function TournamentDetailPage() {
     );
   }
 
-  // Permitir inscripción si el torneo está PUBLICADO o EN_CURSO y hay categorías con inscripción abierta
   const hasOpenCategories = tournament.categorias?.some(
     (tc: any) => tc.inscripcionAbierta || tc.estado === 'INSCRIPCIONES_ABIERTAS'
   ) ?? false;
@@ -82,48 +144,10 @@ export default function TournamentDetailPage() {
   const isOwner = user?.id === tournament.organizadorId;
   const canManage = isAdmin || isOwner;
 
+  const currentGenderCats = fixtureGender === 'caballeros' ? caballeroCats : damasCats;
+
   return (
     <div className="min-h-screen bg-dark-surface">
-      {/* Estilos para animación del botón */}
-      <style>{`
-        @keyframes pulse-glow {
-          0%, 100% {
-            box-shadow: 0 0 5px #22c55e, 0 0 10px #22c55e, 0 0 20px #22c55e;
-            transform: scale(1);
-          }
-          50% {
-            box-shadow: 0 0 10px #22c55e, 0 0 25px #22c55e, 0 0 40px #22c55e;
-            transform: scale(1.02);
-          }
-        }
-        
-        @keyframes shimmer {
-          0% {
-            background-position: -200% center;
-          }
-          100% {
-            background-position: 200% center;
-          }
-        }
-        
-        .btn-inscribirse {
-          animation: pulse-glow 2s ease-in-out infinite;
-          background: linear-gradient(
-            90deg, 
-            #22c55e 0%, 
-            #4ade80 25%, 
-            #86efac 50%, 
-            #4ade80 75%, 
-            #22c55e 100%
-          );
-          background-size: 200% auto;
-        }
-        
-        .btn-inscribirse:hover {
-          animation: pulse-glow 1s ease-in-out infinite, shimmer 1.5s linear infinite;
-        }
-      `}</style>
-
       {/* Hero Image */}
       <div className="relative h-96 bg-gray-900">
         <img
@@ -139,30 +163,30 @@ export default function TournamentDetailPage() {
               {tournament.nombre}
             </h1>
             <p className="text-white/90 text-lg">
-              📍 {tournament.ciudad}, {tournament.pais}
+              {tournament.ciudad}, {tournament.pais}
             </p>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Banner: Torneo Detalle — individual por torneo */}
+        {/* Banner: Torneo Detalle */}
         <BannerZone zona="TORNEO_DETALLE" className="mb-6" layout="single" torneoId={id} />
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Descripción */}
+            {/* Descripcion */}
             <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Descripción</h2>
+              <h2 className="text-2xl font-bold mb-4">Descripcion</h2>
               <p className="text-light-text whitespace-pre-line">
-                {tournament.descripcion || 'Sin descripción disponible'}
+                {tournament.descripcion || 'Sin descripcion disponible'}
               </p>
             </Card>
 
-            {/* Categorías */}
+            {/* Categorias */}
             <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Categorías</h2>
+              <h2 className="text-2xl font-bold mb-4">Categorias</h2>
               {tournament.categorias && tournament.categorias.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -187,7 +211,7 @@ export default function TournamentDetailPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-light-secondary">Sin categorías</p>
+                <p className="text-light-secondary">Sin categorias</p>
               )}
             </Card>
 
@@ -219,12 +243,13 @@ export default function TournamentDetailPage() {
                       rel="noopener noreferrer"
                       className="text-primary-600 hover:underline flex items-center gap-1"
                     >
-                      📍 Ver en Google Maps
+                      Ver en Google Maps
                     </a>
                   )}
                 </div>
               </Card>
             )}
+
             {/* Inscriptos */}
             {inscripciones.length > 0 && (
               <Card className="p-6">
@@ -233,15 +258,13 @@ export default function TournamentDetailPage() {
                   Inscriptos ({inscripciones.length} parejas)
                 </h2>
                 {(() => {
-                  // Agrupar por categoría
                   const grouped: Record<string, any[]> = {};
                   inscripciones.forEach((insc) => {
-                    const catName = insc.category?.nombre || 'Sin categoría';
+                    const catName = insc.category?.nombre || 'Sin categoria';
                     if (!grouped[catName]) grouped[catName] = [];
                     grouped[catName].push(insc);
                   });
 
-                  // Separar en caballeros y damas, ordenar por nombre ascendente (1ra, 2da, 3ra...)
                   const sortCat = (a: [string, any[]], b: [string, any[]]) => a[0].localeCompare(b[0], 'es', { numeric: true });
                   const caballerosEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('caballeros')).sort(sortCat);
                   const damasEntries = Object.entries(grouped).filter(([name]) => name.toLowerCase().includes('damas')).sort(sortCat);
@@ -289,12 +312,13 @@ export default function TournamentDetailPage() {
                         </h4>
                         <div className="space-y-4">
                           {entries.map(([catName, inscs]) => {
-                            const isExpanded = expandedCategories[catName] !== false;
+                            // Default: collapsed
+                            const isExpanded = expandedCategories[catName] === true;
                             return (
                               <div key={catName}>
                                 <button
                                   onClick={() => toggleCategory(catName)}
-                                  className={`flex items-center justify-between w-full text-left px-3 py-2 rounded-lg hover:bg-dark-hover border border-dark-border bg-dark-bg`}
+                                  className="flex items-center justify-between w-full text-left px-3 py-2 rounded-lg hover:bg-dark-hover border border-dark-border bg-dark-bg"
                                 >
                                   <span className="font-medium text-sm">{catName.replace(' Caballeros', '').replace(' Damas', '')}</span>
                                   <div className="flex items-center gap-2">
@@ -347,14 +371,84 @@ export default function TournamentDetailPage() {
                 })()}
               </Card>
             )}
+
+            {/* Fixtures */}
+            {hasFixtures && (
+              <Card className="p-6">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-primary-500" />
+                  Fixture
+                </h2>
+
+                {/* Gender tabs */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setFixtureGender('caballeros')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      fixtureGender === 'caballeros'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                    }`}
+                    disabled={caballeroCats.length === 0}
+                  >
+                    Caballeros {caballeroCats.length > 0 && `(${caballeroCats.length})`}
+                  </button>
+                  <button
+                    onClick={() => setFixtureGender('damas')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      fixtureGender === 'damas'
+                        ? 'bg-pink-500 text-white'
+                        : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                    }`}
+                    disabled={damasCats.length === 0}
+                  >
+                    Damas {damasCats.length > 0 && `(${damasCats.length})`}
+                  </button>
+                </div>
+
+                {/* Category tabs */}
+                {currentGenderCats.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {currentGenderCats.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setFixtureCategory(cat.id)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          fixtureCategory === cat.id
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                        }`}
+                      >
+                        {cat.nombre.replace(' Caballeros', '').replace(' Damas', '')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Bracket */}
+                {loadingFixture ? (
+                  <div className="flex justify-center py-8">
+                    <Loading size="md" text="Cargando fixture..." />
+                  </div>
+                ) : fixtureMatches.length > 0 ? (
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <BracketView matches={fixtureMatches} />
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-light-muted">
+                    <p className="text-sm">Sin fixture para esta categoria</p>
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar — fully sticky */}
+          <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
             {/* Info Card */}
-            <Card className="p-6 sticky top-4">
-              <h3 className="font-bold text-lg mb-4">Información</h3>
-              
+            <Card className="p-6">
+              <h3 className="font-bold text-lg mb-4">Informacion</h3>
+
               <div className="space-y-4 mb-6">
                 <div>
                   <p className="text-sm text-light-secondary mb-1">Fecha de inicio</p>
@@ -367,14 +461,14 @@ export default function TournamentDetailPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-light-secondary mb-1">Límite inscripción</p>
+                  <p className="text-sm text-light-secondary mb-1">Limite inscripcion</p>
                   <p className="font-medium">{formatDate(tournament.fechaLimiteInscr)}</p>
                 </div>
 
                 <div>
                   <p className="text-sm text-light-secondary mb-1">Costo</p>
                   <p className="font-bold text-2xl text-primary-600">
-                    {tournament.costoInscripcion > 0 
+                    {tournament.costoInscripcion > 0
                       ? formatCurrency(Number(tournament.costoInscripcion))
                       : 'Gratis'}
                   </p>
@@ -384,18 +478,15 @@ export default function TournamentDetailPage() {
               {canInscribe ? (
                 <button
                   onClick={handleInscribirse}
-                  className="btn-inscribirse w-full py-4 px-6 text-white text-xl font-bold rounded-xl 
-                             transition-all duration-300 hover:scale-105 active:scale-95
-                             flex items-center justify-center gap-3"
+                  className="w-full py-3.5 px-6 bg-primary-500 hover:bg-primary-600 text-white text-lg font-bold rounded-xl
+                             transition-all duration-200 hover:scale-[1.02] active:scale-95"
                 >
-                  <span className="text-2xl">🎾</span>
-                  <span>¡INSCRIBIRSE AHORA!</span>
-                  <span className="text-2xl">🏆</span>
+                  Inscribirse
                 </button>
               ) : ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) ? (
-                <div className="text-center p-4 bg-yellow-900/30 rounded-lg border-2 border-yellow-500/50">
+                <div className="text-center p-4 bg-yellow-900/30 rounded-lg border border-yellow-500/50">
                   <p className="text-sm text-yellow-400 font-medium">
-                    ⏰ Todas las inscripciones cerradas
+                    Todas las inscripciones cerradas
                   </p>
                 </div>
               ) : (
@@ -407,7 +498,7 @@ export default function TournamentDetailPage() {
               )}
             </Card>
 
-            {/* Botón Administrar - solo visible para organizador del torneo y admin */}
+            {/* Boton Administrar */}
             {canManage && (
               <button
                 onClick={() => navigate(`/tournaments/${id}/manage`)}
@@ -430,7 +521,7 @@ export default function TournamentDetailPage() {
               </p>
             </Card>
 
-            {/* Banner: Sidebar — individual por torneo */}
+            {/* Banner: Sidebar */}
             <BannerZone zona="SIDEBAR" layout="carousel" torneoId={id} />
           </div>
         </div>
