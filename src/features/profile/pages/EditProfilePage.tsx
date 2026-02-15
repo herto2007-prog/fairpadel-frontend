@@ -208,7 +208,6 @@ const EditProfilePage = () => {
               type="tel"
               value={formData.telefono}
               onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-              required
             />
 
             <Input
