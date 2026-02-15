@@ -97,6 +97,16 @@ export const tournamentsService = {
     return response.data;
   },
 
+  // POST /tournaments/:id/flyer - Upload flyer image
+  uploadFlyer: async (id: string, file: File): Promise<{ flyerUrl: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/tournaments/${id}/flyer`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   // Ayudantes
   getAyudantes: async (tournamentId: string) => {
     const response = await api.get(`/tournaments/${tournamentId}/ayudantes`);
