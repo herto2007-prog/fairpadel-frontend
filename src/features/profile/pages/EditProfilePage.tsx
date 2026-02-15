@@ -6,6 +6,7 @@ import { notificacionesService } from '@/services/notificacionesService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import type { UpdateProfileDto, PreferenciaNotificacion, TipoNotificacion } from '@/types';
 import { Camera, Crown, Bell, Mail, MessageSquare } from 'lucide-react';
+import ProfilePhotoCropper from '../components/ProfilePhotoCropper';
 
 // Labels legibles por tipo de notificacion
 const TIPO_LABELS: Record<string, string> = {
@@ -26,6 +27,7 @@ const EditProfilePage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   // Notification preferences
   const [preferencias, setPreferencias] = useState<PreferenciaNotificacion[]>([]);
@@ -79,17 +81,32 @@ const EditProfilePage = () => {
     }
   };
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Read the file and open the cropper
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setUploadingPhoto(true);
     setError('');
 
     try {
+      // Convert blob to File for the upload service
+      const file = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
       const response = await usersService.updateFoto(file);
       updateUser({ fotoUrl: response.fotoUrl });
       setSuccess('Foto actualizada correctamente');
+      setCropImageSrc(null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al subir la foto');
     } finally {
@@ -156,8 +173,8 @@ const EditProfilePage = () => {
                 <Camera className="h-4 w-4 text-white" />
                 <input
                   type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoSelect}
                   className="hidden"
                   disabled={uploadingPhoto}
                 />
@@ -339,6 +356,16 @@ const EditProfilePage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Photo Cropper Modal */}
+      {cropImageSrc && (
+        <ProfilePhotoCropper
+          imageSrc={cropImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCropImageSrc(null)}
+          saving={uploadingPhoto}
+        />
+      )}
     </div>
   );
 };
