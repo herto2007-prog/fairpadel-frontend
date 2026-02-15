@@ -40,10 +40,12 @@ import {
   Award,
   Search,
   Download,
+  FileText,
+  FileSpreadsheet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'acreditacion' | 'dashboard';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'pagos' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'acreditacion' | 'reportes' | 'dashboard';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -129,6 +131,7 @@ export default function ManageTournamentPage() {
     { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
     { key: 'ayudantes', label: 'Ayudantes', icon: <UserPlus className="w-4 h-4" /> },
     { key: 'acreditacion', label: 'Acreditación', icon: <ClipboardCheck className="w-4 h-4" /> },
+    { key: 'reportes', label: 'Reportes', icon: <FileText className="w-4 h-4" /> },
     { key: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, premium: true },
   ];
 
@@ -191,6 +194,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
         {activeTab === 'acreditacion' && <AcreditacionTab tournament={tournament} />}
+        {activeTab === 'reportes' && <ReportesTab tournament={tournament} isPremium={isPremium} />}
         {activeTab === 'dashboard' && <DashboardPremiumTab tournament={tournament} stats={stats} isPremium={isPremium} />}
       </div>
     </div>
@@ -1528,6 +1532,170 @@ function AcreditacionTab({ tournament }: { tournament: Tournament }) {
           })
         )}
       </div>
+    </div>
+  );
+}
+
+// ===================== TAB: REPORTES =====================
+
+function ReportesTab({ tournament, isPremium }: { tournament: Tournament; isPremium: boolean }) {
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = async (type: 'resultados' | 'financiero' | 'asistencia') => {
+    setDownloading(type);
+    try {
+      if (type === 'resultados') {
+        await tournamentsService.downloadReporteResultados(tournament.id);
+      } else if (type === 'financiero') {
+        await tournamentsService.downloadReporteFinanciero(tournament.id);
+      } else {
+        await tournamentsService.downloadReporteAsistencia(tournament.id);
+      }
+      toast.success('Reporte descargado');
+    } catch (error: any) {
+      console.error('Error downloading report:', error);
+      toast.error(error?.response?.data?.message || 'Error al descargar el reporte');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const reports = [
+    {
+      key: 'resultados' as const,
+      title: 'Resultados del Torneo',
+      description: 'Bracket completo con campeones, finalistas y semifinalistas por categoría. Incluye tabla de resultados con scores.',
+      format: 'PDF',
+      icon: <Trophy className="w-6 h-6 text-yellow-400" />,
+      formatIcon: <FileText className="w-4 h-4" />,
+      color: 'border-yellow-500/30 bg-yellow-900/10',
+      buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
+      premium: false,
+      requiresState: ['EN_CURSO', 'FINALIZADO'] as string[],
+    },
+    {
+      key: 'financiero' as const,
+      title: 'Reporte Financiero',
+      description: 'Resumen de ingresos, comisiones y neto. Desglose por categoría con inscripciones confirmadas, pendientes y rechazadas.',
+      format: 'Excel',
+      icon: <DollarSign className="w-6 h-6 text-green-400" />,
+      formatIcon: <FileSpreadsheet className="w-4 h-4" />,
+      color: 'border-green-500/30 bg-green-900/10',
+      buttonColor: 'bg-green-600 hover:bg-green-700',
+      premium: false,
+      requiresState: [] as string[],
+    },
+    {
+      key: 'asistencia' as const,
+      title: 'Reporte de Asistencia',
+      description: 'Listado de parejas confirmadas por categoría con estadísticas de partidos jugados, ganados y efectividad.',
+      format: 'Excel',
+      icon: <Users className="w-6 h-6 text-blue-400" />,
+      formatIcon: <FileSpreadsheet className="w-4 h-4" />,
+      color: 'border-blue-500/30 bg-blue-900/10',
+      buttonColor: 'bg-blue-600 hover:bg-blue-700',
+      premium: false,
+      requiresState: [] as string[],
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-light-text">Reportes del Torneo</h3>
+        <p className="text-sm text-light-secondary mt-1">
+          Descarga reportes en PDF o Excel con la información del torneo.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {reports.map((report) => {
+          const isDisabled = report.requiresState.length > 0 && !report.requiresState.includes(tournament.estado);
+          const isLocked = report.premium && !isPremium;
+          const isDownloading = downloading === report.key;
+
+          return (
+            <Card
+              key={report.key}
+              className={`p-5 border ${report.color} ${isDisabled ? 'opacity-50' : ''} transition-all`}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-dark-surface rounded-lg">
+                  {report.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-light-text">{report.title}</h4>
+                    {isLocked && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-indigo-900/40 text-indigo-300 rounded-full flex items-center gap-1">
+                        <Crown className="w-3 h-3" /> Premium
+                      </span>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-xs font-medium bg-dark-surface text-light-secondary rounded">
+                    {report.formatIcon} {report.format}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-light-secondary mb-4 leading-relaxed">
+                {report.description}
+              </p>
+
+              {isDisabled ? (
+                <div className="flex items-center gap-2 text-xs text-light-secondary">
+                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                  <span>Disponible cuando el torneo esté en curso o finalizado</span>
+                </div>
+              ) : isLocked ? (
+                <div className="flex items-center gap-2 text-xs text-indigo-300">
+                  <Lock className="w-4 h-4" />
+                  <span>Actualiza a Premium para descargar</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleDownload(report.key)}
+                  disabled={isDownloading}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${report.buttonColor} disabled:opacity-50`}
+                >
+                  {isDownloading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Descargar {report.format}
+                    </>
+                  )}
+                </button>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Additional quick downloads section */}
+      <Card className="p-5 border border-dark-border">
+        <h4 className="font-semibold text-light-text mb-3">Otros Reportes</h4>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={async () => {
+              try {
+                await tournamentsService.exportInscripcionesExcel(tournament.id);
+                toast.success('Excel de inscripciones descargado');
+              } catch (error) {
+                toast.error('Error al descargar inscripciones');
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-light-text bg-dark-surface hover:bg-dark-hover border border-dark-border rounded-lg transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            Inscripciones (Excel)
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

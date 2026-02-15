@@ -108,6 +108,51 @@ export const tournamentsService = {
     window.URL.revokeObjectURL(url);
   },
 
+  // GET /tournaments/:id/reporte/resultados — Download PDF results report
+  downloadReporteResultados: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/reporte/resultados`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `resultados-${tournamentId.substring(0, 8)}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  // GET /tournaments/:id/reporte/financiero — Download Excel financial report
+  downloadReporteFinanciero: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/reporte/financiero`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `financiero-${tournamentId.substring(0, 8)}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  // GET /tournaments/:id/reporte/asistencia — Download Excel attendance report
+  downloadReporteAsistencia: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/reporte/asistencia`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `asistencia-${tournamentId.substring(0, 8)}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // GET /tournaments/:id/pelotas-ronda
   getPelotasRonda: async (tournamentId: string) => {
     const response = await api.get(`/tournaments/${tournamentId}/pelotas-ronda`);
