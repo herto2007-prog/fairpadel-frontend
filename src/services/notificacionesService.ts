@@ -1,43 +1,7 @@
 import api from './api';
 import type { Notificacion, PreferenciaNotificacion } from '@/types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
 export const notificacionesService = {
-  // ═══════════════════════════════════════════
-  // SSE REAL-TIME STREAM
-  // ═══════════════════════════════════════════
-
-  /**
-   * Connect to SSE stream for real-time notification updates.
-   * Returns an EventSource that emits when new notifications arrive.
-   */
-  connectStream: (token: string, onNotification: (data: { count: number; tipo: string; titulo: string; contenido: string }) => void): EventSource | null => {
-    if (!token) return null;
-    try {
-      const url = `${API_BASE}/notificaciones/stream?token=${encodeURIComponent(token)}`;
-      const eventSource = new EventSource(url);
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'heartbeat') return; // Ignore heartbeats
-          onNotification(data);
-        } catch {
-          // ignore parse errors
-        }
-      };
-
-      eventSource.onerror = () => {
-        // EventSource will auto-reconnect, no action needed
-      };
-
-      return eventSource;
-    } catch {
-      return null;
-    }
-  },
-
   // ═══════════════════════════════════════════
   // NOTIFICACIONES CRUD
   // ═══════════════════════════════════════════

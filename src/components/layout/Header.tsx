@@ -94,38 +94,12 @@ const Header = () => {
     }
   }, [isAuthenticated]);
 
-  // SSE real-time stream + fallback polling
+  // Poll for unread count every 10s for near real-time updates
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    // Initial fetch
     fetchUnreadCount();
-
-    // Try SSE for real-time updates
-    const token = localStorage.getItem('token');
-    let eventSource: EventSource | null = null;
-    let sseConnected = false;
-
-    if (token) {
-      eventSource = notificacionesService.connectStream(token, (data) => {
-        sseConnected = true;
-        setNotifCount(data.count);
-      });
-    }
-
-    // Fallback polling every 60s (longer since SSE handles instant updates)
-    const interval = setInterval(() => {
-      if (!sseConnected) {
-        fetchUnreadCount();
-      }
-    }, 60000);
-
-    return () => {
-      clearInterval(interval);
-      if (eventSource) {
-        eventSource.close();
-      }
-    };
+    const id = setInterval(fetchUnreadCount, 10000);
+    return () => clearInterval(id);
   }, [isAuthenticated, fetchUnreadCount]);
 
   // Load notifications when dropdown opens (only unread)
