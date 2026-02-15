@@ -73,6 +73,7 @@ const Header = () => {
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -147,6 +148,9 @@ const Header = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -274,7 +278,7 @@ const Header = () => {
                 </div>
 
                 {/* User Menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => {
                       setUserMenuOpen(!userMenuOpen);
