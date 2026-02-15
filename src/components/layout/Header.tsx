@@ -28,6 +28,7 @@ import {
   ClipboardCheck,
   Megaphone,
   Newspaper,
+  Users,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -155,6 +156,7 @@ const Header = () => {
   const navLinks = [
     { to: '/', label: 'Inicio', icon: Home },
     { to: '/tournaments', label: 'Torneos', icon: Calendar },
+    { to: '/jugadores', label: 'Jugadores', icon: Users },
     { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
     ...(isAuthenticated ? [{ to: '/feed', label: 'Feed', icon: Newspaper }] : []),

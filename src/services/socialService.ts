@@ -10,6 +10,17 @@ import type {
   UserBrief,
 } from '@/types';
 
+export interface JugadorBusqueda {
+  id: string;
+  nombre: string;
+  apellido: string;
+  genero: string;
+  ciudad: string | null;
+  fotoUrl: string | null;
+  esPremium: boolean;
+  categoriaActual: { id: string; nombre: string; orden: number } | null;
+}
+
 class SocialService {
   // ============ SEGUIMIENTOS ============
 
@@ -112,12 +123,30 @@ class SocialService {
 
   // ============ BÚSQUEDA ============
 
-  async buscarJugadores(query: string, ciudad?: string, genero?: string): Promise<UserBrief[]> {
+  async buscarJugadores(
+    query?: string,
+    ciudad?: string,
+    genero?: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{
+    jugadores: JugadorBusqueda[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
     const params = new URLSearchParams();
-    params.append('q', query);
+    if (query) params.append('q', query);
     if (ciudad) params.append('ciudad', ciudad);
     if (genero) params.append('genero', genero);
+    params.append('page', String(page));
+    params.append('limit', String(limit));
     const response = await api.get(`/social/buscar-jugadores?${params.toString()}`);
+    return response.data;
+  }
+
+  async obtenerCiudades(): Promise<string[]> {
+    const response = await api.get('/social/ciudades');
     return response.data;
   }
 }
