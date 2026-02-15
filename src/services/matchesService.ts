@@ -40,6 +40,13 @@ class MatchesService {
     return response.data;
   }
 
+  // Internal fixture (includes draft/borrador) — for organizers/admin
+  async obtenerFixtureInterno(tournamentId: string, categoryId?: string): Promise<any> {
+    const params = categoryId ? `?categoryId=${categoryId}` : '';
+    const response = await api.get(`/matches/torneo/${tournamentId}/fixture-interno${params}`);
+    return response.data;
+  }
+
   async publicarFixture(tournamentId: string, categoryId: string): Promise<any> {
     const response = await api.post(
       `/matches/torneo/${tournamentId}/categoria/${categoryId}/publicar-fixture`,

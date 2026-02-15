@@ -89,10 +89,10 @@ export const ScoreModal: React.FC<ScoreModalProps> = ({
       </div>
 
       {/* Parejas header */}
-      <div className="flex justify-between items-center mb-4 px-2">
-        <div className="text-sm font-medium text-light-text">{pareja1Label}</div>
-        <span className="text-xs text-light-secondary">vs</span>
-        <div className="text-sm font-medium text-light-text">{pareja2Label}</div>
+      <div className="flex justify-between items-center mb-4 px-1 sm:px-2 gap-2">
+        <div className="text-xs sm:text-sm font-medium text-light-text truncate min-w-0">{pareja1Label}</div>
+        <span className="text-xs text-light-secondary flex-shrink-0">vs</span>
+        <div className="text-xs sm:text-sm font-medium text-light-text truncate min-w-0 text-right">{pareja2Label}</div>
       </div>
 
       {activeTab === 'directo' ? (
@@ -282,7 +282,7 @@ const DirectTab: React.FC<DirectTabProps> = ({
       {!esWalkOver && (
         <div className="space-y-3">
           {/* Headers */}
-          <div className="grid grid-cols-[1fr_80px_30px_80px] gap-2 items-center">
+          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
             <div></div>
             <div className="text-xs text-center text-light-secondary font-medium">P1</div>
             <div></div>
@@ -290,15 +290,15 @@ const DirectTab: React.FC<DirectTabProps> = ({
           </div>
 
           {/* Set 1 */}
-          <div className="grid grid-cols-[1fr_80px_30px_80px] gap-2 items-center">
-            <span className="text-sm text-light-text font-medium">Set 1</span>
+          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
+            <span className="text-xs sm:text-sm text-light-text font-medium">Set 1</span>
             <input
               type="number"
               min="0"
               max="7"
               value={set1P1}
               onChange={(e) => setSet1P1(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
             />
             <span className="text-center text-light-secondary">-</span>
             <input
@@ -307,20 +307,20 @@ const DirectTab: React.FC<DirectTabProps> = ({
               max="7"
               value={set1P2}
               onChange={(e) => setSet1P2(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
             />
           </div>
 
           {/* Set 2 */}
-          <div className="grid grid-cols-[1fr_80px_30px_80px] gap-2 items-center">
-            <span className="text-sm text-light-text font-medium">Set 2</span>
+          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
+            <span className="text-xs sm:text-sm text-light-text font-medium">Set 2</span>
             <input
               type="number"
               min="0"
               max="7"
               value={set2P1}
               onChange={(e) => setSet2P1(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
             />
             <span className="text-center text-light-secondary">-</span>
             <input
@@ -329,14 +329,14 @@ const DirectTab: React.FC<DirectTabProps> = ({
               max="7"
               value={set2P2}
               onChange={(e) => setSet2P2(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
             />
           </div>
 
           {/* Set 3 / Super Tie-Break */}
           {needsSet3 && (
-            <div className="grid grid-cols-[1fr_80px_30px_80px] gap-2 items-center">
-              <span className="text-sm text-light-text font-medium">
+            <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
+              <span className="text-xs sm:text-sm text-light-text font-medium">
                 {isSemiFinal ? 'Set 3' : 'STB (a 10)'}
               </span>
               <input
@@ -345,7 +345,7 @@ const DirectTab: React.FC<DirectTabProps> = ({
                 max={isSemiFinal ? 7 : 99}
                 value={set3P1}
                 onChange={(e) => setSet3P1(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
               />
               <span className="text-center text-light-secondary">-</span>
               <input
@@ -354,7 +354,7 @@ const DirectTab: React.FC<DirectTabProps> = ({
                 max={isSemiFinal ? 7 : 99}
                 value={set3P2}
                 onChange={(e) => setSet3P2(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
               />
             </div>
           )}
@@ -453,28 +453,28 @@ const ArbitrajeTab: React.FC<ArbitrajeTabProps> = ({
   return (
     <div className="space-y-4">
       {/* Scoreboard: sets completados */}
-      <div className="bg-dark-surface rounded-lg p-4">
+      <div className="bg-dark-surface rounded-lg p-3 sm:p-4">
         {/* Header con labels de set */}
-        <div className="grid grid-cols-[1fr_repeat(3,48px)_60px] gap-2 items-center mb-2">
+        <div className="grid grid-cols-[1fr_repeat(3,36px)_48px] sm:grid-cols-[1fr_repeat(3,48px)_60px] gap-1.5 sm:gap-2 items-center mb-2">
           <div></div>
-          <div className="text-xs text-center text-light-secondary font-medium">S1</div>
-          <div className="text-xs text-center text-light-secondary font-medium">S2</div>
-          <div className="text-xs text-center text-light-secondary font-medium">
+          <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">S1</div>
+          <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">S2</div>
+          <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">
             {state.isSuperTieBreak ? 'STB' : 'S3'}
           </div>
-          <div className="text-xs text-center text-light-secondary font-medium">Pts</div>
+          <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">Pts</div>
         </div>
 
         {/* Pareja 1 row */}
-        <div className="grid grid-cols-[1fr_repeat(3,48px)_60px] gap-2 items-center py-2 border-b border-dark-border">
-          <div className="text-sm font-medium text-light-text truncate pr-2">
+        <div className="grid grid-cols-[1fr_repeat(3,36px)_48px] sm:grid-cols-[1fr_repeat(3,48px)_60px] gap-1.5 sm:gap-2 items-center py-1.5 sm:py-2 border-b border-dark-border">
+          <div className="text-xs sm:text-sm font-medium text-light-text truncate pr-1">
             {state.winner === 1 && <span className="text-green-400 mr-1">✓</span>}
             {pareja1Label}
           </div>
           {[0, 1, 2].map((setIdx) => (
             <div
               key={setIdx}
-              className={`text-center font-mono text-lg font-bold ${
+              className={`text-center font-mono text-base sm:text-lg font-bold ${
                 state.sets[setIdx].isComplete
                   ? state.sets[setIdx].winnerId === 1
                     ? 'text-green-400'
@@ -489,21 +489,21 @@ const ArbitrajeTab: React.FC<ArbitrajeTabProps> = ({
                 : '-'}
             </div>
           ))}
-          <div className="text-center font-mono text-xl font-bold text-primary-300">
+          <div className="text-center font-mono text-lg sm:text-xl font-bold text-primary-300">
             {!state.isFinished ? getPointDisplay(1) : '-'}
           </div>
         </div>
 
         {/* Pareja 2 row */}
-        <div className="grid grid-cols-[1fr_repeat(3,48px)_60px] gap-2 items-center py-2">
-          <div className="text-sm font-medium text-light-text truncate pr-2">
+        <div className="grid grid-cols-[1fr_repeat(3,36px)_48px] sm:grid-cols-[1fr_repeat(3,48px)_60px] gap-1.5 sm:gap-2 items-center py-1.5 sm:py-2">
+          <div className="text-xs sm:text-sm font-medium text-light-text truncate pr-1">
             {state.winner === 2 && <span className="text-green-400 mr-1">✓</span>}
             {pareja2Label}
           </div>
           {[0, 1, 2].map((setIdx) => (
             <div
               key={setIdx}
-              className={`text-center font-mono text-lg font-bold ${
+              className={`text-center font-mono text-base sm:text-lg font-bold ${
                 state.sets[setIdx].isComplete
                   ? state.sets[setIdx].winnerId === 2
                     ? 'text-green-400'
@@ -518,7 +518,7 @@ const ArbitrajeTab: React.FC<ArbitrajeTabProps> = ({
                 : '-'}
             </div>
           ))}
-          <div className="text-center font-mono text-xl font-bold text-primary-300">
+          <div className="text-center font-mono text-lg sm:text-xl font-bold text-primary-300">
             {!state.isFinished ? getPointDisplay(2) : '-'}
           </div>
         </div>
@@ -544,22 +544,22 @@ const ArbitrajeTab: React.FC<ArbitrajeTabProps> = ({
 
       {/* Point buttons */}
       {!state.isFinished ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <button
             onClick={() => addPoint(1)}
-            className="py-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors active:scale-95"
+            className="py-3 sm:py-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors active:scale-95"
           >
             + Punto
             <br />
-            <span className="text-xs opacity-80 truncate block">{pareja1Label}</span>
+            <span className="text-[10px] sm:text-xs opacity-80 truncate block px-1">{pareja1Label}</span>
           </button>
           <button
             onClick={() => addPoint(2)}
-            className="py-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold text-sm transition-colors active:scale-95"
+            className="py-3 sm:py-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold text-sm transition-colors active:scale-95"
           >
             + Punto
             <br />
-            <span className="text-xs opacity-80 truncate block">{pareja2Label}</span>
+            <span className="text-[10px] sm:text-xs opacity-80 truncate block px-1">{pareja2Label}</span>
           </button>
         </div>
       ) : (

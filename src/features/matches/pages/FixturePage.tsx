@@ -46,8 +46,14 @@ const FixturePage = () => {
 
   const loadMatches = async () => {
     try {
-      const matchesData = await matchesService.getByCategory(tournamentId!, selectedCategory);
-      setMatches(matchesData);
+      const data = await matchesService.obtenerFixture(tournamentId!, selectedCategory);
+      const catData = data[selectedCategory];
+      if (catData?.rondas) {
+        const allMatches = Object.values(catData.rondas).flat() as Match[];
+        setMatches(allMatches);
+      } else {
+        setMatches([]);
+      }
     } catch (error) {
       console.error('Error loading matches:', error);
     }

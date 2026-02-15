@@ -90,13 +90,21 @@ export default function TournamentDetailPage() {
     }
   }, [fixtureGender, fixtureData]);
 
-  // Load matches when selected category changes
+  // Load matches when selected category changes — use obtenerFixture (public endpoint)
   useEffect(() => {
     if (fixtureCategory && id) {
       setLoadingFixture(true);
       matchesService
-        .getByCategory(id, fixtureCategory)
-        .then((matches) => setFixtureMatches(matches))
+        .obtenerFixture(id, fixtureCategory)
+        .then((data) => {
+          const catData = data[fixtureCategory];
+          if (catData?.rondas) {
+            const allMatches = Object.values(catData.rondas).flat() as Match[];
+            setFixtureMatches(allMatches);
+          } else {
+            setFixtureMatches([]);
+          }
+        })
         .catch(() => setFixtureMatches([]))
         .finally(() => setLoadingFixture(false));
     }

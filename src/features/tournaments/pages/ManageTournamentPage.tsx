@@ -143,32 +143,34 @@ export default function ManageTournamentPage() {
     <div className="min-h-screen bg-dark-surface">
       <div className="bg-dark-card border-b border-dark-border shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(`/tournaments/${id}`)} className="p-2 hover:bg-dark-hover rounded-lg transition-colors">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button onClick={() => navigate(`/tournaments/${id}`)} className="p-2 hover:bg-dark-hover rounded-lg transition-colors flex-shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold">{tournament.nombre}</h1>
-              <div className="flex items-center gap-3 mt-1">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold truncate">{tournament.nombre}</h1>
+              <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoColor[tournament.estado] || ''}`}>
                   {tournament.estado.replace('_', ' ')}
                 </span>
-                <span className="text-sm text-light-secondary flex items-center gap-1"><MapPin className="w-3 h-3" /> {tournament.ciudad}</span>
-                <span className="text-sm text-light-secondary flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(tournament.fechaInicio)}</span>
+                <span className="text-xs sm:text-sm text-light-secondary flex items-center gap-1"><MapPin className="w-3 h-3" /> {tournament.ciudad}</span>
+                <span className="text-xs sm:text-sm text-light-secondary flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(tournament.fechaInicio)}</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-1 mt-4 overflow-x-auto">
+          {/* Tabs — icons only on mobile, icons + labels on desktop */}
+          <div className="flex gap-0.5 sm:gap-1 mt-4 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap
+                title={tab.label}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-t-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0
                   ${activeTab === tab.key ? 'bg-primary-500/20 text-primary-400 border-b-2 border-primary-500' : 'text-light-secondary hover:text-light-text hover:bg-dark-hover'}`}
               >
                 {tab.icon}
-                {tab.label}
-                {tab.premium && !isPremium && <Lock className="w-3 h-3 ml-1" />}
+                <span className="hidden sm:inline">{tab.label}</span>
+                {tab.premium && !isPremium && <Lock className="w-3 h-3" />}
               </button>
             ))}
           </div>
@@ -1548,7 +1550,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     setFixtureData([]);
     setMessage('');
     try {
-      const data = await matchesService.obtenerFixture(tournament.id, categoryId);
+      const data = await matchesService.obtenerFixtureInterno(tournament.id, categoryId);
       if (!data || typeof data !== 'object') {
         setFixtureData([]);
         setMessage('La API devolvió una respuesta vacía');
@@ -1740,71 +1742,76 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   };
 
   const renderCategoriaRow = (tc: TournamentCategory & { inscripcionesCount: number }) => (
-    <div key={tc.id} className="flex items-center justify-between p-4 rounded-lg border border-dark-border bg-dark-card">
-      <div>
-        <p className="font-medium">{tc.category?.nombre}</p>
-        <div className="flex items-center gap-2 mt-1">
-          {getEstadoBadge(tc.estado)}
-          <span className="text-xs text-light-secondary">{tc.inscripcionesCount} parejas confirmadas</span>
+    <div key={tc.id} className="p-3 sm:p-4 rounded-lg border border-dark-border bg-dark-card space-y-2 sm:space-y-0">
+      <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
+        <div className="min-w-0">
+          <p className="font-medium text-sm sm:text-base">{tc.category?.nombre}</p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {getEstadoBadge(tc.estado)}
+            <span className="text-xs text-light-secondary">{tc.inscripcionesCount} parejas</span>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {canSortear(tc) && (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => handleSortear(tc.categoryId)}
-            loading={sorteando === tc.categoryId}
-            disabled={sorteando !== null}
-          >
-            <Trophy className="w-4 h-4 mr-1" /> {tc.estado === 'FIXTURE_BORRADOR' ? 'Re-Sortear' : 'Sortear'}
-          </Button>
-        )}
-        {['FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadFixture(tc.categoryId)}
-            loading={loadingFixture && selectedCategory === tc.categoryId}
-          >
-            <Eye className="w-4 h-4 mr-1" /> Ver Fixture
-          </Button>
-        )}
-        {tc.estado === 'FIXTURE_BORRADOR' && (
-          <Button
-            variant="success"
-            size="sm"
-            onClick={() => handlePublicar(tc.categoryId)}
-            loading={publishing}
-          >
-            <Send className="w-4 h-4 mr-1" /> Publicar
-          </Button>
-        )}
-        {tc.estado === 'INSCRIPCIONES_ABIERTAS' && (
-          <span className="text-xs text-yellow-400">Cierra inscripciones primero</span>
-        )}
-        {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 2 && (
-          <span className="text-xs text-red-400">Min. 2 parejas</span>
-        )}
-        {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 2 && !hasCanchas && (
-          <span className="text-xs text-orange-400">Configura canchas y horarios primero</span>
-        )}
-        {/* Botón Finalizar — visible cuando fixture está cargado y todos los matches completos */}
-        {['SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && isCategoryComplete(tc.categoryId) && (
-          <Button
-            variant="success"
-            size="sm"
-            onClick={() => handleShowStandings(tc.categoryId)}
-            loading={loadingStandings && showStandingsModal === tc.categoryId}
-          >
-            <Award className="w-4 h-4 mr-1" /> Finalizar
-          </Button>
-        )}
-        {tc.estado === 'FINALIZADA' && (
-          <span className="text-xs text-gray-400 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Finalizada
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
+          {canSortear(tc) && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => handleSortear(tc.categoryId)}
+              loading={sorteando === tc.categoryId}
+              disabled={sorteando !== null}
+              className="text-xs sm:text-sm"
+            >
+              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {tc.estado === 'FIXTURE_BORRADOR' ? 'Re-Sortear' : 'Sortear'}
+            </Button>
+          )}
+          {['FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadFixture(tc.categoryId)}
+              loading={loadingFixture && selectedCategory === tc.categoryId}
+              className="text-xs sm:text-sm"
+            >
+              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> Fixture
+            </Button>
+          )}
+          {tc.estado === 'FIXTURE_BORRADOR' && (
+            <Button
+              variant="success"
+              size="sm"
+              onClick={() => handlePublicar(tc.categoryId)}
+              loading={publishing}
+              className="text-xs sm:text-sm"
+            >
+              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> Publicar
+            </Button>
+          )}
+          {tc.estado === 'INSCRIPCIONES_ABIERTAS' && (
+            <span className="text-xs text-yellow-400">Cierra inscripciones primero</span>
+          )}
+          {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 2 && (
+            <span className="text-xs text-red-400">Min. 2 parejas</span>
+          )}
+          {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 2 && !hasCanchas && (
+            <span className="text-xs text-orange-400">Configura canchas primero</span>
+          )}
+          {['SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && isCategoryComplete(tc.categoryId) && (
+            <Button
+              variant="success"
+              size="sm"
+              onClick={() => handleShowStandings(tc.categoryId)}
+              loading={loadingStandings && showStandingsModal === tc.categoryId}
+              className="text-xs sm:text-sm"
+            >
+              <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> Finalizar
+            </Button>
+          )}
+          {tc.estado === 'FINALIZADA' && (
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Finalizada
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1860,28 +1867,30 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
 
       {/* Vista del Fixture */}
       {selectedCategory && (loadingFixture || fixtureData.length > 0) && (
-        <Card className="p-6" ref={fixtureRef}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">
-              Vista del Fixture
+        <Card className="p-4 sm:p-6" ref={fixtureRef}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <h3 className="font-bold text-base sm:text-lg">
+              Fixture
               {(() => {
                 const cat = categorias.find(c => c.categoryId === selectedCategory);
                 return cat ? ` — ${cat.category?.nombre}` : '';
               })()}
             </h3>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-shrink-0">
               {isPremium ? (
                 <Button
                   variant={swapMode ? 'danger' : 'outline'}
                   size="sm"
                   onClick={() => { setSwapMode(!swapMode); setSwapSelection([]); }}
+                  className="text-xs sm:text-sm"
                 >
-                  <ArrowRightLeft className="w-4 h-4 mr-1" />
-                  {swapMode ? 'Cancelar Swap' : 'Intercambiar Horarios'}
+                  <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden sm:inline">{swapMode ? 'Cancelar Swap' : 'Intercambiar Horarios'}</span>
+                  <span className="sm:hidden">{swapMode ? 'Cancelar' : 'Swap'}</span>
                 </Button>
               ) : (
                 <span className="text-xs text-light-secondary flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Swap requiere Premium
+                  <Lock className="w-3 h-3" /> Swap Premium
                 </span>
               )}
             </div>
@@ -1902,10 +1911,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
 
           {/* Swap preview */}
           {swapMode && swapSelection.length === 2 && (
-            <div className="mt-4 p-4 bg-amber-900/30 border border-amber-500/50 rounded-lg">
-              <p className="text-sm text-amber-400 mb-3">Intercambiar horarios de estos 2 partidos:</p>
-              <div className="flex items-center gap-4 text-sm mb-3">
-                <div className="flex-1 p-2 bg-dark-surface rounded">
+            <div className="mt-4 p-3 sm:p-4 bg-amber-900/30 border border-amber-500/50 rounded-lg">
+              <p className="text-xs sm:text-sm text-amber-400 mb-3">Intercambiar horarios:</p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 text-sm mb-3">
+                <div className="flex-1 p-2 bg-dark-surface rounded text-xs sm:text-sm">
                   {(() => {
                     const m = fixtureData.find((m) => m.id === swapSelection[0]);
                     if (!m) return '';
@@ -1913,8 +1922,8 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                     return `${getParejaLabel(m.pareja1)} vs ${getParejaLabel(m.pareja2)} — ${canchaName} ${m.horaProgramada || 'Sin hora'}`;
                   })()}
                 </div>
-                <ArrowRightLeft className="w-5 h-5 text-amber-400" />
-                <div className="flex-1 p-2 bg-dark-surface rounded">
+                <ArrowRightLeft className="w-5 h-5 text-amber-400 self-center rotate-90 sm:rotate-0 flex-shrink-0" />
+                <div className="flex-1 p-2 bg-dark-surface rounded text-xs sm:text-sm">
                   {(() => {
                     const m = fixtureData.find((m) => m.id === swapSelection[1]);
                     if (!m) return '';
@@ -1932,8 +1941,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           {/* Grilla editable de partidos */}
           {fixtureData.length > 0 && (
           <div className="mt-6">
-            <h4 className="font-semibold mb-3">Grilla de Partidos</h4>
-            <div className="overflow-x-auto">
+            <h4 className="font-semibold mb-3 text-sm sm:text-base">Grilla de Partidos</h4>
+
+            {/* Desktop: table view */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-dark-border">
@@ -2067,7 +2078,6 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                               </Button>
                             )
                           )}
-                          {/* Botón Cargar Resultado — visible si tiene ambas parejas y no está finalizado */}
                           {match.pareja1Id && match.pareja2Id
                             && match.estado !== 'FINALIZADO' && match.estado !== 'WO' && match.estado !== 'CANCELADO'
                             && !swapMode && (
@@ -2088,6 +2098,141 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile: card view */}
+            <div className="md:hidden space-y-2">
+              {fixtureData.map((match) => {
+                const isEditing = !!editingSchedule[match.id];
+                const isSelected = swapSelection.includes(match.id);
+                const rondaLabel: Record<string, string> = {
+                  ACOMODACION_1: 'Acom. 1', ACOMODACION_2: 'Acom. 2',
+                  DIECISEISAVOS: '16avos', OCTAVOS: '8vos',
+                  CUARTOS: '4tos', SEMIFINAL: 'Semi', FINAL: 'Final',
+                };
+                return (
+                  <div
+                    key={match.id}
+                    className={`p-3 rounded-lg border bg-dark-card ${isSelected ? 'border-amber-500/50 bg-amber-900/20' : 'border-dark-border'} ${swapMode ? 'cursor-pointer active:bg-dark-hover' : ''}`}
+                    onClick={swapMode ? () => handleSwapSelect(match.id) : undefined}
+                  >
+                    {/* Top row: ronda + estado + swap checkbox */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {swapMode && <input type="checkbox" checked={isSelected} readOnly className="rounded" />}
+                        <span className="text-xs font-semibold text-primary-400">{rondaLabel[match.ronda] || match.ronda}</span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        match.estado === 'FINALIZADO' ? 'bg-green-900/30 text-green-400' :
+                        match.estado === 'WO' ? 'bg-red-900/30 text-red-400' :
+                        'bg-gray-900/30 text-gray-400'
+                      }`}>
+                        {match.estado === 'WO' ? 'BYE' : match.estado}
+                      </span>
+                    </div>
+
+                    {/* Parejas */}
+                    <div className="text-sm space-y-0.5 mb-2">
+                      <p className={`truncate ${match.parejaGanadoraId === match.pareja1Id ? 'font-semibold text-green-400' : ''}`}>
+                        {getParejaLabel(match.pareja1)}
+                      </p>
+                      <p className="text-light-secondary text-xs">vs</p>
+                      <p className={`truncate ${match.parejaGanadoraId === match.pareja2Id ? 'font-semibold text-green-400' : ''}`}>
+                        {getParejaLabel(match.pareja2)}
+                      </p>
+                    </div>
+
+                    {/* Schedule info */}
+                    {isEditing ? (
+                      <div className="space-y-2 mb-2">
+                        <select
+                          value={editingSchedule[match.id]?.torneoCanchaId || ''}
+                          onChange={(e) => setEditingSchedule((prev) => ({
+                            ...prev,
+                            [match.id]: { ...prev[match.id], torneoCanchaId: e.target.value },
+                          }))}
+                          className="w-full text-xs bg-dark-surface border border-dark-border rounded px-2 py-1.5 text-light-text"
+                        >
+                          <option value="">Sin cancha</option>
+                          {torneoCanchas.map((tc) => (
+                            <option key={tc.id} value={tc.id}>{tc.sedeCancha?.nombre || tc.sedeCanchaId}</option>
+                          ))}
+                        </select>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={editingSchedule[match.id]?.fechaProgramada || ''}
+                            onChange={(e) => setEditingSchedule((prev) => ({
+                              ...prev,
+                              [match.id]: { ...prev[match.id], fechaProgramada: e.target.value },
+                            }))}
+                            className="text-xs bg-dark-surface border border-dark-border rounded px-2 py-1.5 text-light-text"
+                          />
+                          <input
+                            type="time"
+                            value={editingSchedule[match.id]?.horaProgramada || ''}
+                            onChange={(e) => setEditingSchedule((prev) => ({
+                              ...prev,
+                              [match.id]: { ...prev[match.id], horaProgramada: e.target.value },
+                            }))}
+                            className="text-xs bg-dark-surface border border-dark-border rounded px-2 py-1.5 text-light-text"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 text-xs text-light-secondary mb-2">
+                        <span>{match.torneoCancha?.sedeCancha?.nombre || 'Sin cancha'}</span>
+                        <span>{match.fechaProgramada ? new Date(match.fechaProgramada).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' }) : 'Sin fecha'}</span>
+                        <span>{match.horaProgramada || 'Sin hora'}</span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {!swapMode && (
+                      <div className="flex gap-1.5">
+                        {match.estado !== 'FINALIZADO' && match.estado !== 'WO' && (
+                          isEditing ? (
+                            <>
+                              <Button size="sm" variant="primary" onClick={() => handleReprogramar(match.id)} loading={savingSchedule === match.id} className="text-xs flex-1">
+                                <Save className="w-3 h-3 mr-1" /> Guardar
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingSchedule((prev) => {
+                                const next = { ...prev };
+                                delete next[match.id];
+                                return next;
+                              })} className="text-xs">
+                                ✕
+                              </Button>
+                            </>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={() => setEditingSchedule((prev) => ({
+                              ...prev,
+                              [match.id]: {
+                                fechaProgramada: match.fechaProgramada?.split('T')[0] || '',
+                                horaProgramada: match.horaProgramada || '',
+                                torneoCanchaId: match.torneoCanchaId || '',
+                              },
+                            }))} className="text-xs">
+                              <Edit3 className="w-3 h-3 mr-1" /> Editar
+                            </Button>
+                          )
+                        )}
+                        {match.pareja1Id && match.pareja2Id
+                          && match.estado !== 'FINALIZADO' && match.estado !== 'WO' && match.estado !== 'CANCELADO' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setScoreModalMatch(match)}
+                            className="text-xs text-green-400 border-green-500/30 hover:bg-green-500/10"
+                          >
+                            <ClipboardCheck className="w-3 h-3 mr-1" /> Resultado
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
           )}

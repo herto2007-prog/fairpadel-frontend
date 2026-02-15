@@ -262,18 +262,14 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
         <Card className={`overflow-hidden ${isBye ? 'opacity-60' : ''} ${isClickable ? 'group-hover:ring-1 group-hover:ring-primary-500/50 transition-shadow' : ''}`}>
           <CardContent className="p-0">
             {/* Header con cancha + fecha + hora + estado */}
-            <div className="flex justify-between items-center px-3 py-1.5 bg-dark-surface border-b border-dark-border gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex justify-between items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-dark-surface border-b border-dark-border gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 {canchaLabel && (
-                  <span className="text-xs font-medium text-primary-400 truncate flex items-center gap-1">
-                    <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/>
-                      <path d="M8 4a4 4 0 1 0 0 8 4 4 0 0 0 8-4z" opacity="0.3"/>
-                    </svg>
+                  <span className="text-[10px] sm:text-xs font-medium text-primary-400 truncate">
                     {canchaLabel}
                   </span>
                 )}
-                <span className="text-xs text-light-secondary whitespace-nowrap">
+                <span className="text-[10px] sm:text-xs text-light-secondary whitespace-nowrap">
                   {match.fechaProgramada
                     ? new Date(match.fechaProgramada).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })
                     : ''
@@ -285,37 +281,37 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
             </div>
 
             {/* Pareja 1 */}
-            <div className={`flex justify-between items-center px-2 py-1.5 border-b border-dark-border ${
+            <div className={`flex justify-between items-center px-1.5 sm:px-2 py-1 sm:py-1.5 border-b border-dark-border ${
               isWinner(match, 1) ? 'bg-green-900/30' : ''
             }`}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="flex -space-x-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
                   <PlayerAvatar player={match.pareja1?.jugador1} size={22} />
                   <PlayerAvatar player={match.pareja1?.jugador2} size={22} />
                 </div>
-                <span className={`text-sm truncate ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
+                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
                   {getParejaName(match, 1)}
                 </span>
               </div>
-              <span className="font-mono font-semibold text-sm ml-2 flex-shrink-0">
+              <span className="font-mono font-semibold text-xs sm:text-sm ml-1.5 flex-shrink-0">
                 {getScore(match, 1)}
               </span>
             </div>
 
             {/* Pareja 2 */}
-            <div className={`flex justify-between items-center px-2 py-1.5 ${
+            <div className={`flex justify-between items-center px-1.5 sm:px-2 py-1 sm:py-1.5 ${
               isWinner(match, 2) ? 'bg-green-900/30' : ''
             }`}>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="flex -space-x-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
                   <PlayerAvatar player={match.pareja2?.jugador1} size={22} />
                   <PlayerAvatar player={match.pareja2?.jugador2} size={22} />
                 </div>
-                <span className={`text-sm truncate ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
+                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
                   {getParejaName(match, 2)}
                 </span>
               </div>
-              <span className="font-mono font-semibold text-sm ml-2 flex-shrink-0">
+              <span className="font-mono font-semibold text-xs sm:text-sm ml-1.5 flex-shrink-0">
                 {getScore(match, 2)}
               </span>
             </div>
@@ -356,7 +352,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
           )}
 
           {/* Rondas */}
-          <div className="flex gap-8 min-w-max p-4">
+          <div className="flex gap-4 sm:gap-8 min-w-max p-2 sm:p-4">
             {rounds.map((roundKey, roundIdx) => {
               const roundMatches = matchesByRound[roundKey] || [];
               // Calcular espaciado vertical progresivo para alinear con bracket
@@ -368,15 +364,15 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
               const spacingMultiplier = isAcomodacion ? 1 : Math.pow(2, Math.max(0, bracketRoundIdx));
 
               return (
-                <div key={roundKey} className="flex flex-col min-w-[300px]">
-                  <h3 className="text-lg font-semibold text-center py-2 bg-primary-500/20 text-primary-500 rounded-lg mb-4">
+                <div key={roundKey} className="flex flex-col min-w-[220px] sm:min-w-[300px]">
+                  <h3 className="text-sm sm:text-lg font-semibold text-center py-1.5 sm:py-2 bg-primary-500/20 text-primary-500 rounded-lg mb-3 sm:mb-4">
                     {getRoundName(roundKey)}
-                    <span className="text-xs font-normal ml-2 opacity-70">({roundMatches.length})</span>
+                    <span className="text-xs font-normal ml-1.5 opacity-70">({roundMatches.length})</span>
                   </h3>
 
                   <div
                     className="flex flex-col justify-around flex-1"
-                    style={{ gap: `${Math.max(16, spacingMultiplier * 16)}px` }}
+                    style={{ gap: `${Math.max(12, spacingMultiplier * 12)}px` }}
                   >
                     {roundMatches.map((match) => renderMatchCard(match))}
                   </div>
