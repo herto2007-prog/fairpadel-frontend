@@ -27,6 +27,8 @@ import EditTournamentPage from '@/features/tournaments/pages/EditTournamentPage'
 import CircuitosListPage from '@/features/circuitos/pages/CircuitosListPage';
 import CircuitoDetailPage from '@/features/circuitos/pages/CircuitoDetailPage';
 import FixturePage from '@/features/matches/pages/FixturePage';
+import PremiumPage from '@/features/suscripciones/pages/PremiumPage';
+import FeedPage from '@/features/feed/pages/FeedPage';
 
 function App() {
   return (
@@ -50,6 +52,7 @@ function App() {
             <Route path="/circuitos" element={<CircuitosListPage />} />
             <Route path="/circuitos/:id" element={<CircuitoDetailPage />} />
             <Route path="/tournaments/:tournamentId/fixture" element={<FixturePage />} />
+            <Route path="/premium" element={<PremiumPage />} />
 
             {/* Protected - Admin */}
             <Route
@@ -121,6 +124,16 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminPublicidadPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected - Feed */}
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <FeedPage />
                 </ProtectedRoute>
               }
             />

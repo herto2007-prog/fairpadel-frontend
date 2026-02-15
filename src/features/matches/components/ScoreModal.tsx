@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button';
 import type { Match, CargarResultadoDto } from '@/types';
 import { usePadelScoring } from '../hooks/usePadelScoring';
 import matchesService from '@/services/matchesService';
+import { useAuthStore } from '@/store/authStore';
+import { Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // ═══════════════════════════════════════════════════════
@@ -50,6 +52,8 @@ export const ScoreModal: React.FC<ScoreModalProps> = ({
   match,
   onResultSaved,
 }) => {
+  const { user, hasRole } = useAuthStore();
+  const isPremium = user?.esPremium || hasRole('admin');
   const [activeTab, setActiveTab] = useState<TabMode>('directo');
   const [loading, setLoading] = useState(false);
 
@@ -77,14 +81,18 @@ export const ScoreModal: React.FC<ScoreModalProps> = ({
           Resultado Directo
         </button>
         <button
-          onClick={() => setActiveTab('arbitraje')}
+          onClick={() => isPremium && setActiveTab('arbitraje')}
+          disabled={!isPremium}
           className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'arbitraje'
               ? 'bg-primary-500 text-white'
+              : !isPremium
+              ? 'text-light-secondary/50 cursor-not-allowed'
               : 'text-light-secondary hover:text-light-text'
           }`}
         >
           Arbitraje en Vivo
+          {!isPremium && <Crown className="inline h-3 w-3 ml-1 text-yellow-400" />}
         </button>
       </div>
 

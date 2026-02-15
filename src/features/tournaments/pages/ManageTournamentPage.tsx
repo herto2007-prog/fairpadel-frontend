@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, Button, Loading, Checkbox } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
@@ -930,6 +930,8 @@ function PelotasRondaTab({ tournament, stats, isPremium }: { tournament: Tournam
 // ===================== TAB: AYUDANTES =====================
 
 function AyudantesTab({ tournament }: { tournament: Tournament }) {
+  const { user } = useAuthStore();
+  const isPremiumOrAdmin = user?.esPremium || useAuthStore.getState().hasRole('admin');
   const [ayudantes, setAyudantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [documento, setDocumento] = useState('');
@@ -981,6 +983,23 @@ function AyudantesTab({ tournament }: { tournament: Tournament }) {
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loading size="lg" /></div>;
+
+  if (!isPremiumOrAdmin) {
+    return (
+      <div className="text-center py-12">
+        <Crown className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-dark-text mb-2">Función Premium</h3>
+        <p className="text-dark-textSecondary mb-4 max-w-md mx-auto">
+          Agrega ayudantes y árbitros a tu torneo para que te ayuden a cargar resultados.
+        </p>
+        <Link to="/premium">
+          <Button className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold">
+            <Crown className="h-4 w-4 mr-2" /> Activar Premium - $3/mes
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   const ROLES = [
     { value: 'ayudante', label: 'Ayudante General' },
@@ -1753,16 +1772,21 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
           {canSortear(tc) && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => handleSortear(tc.categoryId)}
-              loading={sorteando === tc.categoryId}
-              disabled={sorteando !== null}
-              className="text-xs sm:text-sm"
-            >
-              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {tc.estado === 'FIXTURE_BORRADOR' ? 'Re-Sortear' : 'Sortear'}
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleSortear(tc.categoryId)}
+                loading={sorteando === tc.categoryId}
+                disabled={sorteando !== null}
+                className="text-xs sm:text-sm"
+              >
+                <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {tc.estado === 'FIXTURE_BORRADOR' ? 'Re-Sortear' : 'Sortear'}
+              </Button>
+              {tc.estado === 'FIXTURE_BORRADOR' && !isPremium && (
+                <span className="text-[10px] text-yellow-400">Premium</span>
+              )}
+            </>
           )}
           {['FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && (
             <Button

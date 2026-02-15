@@ -27,6 +27,7 @@ import {
   TrendingUp,
   ClipboardCheck,
   Megaphone,
+  Newspaper,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -156,6 +157,7 @@ const Header = () => {
     { to: '/tournaments', label: 'Torneos', icon: Calendar },
     { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
+    ...(isAuthenticated ? [{ to: '/feed', label: 'Feed', icon: Newspaper }] : []),
   ];
 
   return (
@@ -314,6 +316,14 @@ const Header = () => {
                       >
                         <Calendar className="h-4 w-4" />
                         Mis Inscripciones
+                      </Link>
+                      <Link
+                        to="/premium"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover"
+                      >
+                        <Crown className="h-4 w-4" />
+                        {user?.esPremium ? 'Mi Suscripción' : 'Premium'}
                       </Link>
                       {isOrganizador && (
                         <Link
@@ -555,6 +565,14 @@ const Header = () => {
                   >
                     <Calendar className="h-5 w-5" />
                     Mis Inscripciones
+                  </Link>
+                  <Link
+                    to="/premium"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover rounded-lg"
+                  >
+                    <Crown className="h-5 w-5" />
+                    {user?.esPremium ? 'Mi Suscripción' : 'Premium'}
                   </Link>
                   {isOrganizador && (
                     <Link
