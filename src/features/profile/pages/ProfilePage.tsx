@@ -129,6 +129,8 @@ const ProfilePage = () => {
           <ProfilePhotoGallery
             fotos={perfil.fotos}
             isOwnProfile={perfil.social.isOwnProfile}
+            userId={profileId}
+            onPhotosChange={loadProfile}
           />
         </div>
       )}
