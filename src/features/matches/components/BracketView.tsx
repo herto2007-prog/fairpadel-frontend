@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, Badge } from '@/components/ui';
 import type { Match, User } from '@/types';
 import { MatchStatus } from '@/types';
@@ -168,81 +168,102 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
   };
 
   // Calcular conectores SVG entre rondas
-  useEffect(() => {
-    if (!bracketRef.current || rounds.length < 2) {
+  const calculateConnectors = useCallback(() => {
+    const container = bracketRef.current;
+    if (!container || rounds.length < 2) {
       setConnectors([]);
       return;
     }
 
-    const calculateConnectors = () => {
-      const newConnectors: { x1: number; y1: number; x2: number; y2: number; type: 'winner' | 'loser' }[] = [];
-      const container = bracketRef.current;
-      if (!container) return;
+    const newConnectors: { x1: number; y1: number; x2: number; y2: number; type: 'winner' | 'loser' }[] = [];
+    const containerRect = container.getBoundingClientRect();
+    const allMatchesFlat = Object.values(matchesByRound).flat();
 
-      const containerRect = container.getBoundingClientRect();
-      const allMatchesFlat = Object.values(matchesByRound).flat();
+    for (let i = 0; i < rounds.length - 1; i++) {
+      const currentRound = rounds[i];
+      const nextRound = rounds[i + 1];
+      const currentMatches = matchesByRound[currentRound] || [];
+      const nextMatches = matchesByRound[nextRound] || [];
 
-      for (let i = 0; i < rounds.length - 1; i++) {
-        const currentRound = rounds[i];
-        const nextRound = rounds[i + 1];
-        const currentMatches = matchesByRound[currentRound] || [];
-        const nextMatches = matchesByRound[nextRound] || [];
+      for (let nIdx = 0; nIdx < nextMatches.length; nIdx++) {
+        const nextMatch = nextMatches[nIdx];
+        const nextEl = container.querySelector(`[data-match-id="${nextMatch.id}"]`) as HTMLElement;
+        if (!nextEl) continue;
 
-        // Para cada match de la ronda siguiente, buscar sus matches alimentadores
-        for (let nIdx = 0; nIdx < nextMatches.length; nIdx++) {
-          const nextMatch = nextMatches[nIdx];
-          const nextEl = container.querySelector(`[data-match-id="${nextMatch.id}"]`) as HTMLElement;
-          if (!nextEl) continue;
+        const nextRect = nextEl.getBoundingClientRect();
+        const nextY = nextRect.top + nextRect.height / 2 - containerRect.top;
+        const nextX = nextRect.left - containerRect.left;
 
-          const nextRect = nextEl.getBoundingClientRect();
-          const nextY = nextRect.top + nextRect.height / 2 - containerRect.top;
-          const nextX = nextRect.left - containerRect.left;
+        // Buscar feeders de ganadores (por partidoSiguienteId)
+        const winnerFeeders = currentMatches.filter(m => m.partidoSiguienteId === nextMatch.id);
 
-          // Buscar feeders de ganadores (por partidoSiguienteId)
-          const winnerFeeders = currentMatches.filter(m => m.partidoSiguienteId === nextMatch.id);
+        for (const feeder of winnerFeeders) {
+          const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
+          if (!feederEl) continue;
 
-          for (const feeder of winnerFeeders) {
-            const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
-            if (!feederEl) continue;
+          const feederRect = feederEl.getBoundingClientRect();
+          const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
+          const feederX = feederRect.right - containerRect.left;
 
-            const feederRect = feederEl.getBoundingClientRect();
-            const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
-            const feederX = feederRect.right - containerRect.left;
+          newConnectors.push({
+            x1: feederX, y1: feederY,
+            x2: nextX, y2: nextY,
+            type: 'winner',
+          });
+        }
 
-            newConnectors.push({
-              x1: feederX, y1: feederY,
-              x2: nextX, y2: nextY,
-              type: 'winner',
-            });
-          }
+        // Buscar feeders de perdedores (por partidoPerdedorSiguienteId) — cross-ronda
+        const loserFeeders = allMatchesFlat.filter(m => m.partidoPerdedorSiguienteId === nextMatch.id);
 
-          // Buscar feeders de perdedores (por partidoPerdedorSiguienteId) — cross-ronda
-          const loserFeeders = allMatchesFlat.filter(m => m.partidoPerdedorSiguienteId === nextMatch.id);
+        for (const feeder of loserFeeders) {
+          const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
+          if (!feederEl) continue;
 
-          for (const feeder of loserFeeders) {
-            const feederEl = container.querySelector(`[data-match-id="${feeder.id}"]`) as HTMLElement;
-            if (!feederEl) continue;
+          const feederRect = feederEl.getBoundingClientRect();
+          const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
+          const feederX = feederRect.right - containerRect.left;
 
-            const feederRect = feederEl.getBoundingClientRect();
-            const feederY = feederRect.top + feederRect.height / 2 - containerRect.top;
-            const feederX = feederRect.right - containerRect.left;
-
-            newConnectors.push({
-              x1: feederX, y1: feederY,
-              x2: nextX, y2: nextY,
-              type: 'loser',
-            });
-          }
+          newConnectors.push({
+            x1: feederX, y1: feederY,
+            x2: nextX, y2: nextY,
+            type: 'loser',
+          });
         }
       }
+    }
 
-      setConnectors(newConnectors);
+    setConnectors(newConnectors);
+  }, [rounds, matchesByRound]);
+
+  // Recalculate connectors on mount, data changes, and container resize
+  useEffect(() => {
+    const container = bracketRef.current;
+    if (!container) return;
+
+    // Initial calculation after DOM settles
+    const initialTimer = setTimeout(calculateConnectors, 50);
+
+    // Debounced recalculation on resize
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const debouncedRecalc = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(calculateConnectors, 100);
     };
 
-    // Wait for DOM to settle
-    const timer = setTimeout(calculateConnectors, 200);
-    return () => clearTimeout(timer);
-  }, [rounds, matchesByRound, matches]);
+    // ResizeObserver for responsive recalculation
+    const resizeObserver = new ResizeObserver(debouncedRecalc);
+    resizeObserver.observe(container);
+
+    // Also listen for window resize (orientation changes, zoom)
+    window.addEventListener('resize', debouncedRecalc);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(resizeTimer);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', debouncedRecalc);
+    };
+  }, [calculateConnectors, matches]);
 
   const renderMatchCard = (match: Match) => {
     const canchaLabel = getCanchaLabel(match);

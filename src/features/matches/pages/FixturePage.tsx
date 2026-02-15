@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { matchesService } from '@/services/matchesService';
 import { tournamentsService } from '@/services/tournamentsService';
-import { Loading, Card, CardContent, Select } from '@/components/ui';
+import { Loading, Card, CardContent, Select, Button } from '@/components/ui';
 import { BracketView } from '../components/BracketView';
+import { Printer } from 'lucide-react';
 import type { Match, Tournament, Category } from '@/types';
 
 const FixturePage = () => {
@@ -81,13 +82,13 @@ const FixturePage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-6 sm:mb-8 no-print">
         <h1 className="text-xl sm:text-3xl font-bold text-light-text line-clamp-2">{tournament.nombre}</h1>
         <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Fixture del torneo</p>
       </div>
 
       {categories.length > 0 && (
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-end gap-3 no-print">
           <Select
             label="Categoría"
             value={selectedCategory}
@@ -100,8 +101,26 @@ const FixturePage = () => {
               </option>
             ))}
           </Select>
+          {matches.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              className="flex items-center gap-2"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir Fixture
+            </Button>
+          )}
         </div>
       )}
+
+      {/* Print-only header */}
+      <div className="hidden print:block mb-4">
+        <h1 className="text-2xl font-bold">{tournament.nombre}</h1>
+        <p className="text-sm text-gray-600">
+          Fixture — {categories.find(c => c.id === selectedCategory)?.nombre || ''}
+        </p>
+      </div>
 
       {matches.length === 0 ? (
         <Card>

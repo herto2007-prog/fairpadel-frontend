@@ -137,3 +137,106 @@ input, select, textarea {
   transform: translateY(0);
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
+
+/* ═══════════════════════════════════════════
+   PRINT STYLES — Fixture / Bracket
+   ═══════════════════════════════════════════ */
+@media print {
+  /* Hide navigation, sidebar, footer, and non-essential UI */
+  header,
+  footer,
+  nav,
+  aside,
+  .no-print,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  /* Reset dark theme for print (white background, black text) */
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Force light backgrounds on cards */
+  .bg-dark-card,
+  .bg-dark-bg,
+  .bg-dark-surface {
+    background: white !important;
+    border: 1px solid #ccc !important;
+  }
+
+  /* Text colors for print */
+  .text-light-text,
+  .text-light-secondary {
+    color: black !important;
+  }
+
+  .text-primary-400,
+  .text-primary-500,
+  .text-primary-300 {
+    color: #333 !important;
+  }
+
+  /* Bracket round headers */
+  .bg-primary-500\/20 {
+    background: #eee !important;
+    color: #333 !important;
+  }
+
+  /* Winner highlight */
+  .bg-green-900\/30 {
+    background: #e8f5e9 !important;
+  }
+
+  /* Badge colors for print */
+  [class*="bg-"] span,
+  [class*="badge"] {
+    color: black !important;
+  }
+
+  /* SVG connectors: make them visible on print */
+  svg path {
+    stroke: #888 !important;
+    stroke-width: 1.5px !important;
+  }
+
+  /* A4 landscape for fixture bracket */
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  /* Ensure bracket doesn't clip */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Scale bracket to fit page width */
+  .min-w-max {
+    min-width: unset !important;
+  }
+
+  /* Reduce gap sizes for print */
+  .gap-4, .gap-8 {
+    gap: 8px !important;
+  }
+
+  /* Compact match cards for print */
+  .min-w-\[220px\],
+  .sm\:min-w-\[300px\] {
+    min-width: 180px !important;
+  }
+
+  /* Hide avatars on print to save space */
+  .rounded-full {
+    display: none !important;
+  }
+
+  /* Border styling for print */
+  .border-dark-border {
+    border-color: #ccc !important;
+  }
+}
