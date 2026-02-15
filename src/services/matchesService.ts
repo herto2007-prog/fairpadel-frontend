@@ -17,8 +17,13 @@ class MatchesService {
     return response.data;
   }
 
-  async cargarResultado(matchId: string, data: CargarResultadoDto): Promise<Match> {
-    const response = await api.put<Match>(`/matches/${matchId}/cargar-resultado`, data);
+  async cargarResultado(matchId: string, data: CargarResultadoDto): Promise<Match & { categoriaCompleta?: boolean }> {
+    const response = await api.put<Match & { categoriaCompleta?: boolean }>(`/matches/${matchId}/cargar-resultado`, data);
+    return response.data;
+  }
+
+  async editarResultado(matchId: string, data: CargarResultadoDto): Promise<Match & { categoriaCompleta?: boolean }> {
+    const response = await api.put<Match & { categoriaCompleta?: boolean }>(`/matches/${matchId}/editar-resultado`, data);
     return response.data;
   }
 

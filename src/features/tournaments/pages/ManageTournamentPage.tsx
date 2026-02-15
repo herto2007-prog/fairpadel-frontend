@@ -2357,9 +2357,39 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           isOpen={!!scoreModalMatch}
           onClose={() => setScoreModalMatch(null)}
           match={scoreModalMatch}
-          onResultSaved={() => {
+          onResultSaved={(result) => {
             if (selectedCategory) loadFixture(selectedCategory);
             setScoreModalMatch(null);
+            // Auto-finalize prompt: if this was the last match in the category
+            if (result?.categoriaCompleta && scoreModalMatch.ronda === 'FINAL') {
+              toast((t) => (
+                <div className="flex flex-col gap-2">
+                  <span className="font-medium">🏆 ¡La final ha terminado!</span>
+                  <span className="text-sm text-gray-400">¿Deseas finalizar la categoría y calcular rankings?</span>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => {
+                        toast.dismiss(t.id);
+                        if (selectedCategory) {
+                          handleShowStandings(selectedCategory);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-primary-500 text-white text-sm rounded-lg hover:bg-primary-600"
+                    >
+                      Finalizar Categoría
+                    </button>
+                    <button
+                      onClick={() => toast.dismiss(t.id)}
+                      className="px-3 py-1.5 bg-dark-surface text-light-secondary text-sm rounded-lg hover:bg-dark-border"
+                    >
+                      Más tarde
+                    </button>
+                  </div>
+                </div>
+              ), { duration: 15000 });
+            } else if (result?.categoriaCompleta) {
+              toast.success('Todos los partidos de esta categoría están completos. Puedes finalizarla desde el panel de categorías.');
+            }
           }}
         />
       )}

@@ -268,10 +268,11 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
   const renderMatchCard = (match: Match) => {
     const canchaLabel = getCanchaLabel(match);
     const isBye = match.estado === MatchStatus.WO && match.observaciones?.includes('BYE');
-    // Clickeable si: tiene handler, ambas parejas asignadas, y no está finalizado/WO/cancelado
+    // Clickeable si: tiene handler, ambas parejas asignadas, y no es BYE/cancelado
+    // FINALIZADO es clickeable para edición de resultado
     const isClickable = onMatchClick
       && match.pareja1Id && match.pareja2Id
-      && ![MatchStatus.FINALIZADO, MatchStatus.WO, MatchStatus.CANCELADO].includes(match.estado);
+      && ![MatchStatus.WO, MatchStatus.CANCELADO].includes(match.estado);
 
     return (
       <div
