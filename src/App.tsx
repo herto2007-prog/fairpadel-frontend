@@ -28,6 +28,8 @@ import CircuitosListPage from '@/features/circuitos/pages/CircuitosListPage';
 import CircuitoDetailPage from '@/features/circuitos/pages/CircuitoDetailPage';
 import FixturePage from '@/features/matches/pages/FixturePage';
 import PremiumPage from '@/features/suscripciones/pages/PremiumPage';
+import SuscripcionConfirmacionPage from '@/features/suscripciones/pages/SuscripcionConfirmacionPage';
+import SuscripcionCanceladoPage from '@/features/suscripciones/pages/SuscripcionCanceladoPage';
 import FeedPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
 
@@ -54,6 +56,8 @@ function App() {
             <Route path="/circuitos/:id" element={<CircuitoDetailPage />} />
             <Route path="/tournaments/:tournamentId/fixture" element={<FixturePage />} />
             <Route path="/premium" element={<PremiumPage />} />
+            <Route path="/suscripcion/confirmacion" element={<SuscripcionConfirmacionPage />} />
+            <Route path="/suscripcion/cancelado" element={<SuscripcionCanceladoPage />} />
             <Route path="/jugadores" element={<JugadoresPage />} />
             <Route path="/jugadores/:id" element={<ProfilePage />} />
 
