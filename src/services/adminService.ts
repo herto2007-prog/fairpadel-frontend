@@ -185,6 +185,71 @@ export const adminService = {
     const response = await api.get('/admin/metricas/torneos');
     return response.data;
   },
+
+  // ============ PREMIUM DASHBOARD ============
+  getUsuariosPremium: async (search?: string, estado?: string): Promise<any[]> => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (estado) params.append('estado', estado);
+    const query = params.toString();
+    const response = await api.get(`/admin/premium/usuarios${query ? `?${query}` : ''}`);
+    return response.data;
+  },
+
+  getMetricasPremium: async (): Promise<{
+    totalPremium: number;
+    totalUsuarios: number;
+    tasaConversion: number;
+    suscripcionesActivas: number;
+    suscripcionesPendientes: number;
+    nuevosPremium30d: number;
+    cancelaciones30d: number;
+    mrr: number;
+    arr: number;
+    churnRate: number;
+    conCupon: number;
+    autoRenovarActivo: number;
+    proximosVencer: number;
+  }> => {
+    const response = await api.get('/admin/premium/metricas');
+    return response.data;
+  },
+
+  getTendenciasSuscripciones: async (): Promise<{
+    mes: string;
+    nuevas: number;
+    canceladas: number;
+    ingresos: number;
+  }[]> => {
+    const response = await api.get('/admin/premium/tendencias');
+    return response.data;
+  },
+
+  getActividadPremium: async (): Promise<any[]> => {
+    const response = await api.get('/admin/premium/actividad');
+    return response.data;
+  },
+
+  otorgarPremium: async (userId: string, dias: number, motivo: string): Promise<{ message: string }> => {
+    const response = await api.post('/admin/premium/otorgar', { userId, dias, motivo });
+    return response.data;
+  },
+
+  revocarPremium: async (userId: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/premium/revocar/${userId}`);
+    return response.data;
+  },
+
+  getEstadisticasCupones: async (): Promise<{
+    totalCupones: number;
+    cuponesActivos: number;
+    totalUsos: number;
+    descuentoTotal: number;
+    topCupones: { codigo: string; tipo: string; valor: number; usos: number; limite: number; estado: string }[];
+  }> => {
+    const response = await api.get('/admin/premium/cupones/stats');
+    return response.data;
+  },
 };
 
 export default adminService;
