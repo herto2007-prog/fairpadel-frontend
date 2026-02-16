@@ -81,9 +81,12 @@ const RegisterPage = () => {
           <CardContent className="text-center py-8">
             <div className="text-6xl mb-4">📧</div>
             <h2 className="text-2xl font-bold mb-2 text-light-text">¡Registro exitoso!</h2>
-            <p className="text-light-secondary mb-6">
+            <p className="text-light-secondary mb-4">
               Hemos enviado un correo de verificación a <strong className="text-light-text">{formData.email}</strong>.
               Por favor revisa tu bandeja de entrada.
+            </p>
+            <p className="text-sm text-amber-400/80 mb-6">
+              💡 Si no lo encontrás, revisá tu carpeta de <strong>Spam</strong> o <strong>Correo no deseado</strong>.
             </p>
             <Button variant="primary" onClick={() => navigate('/login')}>
               Ir a Iniciar Sesión
