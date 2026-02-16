@@ -52,7 +52,8 @@ const StatsRadarChart = ({ stats }: Props) => {
 
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 300 300" className="w-full max-w-[280px]">
+      <svg viewBox="0 0 300 300" className="w-full max-w-[280px]" role="img" aria-label={`Estadisticas del jugador: Overall ${stats.overall}, ${LABELS.map(({ key, label }) => `${label} ${stats[key]}`).join(', ')}`}>
+        <title>Estadisticas del jugador - Overall {stats.overall}</title>
         {/* Background levels */}
         {LEVELS.map((level) => (
           <polygon

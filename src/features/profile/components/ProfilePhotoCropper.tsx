@@ -11,9 +11,29 @@ interface ProfilePhotoCropperProps {
 }
 
 /**
- * Generates a cropped image blob from the original image and crop area.
+ * Helper: create a rotated canvas from the original image so that
+ * croppedAreaPixels (which are relative to the rotated image) can be
+ * used for a simple drawImage crop.
  */
-async function getCroppedImage(imageSrc: string, cropArea: Area): Promise<Blob> {
+function getRotatedImage(image: HTMLImageElement, rotation: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d')!;
+  const orientationChanged = rotation === 90 || rotation === 270;
+
+  canvas.width = orientationChanged ? image.naturalHeight : image.naturalWidth;
+  canvas.height = orientationChanged ? image.naturalWidth : image.naturalHeight;
+
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+
+  return canvas;
+}
+
+/**
+ * Generates a cropped image blob from the original image, crop area, and rotation.
+ */
+async function getCroppedImage(imageSrc: string, cropArea: Area, rotation = 0): Promise<Blob> {
   const image = new Image();
   image.crossOrigin = 'anonymous';
 
@@ -22,6 +42,9 @@ async function getCroppedImage(imageSrc: string, cropArea: Area): Promise<Blob> 
     image.onerror = reject;
     image.src = imageSrc;
   });
+
+  // Apply rotation to a temp canvas first
+  const rotatedCanvas = getRotatedImage(image, rotation % 360);
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -33,7 +56,7 @@ async function getCroppedImage(imageSrc: string, cropArea: Area): Promise<Blob> 
   canvas.height = outputSize;
 
   ctx.drawImage(
-    image,
+    rotatedCanvas,
     cropArea.x,
     cropArea.y,
     cropArea.width,
@@ -83,7 +106,7 @@ const ProfilePhotoCropper: React.FC<ProfilePhotoCropperProps> = ({
     if (!croppedAreaPixels) return;
 
     try {
-      const croppedBlob = await getCroppedImage(imageSrc, croppedAreaPixels);
+      const croppedBlob = await getCroppedImage(imageSrc, croppedAreaPixels, rotation);
       onCropComplete(croppedBlob);
     } catch (error) {
       console.error('Error cropping image:', error);

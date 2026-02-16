@@ -116,7 +116,7 @@ const FollowersModal = ({ userId, tab: initialTab, isOpen, onClose }: Props) => 
             >
               {/* Avatar */}
               <Link
-                to={`/profile/${user.id}`}
+                to={`/jugadores/${user.id}`}
                 onClick={onClose}
                 className="flex-shrink-0"
               >
@@ -124,7 +124,7 @@ const FollowersModal = ({ userId, tab: initialTab, isOpen, onClose }: Props) => 
                   {user.fotoUrl ? (
                     <img
                       src={user.fotoUrl}
-                      alt={user.nombre}
+                      alt={`${user.nombre} ${user.apellido}`}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -135,7 +135,7 @@ const FollowersModal = ({ userId, tab: initialTab, isOpen, onClose }: Props) => 
 
               {/* Name */}
               <Link
-                to={`/profile/${user.id}`}
+                to={`/jugadores/${user.id}`}
                 onClick={onClose}
                 className="flex-1 min-w-0"
               >

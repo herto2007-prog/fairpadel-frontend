@@ -668,6 +668,7 @@ export interface PerfilCompleto {
     isOwnProfile: boolean;
   };
   fotos: FotoResumen[];
+  totalFotos?: number;
 }
 
 // ==================== SOCIAL DTOs ====================

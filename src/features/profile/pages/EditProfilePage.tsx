@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { usersService } from '@/services/usersService';
 import { notificacionesService } from '@/services/notificacionesService';
@@ -7,6 +7,7 @@ import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/compo
 import type { UpdateProfileDto, PreferenciaNotificacion, TipoNotificacion } from '@/types';
 import { Camera, Crown, Bell, Mail, MessageSquare } from 'lucide-react';
 import ProfilePhotoCropper from '../components/ProfilePhotoCropper';
+import toast from 'react-hot-toast';
 
 // Labels legibles por tipo de notificacion
 const TIPO_LABELS: Record<string, string> = {
@@ -25,7 +26,6 @@ const EditProfilePage = () => {
   const { user, updateUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
@@ -63,19 +63,29 @@ const EditProfilePage = () => {
     campo: 'recibirEmail' | 'recibirSms',
     value: boolean,
   ) => {
+    const prevValue = !value; // The value before toggle
     setSavingPref(`${tipo}-${campo}`);
+
+    // Optimistic update
+    setPreferencias((prev) =>
+      prev.map((p) =>
+        p.tipoNotificacion === tipo ? { ...p, [campo]: value } : p,
+      ),
+    );
+
     try {
       await notificacionesService.actualizarPreferencia({
         tipoNotificacion: tipo,
         [campo]: value,
       });
+    } catch {
+      // Revert on error
       setPreferencias((prev) =>
         prev.map((p) =>
-          p.tipoNotificacion === tipo ? { ...p, [campo]: value } : p,
+          p.tipoNotificacion === tipo ? { ...p, [campo]: prevValue } : p,
         ),
       );
-    } catch {
-      // revert on error
+      toast.error('Error al guardar preferencia');
     } finally {
       setSavingPref(null);
     }
@@ -105,7 +115,7 @@ const EditProfilePage = () => {
       const file = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
       const response = await usersService.updateFoto(file);
       updateUser({ fotoUrl: response.fotoUrl });
-      setSuccess('Foto actualizada correctamente');
+      toast.success('Foto actualizada correctamente');
       setCropImageSrc(null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al subir la foto');
@@ -117,14 +127,13 @@ const EditProfilePage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
       const updatedUser = await usersService.updateMyProfile(formData);
       updateUser(updatedUser);
-      setSuccess('Perfil actualizado correctamente');
-      setTimeout(() => navigate('/profile'), 1500);
+      toast.success('Perfil actualizado correctamente');
+      navigate('/profile');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al actualizar el perfil');
     } finally {
@@ -132,9 +141,9 @@ const EditProfilePage = () => {
     }
   };
 
+  // Use Navigate component instead of calling navigate() during render
   if (!user) {
-    navigate('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -149,11 +158,6 @@ const EditProfilePage = () => {
               {error}
             </div>
           )}
-          {success && (
-            <div className="mb-4 p-3 bg-green-900/30 border border-green-500/50 text-green-400 rounded-md text-sm">
-              {success}
-            </div>
-          )}
 
           {/* Foto de perfil */}
           <div className="flex flex-col items-center mb-8">
@@ -162,7 +166,7 @@ const EditProfilePage = () => {
                 {user.fotoUrl ? (
                   <img
                     src={user.fotoUrl}
-                    alt={user.nombre}
+                    alt={`${user.nombre} ${user.apellido}`}
                     className="h-full w-full object-cover"
                   />
                 ) : (

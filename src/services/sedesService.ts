@@ -15,9 +15,10 @@ export const sedesService = {
   // SEDES (Admin: CRUD / Organizador: solo lectura)
   // ═══════════════════════════════════════════
 
-  getAll: async (filters?: { ciudad?: string; activo?: boolean }): Promise<Sede[]> => {
+  getAll: async (filters?: { ciudad?: string; nombre?: string; activo?: boolean }): Promise<Sede[]> => {
     const params = new URLSearchParams();
     if (filters?.ciudad) params.append('ciudad', filters.ciudad);
+    if (filters?.nombre) params.append('nombre', filters.nombre);
     if (filters?.activo !== undefined) params.append('activo', String(filters.activo));
     const response = await api.get(`/sedes?${params.toString()}`);
     return response.data;
@@ -42,12 +43,18 @@ export const sedesService = {
     await api.delete(`/sedes/${id}`);
   },
 
+  reactivar: async (id: string): Promise<Sede> => {
+    const response = await api.put(`/sedes/${id}/reactivar`);
+    return response.data;
+  },
+
   // ═══════════════════════════════════════════
   // CANCHAS DE SEDE (Solo Admin)
   // ═══════════════════════════════════════════
 
-  getCanchas: async (sedeId: string): Promise<SedeCancha[]> => {
-    const response = await api.get(`/sedes/${sedeId}/canchas`);
+  getCanchas: async (sedeId: string, includeInactive = true): Promise<SedeCancha[]> => {
+    const params = includeInactive ? '?includeInactive=true' : '';
+    const response = await api.get(`/sedes/${sedeId}/canchas${params}`);
     return response.data;
   },
 
@@ -71,7 +78,7 @@ export const sedesService = {
   },
 
   // ═══════════════════════════════════════════
-  // CONFIGURACIÓN TORNEO-CANCHAS (Organizador)
+  // CONFIGURACION TORNEO-CANCHAS (Organizador)
   // ═══════════════════════════════════════════
 
   configurarTorneoCanchas: async (tournamentId: string, data: ConfigurarTorneoCanchasDto): Promise<TorneoCancha[]> => {

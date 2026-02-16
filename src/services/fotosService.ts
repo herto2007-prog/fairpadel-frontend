@@ -112,6 +112,17 @@ class FotosService {
     const response = await api.post(`/fotos/${fotoId}/reportar`, { motivo });
     return response.data;
   }
+
+  /**
+   * Get paginated user photos via the perfil-completo endpoint.
+   * Used for "load more" in photo gallery.
+   */
+  async obtenerFotosUsuario(userId: string, page: number, limit = 24): Promise<Foto[]> {
+    const response = await api.get(`/users/${userId}/perfil-completo`, {
+      params: { fotosPage: page, fotosLimit: limit },
+    });
+    return response.data.fotos || [];
+  }
 }
 
 export const fotosService = new FotosService();

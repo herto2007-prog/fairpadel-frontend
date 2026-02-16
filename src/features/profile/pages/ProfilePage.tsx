@@ -13,7 +13,8 @@ import ProfilePhotoGallery from '../components/ProfilePhotoGallery';
 import FollowersModal from '../components/FollowersModal';
 
 const ProfilePage = () => {
-  const { userId } = useParams<{ userId?: string }>();
+  // Route can be /jugadores/:id, /profile/:userId, or /profile (own)
+  const params = useParams<{ id?: string; userId?: string }>();
   const { user: currentUser } = useAuthStore();
 
   const [perfil, setPerfil] = useState<PerfilCompleto | null>(null);
@@ -24,7 +25,7 @@ const ProfilePage = () => {
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followersTab, setFollowersTab] = useState<'seguidores' | 'siguiendo'>('seguidores');
 
-  const profileId = userId || currentUser?.id;
+  const profileId = params.id || params.userId || currentUser?.id;
 
   const loadProfile = useCallback(async () => {
     if (!profileId) return;
@@ -128,6 +129,7 @@ const ProfilePage = () => {
         <div className="container mx-auto px-4 mt-4 pb-8">
           <ProfilePhotoGallery
             fotos={perfil.fotos}
+            totalFotos={perfil.totalFotos}
             isOwnProfile={perfil.social.isOwnProfile}
             userId={profileId}
             onPhotosChange={loadProfile}

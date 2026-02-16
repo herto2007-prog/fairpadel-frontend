@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, Modal, Button } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import fotosService from '@/services/fotosService';
 import type { FotoComentario } from '@/services/fotosService';
@@ -19,6 +19,7 @@ import {
   Trash2,
   Crown,
   ImagePlus,
+  ChevronDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -26,11 +27,16 @@ interface Props {
   fotos: FotoResumen[];
   isOwnProfile: boolean;
   userId?: string;
+  totalFotos?: number;
   onPhotosChange?: () => void;
 }
 
-const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Props) => {
+const ProfilePhotoGallery = ({ fotos: initialFotos, isOwnProfile, userId, totalFotos, onPhotosChange }: Props) => {
   const { user, isAuthenticated } = useAuthStore();
+
+  // Local fotos state (for likes sync and pagination)
+  const [fotos, setFotos] = useState<FotoResumen[]>(initialFotos);
+  useEffect(() => { setFotos(initialFotos); }, [initialFotos]);
 
   // Lightbox state
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -49,12 +55,20 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
   // Lightbox interaction state
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
   const [comments, setComments] = useState<FotoComentario[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [deletingPhoto, setDeletingPhoto] = useState(false);
+
+  // Delete confirmation modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Pagination (load more)
+  const [loadingMore, setLoadingMore] = useState(false);
+  const hasMore = totalFotos ? fotos.length < totalFotos : false;
 
   // Load photo count for own profile
   useEffect(() => {
@@ -63,9 +77,9 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
     }
   }, [isOwnProfile, isAuthenticated, fotos.length]);
 
-  // ═══════════════════════════════════════════
+  // -----------------------------------------------
   // UPLOAD LOGIC
-  // ═══════════════════════════════════════════
+  // -----------------------------------------------
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,47 +127,75 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
     return photoCount.count < (photoCount.limit || 6);
   };
 
-  // ═══════════════════════════════════════════
+  // -----------------------------------------------
+  // LOAD MORE (pagination)
+  // -----------------------------------------------
+
+  const handleLoadMore = async () => {
+    if (!userId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = Math.floor(fotos.length / 24) + 1 + 1; // current page + 1
+      const data = await fotosService.obtenerFotosUsuario(userId, nextPage, 24);
+      if (data.length > 0) {
+        setFotos((prev) => [...prev, ...data]);
+      }
+    } catch {
+      toast.error('Error cargando mas fotos');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // -----------------------------------------------
   // LIGHTBOX LOGIC
-  // ═══════════════════════════════════════════
+  // -----------------------------------------------
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setShowComments(false);
     setNewComment('');
-    loadLightboxData(fotos[index].id);
+    loadLightboxData(fotos[index]);
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxIndex(null);
     setComments([]);
     setShowComments(false);
-  };
+  }, []);
 
-  const goNext = () => {
-    if (lightboxIndex !== null && lightboxIndex < fotos.length - 1) {
-      const nextIdx = lightboxIndex + 1;
-      setLightboxIndex(nextIdx);
-      setShowComments(false);
-      setNewComment('');
-      loadLightboxData(fotos[nextIdx].id);
-    }
-  };
+  const goNext = useCallback(() => {
+    setLightboxIndex((prev) => {
+      if (prev !== null && prev < fotos.length - 1) {
+        const nextIdx = prev + 1;
+        setShowComments(false);
+        setNewComment('');
+        loadLightboxData(fotos[nextIdx]);
+        return nextIdx;
+      }
+      return prev;
+    });
+  }, [fotos]);
 
-  const goPrev = () => {
-    if (lightboxIndex !== null && lightboxIndex > 0) {
-      const prevIdx = lightboxIndex - 1;
-      setLightboxIndex(prevIdx);
-      setShowComments(false);
-      setNewComment('');
-      loadLightboxData(fotos[prevIdx].id);
-    }
-  };
+  const goPrev = useCallback(() => {
+    setLightboxIndex((prev) => {
+      if (prev !== null && prev > 0) {
+        const prevIdx = prev - 1;
+        setShowComments(false);
+        setNewComment('');
+        loadLightboxData(fotos[prevIdx]);
+        return prevIdx;
+      }
+      return prev;
+    });
+  }, [fotos]);
 
-  const loadLightboxData = async (fotoId: string) => {
+  const loadLightboxData = async (foto: FotoResumen) => {
+    setLikesCount(foto.likesCount);
+    setCommentsCount(foto.comentariosCount);
     if (isAuthenticated) {
       try {
-        const likes = await fotosService.obtenerLikes(fotoId);
+        const likes = await fotosService.obtenerLikes(foto.id);
         setLiked(likes.some((l) => l.user.id === user?.id));
         setLikesCount(likes.length);
       } catch {
@@ -170,9 +212,17 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
       if (res.message.includes('agregado')) {
         setLiked(true);
         setLikesCount((c) => c + 1);
+        // Sync to grid
+        setFotos((prev) =>
+          prev.map((f, i) => i === lightboxIndex ? { ...f, likesCount: f.likesCount + 1 } : f),
+        );
       } else {
         setLiked(false);
         setLikesCount((c) => Math.max(0, c - 1));
+        // Sync to grid
+        setFotos((prev) =>
+          prev.map((f, i) => i === lightboxIndex ? { ...f, likesCount: Math.max(0, f.likesCount - 1) } : f),
+        );
       }
     } catch {
       toast.error('Error');
@@ -190,6 +240,7 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
     try {
       const data = await fotosService.obtenerComentarios(fotos[lightboxIndex].id);
       setComments(data);
+      setCommentsCount(data.length);
     } catch {
       toast.error('Error cargando comentarios');
     } finally {
@@ -207,6 +258,12 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
         ...prev,
       ]);
       setNewComment('');
+      // Update comment count in lightbox and grid
+      const newCount = commentsCount + 1;
+      setCommentsCount(newCount);
+      setFotos((prev) =>
+        prev.map((f, i) => i === lightboxIndex ? { ...f, comentariosCount: newCount } : f),
+      );
     } catch {
       toast.error('Error al comentar');
     } finally {
@@ -217,11 +274,11 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
   const handleDeletePhoto = async () => {
     if (lightboxIndex === null) return;
     const foto = fotos[lightboxIndex];
-    if (!confirm('¿Eliminar esta foto?')) return;
     setDeletingPhoto(true);
     try {
       await fotosService.eliminarFoto(foto.id);
       toast.success('Foto eliminada');
+      setShowDeleteConfirm(false);
       closeLightbox();
       onPhotosChange?.();
     } catch {
@@ -231,7 +288,7 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
     }
   };
 
-  // Keyboard navigation
+  // Keyboard navigation — using useCallback refs to avoid stale closures
   useEffect(() => {
     if (lightboxIndex === null) return;
     const handler = (e: KeyboardEvent) => {
@@ -241,7 +298,7 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [lightboxIndex, fotos.length]);
+  }, [lightboxIndex, goNext, goPrev, closeLightbox]);
 
   const currentFoto = lightboxIndex !== null ? fotos[lightboxIndex] : null;
   const isOwnPhoto = currentFoto && user?.id === userId;
@@ -255,8 +312,8 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
             <div className="flex items-center gap-2">
               <Camera className="h-5 w-5 text-primary-400" />
               <h3 className="text-lg font-semibold text-white">Fotos</h3>
-              {fotos.length > 0 && (
-                <span className="text-xs text-light-tertiary">({fotos.length})</span>
+              {(totalFotos ?? fotos.length) > 0 && (
+                <span className="text-xs text-light-tertiary">({totalFotos ?? fotos.length})</span>
               )}
             </div>
 
@@ -324,44 +381,64 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
               ) : (
                 <>
                   <Camera className="h-10 w-10 text-light-tertiary mx-auto mb-3 opacity-50" />
-                  <p className="text-light-tertiary text-sm">Sin fotos aún</p>
+                  <p className="text-light-tertiary text-sm">Sin fotos aun</p>
                 </>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {fotos.map((foto, index) => (
-                <button
-                  key={foto.id}
-                  onClick={() => openLightbox(index)}
-                  className="relative aspect-square rounded-lg overflow-hidden group"
-                >
-                  <img
-                    src={foto.urlThumbnail || foto.urlImagen}
-                    alt={foto.descripcion || 'Foto'}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <span className="flex items-center gap-1 text-white text-xs">
-                      <Heart className="h-3.5 w-3.5" />
-                      {foto.likesCount}
-                    </span>
-                    <span className="flex items-center gap-1 text-white text-xs">
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      {foto.comentariosCount}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {fotos.map((foto, index) => (
+                  <button
+                    key={foto.id}
+                    onClick={() => openLightbox(index)}
+                    className="relative aspect-square rounded-lg overflow-hidden group"
+                  >
+                    <img
+                      src={foto.urlThumbnail || foto.urlImagen}
+                      alt={foto.descripcion || 'Foto'}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <span className="flex items-center gap-1 text-white text-xs">
+                        <Heart className="h-3.5 w-3.5" />
+                        {foto.likesCount}
+                      </span>
+                      <span className="flex items-center gap-1 text-white text-xs">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        {foto.comentariosCount}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Load more button */}
+              {hasMore && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-primary-400 hover:text-primary-300 transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                    {loadingMore ? 'Cargando...' : 'Ver mas fotos'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* UPLOAD MODAL */}
-      {/* ═══════════════════════════════════════════ */}
+      {/* -----------------------------------------------
+          UPLOAD MODAL
+         ----------------------------------------------- */}
       {uploadModalOpen && uploadPreview && (
         <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
           <div
@@ -427,9 +504,42 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════ */}
-      {/* LIGHTBOX WITH SOCIAL */}
-      {/* ═══════════════════════════════════════════ */}
+      {/* -----------------------------------------------
+          DELETE CONFIRMATION MODAL
+         ----------------------------------------------- */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Eliminar foto"
+        size="sm"
+      >
+        <p className="text-sm text-light-secondary mb-4">
+          ¿Estas seguro de que quieres eliminar esta foto? Esta accion no se puede deshacer.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(false)}
+            disabled={deletingPhoto}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleDeletePhoto}
+            loading={deletingPhoto}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Eliminar
+          </Button>
+        </div>
+      </Modal>
+
+      {/* -----------------------------------------------
+          LIGHTBOX WITH SOCIAL
+         ----------------------------------------------- */}
       {lightboxIndex !== null && currentFoto && (
         <div
           className="fixed inset-0 z-[100] bg-black/95 flex"
@@ -508,12 +618,12 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
                   }`}
                 >
                   <MessageSquare className="h-5 w-5" />
-                  {currentFoto.comentariosCount}
+                  {commentsCount}
                 </button>
 
                 {isOwnPhoto && (
                   <button
-                    onClick={handleDeletePhoto}
+                    onClick={() => setShowDeleteConfirm(true)}
                     disabled={deletingPhoto}
                     className="ml-auto text-light-muted hover:text-red-400 transition-colors"
                     title="Eliminar foto"
@@ -533,7 +643,7 @@ const ProfilePhotoGallery = ({ fotos, isOwnProfile, userId, onPhotosChange }: Pr
                       </div>
                     ) : comments.length === 0 ? (
                       <p className="text-light-muted text-sm text-center py-4">
-                        Sin comentarios aún
+                        Sin comentarios aun
                       </p>
                     ) : (
                       comments.map((c) => (
