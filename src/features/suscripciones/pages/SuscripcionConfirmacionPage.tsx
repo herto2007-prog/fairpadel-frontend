@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle, Crown, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
@@ -11,7 +11,8 @@ type Estado = 'procesando' | 'exito' | 'error';
 
 export default function SuscripcionConfirmacionPage() {
   const [searchParams] = useSearchParams();
-  const { user, setUser } = useAuthStore();
+  const { user, refreshProfile } = useAuthStore();
+  const navigate = useNavigate();
   const [estado, setEstado] = useState<Estado>('procesando');
   const [mensaje, setMensaje] = useState('');
 
@@ -19,6 +20,11 @@ export default function SuscripcionConfirmacionPage() {
   const transactionId = searchParams.get('transactionId');
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     confirmarPago();
   }, []);
 
@@ -29,19 +35,23 @@ export default function SuscripcionConfirmacionPage() {
       return;
     }
 
+    if (!transactionId) {
+      setEstado('error');
+      setMensaje('No se encontró el ID de transacción. Contacta a soporte.');
+      return;
+    }
+
     try {
       const resultado = await suscripcionesService.confirmarPago(
         suscripcionId,
-        transactionId || undefined,
+        transactionId,
       );
       setEstado('exito');
       setMensaje(resultado.message);
       toast.success('Premium activado!');
 
-      // Update user premium flag in store
-      if (user) {
-        setUser({ ...user, esPremium: true });
-      }
+      // Refresh profile to update esPremium in auth store
+      await refreshProfile();
     } catch (err: any) {
       setEstado('error');
       setMensaje(

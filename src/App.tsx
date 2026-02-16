@@ -58,7 +58,14 @@ function App() {
             <Route path="/tournaments/:tournamentId/fixture" element={<FixturePage />} />
             <Route path="/t/:slug" element={<TournamentSlugRedirect />} />
             <Route path="/premium" element={<PremiumPage />} />
-            <Route path="/suscripcion/confirmacion" element={<SuscripcionConfirmacionPage />} />
+            <Route
+              path="/suscripcion/confirmacion"
+              element={
+                <ProtectedRoute>
+                  <SuscripcionConfirmacionPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/suscripcion/cancelado" element={<SuscripcionCanceladoPage />} />
             <Route path="/jugadores" element={<JugadoresPage />} />
             <Route path="/jugadores/:id" element={<ProfilePage />} />

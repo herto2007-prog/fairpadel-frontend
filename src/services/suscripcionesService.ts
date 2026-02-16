@@ -59,7 +59,7 @@ export const suscripcionesService = {
     return data as { valido: boolean; mensaje: string; cupon?: any };
   },
 
-  confirmarPago: async (suscripcionId: string, transactionId?: string) => {
+  confirmarPago: async (suscripcionId: string, transactionId: string) => {
     const { data } = await api.post('/suscripciones/confirmar-pago', {
       suscripcionId,
       transactionId,

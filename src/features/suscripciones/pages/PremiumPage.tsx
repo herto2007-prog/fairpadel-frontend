@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Crown, Check, Loader2, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Crown, Check, Loader2, Tag, AlertTriangle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { suscripcionesService, PlanPremium, Suscripcion } from '../../../services/suscripcionesService';
@@ -7,11 +8,14 @@ import { useAuthStore } from '../../../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function PremiumPage() {
-  const { user } = useAuthStore();
+  const { user, refreshProfile } = useAuthStore();
+  const navigate = useNavigate();
   const [plan, setPlan] = useState<PlanPremium | null>(null);
   const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [cuponCodigo, setCuponCodigo] = useState('');
   const [cuponValidado, setCuponValidado] = useState<any>(null);
   const [validandoCupon, setValidandoCupon] = useState(false);
@@ -22,6 +26,7 @@ export default function PremiumPage() {
 
   const loadData = async () => {
     try {
+      setLoadError(false);
       const [planes, miSuscripcion] = await Promise.all([
         suscripcionesService.obtenerPlanes(),
         user ? suscripcionesService.obtenerMiSuscripcion() : null,
@@ -29,7 +34,7 @@ export default function PremiumPage() {
       if (planes.length > 0) setPlan(planes[0]);
       setSuscripcion(miSuscripcion);
     } catch {
-      // silent
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -53,8 +58,30 @@ export default function PremiumPage() {
     }
   };
 
+  const calcularPrecioFinal = (): number => {
+    if (!plan) return 0;
+    const precio = Number(plan.precioMensual);
+    if (!cuponValidado?.valido || !cuponValidado?.cupon) return precio;
+
+    const cupon = cuponValidado.cupon;
+    if (cupon.tipo === 'PORCENTAJE') {
+      return Math.max(0, precio - (precio * Number(cupon.valor)) / 100);
+    }
+    return Math.max(0, precio - Number(cupon.valor));
+  };
+
+  const calcularDescuento = (): number => {
+    if (!plan || !cuponValidado?.valido) return 0;
+    return Number(plan.precioMensual) - calcularPrecioFinal();
+  };
+
   const handleSuscribirse = async () => {
-    if (!plan || !user) return;
+    if (!plan) return;
+    if (!user) {
+      toast.error('Debes iniciar sesión para suscribirte');
+      navigate('/login');
+      return;
+    }
     setSubscribing(true);
     try {
       const resultado = await suscripcionesService.crearSuscripcion(
@@ -75,22 +102,30 @@ export default function PremiumPage() {
   };
 
   const handleCancelar = async () => {
+    setActionLoading(true);
     try {
       const resultado = await suscripcionesService.cancelarSuscripcion();
       toast.success(resultado.message);
-      loadData();
+      await loadData();
+      await refreshProfile();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleReactivar = async () => {
+    setActionLoading(true);
     try {
       const resultado = await suscripcionesService.reactivarSuscripcion();
       toast.success(resultado.message);
-      loadData();
+      await loadData();
+      await refreshProfile();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -102,12 +137,34 @@ export default function PremiumPage() {
     );
   }
 
-  const caracteristicas: string[] = plan?.caracteristicas
-    ? JSON.parse(plan.caracteristicas)
-    : [];
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <AlertTriangle className="h-12 w-12 text-red-400" />
+        <p className="text-dark-textSecondary">Error al cargar la información</p>
+        <Button variant="outline" onClick={() => { setLoading(true); loadData(); }}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
+
+  // Safe JSON parse for plan features
+  let caracteristicas: string[] = [];
+  try {
+    caracteristicas = plan?.caracteristicas ? JSON.parse(plan.caracteristicas) : [];
+  } catch {
+    caracteristicas = [];
+  }
 
   const playerFeatures = caracteristicas.filter(f => !f.includes('(organizadores)'));
   const organizerFeatures = caracteristicas.filter(f => f.includes('(organizadores)'));
+
+  const precioFinal = calcularPrecioFinal();
+  const descuento = calcularDescuento();
+
+  // Determine if user can subscribe (no ACTIVA subscription)
+  const canSubscribe = !suscripcion || suscripcion.estado !== 'ACTIVA';
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -125,7 +182,7 @@ export default function PremiumPage() {
         </p>
       </div>
 
-      {/* Suscripción activa */}
+      {/* Suscripción ACTIVA */}
       {suscripcion && suscripcion.estado === 'ACTIVA' && (
         <Card className="mb-8 border-yellow-500/30">
           <CardContent className="p-4 sm:p-6">
@@ -144,14 +201,52 @@ export default function PremiumPage() {
               </div>
               <div className="flex gap-2">
                 {suscripcion.autoRenovar ? (
-                  <Button variant="outline" size="sm" onClick={handleCancelar}>
+                  <Button variant="outline" size="sm" onClick={handleCancelar} disabled={actionLoading}>
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                     Cancelar renovación
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={handleReactivar}>
+                  <Button size="sm" onClick={handleReactivar} disabled={actionLoading}>
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                     Reactivar
                   </Button>
                 )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Suscripción PENDIENTE_PAGO */}
+      {suscripcion && suscripcion.estado === 'PENDIENTE_PAGO' && (
+        <Card className="mb-8 border-amber-500/30">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-dark-text font-semibold mb-1">Pago pendiente</p>
+                <p className="text-dark-textSecondary text-sm">
+                  Tu suscripción está esperando confirmación de pago. Si ya pagaste, el proceso se completará en breve.
+                  Si el pago no se completa en 24 horas, se cancelará automáticamente.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Suscripción VENCIDA */}
+      {suscripcion && suscripcion.estado === 'VENCIDA' && (
+        <Card className="mb-8 border-red-500/30">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-dark-text font-semibold mb-1">Premium vencido</p>
+                <p className="text-dark-textSecondary text-sm">
+                  Tu suscripción venció el {new Date(suscripcion.fechaFin).toLocaleDateString('es-PY')}.
+                  Suscribite de nuevo para recuperar todos los beneficios premium.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -202,12 +297,26 @@ export default function PremiumPage() {
 
         {/* Subscribe section */}
         <div className="space-y-6">
-          {!suscripcion || suscripcion.estado !== 'ACTIVA' ? (
+          {canSubscribe ? (
             <Card>
               <CardHeader>
-                <CardTitle>Suscribirse</CardTitle>
+                <CardTitle>
+                  {suscripcion?.estado === 'VENCIDA' ? 'Renovar Premium' : 'Suscribirse'}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Login prompt for unauthenticated users */}
+                {!user && (
+                  <div className="bg-dark-bg rounded-lg p-3 text-center">
+                    <p className="text-dark-textSecondary text-sm mb-2">
+                      Iniciá sesión para suscribirte
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+                      Iniciar sesión
+                    </Button>
+                  </div>
+                )}
+
                 {/* Cupón */}
                 <div>
                   <label className="block text-sm text-dark-textSecondary mb-1">Cupón de descuento</label>
@@ -215,7 +324,10 @@ export default function PremiumPage() {
                     <input
                       type="text"
                       value={cuponCodigo}
-                      onChange={(e) => setCuponCodigo(e.target.value.toUpperCase())}
+                      onChange={(e) => {
+                        setCuponCodigo(e.target.value.toUpperCase());
+                        setCuponValidado(null);
+                      }}
                       placeholder="CODIGO"
                       className="flex-1 bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-dark-text text-sm"
                     />
@@ -229,7 +341,12 @@ export default function PremiumPage() {
                     </Button>
                   </div>
                   {cuponValidado?.valido && (
-                    <p className="text-green-400 text-xs mt-1">Cupón aplicado: {cuponValidado.mensaje}</p>
+                    <p className="text-green-400 text-xs mt-1">
+                      Cupón aplicado: {cuponValidado.cupon?.tipo === 'PORCENTAJE'
+                        ? `${Number(cuponValidado.cupon.valor)}% de descuento`
+                        : `$${Number(cuponValidado.cupon.valor)} de descuento`
+                      }
+                    </p>
                   )}
                 </div>
 
@@ -237,31 +354,31 @@ export default function PremiumPage() {
                 <div className="bg-dark-bg rounded-lg p-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-dark-textSecondary">Plan mensual</span>
-                    <span className="text-dark-text">${plan?.precioMensual || '3.00'}</span>
+                    <span className="text-dark-text">${Number(plan?.precioMensual || 3).toFixed(2)}</span>
                   </div>
-                  {cuponValidado?.valido && (
+                  {cuponValidado?.valido && descuento > 0 && (
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-green-400">Descuento</span>
-                      <span className="text-green-400">-Cupón aplicado</span>
+                      <span className="text-green-400">-${descuento.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="border-t border-dark-border pt-2 flex justify-between font-semibold">
                     <span className="text-dark-text">Total/mes</span>
-                    <span className="text-yellow-400">${plan?.precioMensual || '3.00'} USD</span>
+                    <span className="text-yellow-400">${precioFinal.toFixed(2)} USD</span>
                   </div>
                 </div>
 
                 <Button
                   className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black font-semibold"
                   onClick={handleSuscribirse}
-                  disabled={subscribing || !plan}
+                  disabled={subscribing || !plan || !user}
                 >
                   {subscribing ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
                     <Crown className="h-4 w-4 mr-2" />
                   )}
-                  Activar Premium
+                  {suscripcion?.estado === 'VENCIDA' ? 'Renovar Premium' : 'Activar Premium'}
                 </Button>
 
                 <p className="text-xs text-dark-textSecondary text-center">
@@ -292,7 +409,7 @@ export default function PremiumPage() {
               <div>
                 <h4 className="text-sm font-medium text-dark-text">¿Cómo se cobra?</h4>
                 <p className="text-xs text-dark-textSecondary mt-1">
-                  Cobro mensual automático vía Bancard. $3 USD al mes.
+                  Cobro mensual vía Bancard. $3 USD al mes.
                 </p>
               </div>
             </CardContent>

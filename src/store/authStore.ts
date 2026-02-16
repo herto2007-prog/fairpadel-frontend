@@ -7,7 +7,7 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
+
   // Actions
   setAuth: (user: User, token: string) => void;
   setUser: (user: User) => void;
@@ -16,6 +16,7 @@ export interface AuthState {
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   hasRole: (roleName: string) => boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -75,10 +76,25 @@ export const useAuthStore = create<AuthState>()(
   const user = get().user;
   if (!user || !user.roles) return false;
   // Soporta tanto array de strings ["admin"] como array de objetos [{nombre: "admin"}]
-  return user.roles.some((role: any) => 
+  return user.roles.some((role: any) =>
     typeof role === 'string' ? role === roleName : role.nombre === roleName
   );
 },
+
+      refreshProfile: async () => {
+        try {
+          const { default: api } = await import('@/services/api');
+          const { data } = await api.get('/auth/profile');
+          const currentUser = get().user;
+          if (currentUser && data) {
+            const updatedUser = { ...currentUser, ...data };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            set({ user: updatedUser });
+          }
+        } catch {
+          // non-critical — don't break the app if refresh fails
+        }
+      },
     }),
     {
       name: 'auth-storage',
