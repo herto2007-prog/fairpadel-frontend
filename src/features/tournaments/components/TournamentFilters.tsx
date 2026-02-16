@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Select, Input, Button } from '@/components/ui';
+import { Select, Button } from '@/components/ui';
+import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import type { TournamentFilters as Filters, Circuito } from '@/types';
 import { TournamentStatus, Modalidad } from '@/types';
 import { X, Search } from 'lucide-react';
@@ -53,14 +54,10 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
           <option value={TournamentStatus.FINALIZADO}>Finalizados</option>
         </Select>
 
-        <Input
+        <CityAutocomplete
           label="Ciudad"
-          type="text"
-          placeholder="Ej: Ciudad del Este"
           value={filters.ciudad || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange({ ...filters, ciudad: e.target.value || undefined })
-          }
+          onChange={(val) => onChange({ ...filters, ciudad: val || undefined })}
         />
 
         <Select

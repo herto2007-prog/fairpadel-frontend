@@ -75,7 +75,50 @@ const ROUND_LABELS: Record<string, string> = {
 
 export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick }) => {
   const bracketRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [connectors, setConnectors] = useState<{ x1: number; y1: number; x2: number; y2: number; type: 'winner' | 'loser' }[]>([]);
+
+  // Click-drag horizontal scroll
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const dragThreshold = useRef(false); // true once we've moved enough to count as drag
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    isDragging.current = true;
+    dragThreshold.current = false;
+    startX.current = e.pageX - container.offsetLeft;
+    scrollLeft.current = container.scrollLeft;
+    container.style.cursor = 'grabbing';
+    container.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    if (Math.abs(walk) > 5) dragThreshold.current = true;
+    container.scrollLeft = scrollLeft.current - walk;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.style.cursor = 'grab';
+      container.style.userSelect = '';
+    }
+    // Small delay to allow click events on match cards if not dragging
+    setTimeout(() => { isDragging.current = false; dragThreshold.current = false; }, 0);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging.current) handleMouseUp();
+  }, [handleMouseUp]);
 
   // Agrupar partidos por ronda (string) en vez de numeroRonda (secuencial)
   const matchesByRound = useMemo(() => {
@@ -346,7 +389,14 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
   return (
     <div className="space-y-6">
       {/* Bracket principal con conectores */}
-      <div className="overflow-x-auto">
+      <div
+        ref={scrollContainerRef}
+        className="overflow-x-auto cursor-grab"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
         <div className="relative" ref={bracketRef}>
           {/* SVG conectores */}
           {connectors.length > 0 && (

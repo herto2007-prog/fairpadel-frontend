@@ -427,6 +427,7 @@ export default function NuevaInscripcionPage() {
                       setAcceptNotRegistered(false);
                       setConsentCompanero(false);
                     }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarJugador2(); } }}
                     className="flex-1"
                   />
                   <Button

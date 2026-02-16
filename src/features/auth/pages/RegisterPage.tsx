@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import tournamentsService from '@/services/tournamentsService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Select } from '@/components/ui';
+import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import type { RegisterDto, Category } from '@/types';
 import { Gender } from '@/types';
 import logoRed from '@/assets/Asset 2fair padel.png';
@@ -184,12 +185,10 @@ const RegisterPage = () => {
               required
             />
 
-            <Input
+            <CityAutocomplete
               label="Ciudad"
-              type="text"
-              placeholder="Ej: Ciudad del Este"
-              value={formData.ciudad}
-              onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+              value={formData.ciudad || ''}
+              onChange={(val) => setFormData({ ...formData, ciudad: val })}
             />
 
             <Input

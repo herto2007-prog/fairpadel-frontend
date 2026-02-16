@@ -9,7 +9,18 @@ interface TournamentCardProps {
 }
 
 export const TournamentCard: React.FC<TournamentCardProps> = ({ tournament }) => {
+  // Check if inscription deadline has passed
+  const isInscripcionVencida = () => {
+    if (!tournament.fechaLimiteInscr) return false;
+    return new Date(tournament.fechaLimiteInscr) < new Date();
+  };
+
   const getStatusBadge = (status: TournamentStatus) => {
+    // Special case: PUBLICADO but deadline passed → show "Inscripciones Cerradas"
+    if (status === TournamentStatus.PUBLICADO && isInscripcionVencida()) {
+      return <Badge variant="warning">Inscripciones Cerradas</Badge>;
+    }
+
     const variants: Record<TournamentStatus, { variant: 'success' | 'warning' | 'info' | 'default' | 'danger'; label: string }> = {
       [TournamentStatus.BORRADOR]: { variant: 'default', label: 'Borrador' },
       [TournamentStatus.PENDIENTE_APROBACION]: { variant: 'warning', label: 'Pendiente' },

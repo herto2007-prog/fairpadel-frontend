@@ -220,6 +220,24 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
   const [showCancelarTorneo, setShowCancelarTorneo] = useState(false);
   const [cancelMotivo, setCancelMotivo] = useState('');
   const [cancellingTorneo, setCancellingTorneo] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showPublicarModal, setShowPublicarModal] = useState(false);
+
+  const puedePublicar = ['BORRADOR', 'RECHAZADO'].includes(tournament.estado);
+
+  const handlePublicarTorneo = async () => {
+    setPublishing(true);
+    try {
+      await tournamentsService.publish(tournament.id);
+      toast.success('Torneo enviado a aprobación exitosamente');
+      setShowPublicarModal(false);
+      await onRefresh();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al publicar torneo');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const categoriasFinalizadas = stats?.categorias?.filter((tc) => tc.estado === 'FINALIZADA').length || 0;
   const totalCategorias = stats?.categorias?.length || 0;
@@ -384,6 +402,33 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
         </Card>
       </div>
 
+      {/* Publicar Torneo */}
+      {puedePublicar && (
+        <div className="p-4 bg-primary-500/10 border border-primary-500/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Send className="w-5 h-5 text-primary-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-primary-400">
+                {tournament.estado === 'RECHAZADO' ? 'Re-enviar a Aprobación' : 'Publicar Torneo'}
+              </p>
+              <p className="text-xs text-primary-400/70">
+                {tournament.estado === 'RECHAZADO'
+                  ? 'Si ya corregiste las observaciones, puedes re-enviar el torneo para aprobación.'
+                  : '¿Terminaste de configurar el torneo? Envialo a aprobación para que sea publicado.'}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            onClick={() => setShowPublicarModal(true)}
+            className="flex-shrink-0"
+          >
+            <Send className="w-4 h-4 mr-2" />
+            {tournament.estado === 'RECHAZADO' ? 'Re-enviar' : 'Publicar Torneo'}
+          </Button>
+        </div>
+      )}
+
       {/* Cancelar Torneo */}
       {['BORRADOR', 'PENDIENTE_APROBACION', 'PUBLICADO', 'RECHAZADO'].includes(tournament.estado) && (
         <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -508,6 +553,52 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
                   disabled={!cancelMotivo.trim()}
                 >
                   Confirmar Cancelación
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar publicar torneo */}
+      {showPublicarModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowPublicarModal(false)}>
+          <div className="bg-dark-card rounded-xl border border-dark-border max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary-400" />
+                {tournament.estado === 'RECHAZADO' ? 'Re-enviar a Aprobación' : 'Publicar Torneo'}
+              </h3>
+              <p className="text-sm text-light-secondary mb-4">
+                ¿Estás seguro de que deseas enviar <strong>{tournament.nombre}</strong> para aprobación?
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-light-secondary">
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  Un administrador revisará el torneo
+                </div>
+                <div className="flex items-center gap-2 text-sm text-light-secondary">
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  Una vez aprobado, será visible para todos los jugadores
+                </div>
+              </div>
+              <div className="p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg mb-4">
+                <p className="text-sm text-blue-400 flex items-center gap-2">
+                  <Eye className="w-4 h-4 flex-shrink-0" />
+                  Asegurate de haber configurado categorías, fechas y sede antes de publicar.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setShowPublicarModal(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={handlePublicarTorneo}
+                  loading={publishing}
+                >
+                  <Send className="w-4 h-4 mr-1" /> Enviar a Aprobación
                 </Button>
               </div>
             </div>

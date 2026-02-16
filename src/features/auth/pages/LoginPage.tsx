@@ -4,6 +4,8 @@ import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import type { LoginDto } from '@/types';
+import { AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import logoRed from '@/assets/Asset 2fair padel.png';
 
 const LoginPage = () => {
@@ -27,7 +29,9 @@ const LoginPage = () => {
       setAuth(response.user, token);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión');
+      const message = err.response?.data?.message || 'Error al iniciar sesión. Verifica tus datos.';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -45,8 +49,9 @@ const LoginPage = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm">
-                {error}
+              <div className="p-3 bg-red-900/30 border border-red-500/50 text-red-400 rounded-md text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
