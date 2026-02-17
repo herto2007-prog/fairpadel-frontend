@@ -1,13 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
-import { Loading, Card, CardContent } from '@/components/ui';
+import { Loading, Card, CardContent, Button } from '@/components/ui';
 import { TournamentCard } from '../components/TournamentCard';
 import { TournamentFilters } from '../components/TournamentFilters';
 import { useAuthStore } from '@/store/authStore';
 import type { Tournament, TournamentFilters as Filters } from '@/types';
-import { Plus } from 'lucide-react';
+import { TournamentStatus } from '@/types';
+import { Plus, Zap, CalendarDays, Trophy, ChevronDown } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
+
+// ─── Section helper ───────────────────────────────────────
+
+function TournamentSection({
+  title,
+  icon,
+  tournaments,
+  accentColor,
+  collapsible = false,
+  defaultCount = 6,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  tournaments: Tournament[];
+  accentColor: string;
+  collapsible?: boolean;
+  defaultCount?: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (tournaments.length === 0) return null;
+
+  const visible = collapsible && !expanded
+    ? tournaments.slice(0, defaultCount)
+    : tournaments;
+  const hasMore = collapsible && tournaments.length > defaultCount;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${accentColor}`}>
+          {icon}
+        </div>
+        <h2 className="text-lg sm:text-xl font-bold text-light-text">{title}</h2>
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-dark-surface text-light-secondary">
+          {tournaments.length}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {visible.map((tournament) => (
+          <TournamentCard key={tournament.id} tournament={tournament} />
+        ))}
+      </div>
+
+      {hasMore && !expanded && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => setExpanded(true)}
+            className="flex items-center gap-2"
+          >
+            <ChevronDown className="w-4 h-4" />
+            Ver todos ({tournaments.length})
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────
 
 const TournamentsListPage = () => {
   const navigate = useNavigate();
@@ -15,9 +78,7 @@ const TournamentsListPage = () => {
   const canCreate = hasRole('admin') || hasRole('organizador');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({
-    inscripcionesAbiertas: true,
-  });
+  const [filters, setFilters] = useState<Filters>({});
 
   useEffect(() => {
     loadTournaments();
@@ -39,13 +100,24 @@ const TournamentsListPage = () => {
     setFilters(newFilters);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loading size="lg" text="Cargando torneos..." />
-      </div>
-    );
-  }
+  // Group & sort tournaments client-side
+  const { enCurso, proximos, finalizados } = useMemo(() => {
+    const enCurso = tournaments
+      .filter((t) => t.estado === TournamentStatus.EN_CURSO)
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
+
+    const proximos = tournaments
+      .filter((t) => t.estado === TournamentStatus.PUBLICADO)
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
+
+    const finalizados = tournaments
+      .filter((t) => t.estado === TournamentStatus.FINALIZADO)
+      .sort((a, b) => new Date(b.fechaFin).getTime() - new Date(a.fechaFin).getTime());
+
+    return { enCurso, proximos, finalizados };
+  }, [tournaments]);
+
+  const totalVisible = enCurso.length + proximos.length + finalizados.length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -70,7 +142,11 @@ const TournamentsListPage = () => {
 
       <TournamentFilters filters={filters} onChange={handleFiltersChange} />
 
-      {tournaments.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loading size="lg" text="Cargando torneos..." />
+        </div>
+      ) : totalVisible === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <div className="text-6xl mb-4">🎾</div>
@@ -81,18 +157,42 @@ const TournamentsListPage = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tournaments.map((tournament, index) => (
-            <React.Fragment key={tournament.id}>
-              <TournamentCard tournament={tournament} />
-              {/* Insert banner after every 6th card */}
-              {(index + 1) % 6 === 0 && (
-                <div className="col-span-full">
-                  <BannerZone zona="ENTRE_TORNEOS" layout="single" />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+        <div className="space-y-10">
+          {/* En Curso */}
+          <TournamentSection
+            title="En Curso"
+            icon={<Zap className="w-4 h-4 text-orange-400" />}
+            accentColor="bg-orange-500/20"
+            tournaments={enCurso}
+          />
+
+          {/* Banner between sections */}
+          {enCurso.length > 0 && proximos.length > 0 && (
+            <BannerZone zona="ENTRE_TORNEOS" layout="single" />
+          )}
+
+          {/* Proximos */}
+          <TournamentSection
+            title="Próximos Torneos"
+            icon={<CalendarDays className="w-4 h-4 text-green-400" />}
+            accentColor="bg-green-500/20"
+            tournaments={proximos}
+          />
+
+          {/* Banner between sections */}
+          {proximos.length > 0 && finalizados.length > 0 && (
+            <BannerZone zona="ENTRE_TORNEOS" layout="single" />
+          )}
+
+          {/* Finalizados */}
+          <TournamentSection
+            title="Finalizados"
+            icon={<Trophy className="w-4 h-4 text-light-secondary" />}
+            accentColor="bg-dark-surface"
+            tournaments={finalizados}
+            collapsible
+            defaultCount={6}
+          />
         </div>
       )}
     </div>

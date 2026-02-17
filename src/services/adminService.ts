@@ -250,6 +250,17 @@ export const adminService = {
     const response = await api.get('/admin/premium/cupones/stats');
     return response.data;
   },
+
+  // ============ COMISIÓN POR TORNEO ============
+  getComisionTorneo: async (tournamentId: string): Promise<{ comisionPorcentaje: number | null; comisionGlobal: number }> => {
+    const response = await api.get(`/admin/tournaments/${tournamentId}/comision`);
+    return response.data;
+  },
+
+  setComisionTorneo: async (tournamentId: string, comisionPorcentaje: number | null): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/tournaments/${tournamentId}/comision`, { comisionPorcentaje });
+    return response.data;
+  },
 };
 
 export default adminService;

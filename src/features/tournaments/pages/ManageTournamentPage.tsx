@@ -5,6 +5,7 @@ import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
 import { matchesService } from '@/services/matchesService';
 import inscripcionesService from '@/services/inscripcionesService';
+import adminService from '@/services/adminService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament, TournamentCategory, SedeCancha, TorneoCancha, TorneoPelotasRonda, Match, Pareja, Inscripcion } from '@/types';
@@ -42,6 +43,7 @@ import {
   Download,
   FileText,
   FileSpreadsheet,
+  Percent,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -2101,6 +2103,11 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                   const j2 = insc.pareja?.jugador2;
                   const comprobante = insc.comprobantes && insc.comprobantes.length > 0 ? insc.comprobantes[insc.comprobantes.length - 1] : null;
 
+                  const pagos = insc.pagos || (insc.pago ? [insc.pago] : []);
+                  const primerPago = pagos[0];
+                  const isIndividual = insc.modoPago === 'INDIVIDUAL';
+                  const fechaConfirm = pagos.find((p: any) => p.fechaConfirm)?.fechaConfirm;
+
                   return (
                     <tr key={insc.id} className="border-b border-dark-border/50 hover:bg-dark-hover/30">
                       <td className="px-4 py-3">
@@ -2110,12 +2117,29 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                         <div className="text-light-secondary text-xs">
                           {j2 ? `${j2.nombre} ${j2.apellido}` : insc.pareja?.jugador2Documento ? `Doc: ${insc.pareja.jugador2Documento}` : '—'}
                         </div>
+                        {isIndividual && (
+                          <span className="text-[10px] px-1.5 py-0.5 mt-1 inline-block bg-blue-900/30 text-blue-400 rounded-full">Pago Individual</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-light-secondary">
                         {insc.category?.nombre || '—'}
                       </td>
                       <td className="px-4 py-3">
-                        {getMetodoBadge(insc.pago?.metodoPago)}
+                        {isIndividual ? (
+                          <div className="space-y-1">
+                            {pagos.map((p: any, idx: number) => (
+                              <div key={p.id || idx} className="flex items-center gap-1">
+                                <span className="text-[10px] text-light-secondary">{idx === 0 ? 'J1' : 'J2'}:</span>
+                                {getMetodoBadge(p.metodoPago)}
+                                <span className={`text-[10px] ${p.estado === 'CONFIRMADO' ? 'text-green-400' : p.estado === 'RECHAZADO' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {p.estado === 'CONFIRMADO' ? '✓' : p.estado === 'RECHAZADO' ? '✗' : '⏳'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          getMetodoBadge(primerPago?.metodoPago)
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {getEstadoBadge(insc.estado)}
@@ -2144,9 +2168,9 @@ function PagosTab({ tournament }: { tournament: Tournament }) {
                       <td className="px-4 py-3">
                         <div className="text-xs text-light-secondary space-y-0.5">
                           <p title="Fecha de inscripción">{new Date(insc.createdAt || '').toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}</p>
-                          {insc.pago?.fechaConfirm && (
+                          {fechaConfirm && (
                             <p className="text-green-400" title="Fecha de confirmación">
-                              ✓ {new Date(insc.pago.fechaConfirm).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                              ✓ {new Date(fechaConfirm).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                             </p>
                           )}
                         </div>
@@ -2235,6 +2259,14 @@ function FinanzasTab({ tournament }: { tournament: Tournament }) {
   const [data, setData] = useState<DashboardFinanciero | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const { hasRole } = useAuthStore();
+  const isAdmin = hasRole('admin');
+
+  // Commission config (admin only)
+  const [comisionData, setComisionData] = useState<{ comisionPorcentaje: number | null; comisionGlobal: number } | null>(null);
+  const [comisionMode, setComisionMode] = useState<'global' | 'custom'>('global');
+  const [comisionInput, setComisionInput] = useState('');
+  const [savingComision, setSavingComision] = useState(false);
 
   useEffect(() => {
     tournamentsService.getDashboardFinanciero(tournament.id)
@@ -2242,6 +2274,42 @@ function FinanzasTab({ tournament }: { tournament: Tournament }) {
       .catch(() => toast.error('Error al cargar datos financieros'))
       .finally(() => setLoading(false));
   }, [tournament.id]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    adminService.getComisionTorneo(tournament.id)
+      .then((res) => {
+        setComisionData(res);
+        if (res.comisionPorcentaje !== null && res.comisionPorcentaje !== undefined) {
+          setComisionMode('custom');
+          setComisionInput(String(res.comisionPorcentaje));
+        } else {
+          setComisionMode('global');
+          setComisionInput('');
+        }
+      })
+      .catch(() => {});
+  }, [tournament.id, isAdmin]);
+
+  const handleSaveComision = async () => {
+    setSavingComision(true);
+    try {
+      const value = comisionMode === 'global' ? null : parseFloat(comisionInput);
+      if (comisionMode === 'custom' && (isNaN(value!) || value! < 0 || value! > 100)) {
+        toast.error('La comisión debe ser un número entre 0 y 100');
+        return;
+      }
+      await adminService.setComisionTorneo(tournament.id, value);
+      toast.success(comisionMode === 'global' ? 'Usando comisión global' : `Comisión configurada a ${value}%`);
+      // Refresh commission data
+      const res = await adminService.getComisionTorneo(tournament.id);
+      setComisionData(res);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al guardar comisión');
+    } finally {
+      setSavingComision(false);
+    }
+  };
 
   const handleExportExcel = async () => {
     setExporting(true);
@@ -2365,6 +2433,71 @@ function FinanzasTab({ tournament }: { tournament: Tournament }) {
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Admin: Commission Configuration */}
+      {isAdmin && comisionData && (
+        <Card className="p-6">
+          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+            <Percent className="w-5 h-5 text-primary-500" /> Comisión FairPadel
+          </h3>
+          <p className="text-sm text-light-secondary mb-4">
+            Configurar el porcentaje de comisión que FairPadel cobra al organizador por cada inscripción en este torneo.
+          </p>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="comisionMode"
+                checked={comisionMode === 'global'}
+                onChange={() => { setComisionMode('global'); setComisionInput(''); }}
+                className="accent-primary-500"
+              />
+              <span className="text-sm">
+                Usar comisión global ({comisionData.comisionGlobal}%)
+              </span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="comisionMode"
+                checked={comisionMode === 'custom'}
+                onChange={() => setComisionMode('custom')}
+                className="accent-primary-500"
+              />
+              <span className="text-sm">Comisión personalizada:</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={comisionInput}
+                  onChange={(e) => { setComisionInput(e.target.value); setComisionMode('custom'); }}
+                  disabled={comisionMode !== 'custom'}
+                  placeholder={String(comisionData.comisionGlobal)}
+                  className="w-20 px-2 py-1.5 text-sm bg-dark-card border border-dark-border rounded focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-40"
+                />
+                <span className="text-sm text-light-secondary">%</span>
+              </div>
+            </label>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              onClick={handleSaveComision}
+              disabled={savingComision}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {savingComision ? 'Guardando...' : 'Guardar Comisión'}
+            </Button>
+            {comisionData.comisionPorcentaje !== null && comisionData.comisionPorcentaje !== undefined && (
+              <span className="text-xs text-primary-400 bg-primary-500/10 px-2 py-1 rounded-full">
+                Actualmente: {comisionData.comisionPorcentaje}%
+              </span>
+            )}
           </div>
         </Card>
       )}

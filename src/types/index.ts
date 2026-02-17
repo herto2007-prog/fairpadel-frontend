@@ -73,6 +73,11 @@ export enum PagoEstado {
   RECHAZADO = 'RECHAZADO',
 }
 
+export enum ModoPagoInscripcion {
+  COMPLETO = 'COMPLETO',
+  INDIVIDUAL = 'INDIVIDUAL',
+}
+
 export enum ModerationStatus {
   PENDIENTE = 'PENDIENTE',
   APROBADA = 'APROBADA',
@@ -237,6 +242,7 @@ export interface Tournament {
   // Pagos
   habilitarBancard?: boolean;
   cuentasBancarias?: CuentaBancaria[];
+  comisionPorcentaje?: number;
   // Shortlink
   slug?: string;
   estado: TournamentStatus;
@@ -260,6 +266,7 @@ export interface Pareja {
 export interface Pago {
   id: string;
   inscripcionId: string;
+  jugadorId?: string;
   metodoPago: MetodoPago;
   monto: number;
   comision: number;
@@ -299,9 +306,11 @@ export interface Inscripcion {
   parejaId: string;
   modalidad?: Modalidad;
   estado: InscripcionEstado;
+  modoPago?: ModoPagoInscripcion;
   metodoPago?: MetodoPago;
   pagoId?: string;
   pago?: Pago;
+  pagos?: Pago[];
   comprobantes?: ComprobantePago[];
   tournament?: Tournament;
   category?: Category;
@@ -514,6 +523,7 @@ export interface CreateInscripcionDto {
   modalidad: Modalidad;
   jugador2Documento: string;
   metodoPago: MetodoPago;
+  modoPagoInscripcion?: 'COMPLETO' | 'INDIVIDUAL';
 }
 
 // User DTOs

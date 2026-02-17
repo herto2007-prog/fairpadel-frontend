@@ -312,57 +312,112 @@ const DirectTab: React.FC<DirectTabProps> = ({
     }
   };
 
+  // Input style matching the scoreboard aesthetic
+  const cellInput = "w-full py-1.5 sm:py-2 rounded-md bg-dark-bg border border-dark-border text-center font-mono text-base sm:text-lg font-bold text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]";
+
   return (
     <div className="space-y-4">
-      {/* Checkboxes WO / Retiro */}
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={esWalkOver}
-            onChange={(e) => {
-              setEsWalkOver(e.target.checked);
-              if (e.target.checked) setEsRetiro(false);
-            }}
-            className="rounded border-dark-border bg-dark-surface text-primary-500 focus:ring-primary-500"
-          />
-          <span className="text-sm text-light-text">Walk Over</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={esRetiro}
-            onChange={(e) => {
-              setEsRetiro(e.target.checked);
-              if (e.target.checked) setEsWalkOver(false);
-            }}
-            className="rounded border-dark-border bg-dark-surface text-primary-500 focus:ring-primary-500"
-          />
-          <span className="text-sm text-light-text">Retiro / Lesión</span>
-        </label>
+      {/* Scoreboard-style grid */}
+      {!esWalkOver && (
+        <div className="bg-dark-surface rounded-lg p-3 sm:p-4">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1fr_repeat(2,44px)_44px] sm:grid-cols-[1fr_repeat(2,56px)_56px] gap-1.5 sm:gap-2 items-center mb-2">
+            <div></div>
+            <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">S1</div>
+            <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">S2</div>
+            <div className="text-[10px] sm:text-xs text-center text-light-secondary font-medium">
+              {needsSet3 ? (isSemiFinal ? 'S3' : 'STB') : 'S3'}
+            </div>
+          </div>
+
+          {/* Pareja 1 row */}
+          <div className="grid grid-cols-[1fr_repeat(2,44px)_44px] sm:grid-cols-[1fr_repeat(2,56px)_56px] gap-1.5 sm:gap-2 items-center py-1.5 sm:py-2 border-b border-dark-border">
+            <div className="text-xs sm:text-sm font-medium text-light-text truncate pr-1">
+              {pareja1Label}
+            </div>
+            <input type="number" min="0" max="7" value={set1P1} onChange={(e) => setSet1P1(e.target.value)} className={cellInput} />
+            <input type="number" min="0" max="7" value={set2P1} onChange={(e) => setSet2P1(e.target.value)} className={cellInput} />
+            {needsSet3 ? (
+              <input type="number" min="0" max={isSemiFinal ? 7 : 99} value={set3P1} onChange={(e) => setSet3P1(e.target.value)} className={cellInput} />
+            ) : (
+              <div className="text-center font-mono text-base sm:text-lg font-bold text-dark-border">-</div>
+            )}
+          </div>
+
+          {/* Pareja 2 row */}
+          <div className="grid grid-cols-[1fr_repeat(2,44px)_44px] sm:grid-cols-[1fr_repeat(2,56px)_56px] gap-1.5 sm:gap-2 items-center py-1.5 sm:py-2">
+            <div className="text-xs sm:text-sm font-medium text-light-text truncate pr-1">
+              {pareja2Label}
+            </div>
+            <input type="number" min="0" max="7" value={set1P2} onChange={(e) => setSet1P2(e.target.value)} className={cellInput} />
+            <input type="number" min="0" max="7" value={set2P2} onChange={(e) => setSet2P2(e.target.value)} className={cellInput} />
+            {needsSet3 ? (
+              <input type="number" min="0" max={isSemiFinal ? 7 : 99} value={set3P2} onChange={(e) => setSet3P2(e.target.value)} className={cellInput} />
+            ) : (
+              <div className="text-center font-mono text-base sm:text-lg font-bold text-dark-border">-</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tip for set 3 */}
+      {needsSet3 && !isSemiFinal && !esWalkOver && (
+        <p className="text-xs text-light-secondary px-1">
+          Super tie-break: primero a 10 puntos con diferencia de 2.
+        </p>
+      )}
+
+      {/* WO / Retiro toggle pills */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            setEsWalkOver(!esWalkOver);
+            if (!esWalkOver) setEsRetiro(false);
+          }}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
+            esWalkOver
+              ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+              : 'border-dark-border bg-dark-surface text-light-secondary hover:border-dark-border/80'
+          }`}
+        >
+          Walk Over
+        </button>
+        <button
+          onClick={() => {
+            setEsRetiro(!esRetiro);
+            if (!esRetiro) setEsWalkOver(false);
+          }}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
+            esRetiro
+              ? 'border-amber-500 bg-amber-500/20 text-amber-300'
+              : 'border-dark-border bg-dark-surface text-light-secondary hover:border-dark-border/80'
+          }`}
+        >
+          Retiro / Lesión
+        </button>
       </div>
 
-      {/* Selector de ganador (para WO/Retiro) */}
+      {/* Winner selector (WO/Retiro) */}
       {(esWalkOver || esRetiro) && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-light-secondary">Pareja Ganadora</label>
-          <div className="flex gap-2">
+          <label className="text-xs font-medium text-light-secondary">Pareja Ganadora</label>
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setParejaGanadoraId(match.pareja1Id || '')}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm border transition-colors ${
+              className={`py-3 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
                 parejaGanadoraId === match.pareja1Id
-                  ? 'border-primary-500 bg-primary-500/20 text-primary-300'
-                  : 'border-dark-border bg-dark-surface text-light-secondary hover:border-primary-500/50'
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-dark-border bg-dark-surface text-light-secondary hover:bg-dark-hover'
               }`}
             >
               {pareja1Label}
             </button>
             <button
               onClick={() => setParejaGanadoraId(match.pareja2Id || '')}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm border transition-colors ${
+              className={`py-3 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
                 parejaGanadoraId === match.pareja2Id
-                  ? 'border-primary-500 bg-primary-500/20 text-primary-300'
-                  : 'border-dark-border bg-dark-surface text-light-secondary hover:border-primary-500/50'
+                  ? 'bg-red-600 text-white'
+                  : 'border border-dark-border bg-dark-surface text-light-secondary hover:bg-dark-hover'
               }`}
             >
               {pareja2Label}
@@ -371,99 +426,10 @@ const DirectTab: React.FC<DirectTabProps> = ({
         </div>
       )}
 
-      {/* Sets inputs (ocultos si WO) */}
-      {!esWalkOver && (
-        <div className="space-y-3">
-          {/* Headers */}
-          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
-            <div></div>
-            <div className="text-xs text-center text-light-secondary font-medium">P1</div>
-            <div></div>
-            <div className="text-xs text-center text-light-secondary font-medium">P2</div>
-          </div>
-
-          {/* Set 1 */}
-          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
-            <span className="text-xs sm:text-sm text-light-text font-medium">Set 1</span>
-            <input
-              type="number"
-              min="0"
-              max="7"
-              value={set1P1}
-              onChange={(e) => setSet1P1(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-            />
-            <span className="text-center text-light-secondary">-</span>
-            <input
-              type="number"
-              min="0"
-              max="7"
-              value={set1P2}
-              onChange={(e) => setSet1P2(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-            />
-          </div>
-
-          {/* Set 2 */}
-          <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
-            <span className="text-xs sm:text-sm text-light-text font-medium">Set 2</span>
-            <input
-              type="number"
-              min="0"
-              max="7"
-              value={set2P1}
-              onChange={(e) => setSet2P1(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-            />
-            <span className="text-center text-light-secondary">-</span>
-            <input
-              type="number"
-              min="0"
-              max="7"
-              value={set2P2}
-              onChange={(e) => setSet2P2(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-            />
-          </div>
-
-          {/* Set 3 / Super Tie-Break */}
-          {needsSet3 && (
-            <div className="grid grid-cols-[1fr_60px_20px_60px] sm:grid-cols-[1fr_80px_30px_80px] gap-1.5 sm:gap-2 items-center">
-              <span className="text-xs sm:text-sm text-light-text font-medium">
-                {isSemiFinal ? 'Set 3' : 'STB (a 10)'}
-              </span>
-              <input
-                type="number"
-                min="0"
-                max={isSemiFinal ? 7 : 99}
-                value={set3P1}
-                onChange={(e) => setSet3P1(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-              />
-              <span className="text-center text-light-secondary">-</span>
-              <input
-                type="number"
-                min="0"
-                max={isSemiFinal ? 7 : 99}
-                value={set3P2}
-                onChange={(e) => setSet3P2(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-dark-surface border border-dark-border text-center text-light-text focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-              />
-            </div>
-          )}
-
-          {needsSet3 && !isSemiFinal && (
-            <p className="text-xs text-light-secondary px-1">
-              Super tie-break: primero a 10 puntos con diferencia de 2.
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Observaciones (siempre visible para retiro) */}
+      {/* Observaciones */}
       {(esRetiro || esWalkOver) && (
         <div>
-          <label className="text-sm font-medium text-light-secondary block mb-1">
+          <label className="text-xs font-medium text-light-secondary block mb-1">
             Observaciones
           </label>
           <input
@@ -471,7 +437,7 @@ const DirectTab: React.FC<DirectTabProps> = ({
             value={observaciones}
             onChange={(e) => setObservaciones(e.target.value)}
             placeholder={esRetiro ? 'Ej: Retiro por lesión de rodilla' : 'Opcional'}
-            className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-light-text placeholder:text-light-secondary/50 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+            className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-sm text-light-text placeholder:text-light-secondary/50 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
           />
         </div>
       )}

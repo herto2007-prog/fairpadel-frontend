@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { inscripcionesService } from '@/services/inscripcionesService';
 import tournamentsService from '@/services/tournamentsService';
 import { Loading, Card, CardContent, Badge, Button } from '@/components/ui';
-import type { Inscripcion, CuentaBancaria } from '@/types';
-import { InscripcionEstado } from '@/types';
+import type { Inscripcion, CuentaBancaria, Pago } from '@/types';
+import { InscripcionEstado, PagoEstado } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 import {
   Calendar,
   MapPin,
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast';
 
 const MisInscripcionesPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -266,7 +268,15 @@ const MisInscripcionesPage = () => {
             const cuentas = cuentasCache[inscripcion.tournamentId] || [];
             const isPendientePago = inscripcion.estado === InscripcionEstado.PENDIENTE_PAGO;
             const isRechazada = inscripcion.estado === InscripcionEstado.RECHAZADA;
-            const showPaySection = needsAction(inscripcion.estado) && inscripcion.pago?.metodoPago === 'TRANSFERENCIA';
+            // Get pagos from array (new) or single pago (backward compat)
+            const pagos: Pago[] = inscripcion.pagos || (inscripcion.pago ? [inscripcion.pago] : []);
+            const primerPago = pagos[0];
+            const showPaySection = needsAction(inscripcion.estado) && primerPago?.metodoPago === 'TRANSFERENCIA';
+            // Individual payment: find my pending pago
+            const isIndividual = inscripcion.modoPago === 'INDIVIDUAL';
+            const miPago = isIndividual ? pagos.find((p) => p.jugadorId === user?.id) : null;
+            const companeroPago = isIndividual ? pagos.find((p) => p.jugadorId !== user?.id) : null;
+            const miPagoPendiente = miPago && miPago.estado === PagoEstado.PENDIENTE;
 
             return (
               <Card key={inscripcion.id}>
@@ -314,9 +324,22 @@ const MisInscripcionesPage = () => {
                       )}
 
                       {/* Pago info */}
-                      {inscripcion.pago && (
+                      {pagos.length > 0 && (
                         <div className="mt-2 text-xs text-light-secondary">
-                          Método: {inscripcion.pago.metodoPago} | Monto: Gs. {new Intl.NumberFormat('es-PY').format(Number(inscripcion.pago.monto))}
+                          {isIndividual ? (
+                            <>
+                              <span>Pago individual | Mi parte: Gs. {new Intl.NumberFormat('es-PY').format(Number(miPago?.monto || 0))}</span>
+                              {companeroPago && (
+                                <span className="ml-2">
+                                  | Compañero: {companeroPago.estado === PagoEstado.CONFIRMADO
+                                    ? <span className="text-green-400">Pagado</span>
+                                    : <span className="text-yellow-400">Pendiente</span>}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>Método: {primerPago?.metodoPago} | Monto: Gs. {new Intl.NumberFormat('es-PY').format(Number(primerPago?.monto || 0))}</>
+                          )}
                         </div>
                       )}
                     </div>
@@ -362,6 +385,23 @@ const MisInscripcionesPage = () => {
                           <p className="text-sm text-red-300">
                             {inscripcion.comprobantes[0]?.motivoRechazo || 'Sin motivo especificado'}
                           </p>
+                        </div>
+                      )}
+
+                      {/* Individual payment: "Pagar mi parte" info */}
+                      {isIndividual && miPagoPendiente && (
+                        <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                          <p className="text-sm font-medium text-amber-400 mb-1">Tu pago individual está pendiente</p>
+                          <p className="text-xs text-amber-300">
+                            Monto: Gs. {new Intl.NumberFormat('es-PY').format(Number(miPago?.monto || 0))}
+                          </p>
+                          {companeroPago && (
+                            <p className="text-xs text-light-secondary mt-1">
+                              Estado del compañero: {companeroPago.estado === PagoEstado.CONFIRMADO
+                                ? 'Pagado ✓'
+                                : 'Pendiente'}
+                            </p>
+                          )}
                         </div>
                       )}
 

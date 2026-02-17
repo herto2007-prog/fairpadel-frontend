@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Select, Button } from '@/components/ui';
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete';
 import type { TournamentFilters as Filters, Circuito } from '@/types';
-import { TournamentStatus, Modalidad } from '@/types';
+import { Modalidad } from '@/types';
 import { X, Search } from 'lucide-react';
 import { circuitosService } from '@/services/circuitosService';
 
@@ -40,26 +40,7 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
   }, [filters, onChange]);
 
   const handleReset = () => {
-    onChange({
-      inscripcionesAbiertas: true,
-    });
-  };
-
-  // Derive display value for the estado select
-  const estadoSelectValue = filters.inscripcionesAbiertas
-    ? 'INSCRIPCIONES_ABIERTAS'
-    : filters.estado || '';
-
-  const handleEstadoChange = (value: string) => {
-    if (value === 'INSCRIPCIONES_ABIERTAS') {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { estado: _e, ...rest } = filters;
-      onChange({ ...rest, inscripcionesAbiertas: true });
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { inscripcionesAbiertas: _ia, ...rest } = filters;
-      onChange({ ...rest, estado: (value as TournamentStatus) || undefined });
-    }
+    onChange({});
   };
 
   return (
@@ -78,21 +59,7 @@ export const TournamentFilters: React.FC<TournamentFiltersProps> = ({ filters, o
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
-        <Select
-          label="Estado"
-          value={estadoSelectValue}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-            handleEstadoChange(e.target.value)
-          }
-        >
-          <option value="">Todos</option>
-          <option value="INSCRIPCIONES_ABIERTAS">Inscripciones Abiertas</option>
-          <option value={TournamentStatus.PUBLICADO}>Publicados</option>
-          <option value={TournamentStatus.EN_CURSO}>En Curso</option>
-          <option value={TournamentStatus.FINALIZADO}>Finalizados</option>
-        </Select>
-
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <CityAutocomplete
           label="Ciudad"
           value={filters.ciudad || ''}

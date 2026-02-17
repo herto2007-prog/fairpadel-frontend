@@ -76,6 +76,7 @@ export default function NuevaInscripcionPage() {
   
   // Formulario - Pago
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<MetodoPago | ''>('');
+  const [modoPagoInscripcion, setModoPagoInscripcion] = useState<'COMPLETO' | 'INDIVIDUAL'>('COMPLETO');
   const [cuentasBancarias, setCuentasBancarias] = useState<CuentaBancaria[]>([]);
 
   // Resultado
@@ -286,12 +287,14 @@ export default function NuevaInscripcionPage() {
     setError('');
 
     try {
+      const esPago = Number(tournament.costoInscripcion) > 0;
       const data: CreateInscripcionDto = {
         tournamentId: tournament.id,
         categoryId: selectedCategory,
         modalidad: selectedModalidad,
         jugador2Documento,
-        metodoPago: Number(tournament.costoInscripcion) === 0 ? 'EFECTIVO' : selectedMetodoPago as MetodoPago,
+        metodoPago: esPago ? selectedMetodoPago as MetodoPago : 'EFECTIVO',
+        ...(esPago ? { modoPagoInscripcion } : {}),
       };
 
       const result = await inscripcionesService.create(data);
@@ -745,13 +748,73 @@ export default function NuevaInscripcionPage() {
                 <p className="font-semibold">{selectedModalidad}</p>
               </div>
 
+              {/* Payment mode selector — only for paid tournaments */}
+              {Number(tournament.costoInscripcion) > 0 && (
+                <div className="p-4 bg-dark-surface rounded-lg">
+                  <p className="text-sm text-light-secondary mb-3">💳 Modo de pago</p>
+                  <div className="space-y-2">
+                    <label
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors
+                        ${modoPagoInscripcion === 'COMPLETO'
+                          ? 'border-primary-500 bg-primary-500/10'
+                          : 'border-dark-border hover:bg-dark-hover'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="modoPago"
+                        value="COMPLETO"
+                        checked={modoPagoInscripcion === 'COMPLETO'}
+                        onChange={() => setModoPagoInscripcion('COMPLETO')}
+                        className="mr-3"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Pago por ambos</p>
+                        <p className="text-xs text-light-secondary">
+                          Pagás {formatCurrency(Number(tournament.costoInscripcion))} (total de la pareja)
+                        </p>
+                      </div>
+                    </label>
+                    <label
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors
+                        ${modoPagoInscripcion === 'INDIVIDUAL'
+                          ? 'border-primary-500 bg-primary-500/10'
+                          : 'border-dark-border hover:bg-dark-hover'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="modoPago"
+                        value="INDIVIDUAL"
+                        checked={modoPagoInscripcion === 'INDIVIDUAL'}
+                        onChange={() => setModoPagoInscripcion('INDIVIDUAL')}
+                        className="mr-3"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Pago solo mi parte</p>
+                        <p className="text-xs text-light-secondary">
+                          Pagás {formatCurrency(Number(tournament.costoInscripcion) / 2)} — tu compañero/a paga su parte desde "Mis Inscripciones"
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="p-4 bg-primary-500/10 rounded-lg border-2 border-primary-500/30">
                 <p className="text-sm text-primary-500 mb-1">💰 MONTO A PAGAR</p>
                 <p className="text-3xl font-bold text-primary-500">
-                  {Number(tournament.costoInscripcion) > 0 
-                    ? formatCurrency(Number(tournament.costoInscripcion))
+                  {Number(tournament.costoInscripcion) > 0
+                    ? formatCurrency(
+                        modoPagoInscripcion === 'INDIVIDUAL'
+                          ? Number(tournament.costoInscripcion) / 2
+                          : Number(tournament.costoInscripcion)
+                      )
                     : '¡GRATIS!'}
                 </p>
+                {modoPagoInscripcion === 'INDIVIDUAL' && Number(tournament.costoInscripcion) > 0 && (
+                  <p className="text-xs text-light-secondary mt-1">
+                    Total pareja: {formatCurrency(Number(tournament.costoInscripcion))} — tu parte: {formatCurrency(Number(tournament.costoInscripcion) / 2)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -783,7 +846,12 @@ export default function NuevaInscripcionPage() {
             <h2 className="text-xl font-bold mb-6">Paso 4: Método de Pago</h2>
             
             <p className="text-light-secondary mb-4">
-              Monto a pagar: <strong className="text-primary-500">{formatCurrency(Number(tournament.costoInscripcion))}</strong>
+              Monto a pagar: <strong className="text-primary-500">
+                {formatCurrency(modoPagoInscripcion === 'INDIVIDUAL' ? Number(tournament.costoInscripcion) / 2 : Number(tournament.costoInscripcion))}
+              </strong>
+              {modoPagoInscripcion === 'INDIVIDUAL' && (
+                <span className="text-xs text-light-muted ml-2">(tu parte)</span>
+              )}
             </p>
 
             <div className="space-y-3 mb-6">

@@ -7,6 +7,7 @@ export interface CreateInscripcionDto {
   modalidad: 'TRADICIONAL' | 'MIXTO' | 'SUMA';
   jugador2Documento: string;
   metodoPago: 'BANCARD' | 'TRANSFERENCIA' | 'EFECTIVO';
+  modoPagoInscripcion?: 'COMPLETO' | 'INDIVIDUAL';
 }
 
 class InscripcionesService {
@@ -74,6 +75,23 @@ class InscripcionesService {
     const response = await api.put<Inscripcion>(
       `/inscripciones/torneo/${tournamentId}/inscripcion/${inscripcionId}/rechazar-pago`,
       { motivo },
+    );
+    return response.data;
+  }
+
+  // Pagar mi parte (pago individual)
+  async pagarMiParte(inscripcionId: string, metodoPago?: string): Promise<Inscripcion> {
+    const response = await api.post<Inscripcion>(
+      `/inscripciones/${inscripcionId}/pagar-mi-parte`,
+      { metodoPago },
+    );
+    return response.data;
+  }
+
+  // Confirmar pago individual (organizador/admin)
+  async confirmarPagoIndividual(tournamentId: string, pagoId: string): Promise<Inscripcion> {
+    const response = await api.put<Inscripcion>(
+      `/inscripciones/torneo/${tournamentId}/pago/${pagoId}/confirmar`,
     );
     return response.data;
   }

@@ -3,13 +3,13 @@ import { publicidadService, type BannerPublico } from '@/services/publicidadServ
 
 // Aspect ratios per zone (height/width) for placeholder sizing
 const ZONE_ASPECT: Record<string, string> = {
-  HOME_HERO: 'aspect-[1200/200]',      // 1200x200
-  HOME_MEDIO: 'aspect-[1200/150]',     // 1200x150
-  ENTRE_TORNEOS: 'aspect-[1200/150]',  // 1200x150
-  HEADER: 'aspect-[1200/90]',          // 1200x90
-  FOOTER: 'aspect-[1200/90]',          // 1200x90
-  TORNEO_DETALLE: 'aspect-[1200/100]', // 1200x100
-  SIDEBAR: '',                          // libre
+  HOME_HERO: 'aspect-[1920/400]',       // 1920x400
+  HOME_MEDIO: 'aspect-[1920/300]',      // 1920x300
+  ENTRE_TORNEOS: 'aspect-[1920/300]',   // 1920x300
+  HEADER: 'aspect-[1920/180]',          // 1920x180
+  FOOTER: 'aspect-[1920/180]',          // 1920x180
+  TORNEO_DETALLE: 'aspect-[1920/200]',  // 1920x200
+  SIDEBAR: '',                           // libre
 };
 
 interface BannerZoneProps {
