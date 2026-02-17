@@ -11,6 +11,7 @@ import MatchHistoryList from '../components/MatchHistoryList';
 import TournamentHistoryList from '../components/TournamentHistoryList';
 import ProfilePhotoGallery from '../components/ProfilePhotoGallery';
 import FollowersModal from '../components/FollowersModal';
+import BadgeShowcase from '../components/BadgeShowcase';
 
 const ProfilePage = () => {
   // Route can be /jugadores/:id, /profile/:userId, or /profile (own)
@@ -114,6 +115,14 @@ const ProfilePage = () => {
             <QuickStatsRow ranking={perfil.ranking} />
           </div>
         </div>
+      </div>
+
+      {/* Badge Showcase */}
+      <div className="container mx-auto px-4 mt-4">
+        <BadgeShowcase
+          userId={profileId!}
+          isOwnProfile={perfil.social.isOwnProfile}
+        />
       </div>
 
       {/* Match & Tournament History */}

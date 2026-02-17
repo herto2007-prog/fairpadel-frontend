@@ -185,21 +185,12 @@ const SocialActions = ({ perfil, onFollowToggle }: Props) => {
           )}
         </Button>
 
-        {/* Message — visible for all, premium-gated */}
-        {currentUser.esPremium ? (
-          <Link to={`/mensajes/${usuario.id}`}>
-            <Button variant="ghost" size="sm" title="Enviar mensaje">
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </Link>
-        ) : (
-          <Link to="/premium">
-            <Button variant="ghost" size="sm" title="Enviar mensaje (Premium)" className="opacity-50">
-              <MessageCircle className="h-4 w-4" />
-              <Crown className="h-3 w-3 text-yellow-500 ml-0.5" />
-            </Button>
-          </Link>
-        )}
+        {/* Message — free for all */}
+        <Link to={`/mensajes/${usuario.id}`}>
+          <Button variant="ghost" size="sm" title="Enviar mensaje">
+            <MessageCircle className="h-4 w-4" />
+          </Button>
+        </Link>
 
         {/* Invite to play — visible for all, premium-gated */}
         {currentUser.esPremium ? (

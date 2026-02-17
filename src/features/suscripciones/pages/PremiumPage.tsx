@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Crown, Check, Loader2, Tag, AlertTriangle, Clock } from 'lucide-react';
+import { Crown, Check, Loader2, Tag, AlertTriangle, Clock, Trophy, Bell, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { suscripcionesService, PlanPremium, Suscripcion } from '../../../services/suscripcionesService';
@@ -178,7 +178,7 @@ export default function PremiumPage() {
           Lleva tu juego al siguiente nivel
         </h1>
         <p className="text-dark-textSecondary text-base sm:text-lg max-w-2xl mx-auto">
-          Un solo plan para jugadores y organizadores. Todo lo que necesitas por solo $3 USD/mes.
+          Un solo plan para jugadores y organizadores. Todo lo que necesitas por solo $2.99 USD/mes.
         </p>
       </div>
 
@@ -261,11 +261,44 @@ export default function PremiumPage() {
             <CardTitle className="flex items-center justify-between">
               <span>FairPadel Premium</span>
               <span className="text-2xl sm:text-3xl font-bold text-yellow-400">
-                $3<span className="text-sm font-normal text-dark-textSecondary">/mes</span>
+                $2.99<span className="text-sm font-normal text-dark-textSecondary">/mes</span>
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Highlighted Premium Features */}
+            <div className="mb-6 space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                <Crown className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-dark-text text-sm font-medium">Perfil Verificado</p>
+                  <p className="text-dark-textSecondary text-xs">Badge dorado junto a tu nombre en rankings, fixture y perfil</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                <Trophy className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-dark-text text-sm font-medium">Badges Exclusivos</p>
+                  <p className="text-dark-textSecondary text-xs">Desbloquea badges premium como Racha de 5, Top 3, Leyenda y mas</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                <Bell className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-dark-text text-sm font-medium">Alertas Personalizadas</p>
+                  <p className="text-dark-textSecondary text-xs">Torneos en tu ciudad, tu categoria, rivales inscritos, cambios de ranking</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
+                <Mail className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-dark-text text-sm font-medium">Resumen Semanal</p>
+                  <p className="text-dark-textSecondary text-xs">Email cada lunes con tus estadisticas, ranking y logros de la semana</p>
+                </div>
+              </div>
+            </div>
+
+            {/* All features list from DB */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-dark-textSecondary uppercase tracking-wider mb-3">
                 Para Jugadores
@@ -354,7 +387,7 @@ export default function PremiumPage() {
                 <div className="bg-dark-bg rounded-lg p-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-dark-textSecondary">Plan mensual</span>
-                    <span className="text-dark-text">${Number(plan?.precioMensual || 3).toFixed(2)}</span>
+                    <span className="text-dark-text">${Number(plan?.precioMensual || 2.99).toFixed(2)}</span>
                   </div>
                   {cuponValidado?.valido && descuento > 0 && (
                     <div className="flex justify-between text-sm mb-2">
@@ -409,7 +442,7 @@ export default function PremiumPage() {
               <div>
                 <h4 className="text-sm font-medium text-dark-text">¿Cómo se cobra?</h4>
                 <p className="text-xs text-dark-textSecondary mt-1">
-                  Cobro mensual vía Bancard. $3 USD al mes.
+                  Cobro mensual vía Bancard. $2.99 USD al mes.
                 </p>
               </div>
             </CardContent>

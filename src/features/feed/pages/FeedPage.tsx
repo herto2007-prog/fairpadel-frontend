@@ -308,24 +308,6 @@ export default function FeedPage() {
     );
   }
 
-  if (!user.esPremium) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <Crown className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-dark-text mb-2">Feed Premium</h2>
-        <p className="text-dark-textSecondary mb-6">
-          El feed social es exclusivo para usuarios Premium. Ve las fotos, resultados y logros de los jugadores que sigues.
-        </p>
-        <Link to="/premium">
-          <Button className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold">
-            <Crown className="h-4 w-4 mr-2" />
-            Activar Premium - $3/mes
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-dark-text mb-6">Novedades</h1>
@@ -339,7 +321,7 @@ export default function FeedPage() {
           <CardContent className="p-8 text-center">
             <p className="text-dark-textSecondary mb-2">Tu feed está vacío</p>
             <p className="text-sm text-dark-textSecondary">
-              Sigue a otros jugadores premium para ver sus fotos, resultados y logros aquí.
+              Sigue a otros jugadores para ver sus fotos, resultados y logros aquí.
             </p>
           </CardContent>
         </Card>

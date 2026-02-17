@@ -3,7 +3,7 @@ import { rankingsService } from '@/services/rankingsService';
 import { Loading, Card, CardContent, Badge, Select } from '@/components/ui';
 import type { Ranking } from '@/types';
 import { Gender, TipoRanking } from '@/types';
-import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus, Crown } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
 
 const RankingsPage = () => {
@@ -156,8 +156,11 @@ const RankingsPage = () => {
                             )}
                           </div>
                           <div>
-                            <p className="font-medium">
+                            <p className="font-medium flex items-center gap-1">
                               {ranking.jugador?.nombre} {ranking.jugador?.apellido}
+                              {(ranking.jugador as any)?.esPremium && (
+                                <Crown className="h-3.5 w-3.5 text-yellow-500" />
+                              )}
                             </p>
                             <p className="text-sm text-light-secondary">
                               {ranking.jugador?.ciudad || 'Sin ciudad'}
@@ -206,8 +209,11 @@ const RankingsPage = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-sm truncate flex items-center gap-1">
                       {ranking.jugador?.nombre} {ranking.jugador?.apellido}
+                      {(ranking.jugador as any)?.esPremium && (
+                        <Crown className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                      )}
                     </p>
                     <p className="text-xs text-light-secondary">
                       {ranking.torneosJugados} torneos · <span className="text-green-400">{ranking.victorias}</span>/<span className="text-red-400">{ranking.derrotas}</span>

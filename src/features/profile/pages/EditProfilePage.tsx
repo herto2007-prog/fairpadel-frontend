@@ -5,8 +5,11 @@ import { usersService } from '@/services/usersService';
 import { notificacionesService } from '@/services/notificacionesService';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import type { UpdateProfileDto, PreferenciaNotificacion, TipoNotificacion } from '@/types';
-import { Camera, Crown, Bell, Mail, MessageSquare } from 'lucide-react';
+import { Camera, Crown, Bell, Mail, MessageSquare, BellRing, MapPin, Users, BarChart3, Target } from 'lucide-react';
 import ProfilePhotoCropper from '../components/ProfilePhotoCropper';
+import { alertasService } from '@/services/alertasService';
+import { TipoAlertaPersonalizada } from '@/types';
+import type { AlertaPersonalizada } from '@/types';
 import toast from 'react-hot-toast';
 
 // Labels legibles por tipo de notificacion
@@ -34,6 +37,11 @@ const EditProfilePage = () => {
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [savingPref, setSavingPref] = useState<string | null>(null);
 
+  // Alertas personalizadas (premium)
+  const [alertas, setAlertas] = useState<AlertaPersonalizada[]>([]);
+  const [loadingAlertas, setLoadingAlertas] = useState(true);
+  const [savingAlerta, setSavingAlerta] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<UpdateProfileDto>({
     nombre: user?.nombre || '',
     apellido: user?.apellido || '',
@@ -57,6 +65,48 @@ const EditProfilePage = () => {
     };
     loadPrefs();
   }, []);
+
+  // Load alertas personalizadas (premium only)
+  useEffect(() => {
+    const loadAlertas = async () => {
+      if (!user?.esPremium) {
+        setLoadingAlertas(false);
+        return;
+      }
+      try {
+        const data = await alertasService.getMisAlertas();
+        setAlertas(data);
+      } catch {
+        // ignore — non-premium users get 403
+      } finally {
+        setLoadingAlertas(false);
+      }
+    };
+    loadAlertas();
+  }, [user?.esPremium]);
+
+  const handleToggleAlerta = async (tipo: TipoAlertaPersonalizada) => {
+    setSavingAlerta(tipo);
+    const existing = alertas.find((a) => a.tipo === tipo);
+
+    try {
+      if (existing) {
+        const updated = await alertasService.actualizarAlerta(existing.id, {
+          activa: !existing.activa,
+        });
+        setAlertas((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+        toast.success(updated.activa ? 'Alerta activada' : 'Alerta desactivada');
+      } else {
+        const created = await alertasService.crearAlerta({ tipo, activa: true });
+        setAlertas((prev) => [...prev, created]);
+        toast.success('Alerta activada');
+      }
+    } catch {
+      toast.error('Error al actualizar alerta');
+    } finally {
+      setSavingAlerta(null);
+    }
+  };
 
   const handleTogglePref = async (
     tipo: TipoNotificacion | string,
@@ -355,6 +405,163 @@ const EditProfilePage = () => {
               <p className="text-xs text-yellow-400">
                 Las notificaciones por SMS estan disponibles solo para usuarios Premium.
               </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Alertas Personalizadas (Premium) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BellRing className="h-5 w-5 text-primary-400" />
+            Alertas Personalizadas
+            {!user?.esPremium && (
+              <Crown className="h-4 w-4 text-yellow-500" />
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {user?.esPremium ? (
+            <>
+              <p className="text-sm text-light-secondary mb-4">
+                Recibe notificaciones automaticas cuando ocurran eventos relevantes para ti.
+              </p>
+
+              {loadingAlertas ? (
+                <div className="text-center text-light-muted py-6 text-sm">Cargando alertas...</div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Torneo en mi ciudad */}
+                  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-dark-hover/50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <MapPin className="h-5 w-5 text-primary-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-light-text">Torneo en mi ciudad</p>
+                        <p className="text-xs text-light-secondary">Cuando se publique un torneo en tu ciudad</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAlerta(TipoAlertaPersonalizada.TORNEO_EN_MI_CIUDAD)}
+                      disabled={savingAlerta === TipoAlertaPersonalizada.TORNEO_EN_MI_CIUDAD}
+                      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                        alertas.find((a) => a.tipo === TipoAlertaPersonalizada.TORNEO_EN_MI_CIUDAD)?.activa
+                          ? 'bg-primary-500'
+                          : 'bg-dark-border'
+                      } ${savingAlerta === TipoAlertaPersonalizada.TORNEO_EN_MI_CIUDAD ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          alertas.find((a) => a.tipo === TipoAlertaPersonalizada.TORNEO_EN_MI_CIUDAD)?.activa
+                            ? 'translate-x-5'
+                            : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Torneo mi categoría */}
+                  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-dark-hover/50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Target className="h-5 w-5 text-primary-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-light-text">Torneo de mi categoria</p>
+                        <p className="text-xs text-light-secondary">Cuando se publique un torneo con tu categoria</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAlerta(TipoAlertaPersonalizada.TORNEO_MI_CATEGORIA)}
+                      disabled={savingAlerta === TipoAlertaPersonalizada.TORNEO_MI_CATEGORIA}
+                      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                        alertas.find((a) => a.tipo === TipoAlertaPersonalizada.TORNEO_MI_CATEGORIA)?.activa
+                          ? 'bg-primary-500'
+                          : 'bg-dark-border'
+                      } ${savingAlerta === TipoAlertaPersonalizada.TORNEO_MI_CATEGORIA ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          alertas.find((a) => a.tipo === TipoAlertaPersonalizada.TORNEO_MI_CATEGORIA)?.activa
+                            ? 'translate-x-5'
+                            : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Rival inscrito */}
+                  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-dark-hover/50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Users className="h-5 w-5 text-primary-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-light-text">Rival inscrito</p>
+                        <p className="text-xs text-light-secondary">Cuando un rival anterior se inscriba en un torneo</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAlerta(TipoAlertaPersonalizada.RIVAL_INSCRITO)}
+                      disabled={savingAlerta === TipoAlertaPersonalizada.RIVAL_INSCRITO}
+                      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                        alertas.find((a) => a.tipo === TipoAlertaPersonalizada.RIVAL_INSCRITO)?.activa
+                          ? 'bg-primary-500'
+                          : 'bg-dark-border'
+                      } ${savingAlerta === TipoAlertaPersonalizada.RIVAL_INSCRITO ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          alertas.find((a) => a.tipo === TipoAlertaPersonalizada.RIVAL_INSCRITO)?.activa
+                            ? 'translate-x-5'
+                            : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Cambio de ranking */}
+                  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-dark-hover/50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <BarChart3 className="h-5 w-5 text-primary-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-light-text">Cambio de ranking</p>
+                        <p className="text-xs text-light-secondary">Cuando tu posicion en el ranking cambie</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAlerta(TipoAlertaPersonalizada.RANKING_CAMBIO)}
+                      disabled={savingAlerta === TipoAlertaPersonalizada.RANKING_CAMBIO}
+                      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                        alertas.find((a) => a.tipo === TipoAlertaPersonalizada.RANKING_CAMBIO)?.activa
+                          ? 'bg-primary-500'
+                          : 'bg-dark-border'
+                      } ${savingAlerta === TipoAlertaPersonalizada.RANKING_CAMBIO ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                          alertas.find((a) => a.tipo === TipoAlertaPersonalizada.RANKING_CAMBIO)?.activa
+                            ? 'translate-x-5'
+                            : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <Crown className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-light-text mb-1">Funcion Premium</h3>
+              <p className="text-xs text-light-secondary mb-3">
+                Activa alertas personalizadas para enterarte de torneos en tu ciudad, tu categoria, y mas.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/premium')}
+                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+              >
+                <Crown className="h-3.5 w-3.5 mr-1.5" />
+                Upgrade a Premium
+              </Button>
             </div>
           )}
         </CardContent>

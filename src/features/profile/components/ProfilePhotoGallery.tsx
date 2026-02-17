@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { Card, CardContent, Modal, Button } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import fotosService from '@/services/fotosService';
@@ -17,7 +16,6 @@ import {
   Loader2,
   Send,
   Trash2,
-  Crown,
   ImagePlus,
   ChevronDown,
 } from 'lucide-react';
@@ -119,12 +117,6 @@ const ProfilePhotoGallery = ({ fotos: initialFotos, isOwnProfile, userId, totalF
     setUploadPreview(null);
     setUploadDesc('');
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const canUpload = () => {
-    if (!photoCount) return true;
-    if (photoCount.esPremium) return true;
-    return photoCount.count < (photoCount.limit || 6);
   };
 
   // -----------------------------------------------
@@ -317,42 +309,26 @@ const ProfilePhotoGallery = ({ fotos: initialFotos, isOwnProfile, userId, totalF
               )}
             </div>
 
-            {/* Upload button + counter */}
+            {/* Upload button */}
             {isOwnProfile && isAuthenticated && (
               <div className="flex items-center gap-3">
-                {photoCount && !photoCount.esPremium && (
+                {photoCount && (
                   <span className="text-xs text-light-muted">
-                    {photoCount.count}/{photoCount.limit} fotos
-                  </span>
-                )}
-                {photoCount?.esPremium && (
-                  <span className="text-xs text-yellow-400 flex items-center gap-1">
-                    <Crown className="h-3 w-3" />
-                    Ilimitadas
+                    {photoCount.count} fotos
                   </span>
                 )}
 
-                {canUpload() ? (
-                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-500/10 border border-primary-500/30 text-primary-400 rounded-lg cursor-pointer hover:bg-primary-500/20 transition-colors text-sm font-medium">
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Subir foto</span>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <Link
-                    to="/premium"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-lg text-sm font-medium hover:bg-yellow-500/20 transition-colors"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Fotos ilimitadas
-                  </Link>
-                )}
+                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-500/10 border border-primary-500/30 text-primary-400 rounded-lg cursor-pointer hover:bg-primary-500/20 transition-colors text-sm font-medium">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Subir foto</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </label>
               </div>
             )}
           </div>

@@ -788,6 +788,42 @@ export interface PromocionResult {
   tipo: string;
 }
 
+// ==================== LOGROS / BADGES ====================
+
+export interface Logro {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  icono: string; // Lucide icon name (e.g., "Trophy", "Star", "Crown")
+  condicion: string;
+  categoria: string; // "torneo" | "racha" | "ranking" | "social"
+  requierePremium: boolean;
+  orden: number;
+  createdAt: string;
+  // Added by /mis-logros endpoint:
+  desbloqueado?: boolean;
+  fechaDesbloqueo?: string | null;
+}
+
+// ==================== ALERTAS PERSONALIZADAS ====================
+
+export enum TipoAlertaPersonalizada {
+  TORNEO_EN_MI_CIUDAD = 'TORNEO_EN_MI_CIUDAD',
+  TORNEO_MI_CATEGORIA = 'TORNEO_MI_CATEGORIA',
+  RIVAL_INSCRITO = 'RIVAL_INSCRITO',
+  RANKING_CAMBIO = 'RANKING_CAMBIO',
+}
+
+export interface AlertaPersonalizada {
+  id: string;
+  userId: string;
+  tipo: TipoAlertaPersonalizada;
+  activa: boolean;
+  config: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== NOTIFICACIONES ====================
 
 export enum TipoNotificacion {
