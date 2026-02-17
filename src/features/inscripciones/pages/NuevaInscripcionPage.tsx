@@ -331,6 +331,38 @@ export default function NuevaInscripcionPage() {
     );
   }
 
+  // Check if inscription deadline has passed
+  const isDeadlineExpired = tournament.fechaLimiteInscr
+    ? new Date(tournament.fechaLimiteInscr) < new Date()
+    : false;
+
+  if (isDeadlineExpired) {
+    return (
+      <div className="min-h-screen bg-dark-surface py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <Card className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-red-400 mb-2">Inscripciones cerradas</h2>
+            <p className="text-light-secondary mb-2">
+              La fecha límite de inscripción para <strong>{tournament.nombre}</strong> ya pasó.
+            </p>
+            <p className="text-sm text-light-muted mb-6">
+              Fecha límite: {formatDate(tournament.fechaLimiteInscr)}
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => navigate(`/tournaments/${tournament.id}`)}>
+                Ver Torneo
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/tournaments')}>
+                Volver a Torneos
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   const generoValidation = validarGenero();
   const selectedCategoryData = allCategories.find(c => c.id === selectedCategory);
 

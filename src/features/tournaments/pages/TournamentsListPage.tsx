@@ -6,7 +6,6 @@ import { TournamentCard } from '../components/TournamentCard';
 import { TournamentFilters } from '../components/TournamentFilters';
 import { useAuthStore } from '@/store/authStore';
 import type { Tournament, TournamentFilters as Filters } from '@/types';
-import { TournamentStatus } from '@/types';
 import { Plus } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
 
@@ -17,7 +16,7 @@ const TournamentsListPage = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
-    estado: TournamentStatus.PUBLICADO,
+    inscripcionesAbiertas: true,
   });
 
   useEffect(() => {
@@ -37,7 +36,7 @@ const TournamentsListPage = () => {
   };
 
   const handleFiltersChange = (newFilters: Filters) => {
-    setFilters({ ...filters, ...newFilters });
+    setFilters(newFilters);
   };
 
   if (loading) {

@@ -146,7 +146,13 @@ export default function TournamentDetailPage() {
   const hasOpenCategories = tournament.categorias?.some(
     (tc: any) => tc.inscripcionAbierta || tc.estado === 'INSCRIPCIONES_ABIERTAS'
   ) ?? false;
-  const canInscribe = ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) && hasOpenCategories;
+
+  // Check if inscription deadline has passed
+  const isDeadlineExpired = tournament.fechaLimiteInscr
+    ? new Date(tournament.fechaLimiteInscr) < new Date()
+    : false;
+
+  const canInscribe = ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) && hasOpenCategories && !isDeadlineExpired;
 
   const isAdmin = hasRole('admin');
   const isOwner = user?.id === tournament.organizadorId;
@@ -505,7 +511,14 @@ export default function TournamentDetailPage() {
 
                 <div>
                   <p className="text-sm text-light-secondary mb-1">Limite inscripcion</p>
-                  <p className="font-medium">{formatDate(tournament.fechaLimiteInscr)}</p>
+                  <p className={`font-medium ${isDeadlineExpired ? 'text-red-400' : ''}`}>
+                    {formatDate(tournament.fechaLimiteInscr)}
+                    {isDeadlineExpired && (
+                      <span className="ml-2 text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
+                        Vencido
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div>
@@ -526,6 +539,15 @@ export default function TournamentDetailPage() {
                 >
                   Inscribirse
                 </button>
+              ) : isDeadlineExpired && ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) ? (
+                <div className="text-center p-4 bg-red-900/30 rounded-lg border border-red-500/50">
+                  <p className="text-sm text-red-400 font-medium">
+                    Inscripciones cerradas
+                  </p>
+                  <p className="text-xs text-red-400/70 mt-1">
+                    La fecha límite de inscripción ya pasó
+                  </p>
+                </div>
               ) : ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) ? (
                 <div className="text-center p-4 bg-yellow-900/30 rounded-lg border border-yellow-500/50">
                   <p className="text-sm text-yellow-400 font-medium">

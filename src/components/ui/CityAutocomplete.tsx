@@ -76,11 +76,18 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
   placeholder = 'Ej: Ciudad del Este',
   className = '',
 }) => {
+  // Internal input state — does NOT trigger parent filter on every keystroke
+  const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync internal state when parent value changes externally (e.g. reset)
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   // Filter cities based on input
   const filterCities = useCallback((input: string) => {
@@ -98,20 +105,43 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    onChange(val);
+    setInputValue(val);
     filterCities(val);
     setShowSuggestions(true);
     setActiveIndex(-1);
+
+    // Only notify parent immediately when clearing the input
+    if (!val.trim() && value) {
+      onChange('');
+    }
   };
 
-  const selectCity = (city: string) => {
-    onChange(city);
+  // Commit: notify parent with the selected/typed city
+  const commitValue = (city: string) => {
+    setInputValue(city);
     setSuggestions([]);
     setShowSuggestions(false);
     setActiveIndex(-1);
+    onChange(city);
+  };
+
+  const selectCity = (city: string) => {
+    commitValue(city);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (showSuggestions && activeIndex >= 0 && activeIndex < suggestions.length) {
+        // Select highlighted suggestion
+        commitValue(suggestions[activeIndex]);
+      } else if (inputValue.trim()) {
+        // Commit whatever is typed
+        commitValue(inputValue.trim());
+      }
+      return;
+    }
+
     if (!showSuggestions || suggestions.length === 0) return;
 
     if (e.key === 'ArrowDown') {
@@ -120,14 +150,20 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeIndex >= 0 && activeIndex < suggestions.length) {
-        selectCity(suggestions[activeIndex]);
-      }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
     }
+  };
+
+  // On blur: commit the current value if it changed
+  const handleBlur = () => {
+    // Small delay to allow click on suggestion to fire first
+    setTimeout(() => {
+      if (inputValue.trim() !== value) {
+        onChange(inputValue.trim() || '');
+      }
+      setShowSuggestions(false);
+    }, 150);
   };
 
   // Close suggestions on outside click
@@ -151,10 +187,11 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
       <input
         ref={inputRef}
         type="text"
-        value={value}
+        value={inputValue}
         onChange={handleInputChange}
-        onFocus={() => { if (value.trim()) { filterCities(value); setShowSuggestions(true); } }}
+        onFocus={() => { if (inputValue.trim()) { filterCities(inputValue); setShowSuggestions(true); } }}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder={placeholder}
         autoComplete="off"
         className="w-full px-4 py-2.5 bg-dark-bg border border-dark-border rounded-lg text-light-text placeholder-light-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-colors"
@@ -164,7 +201,7 @@ export const CityAutocomplete: React.FC<CityAutocompleteProps> = ({
           {suggestions.map((city, idx) => (
             <li
               key={city}
-              onClick={() => selectCity(city)}
+              onMouseDown={() => selectCity(city)}
               className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
                 idx === activeIndex
                   ? 'bg-primary-500/20 text-primary-400'

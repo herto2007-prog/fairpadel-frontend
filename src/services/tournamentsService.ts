@@ -3,11 +3,15 @@ import type { Tournament, Category, CreateTournamentDto, UpdateTournamentDto, Cu
 
 export const tournamentsService = {
   // GET /tournaments - Obtener todos los torneos (público)
-  getAll: async (filters?: { pais?: string; ciudad?: string; estado?: string; nombre?: string; circuitoId?: string }): Promise<Tournament[]> => {
+  getAll: async (filters?: { pais?: string; ciudad?: string; estado?: string; nombre?: string; circuitoId?: string; inscripcionesAbiertas?: boolean }): Promise<Tournament[]> => {
     const params = new URLSearchParams();
     if (filters?.pais) params.append('pais', filters.pais);
     if (filters?.ciudad) params.append('ciudad', filters.ciudad);
-    if (filters?.estado) params.append('estado', filters.estado);
+    if (filters?.inscripcionesAbiertas) {
+      params.append('inscripcionesAbiertas', 'true');
+    } else if (filters?.estado) {
+      params.append('estado', filters.estado);
+    }
     if (filters?.nombre) params.append('nombre', filters.nombre);
     if (filters?.circuitoId) params.append('circuitoId', filters.circuitoId);
 

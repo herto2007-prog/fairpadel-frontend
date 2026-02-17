@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, Badge, Button } from '@/components/ui';
 import type { Tournament } from '@/types';
 import { TournamentStatus } from '@/types';
-import { Calendar, MapPin, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Clock } from 'lucide-react';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -90,6 +90,16 @@ export const TournamentCard: React.FC<TournamentCardProps> = ({ tournament }) =>
             <DollarSign className="h-4 w-4" />
             <span>Gs. {formatPrice(tournament.costoInscripcion)}</span>
           </div>
+          {tournament.fechaLimiteInscr && tournament.estado === TournamentStatus.PUBLICADO && (
+            <div className={`flex items-center gap-2 ${isInscripcionVencida() ? 'text-red-400' : 'text-green-400'}`}>
+              <Clock className="h-4 w-4" />
+              <span className="text-xs">
+                {isInscripcionVencida()
+                  ? `Inscripciones cerradas`
+                  : `Inscripciones hasta ${formatDate(tournament.fechaLimiteInscr)}`}
+              </span>
+            </div>
+          )}
         </div>
 
         {categoryNames.length > 0 && (

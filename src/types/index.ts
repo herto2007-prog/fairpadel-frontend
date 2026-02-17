@@ -504,6 +504,7 @@ export interface TournamentFilters {
   modalidad?: Modalidad;
   nombre?: string;
   circuitoId?: string;
+  inscripcionesAbiertas?: boolean;
 }
 
 // Inscripcion DTOs
