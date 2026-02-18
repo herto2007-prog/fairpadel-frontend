@@ -205,7 +205,9 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
 
   const getCanchaLabel = (match: Match): string | null => {
     if (match.torneoCancha?.sedeCancha) {
-      return match.torneoCancha.sedeCancha.nombre;
+      const cancha = match.torneoCancha.sedeCancha.nombre;
+      const sede = match.torneoCancha.sedeCancha.sede?.nombre;
+      return sede ? `${sede} · ${cancha}` : cancha;
     }
     return null;
   };
