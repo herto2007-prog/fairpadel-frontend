@@ -19,6 +19,7 @@ import {
   Pencil,
   Calendar,
   CheckCheck,
+  Star,
 } from 'lucide-react';
 
 // ─── Stats type (matches ManageTournamentPage) ─────────────────────
@@ -119,6 +120,9 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
   const [batchCanchaIds, setBatchCanchaIds] = useState<string[]>([]);
   const [calendarMode, setCalendarMode] = useState<'single' | 'batch'>('single');
 
+  // Cancha principal state (for finals scheduling)
+  const [principalCanchaId, setPrincipalCanchaId] = useState<string | null>(null);
+
   // Derived
   const selectedSede = useMemo(() => sedes.find((s) => s.id === selectedSedeId), [sedes, selectedSedeId]);
   const selectedCancha = useMemo(() => {
@@ -136,6 +140,10 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
         ? data
         : data?.canchasConfiguradas || data?.torneoCanchas || [];
       setSelectedIds(torneoCanchas.map((tc) => tc.sedeCanchaId));
+
+      // Load cancha principal
+      const principalTc = torneoCanchas.find((tc) => tc.esPrincipal);
+      setPrincipalCanchaId(principalTc?.sedeCanchaId || null);
 
       const horariosMap: Record<string, Set<string>> = {};
       torneoCanchas.forEach((tc) => {
@@ -184,6 +192,7 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
     try {
       const canchas = selectedIds.map((sedeCanchaId) => ({
         sedeCanchaId,
+        esPrincipal: sedeCanchaId === principalCanchaId,
         horarios: slotSetToHorarios(horarios[sedeCanchaId] || new Set(), slotMinutes),
       }));
       await sedesService.configurarTorneoCanchas(tournament.id, { canchas });
@@ -288,6 +297,8 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
     e.stopPropagation();
     setSelectedIds((prev) => prev.filter((id) => id !== canchaId));
     setBatchCanchaIds((prev) => prev.filter((id) => id !== canchaId));
+    // Clear principal if deselecting the principal cancha
+    setPrincipalCanchaId((prev) => prev === canchaId ? null : prev);
     // Also remove its horarios
     setHorarios((prev) => {
       const next = { ...prev };
@@ -671,6 +682,25 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
                               <Check className="w-3 h-3 text-white" />
                             </div>
                           )}
+                          {/* Principal court star */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPrincipalCanchaId((prev) => prev === cancha.id ? null : cancha.id);
+                            }}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                              principalCanchaId === cancha.id
+                                ? 'bg-yellow-500/30'
+                                : 'bg-dark-surface hover:bg-yellow-500/20 opacity-0 group-hover:opacity-100'
+                            }`}
+                            title={principalCanchaId === cancha.id ? 'Quitar como cancha principal' : 'Marcar como cancha principal (para finales)'}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${
+                              principalCanchaId === cancha.id
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-yellow-400/60'
+                            }`} />
+                          </button>
                           {/* Individual edit button */}
                           <button
                             onClick={(e) => handleEditSingleCancha(e, cancha.id)}
@@ -706,6 +736,11 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
                           >
                             {cancha.tipo === 'SEMI_TECHADA' ? 'Semi' : cancha.tipo}
                           </Badge>
+                          {principalCanchaId === cancha.id && (
+                            <p className="text-[10px] text-yellow-400 font-medium mt-1.5 flex items-center justify-center gap-1">
+                              <Star className="w-3 h-3 fill-yellow-400" /> Principal
+                            </p>
+                          )}
                           {isSelected && slotCount > 0 && (
                             <p className="text-[10px] text-primary-400 mt-1.5">{hoursCount}h configuradas</p>
                           )}

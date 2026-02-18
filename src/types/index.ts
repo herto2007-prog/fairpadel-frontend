@@ -193,6 +193,7 @@ export interface TorneoCancha {
   id: string;
   tournamentId: string;
   sedeCanchaId: string;
+  esPrincipal?: boolean;
   sedeCancha?: SedeCancha;
   horarios?: TorneoCanchaHorario[];
   createdAt?: string;
@@ -498,6 +499,7 @@ export interface UpdateSedeCanchaDto extends Partial<CreateSedeCanchaDto> {
 export interface ConfigurarTorneoCanchasDto {
   canchas: {
     sedeCanchaId: string;
+    esPrincipal?: boolean;
     horarios: {
       fecha: string;
       horaInicio: string;
