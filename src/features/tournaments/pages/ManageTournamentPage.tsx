@@ -193,7 +193,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'pagos' && <PagosTab tournament={tournament} />}
         {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
-        {activeTab === 'canchas' && <CanchasTab tournament={tournament} stats={stats} />}
+        {activeTab === 'canchas' && <CanchasTab tournament={tournament} stats={stats} onSaved={loadData} />}
         {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
         {activeTab === 'acreditacion' && <AcreditacionTab tournament={tournament} />}

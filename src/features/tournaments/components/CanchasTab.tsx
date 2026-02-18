@@ -93,7 +93,7 @@ function minToTime(mins: number): string {
 }
 
 // ─── Component ─────────────────────────────────────────────────────
-export function CanchasTab({ tournament, stats }: { tournament: Tournament; stats?: TournamentStats | null }) {
+export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournament; stats?: TournamentStats | null; onSaved?: () => void }) {
   // Data state
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [allSedes, setAllSedes] = useState<Sede[]>([]);
@@ -195,6 +195,8 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
         setCalendarMode('single');
       }
       await loadData();
+      // Notify parent to reload stats (canchasConfiguradas count)
+      onSaved?.();
     } catch (error: any) {
       console.error('Error saving:', error);
       setMessage(error?.response?.data?.message || 'Error al guardar la configuración');
