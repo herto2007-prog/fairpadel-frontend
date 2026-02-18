@@ -291,26 +291,7 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
     setHorarios((prev) => ({ ...prev, [canchaId]: slots }));
   }, []);
 
-  // ── Render ─────────────────────────────────────────────────────
-  if (loading) return <div className="flex justify-center py-12"><Loading size="lg" /></div>;
-
-  if (!tournament.sedeId && sedes.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <MapPin className="w-12 h-12 text-light-secondary mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-light-text mb-2">Sin sede configurada</h3>
-        <p className="text-light-secondary">Primero debes seleccionar una sede en la pestaña de edición para poder configurar canchas.</p>
-      </Card>
-    );
-  }
-
-  const sedeIdsVinculadas = sedes.map((s) => s.id);
-  const sedesDisponiblesParaAgregar = allSedes.filter((s) => !sedeIdsVinculadas.includes(s.id));
-
-  // Count total horario blocks across all canchas
-  const totalBlocks = Object.values(horarios).reduce((sum, set) => sum + set.size, 0);
-
-  // ── Capacity calculation ─────────────────────────────────────────
+  // ── Capacity calculation (must be before early returns — hooks rule) ──
   const capacityCalc = useMemo(() => {
     if (!stats?.categorias || stats.categorias.length === 0) return null;
 
@@ -367,6 +348,25 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
       catDetails,
     };
   }, [stats, horarios, selectedIds, slotMinutes, minutosPorPartido]);
+
+  // ── Render ─────────────────────────────────────────────────────
+  if (loading) return <div className="flex justify-center py-12"><Loading size="lg" /></div>;
+
+  if (!tournament.sedeId && sedes.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <MapPin className="w-12 h-12 text-light-secondary mx-auto mb-4" />
+        <h3 className="text-lg font-bold text-light-text mb-2">Sin sede configurada</h3>
+        <p className="text-light-secondary">Primero debes seleccionar una sede en la pestaña de edición para poder configurar canchas.</p>
+      </Card>
+    );
+  }
+
+  const sedeIdsVinculadas = sedes.map((s) => s.id);
+  const sedesDisponiblesParaAgregar = allSedes.filter((s) => !sedeIdsVinculadas.includes(s.id));
+
+  // Count total horario blocks across all canchas
+  const totalBlocks = Object.values(horarios).reduce((sum, set) => sum + set.size, 0);
 
   return (
     <div className="space-y-4">
