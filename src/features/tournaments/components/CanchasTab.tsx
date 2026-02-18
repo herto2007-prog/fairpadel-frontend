@@ -87,6 +87,8 @@ function timeToMin(t: string): number {
   return h * 60 + m;
 }
 function minToTime(mins: number): string {
+  // Cap at 23:59 to avoid "24:00" which is invalid HH:MM
+  if (mins >= 1440) return '23:59';
   return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
 }
 
@@ -186,6 +188,12 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
       }));
       await sedesService.configurarTorneoCanchas(tournament.id, { canchas });
       setMessage('Configuración guardada exitosamente');
+      // Return to canchas view after saving
+      if (step === 'calendario') {
+        setStep('canchas');
+        setSelectedCanchaId(null);
+        setCalendarMode('single');
+      }
       await loadData();
     } catch (error: any) {
       console.error('Error saving:', error);
