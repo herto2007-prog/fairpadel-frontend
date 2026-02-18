@@ -16,6 +16,9 @@ import {
   BarChart3,
   AlertTriangle,
   CheckCircle2,
+  Pencil,
+  Calendar,
+  CheckCheck,
 } from 'lucide-react';
 
 // ─── Stats type (matches ManageTournamentPage) ─────────────────────
@@ -109,6 +112,10 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
   const [step, setStep] = useState<CanchasStep>('sedes');
   const [selectedSedeId, setSelectedSedeId] = useState<string | null>(null);
   const [selectedCanchaId, setSelectedCanchaId] = useState<string | null>(null);
+
+  // Batch selection state
+  const [batchCanchaIds, setBatchCanchaIds] = useState<string[]>([]);
+  const [calendarMode, setCalendarMode] = useState<'single' | 'batch'>('single');
 
   // Derived
   const selectedSede = useMemo(() => sedes.find((s) => s.id === selectedSedeId), [sedes, selectedSedeId]);
@@ -214,19 +221,63 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
     }
   };
 
-  // ── Cancha click ────────────────────────────────────────────────
+  // ── Cancha click (toggle batch selection) ──────────────────────
   const handleCanchaClick = useCallback((canchaId: string) => {
-    // Always select the cancha and open calendar
+    // Toggle batch selection
+    setBatchCanchaIds((prev) =>
+      prev.includes(canchaId) ? prev.filter((id) => id !== canchaId) : [...prev, canchaId],
+    );
+    // Also ensure cancha is in selectedIds (for save)
+    if (!selectedIds.includes(canchaId)) {
+      setSelectedIds((prev) => [...prev, canchaId]);
+    }
+  }, [selectedIds]);
+
+  // ── Open calendar for single cancha ──────────────────────────
+  const handleEditSingleCancha = useCallback((e: React.MouseEvent, canchaId: string) => {
+    e.stopPropagation();
     if (!selectedIds.includes(canchaId)) {
       setSelectedIds((prev) => [...prev, canchaId]);
     }
     setSelectedCanchaId(canchaId);
+    setCalendarMode('single');
     setStep('calendario');
   }, [selectedIds]);
+
+  // ── Open calendar for batch ──────────────────────────────────
+  const handleOpenBatchCalendar = useCallback(() => {
+    if (batchCanchaIds.length === 0) return;
+    setCalendarMode('batch');
+    setSelectedCanchaId(null);
+    setStep('calendario');
+  }, [batchCanchaIds]);
+
+  // ── Batch slots change ───────────────────────────────────────
+  const handleBatchSlotsChange = useCallback((slots: Set<string>) => {
+    setHorarios((prev) => {
+      const next = { ...prev };
+      for (const id of batchCanchaIds) {
+        next[id] = new Set(slots);
+      }
+      return next;
+    });
+  }, [batchCanchaIds]);
+
+  // ── Merged slots for batch view ──────────────────────────────
+  const mergedBatchSlots = useMemo(() => {
+    if (calendarMode !== 'batch' || batchCanchaIds.length === 0) return new Set<string>();
+    const merged = new Set<string>();
+    for (const id of batchCanchaIds) {
+      const s = horarios[id];
+      if (s) s.forEach((slot) => merged.add(slot));
+    }
+    return merged;
+  }, [calendarMode, batchCanchaIds, horarios]);
 
   const handleDeselectCancha = useCallback((e: React.MouseEvent, canchaId: string) => {
     e.stopPropagation();
     setSelectedIds((prev) => prev.filter((id) => id !== canchaId));
+    setBatchCanchaIds((prev) => prev.filter((id) => id !== canchaId));
     // Also remove its horarios
     setHorarios((prev) => {
       const next = { ...prev };
@@ -466,7 +517,7 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm px-1">
         <button
-          onClick={() => { setStep('sedes'); setSelectedSedeId(null); setSelectedCanchaId(null); }}
+          onClick={() => { setStep('sedes'); setSelectedSedeId(null); setSelectedCanchaId(null); setBatchCanchaIds([]); setCalendarMode('single'); }}
           className={`hover:underline ${step === 'sedes' && !selectedSedeId ? 'text-primary-400 font-medium' : 'text-light-secondary'}`}
         >
           Sedes
@@ -475,17 +526,23 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
           <>
             <ChevronRight className="w-3.5 h-3.5 text-light-secondary/50" />
             <button
-              onClick={() => { setStep('canchas'); setSelectedCanchaId(null); }}
+              onClick={() => { setStep('canchas'); setSelectedCanchaId(null); setCalendarMode('single'); }}
               className={`hover:underline ${step === 'canchas' ? 'text-primary-400 font-medium' : 'text-light-secondary'}`}
             >
               {selectedSede?.nombre || 'Sede'}
             </button>
           </>
         )}
-        {selectedCanchaId && (
+        {step === 'calendario' && calendarMode === 'single' && selectedCanchaId && (
           <>
             <ChevronRight className="w-3.5 h-3.5 text-light-secondary/50" />
             <span className="text-primary-400 font-medium">{selectedCancha?.nombre || 'Cancha'}</span>
+          </>
+        )}
+        {step === 'calendario' && calendarMode === 'batch' && batchCanchaIds.length > 0 && (
+          <>
+            <ChevronRight className="w-3.5 h-3.5 text-light-secondary/50" />
+            <span className="text-primary-400 font-medium">{batchCanchaIds.length} canchas</span>
           </>
         )}
       </div>
@@ -535,7 +592,7 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
 
       {/* ═══ Step: Canchas ═══ */}
       {step === 'canchas' && selectedSede && (
-        <div>
+        <div className="space-y-3">
           {(() => {
             const canchasActivas = (selectedSede.canchas || []).filter((c: SedeCancha) => c.activa);
             if (canchasActivas.length === 0) {
@@ -546,75 +603,159 @@ export function CanchasTab({ tournament, stats }: { tournament: Tournament; stat
                 </Card>
               );
             }
+            const allBatchSelected = canchasActivas.every((c: SedeCancha) => batchCanchaIds.includes(c.id));
             return (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {canchasActivas.map((cancha: SedeCancha) => {
-                  const isSelected = selectedIds.includes(cancha.id);
-                  const canchaSlots = horarios[cancha.id];
-                  const slotCount = canchaSlots ? canchaSlots.size : 0;
-                  const hoursCount = (slotCount * slotMinutes) / 60;
-                  return (
-                    <div
-                      key={cancha.id}
-                      onClick={() => handleCanchaClick(cancha.id)}
-                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all group ${
-                        isSelected
-                          ? 'border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/10'
-                          : 'border-dark-border hover:border-dark-hover bg-dark-card hover:bg-dark-surface'
-                      }`}
-                    >
-                      {/* Selection indicator */}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 flex items-center gap-1">
-                          <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                          <button
-                            onClick={(e) => handleDeselectCancha(e, cancha.id)}
-                            className="w-5 h-5 rounded-full bg-dark-surface hover:bg-red-500/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Quitar cancha"
-                          >
-                            <X className="w-3 h-3 text-red-400" />
-                          </button>
-                        </div>
-                      )}
+              <>
+                {/* Select all / deselect all */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-light-secondary">
+                    Click en las canchas para seleccionar, luego configurá horarios
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (allBatchSelected) {
+                        setBatchCanchaIds([]);
+                      } else {
+                        const allIds = canchasActivas.map((c: SedeCancha) => c.id);
+                        setBatchCanchaIds(allIds);
+                        // Also ensure all are in selectedIds
+                        setSelectedIds((prev) => {
+                          const set = new Set(prev);
+                          allIds.forEach((id: string) => set.add(id));
+                          return [...set];
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-light-secondary hover:text-light-text transition-colors"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    {allBatchSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                  </button>
+                </div>
 
-                      <div className="text-center">
-                        <div className={`w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center ${
-                          isSelected ? 'bg-primary-500/30' : 'bg-dark-surface'
-                        }`}>
-                          <CircleDot className={`w-5 h-5 ${isSelected ? 'text-primary-400' : 'text-light-secondary'}`} />
+                {/* Canchas grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {canchasActivas.map((cancha: SedeCancha) => {
+                    const isSelected = selectedIds.includes(cancha.id);
+                    const isBatchSelected = batchCanchaIds.includes(cancha.id);
+                    const canchaSlots = horarios[cancha.id];
+                    const slotCount = canchaSlots ? canchaSlots.size : 0;
+                    const hoursCount = (slotCount * slotMinutes) / 60;
+                    return (
+                      <div
+                        key={cancha.id}
+                        onClick={() => handleCanchaClick(cancha.id)}
+                        className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all group ${
+                          isBatchSelected
+                            ? 'border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/10'
+                            : isSelected
+                              ? 'border-primary-500/40 bg-primary-500/5'
+                              : 'border-dark-border hover:border-dark-hover bg-dark-card hover:bg-dark-surface'
+                        }`}
+                      >
+                        {/* Top-right actions */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1">
+                          {/* Batch check */}
+                          {isBatchSelected && (
+                            <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          {/* Individual edit button */}
+                          <button
+                            onClick={(e) => handleEditSingleCancha(e, cancha.id)}
+                            className="w-6 h-6 rounded-full bg-dark-surface hover:bg-blue-500/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Editar horarios individualmente"
+                          >
+                            <Pencil className="w-3 h-3 text-blue-400" />
+                          </button>
+                          {/* Deselect from selectedIds */}
+                          {isSelected && (
+                            <button
+                              onClick={(e) => handleDeselectCancha(e, cancha.id)}
+                              className="w-5 h-5 rounded-full bg-dark-surface hover:bg-red-500/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Quitar cancha"
+                            >
+                              <X className="w-3 h-3 text-red-400" />
+                            </button>
+                          )}
                         </div>
-                        <h4 className={`font-bold text-sm ${isSelected ? 'text-primary-400' : 'text-light-text'}`}>
-                          {cancha.nombre}
-                        </h4>
-                        <Badge
-                          variant={cancha.tipo === 'INDOOR' ? 'default' : cancha.tipo === 'OUTDOOR' ? 'secondary' : 'outline'}
-                          className="text-[10px] mt-1"
-                        >
-                          {cancha.tipo === 'SEMI_TECHADA' ? 'Semi' : cancha.tipo}
-                        </Badge>
-                        {isSelected && slotCount > 0 && (
-                          <p className="text-[10px] text-primary-400 mt-1.5">{hoursCount}h configuradas</p>
-                        )}
+
+                        <div className="text-center">
+                          <div className={`w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center ${
+                            isBatchSelected ? 'bg-primary-500/30' : isSelected ? 'bg-primary-500/20' : 'bg-dark-surface'
+                          }`}>
+                            <CircleDot className={`w-5 h-5 ${isBatchSelected || isSelected ? 'text-primary-400' : 'text-light-secondary'}`} />
+                          </div>
+                          <h4 className={`font-bold text-sm ${isBatchSelected ? 'text-primary-400' : isSelected ? 'text-primary-400/70' : 'text-light-text'}`}>
+                            {cancha.nombre}
+                          </h4>
+                          <Badge
+                            variant={cancha.tipo === 'INDOOR' ? 'default' : cancha.tipo === 'OUTDOOR' ? 'secondary' : 'outline'}
+                            className="text-[10px] mt-1"
+                          >
+                            {cancha.tipo === 'SEMI_TECHADA' ? 'Semi' : cancha.tipo}
+                          </Badge>
+                          {isSelected && slotCount > 0 && (
+                            <p className="text-[10px] text-primary-400 mt-1.5">{hoursCount}h configuradas</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+
+                {/* Batch action bar */}
+                {batchCanchaIds.length > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-primary-500/10 border border-primary-500/30 rounded-xl">
+                    <span className="text-sm font-medium text-primary-400">
+                      {batchCanchaIds.length} cancha{batchCanchaIds.length !== 1 ? 's' : ''} seleccionada{batchCanchaIds.length !== 1 ? 's' : ''}
+                    </span>
+                    <Button variant="primary" onClick={handleOpenBatchCalendar}>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Configurar horarios
+                    </Button>
+                  </div>
+                )}
+              </>
             );
           })()}
         </div>
       )}
 
       {/* ═══ Step: Calendario ═══ */}
-      {step === 'calendario' && selectedCanchaId && (
+      {step === 'calendario' && (calendarMode === 'single' ? selectedCanchaId : batchCanchaIds.length > 0) && (
         <Card className="p-4">
+          {/* Batch header */}
+          {calendarMode === 'batch' && (
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-dark-border">
+              <Badge variant="default" className="text-xs">
+                {batchCanchaIds.length} canchas
+              </Badge>
+              <span className="text-sm text-light-secondary">
+                Aplicando a: {batchCanchaIds.map((id) => {
+                  for (const sede of sedes) {
+                    const c = (sede.canchas || []).find((c: SedeCancha) => c.id === id);
+                    if (c) return c.nombre;
+                  }
+                  return '?';
+                }).join(', ')}
+              </span>
+            </div>
+          )}
           <CanchasCalendarGrid
             fechaInicio={tournament.fechaInicio}
             fechaFin={tournament.fechaFin}
-            selectedSlots={horarios[selectedCanchaId] || new Set()}
-            onSlotsChange={(slots) => handleSlotsChange(selectedCanchaId, slots)}
+            selectedSlots={
+              calendarMode === 'batch'
+                ? mergedBatchSlots
+                : (horarios[selectedCanchaId!] || new Set())
+            }
+            onSlotsChange={
+              calendarMode === 'batch'
+                ? handleBatchSlotsChange
+                : (slots) => handleSlotsChange(selectedCanchaId!, slots)
+            }
             slotMinutes={slotMinutes}
             onSlotMinutesChange={setSlotMinutes}
           />
