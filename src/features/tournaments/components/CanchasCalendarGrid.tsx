@@ -32,7 +32,7 @@ function getTournamentDays(fechaInicio: string, fechaFin: string): string[] {
 
 function getTimeSlots(slotMinutes: 30 | 60): string[] {
   const slots: string[] = [];
-  for (let h = 7; h < 23; h++) {
+  for (let h = 7; h < 24; h++) {
     slots.push(`${String(h).padStart(2, '0')}:00`);
     if (slotMinutes === 30) {
       slots.push(`${String(h).padStart(2, '0')}:30`);
@@ -173,7 +173,7 @@ export function CanchasCalendarGrid({
     const newSlots = new Set(selectedSlots);
     for (const slot of timeSlots) {
       const mins = timeToMinutes(slot);
-      if (mins >= 480 && mins < 1320) { // 8:00 to 22:00
+      if (mins >= 480 && mins < 1380) { // 8:00 to 23:00
         newSlots.add(`${dayStr}|${slot}`);
       }
     }
@@ -191,7 +191,7 @@ export function CanchasCalendarGrid({
     for (const day of days) {
       for (const slot of timeSlots) {
         const mins = timeToMinutes(slot);
-        if (mins >= 480 && mins < 1320) {
+        if (mins >= 480 && mins < 1380) {
           newSlots.add(`${day}|${slot}`);
         }
       }
@@ -250,7 +250,7 @@ export function CanchasCalendarGrid({
             onClick={fillAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-surface text-light-secondary hover:text-light-text rounded-lg border border-dark-border hover:border-dark-hover transition-colors"
           >
-            <PaintBucket className="w-3.5 h-3.5" /> Llenar todo (8-22h)
+            <PaintBucket className="w-3.5 h-3.5" /> Llenar todo (8-23h)
           </button>
           <button
             onClick={clearAll}
@@ -278,7 +278,7 @@ export function CanchasCalendarGrid({
                 key={day}
                 className="border-b border-dark-border text-center py-2 bg-dark-card cursor-pointer hover:bg-dark-hover transition-colors"
                 onClick={() => fillDay(day)}
-                title="Click para llenar este día (8-22h)"
+                title="Click para llenar este día (8-23h)"
               >
                 <div className="text-[10px] text-light-secondary uppercase tracking-wide">{dayName}</div>
                 <div className="text-sm font-bold text-light-text">{dayNum}</div>
@@ -333,7 +333,7 @@ export function CanchasCalendarGrid({
           )}
         </span>
         <span className="text-[10px]">
-          Click en el encabezado del día para llenar 8-22h
+          Click en el encabezado del día para llenar 8-23h
         </span>
       </div>
     </div>
