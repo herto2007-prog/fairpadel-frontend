@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, Button, Loading, Badge } from '@/components/ui';
 import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
-import type { Tournament, Sede, SedeCancha, TorneoCancha } from '@/types';
+import type { Tournament, Sede, SedeCancha, TorneoCancha, TournamentCategory } from '@/types';
 import { CanchasCalendarGrid } from './CanchasCalendarGrid';
 import {
   MapPin,
@@ -13,7 +13,18 @@ import {
   Check,
   X,
   CircleDot,
+  BarChart3,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
+
+// ─── Stats type (matches ManageTournamentPage) ─────────────────────
+interface TournamentStats {
+  inscripcionesTotal: number;
+  partidosTotal: number;
+  canchasConfiguradas: number;
+  categorias: (TournamentCategory & { inscripcionesCount: number })[];
+}
 
 // ─── Types ─────────────────────────────────────────────────────────
 type CanchasStep = 'sedes' | 'canchas' | 'calendario';
@@ -77,7 +88,7 @@ function minToTime(mins: number): string {
 }
 
 // ─── Component ─────────────────────────────────────────────────────
-export function CanchasTab({ tournament }: { tournament: Tournament }) {
+export function CanchasTab({ tournament, stats }: { tournament: Tournament; stats?: TournamentStats | null }) {
   // Data state
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [allSedes, setAllSedes] = useState<Sede[]>([]);
@@ -248,6 +259,64 @@ export function CanchasTab({ tournament }: { tournament: Tournament }) {
   // Count total horario blocks across all canchas
   const totalBlocks = Object.values(horarios).reduce((sum, set) => sum + set.size, 0);
 
+  // ── Capacity calculation ─────────────────────────────────────────
+  const capacityCalc = useMemo(() => {
+    if (!stats?.categorias || stats.categorias.length === 0) return null;
+
+    // Count total matches needed (eliminación directa: N parejas → N-1 partidos)
+    // For acomodación paraguaya: add ~30% extra matches (R1+R2 before main bracket)
+    let totalParejas = 0;
+    let totalMatches = 0;
+    const catDetails: { nombre: string; parejas: number; partidos: number }[] = [];
+
+    for (const cat of stats.categorias) {
+      const n = cat.inscripcionesCount || 0;
+      if (n < 2) continue;
+      totalParejas += n;
+      // Eliminación directa = n-1 partidos; con repechaje paraguayo ~1.3x
+      const matches = Math.ceil((n - 1) * 1.3);
+      totalMatches += matches;
+      catDetails.push({
+        nombre: cat.category?.nombre || cat.nombre || '?',
+        parejas: n,
+        partidos: matches,
+      });
+    }
+
+    if (totalMatches === 0) return null;
+
+    // Total hours needed
+    const totalMinutesNeeded = totalMatches * minutosPorPartido;
+    const totalHoursNeeded = totalMinutesNeeded / 60;
+
+    // Available hours per cancha (from painted slots)
+    const totalAvailableSlots = Object.entries(horarios)
+      .filter(([id]) => selectedIds.includes(id))
+      .reduce((sum, [, set]) => sum + set.size, 0);
+    const totalAvailableHours = (totalAvailableSlots * slotMinutes) / 60;
+
+    // Minimum canchas needed if all time is used (ceiling)
+    const canchasNecesarias = totalAvailableHours > 0
+      ? Math.ceil(totalHoursNeeded / (totalAvailableHours / selectedIds.length || 1))
+      : Math.ceil(totalHoursNeeded / 15); // fallback: assume 15h per cancha
+
+    // Coverage: how much of the needed time is covered
+    const coverage = totalAvailableHours > 0 && totalHoursNeeded > 0
+      ? Math.min(100, Math.round((totalAvailableHours / totalHoursNeeded) * 100))
+      : 0;
+
+    return {
+      totalParejas,
+      totalMatches,
+      totalHoursNeeded: Math.round(totalHoursNeeded),
+      totalAvailableHours: Math.round(totalAvailableHours),
+      canchasConfiguradas: selectedIds.length,
+      canchasNecesarias,
+      coverage,
+      catDetails,
+    };
+  }, [stats, horarios, selectedIds, slotMinutes, minutosPorPartido]);
+
   return (
     <div className="space-y-4">
       {/* Message */}
@@ -285,6 +354,76 @@ export function CanchasTab({ tournament }: { tournament: Tournament }) {
           </div>
         </div>
       </Card>
+
+      {/* Capacity indicator */}
+      {capacityCalc && (
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              capacityCalc.coverage >= 100
+                ? 'bg-green-500/20'
+                : capacityCalc.coverage >= 60
+                  ? 'bg-yellow-500/20'
+                  : 'bg-red-500/20'
+            }`}>
+              {capacityCalc.coverage >= 100 ? (
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+              ) : (
+                <AlertTriangle className={`w-5 h-5 ${capacityCalc.coverage >= 60 ? 'text-yellow-400' : 'text-red-400'}`} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
+                Estimación de capacidad
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                <div>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Parejas</p>
+                  <p className="text-lg font-bold text-light-text">{capacityCalc.totalParejas}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Partidos est.</p>
+                  <p className="text-lg font-bold text-light-text">~{capacityCalc.totalMatches}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Horas necesarias</p>
+                  <p className="text-lg font-bold text-light-text">~{capacityCalc.totalHoursNeeded}h</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Horas disponibles</p>
+                  <p className={`text-lg font-bold ${capacityCalc.coverage >= 100 ? 'text-green-400' : capacityCalc.coverage >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {capacityCalc.totalAvailableHours}h
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-[10px] mb-1">
+                  <span className="text-light-secondary">
+                    Cobertura: {capacityCalc.coverage}%
+                  </span>
+                  <span className="text-light-secondary">
+                    {capacityCalc.canchasConfiguradas} cancha{capacityCalc.canchasConfiguradas !== 1 ? 's' : ''} configurada{capacityCalc.canchasConfiguradas !== 1 ? 's' : ''}
+                    {capacityCalc.canchasConfiguradas < capacityCalc.canchasNecesarias && (
+                      <span className="text-yellow-400"> · necesitás ~{capacityCalc.canchasNecesarias}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="h-2 bg-dark-surface rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      capacityCalc.coverage >= 100 ? 'bg-green-500' : capacityCalc.coverage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.min(100, capacityCalc.coverage)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Sedes del torneo + agregar */}
       <Card className="p-4">
