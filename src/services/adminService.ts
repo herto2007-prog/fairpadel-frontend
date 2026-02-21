@@ -261,6 +261,12 @@ export const adminService = {
     const response = await api.put(`/admin/tournaments/${tournamentId}/comision`, { comisionPorcentaje });
     return response.data;
   },
+
+  // ============ SEED TEST DATA (TEMPORAL) ============
+  seedTestData: async (tournamentId: string, parejasPorCategoria: Record<string, number>) => {
+    const response = await api.post(`/admin/torneos/${tournamentId}/seed-test-data`, { parejasPorCategoria });
+    return response.data;
+  },
 };
 
 export default adminService;
