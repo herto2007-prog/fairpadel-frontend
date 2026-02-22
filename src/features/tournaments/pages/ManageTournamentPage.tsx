@@ -1630,6 +1630,20 @@ function ReportesTab({ tournament, isPremium }: { tournament: Tournament; isPrem
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             Inscripciones (Excel)
           </button>
+          <button
+            onClick={async () => {
+              try {
+                await tournamentsService.downloadReportePartidos(tournament.id);
+                toast.success('Excel de partidos descargado');
+              } catch {
+                toast.error('Error al descargar partidos');
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-light-text bg-dark-surface hover:bg-dark-hover border border-dark-border rounded-lg transition-colors"
+          >
+            <Calendar className="w-4 h-4 text-orange-400" />
+            Partidos por Sede (Excel)
+          </button>
         </div>
       </Card>
     </div>

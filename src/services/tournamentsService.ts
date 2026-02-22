@@ -157,6 +157,22 @@ export const tournamentsService = {
     window.URL.revokeObjectURL(url);
   },
 
+  // GET /tournaments/:id/reporte/partidos — Download Excel matches schedule report
+  downloadReportePartidos: async (tournamentId: string) => {
+    const response = await api.get(
+      `/tournaments/${tournamentId}/reporte/partidos`,
+      { responseType: 'blob' },
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `partidos-${tournamentId.substring(0, 8)}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
   // GET /tournaments/:id/pelotas-ronda
   getPelotasRonda: async (tournamentId: string) => {
     const response = await api.get(`/tournaments/${tournamentId}/pelotas-ronda`);
