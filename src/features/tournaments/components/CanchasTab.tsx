@@ -316,8 +316,23 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
   const capacityCalc = useMemo(() => {
     if (!stats?.categorias || stats.categorias.length === 0) return null;
 
-    // Count total matches needed (eliminación directa: N parejas → N-1 partidos)
-    // For acomodación paraguaya: add ~30% extra matches (R1+R2 before main bracket)
+    // nextPowerOf2: bracket size for N parejas
+    const nextPow2 = (n: number): number => {
+      let p = 1;
+      while (p < n) p <<= 1;
+      return p;
+    };
+
+    // Exact match count for acomodación paraguaya:
+    // R1 = n - bracket/2, R2 = bracket/2 - byes, Bracket = bracket/2 - 1
+    // Combined: 2n - bracket/2 - 1 (for n >= 4)
+    const calcMatches = (n: number): number => {
+      if (n <= 1) return 0;
+      if (n <= 3) return n - 1; // straight elimination for tiny brackets
+      const bracket = nextPow2(n);
+      return 2 * n - bracket / 2 - 1;
+    };
+
     let totalParejas = 0;
     let totalMatches = 0;
     const catDetails: { nombre: string; parejas: number; partidos: number }[] = [];
@@ -326,8 +341,7 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
       const n = cat.inscripcionesCount || 0;
       if (n < 2) continue;
       totalParejas += n;
-      // Eliminación directa = n-1 partidos; con repechaje paraguayo ~1.3x
-      const matches = Math.ceil((n - 1) * 1.3);
+      const matches = calcMatches(n);
       totalMatches += matches;
       catDetails.push({
         nombre: cat.category?.nombre || cat.nombre || '?',
@@ -338,33 +352,30 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
 
     if (totalMatches === 0) return null;
 
-    // Total hours needed
-    const totalMinutesNeeded = totalMatches * minutosPorPartido;
-    const totalHoursNeeded = totalMinutesNeeded / 60;
+    // Court-hours needed:
+    // Each match = 1 slot on 1 court. Add 20% overhead for:
+    // - 2h30m rest rule gaps (some slots unusable due to pareja conflicts)
+    // - Round sequencing (bracket rounds wait for previous results)
+    const SCHEDULING_OVERHEAD = 1.20;
+    const courtHoursNeeded = (totalMatches * minutosPorPartido / 60) * SCHEDULING_OVERHEAD;
 
-    // Available hours per cancha (from painted slots)
+    // Court-hours available (total across all configured courts)
     const totalAvailableSlots = Object.entries(horarios)
       .filter(([id]) => selectedIds.includes(id))
       .reduce((sum, [, set]) => sum + set.size, 0);
-    const totalAvailableHours = (totalAvailableSlots * slotMinutes) / 60;
+    const courtHoursAvailable = (totalAvailableSlots * slotMinutes) / 60;
 
-    // Minimum canchas needed if all time is used (ceiling)
-    const canchasNecesarias = totalAvailableHours > 0
-      ? Math.ceil(totalHoursNeeded / (totalAvailableHours / selectedIds.length || 1))
-      : Math.ceil(totalHoursNeeded / 15); // fallback: assume 15h per cancha
-
-    // Coverage: how much of the needed time is covered
-    const coverage = totalAvailableHours > 0 && totalHoursNeeded > 0
-      ? Math.min(100, Math.round((totalAvailableHours / totalHoursNeeded) * 100))
+    // Coverage: court-hours available vs needed
+    const coverage = courtHoursAvailable > 0 && courtHoursNeeded > 0
+      ? Math.min(100, Math.round((courtHoursAvailable / courtHoursNeeded) * 100))
       : 0;
 
     return {
       totalParejas,
       totalMatches,
-      totalHoursNeeded: Math.round(totalHoursNeeded),
-      totalAvailableHours: Math.round(totalAvailableHours),
+      courtHoursNeeded: Math.round(courtHoursNeeded),
+      courtHoursAvailable: Math.round(courtHoursAvailable),
       canchasConfiguradas: selectedIds.length,
-      canchasNecesarias,
       coverage,
       catDetails,
     };
@@ -456,31 +467,31 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
                 </div>
                 <div>
                   <p className="text-[10px] text-light-secondary uppercase tracking-wide">Partidos est.</p>
-                  <p className="text-lg font-bold text-light-text">~{capacityCalc.totalMatches}</p>
+                  <p className="text-lg font-bold text-light-text">{capacityCalc.totalMatches}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Horas necesarias</p>
-                  <p className="text-lg font-bold text-light-text">~{capacityCalc.totalHoursNeeded}h</p>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Cancha-hrs nec.</p>
+                  <p className="text-lg font-bold text-light-text">{capacityCalc.courtHoursNeeded}h</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Horas disponibles</p>
+                  <p className="text-[10px] text-light-secondary uppercase tracking-wide">Cancha-hrs disp.</p>
                   <p className={`text-lg font-bold ${capacityCalc.coverage >= 100 ? 'text-green-400' : capacityCalc.coverage >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
-                    {capacityCalc.totalAvailableHours}h
+                    {capacityCalc.courtHoursAvailable}h
                   </p>
                 </div>
               </div>
+              <p className="text-[10px] text-light-secondary mt-1">
+                Incluye +20% por descansos (2h30m) y secuencia de rondas
+              </p>
 
               {/* Progress bar */}
-              <div className="mt-3">
+              <div className="mt-2">
                 <div className="flex items-center justify-between text-[10px] mb-1">
                   <span className="text-light-secondary">
                     Cobertura: {capacityCalc.coverage}%
                   </span>
                   <span className="text-light-secondary">
                     {capacityCalc.canchasConfiguradas} cancha{capacityCalc.canchasConfiguradas !== 1 ? 's' : ''} configurada{capacityCalc.canchasConfiguradas !== 1 ? 's' : ''}
-                    {capacityCalc.canchasConfiguradas < capacityCalc.canchasNecesarias && (
-                      <span className="text-yellow-400"> · necesitás ~{capacityCalc.canchasNecesarias}</span>
-                    )}
                   </span>
                 </div>
                 <div className="h-2 bg-dark-surface rounded-full overflow-hidden">
