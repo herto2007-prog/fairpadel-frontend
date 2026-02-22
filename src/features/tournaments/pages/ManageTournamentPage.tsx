@@ -482,6 +482,7 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
                   <div className="space-y-2">
                     {stats.categorias
                       .filter((tc) => (tc.category?.nombre || '').toLowerCase().includes('caballeros'))
+                      .sort((a, b) => (b.category?.orden ?? 0) - (a.category?.orden ?? 0))
                       .map((tc) => (
                         <div key={tc.categoryId} className="flex items-center justify-between gap-3">
                           <label className="text-sm text-light-text truncate flex-1">{tc.category?.nombre}</label>
@@ -506,6 +507,7 @@ function ResumenTab({ tournament, stats, onRefresh }: { tournament: Tournament; 
                   <div className="space-y-2">
                     {stats.categorias
                       .filter((tc) => (tc.category?.nombre || '').toLowerCase().includes('damas'))
+                      .sort((a, b) => (b.category?.orden ?? 0) - (a.category?.orden ?? 0))
                       .map((tc) => (
                         <div key={tc.categoryId} className="flex items-center justify-between gap-3">
                           <label className="text-sm text-light-text truncate flex-1">{tc.category?.nombre}</label>
@@ -2385,6 +2387,13 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const [showStandingsModal, setShowStandingsModal] = useState<string | null>(null);
   const [loadingStandings, setLoadingStandings] = useState(false);
 
+  // Multi-select sorteo
+  const [selectedForSorteo, setSelectedForSorteo] = useState<Set<string>>(new Set());
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [sorteoFechaInicio, setSorteoFechaInicio] = useState('');
+  const [sorteoTargetCategories, setSorteoTargetCategories] = useState<string[]>([]);
+  const [sorteoProgress, setSorteoProgress] = useState<{ current: number; total: number; currentName: string } | null>(null);
+
   const categorias = stats?.categorias || [];
   const caballeros = categorias.filter((c) => c.category?.tipo === 'MASCULINO');
   const damas = categorias.filter((c) => c.category?.tipo === 'FEMENINO');
@@ -2403,21 +2412,73 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     loadCanchas();
   }, [tournament.id]);
 
-  const handleSortear = async (categoryId: string) => {
-    setSorteando(categoryId);
+  // Helper: fecha de hoy en YYYY-MM-DD
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  const openDateModal = (categoryIds: string[]) => {
+    setSorteoTargetCategories(categoryIds);
+    setSorteoFechaInicio(todayStr);
+    setShowDateModal(true);
+  };
+
+  const handleSortear = (categoryId: string) => {
+    openDateModal([categoryId]);
+  };
+
+  const handleSortearSeleccionadas = () => {
+    const ids = sortableCategories
+      .filter((tc) => selectedForSorteo.has(tc.categoryId))
+      .map((tc) => tc.categoryId);
+    if (ids.length > 0) openDateModal(ids);
+  };
+
+  const handleConfirmSorteo = async () => {
+    setShowDateModal(false);
+    const categories = sorteoTargetCategories;
+    const fecha = sorteoFechaInicio;
+    if (!categories.length) return;
+
     setMessage('');
-    try {
-      const result = await matchesService.sortearCategoria(tournament.id, categoryId);
-      setMessage(result.message || 'Sorteo realizado exitosamente');
+    setSorteoProgress({ current: 0, total: categories.length, currentName: '' });
+    let successCount = 0;
+    let lastError = '';
+
+    for (let i = 0; i < categories.length; i++) {
+      const catId = categories[i];
+      const catName = categorias.find((c) => c.categoryId === catId)?.category?.nombre || catId;
+      setSorteando(catId);
+      setSorteoProgress({ current: i + 1, total: categories.length, currentName: catName });
+      try {
+        await matchesService.sortearCategoria(tournament.id, catId, fecha || undefined);
+        successCount++;
+      } catch (error: any) {
+        lastError = `${catName}: ${error.response?.data?.message || error.message}`;
+      }
+    }
+
+    setSorteando(null);
+    setSorteoProgress(null);
+    setSelectedForSorteo(new Set());
+
+    if (successCount === categories.length) {
+      setMessage(`Sorteo realizado para ${successCount} categoria${successCount > 1 ? 's' : ''}`);
       setMessageType('success');
-      await onRefresh();
-      // Auto-cargar fixture después del sorteo
-      await loadFixture(categoryId);
-    } catch (error: any) {
-      setMessage(error.response?.data?.message || 'Error al realizar el sorteo');
+    } else if (successCount > 0) {
+      setMessage(`${successCount}/${categories.length} exitosos. Error: ${lastError}`);
       setMessageType('error');
-    } finally {
-      setSorteando(null);
+    } else {
+      setMessage(lastError || 'Error al realizar el sorteo');
+      setMessageType('error');
+    }
+
+    await onRefresh();
+
+    // Si fue una sola categoría, auto-cargar fixture
+    if (categories.length === 1 && successCount === 1) {
+      await loadFixture(categories[0]);
     }
   };
 
@@ -2610,6 +2671,33 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     );
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sortableCategories = useMemo(() => categorias.filter(canSortear), [categorias, hasCanchas, tournament.estado]);
+  const sortableSelected = useMemo(
+    () => sortableCategories.filter((tc) => selectedForSorteo.has(tc.categoryId)),
+    [sortableCategories, selectedForSorteo],
+  );
+
+  const toggleCategorySelection = (categoryId: string) => {
+    setSelectedForSorteo((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedForSorteo(
+      sortableSelected.length === sortableCategories.length
+        ? new Set()
+        : new Set(sortableCategories.map((tc) => tc.categoryId)),
+    );
+  };
+
   const getParejaLabel = (pareja?: Pareja) => {
     if (!pareja) return 'TBD';
     const j1 = pareja.jugador1;
@@ -2621,11 +2709,22 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const renderCategoriaRow = (tc: TournamentCategory & { inscripcionesCount: number }) => (
     <div key={tc.id} className="p-3 sm:p-4 rounded-lg border border-dark-border bg-dark-card space-y-2 sm:space-y-0">
       <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
-        <div className="min-w-0">
-          <p className="font-medium text-sm sm:text-base">{tc.category?.nombre}</p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {getEstadoBadge(tc.estado)}
-            <span className="text-xs text-light-secondary">{tc.inscripcionesCount} parejas</span>
+        <div className="min-w-0 flex items-center gap-2">
+          {canSortear(tc) && sortableCategories.length > 1 && (
+            <input
+              type="checkbox"
+              checked={selectedForSorteo.has(tc.categoryId)}
+              onChange={() => toggleCategorySelection(tc.categoryId)}
+              className="accent-primary-500 flex-shrink-0"
+              disabled={sorteando !== null}
+            />
+          )}
+          <div>
+            <p className="font-medium text-sm sm:text-base">{tc.category?.nombre}</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {getEstadoBadge(tc.estado)}
+              <span className="text-xs text-light-secondary">{tc.inscripcionesCount} parejas</span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
@@ -2707,6 +2806,33 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
           Las demas categorias pueden seguir recibiendo inscripciones.
         </p>
 
+        {sortableCategories.length > 1 && (
+          <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-dark-surface border border-dark-border">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-light-secondary">
+              <input
+                type="checkbox"
+                checked={sortableSelected.length === sortableCategories.length && sortableCategories.length > 0}
+                onChange={toggleSelectAll}
+                className="accent-primary-500"
+                disabled={sorteando !== null}
+              />
+              Seleccionar todas
+            </label>
+            {sortableSelected.length > 0 && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSortearSeleccionadas}
+                disabled={sorteando !== null}
+                className="text-xs sm:text-sm ml-auto"
+              >
+                <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                Sortear Seleccionadas ({sortableSelected.length})
+              </Button>
+            )}
+          </div>
+        )}
+
         {!hasCanchas && (
           <div className="p-3 rounded-md text-sm mb-4 bg-orange-900/30 text-orange-400 border border-orange-500/50 flex items-center gap-2">
             <MapPin className="w-4 h-4 flex-shrink-0" />
@@ -2721,6 +2847,13 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
               : 'bg-green-900/30 text-green-400 border border-green-500/50'
           }`}>
             {message}
+          </div>
+        )}
+
+        {sorteoProgress && (
+          <div className="p-3 rounded-md text-sm mb-4 bg-blue-900/30 text-blue-400 border border-blue-500/50 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Sorteando {sorteoProgress.current}/{sorteoProgress.total}: {sorteoProgress.currentName}...
           </div>
         )}
 
@@ -3244,6 +3377,62 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
               ) : (
                 <p className="text-light-secondary text-center py-4">No hay datos disponibles</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de fecha para sorteo */}
+      {showDateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-dark-card border border-dark-border rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="font-bold text-lg mb-4">
+              {sorteoTargetCategories.length === 1
+                ? 'Fecha de inicio de partidos'
+                : `Sortear ${sorteoTargetCategories.length} categorias`}
+            </h3>
+
+            <p className="text-sm text-light-secondary mb-3">
+              {sorteoTargetCategories.length === 1
+                ? '¿Qué fecha inician los partidos de esta categoria?'
+                : '¿Qué fecha inician los partidos de estas categorias?'}
+            </p>
+
+            <div className="mb-4 flex flex-wrap gap-1">
+              {sorteoTargetCategories.map((catId) => {
+                const cat = categorias.find((c) => c.categoryId === catId);
+                return (
+                  <span key={catId} className="text-xs bg-dark-surface px-2 py-1 rounded-full">
+                    {cat?.category?.nombre || catId}
+                  </span>
+                );
+              })}
+            </div>
+
+            <label className="block text-sm font-medium mb-1">Fecha de inicio</label>
+            <input
+              type="date"
+              value={sorteoFechaInicio}
+              min={todayStr}
+              onChange={(e) => setSorteoFechaInicio(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <p className="text-xs text-light-secondary mt-1">
+              Solo se usaran horarios de cancha a partir de esta fecha.
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" className="flex-1" onClick={() => setShowDateModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={handleConfirmSorteo}
+                disabled={!sorteoFechaInicio}
+              >
+                <Trophy className="w-4 h-4 mr-1" /> Sortear
+              </Button>
             </div>
           </div>
         </div>

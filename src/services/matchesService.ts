@@ -27,9 +27,10 @@ class MatchesService {
     return response.data;
   }
 
-  async sortearCategoria(tournamentId: string, categoryId: string): Promise<any> {
+  async sortearCategoria(tournamentId: string, categoryId: string, fechaInicio?: string): Promise<any> {
     const response = await api.post(
       `/matches/torneo/${tournamentId}/categoria/${categoryId}/sortear`,
+      fechaInicio ? { fechaInicio } : {},
     );
     return response.data;
   }

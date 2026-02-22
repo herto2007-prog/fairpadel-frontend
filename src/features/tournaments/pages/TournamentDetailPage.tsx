@@ -181,11 +181,17 @@ export default function TournamentDetailPage() {
 
       {/* Hero Image */}
       <div className="relative h-48 sm:h-64 md:h-96 bg-gray-900">
-        <img
-          src={tournament.flyerUrl || 'https://via.placeholder.com/1200x400'}
-          alt={tournament.nombre}
-          className="w-full h-full object-cover opacity-80"
-        />
+        {tournament.flyerUrl ? (
+          <img
+            src={tournament.flyerUrl}
+            alt={tournament.nombre}
+            className="w-full h-full object-cover opacity-80"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-primary-900 via-dark-bg to-primary-800 flex items-center justify-center opacity-80">
+            <Trophy className="w-16 h-16 sm:w-24 sm:h-24 text-primary-500/30" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
           <div className="container mx-auto">
