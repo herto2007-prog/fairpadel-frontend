@@ -1179,14 +1179,20 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     let successCount = 0;
     let lastError = '';
 
+    let schedulingWarnings: string[] = [];
+
     for (let i = 0; i < categories.length; i++) {
       const catId = categories[i];
       const catName = categorias.find((c) => c.categoryId === catId)?.category?.nombre || catId;
       setSorteando(catId);
       setSorteoProgress({ current: i + 1, total: categories.length, currentName: catName });
       try {
-        await matchesService.sortearCategoria(tournament.id, catId, fecha || undefined);
+        const result = await matchesService.sortearCategoria(tournament.id, catId, fecha || undefined);
         successCount++;
+        // Verificar si hubo partidos sin agendar
+        if (result?.scheduling?.sinSlot > 0) {
+          schedulingWarnings.push(`${catName}: ${result.scheduling.sinSlot} partidos sin cancha/horario`);
+        }
       } catch (error: any) {
         lastError = `${catName}: ${error.response?.data?.message || error.message}`;
       }
@@ -1197,8 +1203,12 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     setSelectedForSorteo(new Set());
 
     if (successCount === categories.length) {
-      setMessage(`Sorteo realizado para ${successCount} categoria${successCount > 1 ? 's' : ''}`);
-      setMessageType('success');
+      const fechaInfo = fecha ? ` (fecha: ${fecha})` : '';
+      const warning = schedulingWarnings.length > 0
+        ? `. ⚠️ ${schedulingWarnings.join('; ')}. Verifique que hay canchas configuradas para la fecha.`
+        : '';
+      setMessage(`Sorteo realizado para ${successCount} categoria${successCount > 1 ? 's' : ''}${fechaInfo}${warning}`);
+      setMessageType(schedulingWarnings.length > 0 ? 'error' : 'success');
     } else if (successCount > 0) {
       setMessage(`${successCount}/${categories.length} exitosos. Error: ${lastError}`);
       setMessageType('error');
