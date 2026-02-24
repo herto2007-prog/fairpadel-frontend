@@ -228,6 +228,7 @@ export interface Tournament {
   fechaLimiteInscr: string;
   flyerUrl: string;
   costoInscripcion: number;
+  minutosPorPartido?: number;
   // Campos legacy
   sede?: string;
   direccion?: string;

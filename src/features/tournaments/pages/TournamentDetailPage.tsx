@@ -427,75 +427,7 @@ export default function TournamentDetailPage() {
               </Card>
             )}
 
-            {/* Fixtures */}
-            {hasFixtures && (
-              <Card className="p-4 sm:p-6">
-                <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
-                  Fixture
-                </h2>
-
-                {/* Gender tabs */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => setFixtureGender('caballeros')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      fixtureGender === 'caballeros'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
-                    }`}
-                    disabled={caballeroCats.length === 0}
-                  >
-                    Caballeros {caballeroCats.length > 0 && `(${caballeroCats.length})`}
-                  </button>
-                  <button
-                    onClick={() => setFixtureGender('damas')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      fixtureGender === 'damas'
-                        ? 'bg-pink-500 text-white'
-                        : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
-                    }`}
-                    disabled={damasCats.length === 0}
-                  >
-                    Damas {damasCats.length > 0 && `(${damasCats.length})`}
-                  </button>
-                </div>
-
-                {/* Category tabs */}
-                {currentGenderCats.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {currentGenderCats.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setFixtureCategory(cat.id)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                          fixtureCategory === cat.id
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
-                        }`}
-                      >
-                        {cat.nombre.replace(' Caballeros', '').replace(' Damas', '')}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Bracket */}
-                {loadingFixture ? (
-                  <div className="flex justify-center py-8">
-                    <Loading size="md" text="Cargando fixture..." />
-                  </div>
-                ) : fixtureMatches.length > 0 ? (
-                  <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
-                    <BracketView matches={fixtureMatches} />
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-light-muted">
-                    <p className="text-sm">Sin fixture para esta categoria</p>
-                  </div>
-                )}
-              </Card>
-            )}
+            {/* Fixtures — moved outside grid below for full width */}
           </div>
 
           {/* Sidebar — fully sticky */}
@@ -619,6 +551,74 @@ export default function TournamentDetailPage() {
             <BannerZone zona="SIDEBAR" layout="carousel" torneoId={id} />
           </div>
         </div>
+
+        {/* Fixtures — full width outside grid */}
+        {hasFixtures && (
+          <Card className="p-4 sm:p-6 mt-8">
+            <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
+              Fixture
+            </h2>
+
+            {/* Gender tabs */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setFixtureGender('caballeros')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  fixtureGender === 'caballeros'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                }`}
+                disabled={caballeroCats.length === 0}
+              >
+                Caballeros {caballeroCats.length > 0 && `(${caballeroCats.length})`}
+              </button>
+              <button
+                onClick={() => setFixtureGender('damas')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  fixtureGender === 'damas'
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                }`}
+                disabled={damasCats.length === 0}
+              >
+                Damas {damasCats.length > 0 && `(${damasCats.length})`}
+              </button>
+            </div>
+
+            {/* Category tabs */}
+            {currentGenderCats.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {currentGenderCats.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setFixtureCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      fixtureCategory === cat.id
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-dark-bg text-light-secondary hover:bg-dark-hover border border-dark-border'
+                    }`}
+                  >
+                    {cat.nombre.replace(' Caballeros', '').replace(' Damas', '')}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Bracket — full width, no restrictive wrapper */}
+            {loadingFixture ? (
+              <div className="flex justify-center py-8">
+                <Loading size="md" text="Cargando fixture..." />
+              </div>
+            ) : fixtureMatches.length > 0 ? (
+              <BracketView matches={fixtureMatches} />
+            ) : (
+              <div className="text-center py-8 text-light-muted">
+                <p className="text-sm">Sin fixture para esta categoria</p>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );
