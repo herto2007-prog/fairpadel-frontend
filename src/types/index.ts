@@ -868,3 +868,87 @@ export interface PreferenciaNotificacion {
   recibirEmail: boolean;
   recibirSms: boolean;
 }
+
+// ═══════════════════════════════════════════════════════
+// FINANZAS: Movimientos y Auspiciantes
+// ═══════════════════════════════════════════════════════
+
+export type TipoMovimiento = 'INGRESO' | 'EGRESO';
+
+export type CategoriaMovimiento =
+  | 'PREMIO'
+  | 'ARBITRAJE'
+  | 'ALQUILER_CANCHA'
+  | 'PELOTAS'
+  | 'PUBLICIDAD'
+  | 'LOGISTICA'
+  | 'ALIMENTACION'
+  | 'AUSPICIO_EFECTIVO'
+  | 'OTRO';
+
+export interface MovimientoFinanciero {
+  id: string;
+  tournamentId: string;
+  tipo: TipoMovimiento;
+  categoria: CategoriaMovimiento;
+  concepto: string;
+  monto: number;
+  fecha: string;
+  observaciones?: string;
+  creadoPor: string;
+  creador?: { nombre: string; apellido: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuspicianteEspecie {
+  id: string;
+  tournamentId: string;
+  sponsorId?: string;
+  nombre: string;
+  descripcion: string;
+  valorEstimado: number;
+  fecha: string;
+  observaciones?: string;
+  sponsor?: { id: string; nombre: string; logoUrl: string };
+  creador?: { nombre: string; apellido: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DashboardFinanciero {
+  costoInscripcion: number;
+  totalInscripciones: number;
+  totalRecaudado: number;
+  totalComisiones: number;
+  totalNeto: number;
+  pagosConfirmados: number;
+  pagosPendientes: number;
+  pagosRechazados: number;
+  inscripcionesGratis: number;
+  porCategoria: {
+    categoryId: string;
+    categoryNombre: string;
+    totalInscritas: number;
+    confirmadas: number;
+    pendientes: number;
+    rechazadas: number;
+    montoRecaudado: number;
+    montoComisiones: number;
+  }[];
+  movimientos: {
+    totalIngresos: number;
+    totalEgresos: number;
+    porCategoria: { categoria: string; tipo: string; total: number; count: number }[];
+  };
+  auspiciosEspecie: {
+    totalEstimado: number;
+    count: number;
+  };
+  resumenGeneral: {
+    ingresosEfectivo: number;
+    egresosEfectivo: number;
+    balanceEfectivo: number;
+    valorEspecie: number;
+  };
+}
