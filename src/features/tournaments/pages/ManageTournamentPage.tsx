@@ -1148,7 +1148,12 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
 
   const openDateModal = (categoryIds: string[]) => {
     setSorteoTargetCategories(categoryIds);
-    setSorteoFechaInicio(todayStr);
+    // Default: fecha inicio del torneo, o hoy si no hay
+    const defaultDate = tournament.fechaInicio
+      ? new Date(tournament.fechaInicio).toISOString().slice(0, 10)
+      : todayStr;
+    // No permitir fecha anterior a hoy
+    setSorteoFechaInicio(defaultDate >= todayStr ? defaultDate : todayStr);
     setShowDateModal(true);
   };
 
