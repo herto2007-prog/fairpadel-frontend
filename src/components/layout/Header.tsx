@@ -174,7 +174,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/features" className="flex items-center gap-2">
             <img src={logoIcon} alt="FairPadel" className="h-8 w-8" />
             <span className="font-bold text-xl text-primary-500">Fair<span className="text-light-text">Padel</span></span>
           </Link>

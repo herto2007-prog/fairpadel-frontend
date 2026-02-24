@@ -33,6 +33,7 @@ import SuscripcionConfirmacionPage from '@/features/suscripciones/pages/Suscripc
 import SuscripcionCanceladoPage from '@/features/suscripciones/pages/SuscripcionCanceladoPage';
 import FeedPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
+import FeaturesPage from '@/features/home/FeaturesPage';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
           <Route element={<Layout />}>
             {/* Public */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/features" element={<FeaturesPage />} />
             <Route path="/tournaments" element={<TournamentsListPage />} />
             <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
             <Route path="/rankings" element={<RankingsPage />} />
