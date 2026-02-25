@@ -337,7 +337,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
         onClick={isClickable ? () => onMatchClick(match) : undefined}
         className={isClickable ? 'cursor-pointer group' : ''}
       >
-        <Card className={`overflow-hidden ${isBye ? 'opacity-60' : ''} ${isClickable ? 'group-hover:ring-1 group-hover:ring-primary-500/50 transition-shadow' : ''}`}>
+        <Card className={`overflow-hidden ${isBye ? 'opacity-80' : ''} ${isClickable ? 'group-hover:ring-1 group-hover:ring-primary-500/50 transition-shadow' : ''}`}>
           <CardContent className="p-0">
             {/* Header con cancha + fecha + hora + estado */}
             <div className="flex justify-between items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-dark-surface border-b border-dark-border gap-1.5">
@@ -355,20 +355,22 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
                   {match.horaProgramada && ` ${match.horaProgramada}`}
                 </span>
               </div>
-              {getStatusBadge(match.estado)}
+              {isBye ? <Badge variant="info">BYE</Badge> : getStatusBadge(match.estado)}
             </div>
 
             {/* Pareja 1 */}
             <div className={`flex justify-between items-center px-1.5 sm:px-2 py-1 sm:py-1.5 border-b border-dark-border ${
-              isWinner(match, 1) ? 'bg-green-900/30' : ''
+              isWinner(match, 1) ? 'bg-green-900/30' : isBye && match.pareja1 ? 'bg-green-900/20' : ''
             }`}>
               <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
-                  <PlayerAvatar player={match.pareja1?.jugador1} size={22} />
-                  <PlayerAvatar player={match.pareja1?.jugador2} size={22} />
-                </div>
-                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 1) ? 'font-semibold' : ''}`}>
-                  {getParejaName(match, 1)}
+                {(!isBye || match.pareja1) && (
+                  <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
+                    <PlayerAvatar player={match.pareja1?.jugador1} size={22} />
+                    <PlayerAvatar player={match.pareja1?.jugador2} size={22} />
+                  </div>
+                )}
+                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 1) ? 'font-semibold' : ''} ${isBye && !match.pareja1 ? 'text-light-secondary italic' : ''}`}>
+                  {isBye && !match.pareja1 ? '— BYE —' : getParejaName(match, 1)}
                 </span>
               </div>
               <span className="font-mono font-semibold text-xs sm:text-sm ml-1.5 flex-shrink-0">
@@ -378,15 +380,17 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
 
             {/* Pareja 2 */}
             <div className={`flex justify-between items-center px-1.5 sm:px-2 py-1 sm:py-1.5 ${
-              isWinner(match, 2) ? 'bg-green-900/30' : ''
+              isWinner(match, 2) ? 'bg-green-900/30' : isBye && match.pareja2 ? 'bg-green-900/20' : ''
             }`}>
               <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
-                  <PlayerAvatar player={match.pareja2?.jugador1} size={22} />
-                  <PlayerAvatar player={match.pareja2?.jugador2} size={22} />
-                </div>
-                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 2) ? 'font-semibold' : ''}`}>
-                  {getParejaName(match, 2)}
+                {(!isBye || match.pareja2) && (
+                  <div className="flex -space-x-1.5 flex-shrink-0 hidden sm:flex">
+                    <PlayerAvatar player={match.pareja2?.jugador1} size={22} />
+                    <PlayerAvatar player={match.pareja2?.jugador2} size={22} />
+                  </div>
+                )}
+                <span className={`text-xs sm:text-sm truncate ${isWinner(match, 2) ? 'font-semibold' : ''} ${isBye && !match.pareja2 ? 'text-light-secondary italic' : ''}`}>
+                  {isBye && !match.pareja2 ? '— BYE —' : getParejaName(match, 2)}
                 </span>
               </div>
               <span className="font-mono font-semibold text-xs sm:text-sm ml-1.5 flex-shrink-0">
