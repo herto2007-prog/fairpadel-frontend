@@ -4,6 +4,7 @@ import tournamentsService from '@/services/tournamentsService';
 import { sedesService } from '@/services';
 import type { Tournament, Sede, SedeCancha, TorneoCancha, TournamentCategory } from '@/types';
 import { CanchasCalendarGrid } from './CanchasCalendarGrid';
+import { OcupacionGrid } from './OcupacionGrid';
 import {
   MapPin,
   Clock,
@@ -20,6 +21,8 @@ import {
   Calendar,
   CheckCheck,
   Star,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 // ─── Stats type (matches ManageTournamentPage) ─────────────────────
@@ -130,12 +133,32 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
   const [savingPelotas, setSavingPelotas] = useState(false);
   const [loadingPelotas, setLoadingPelotas] = useState(false);
 
+  // Ocupacion grid state
+  const [showOcupacion, setShowOcupacion] = useState(false);
+
   // Derived
   const selectedSede = useMemo(() => sedes.find((s) => s.id === selectedSedeId), [sedes, selectedSedeId]);
   const selectedCancha = useMemo(() => {
     if (!selectedSede) return null;
     return (selectedSede.canchas || []).find((c: SedeCancha) => c.id === selectedCanchaId) || null;
   }, [selectedSede, selectedCanchaId]);
+
+  // Canchas prepared for OcupacionGrid
+  const canchasParaGrid = useMemo(() => {
+    const result: { sedeCanchaId: string; nombre: string; sedeName: string; horarios: Set<string> }[] = [];
+    for (const sede of sedes) {
+      for (const cancha of (sede.canchas || []) as SedeCancha[]) {
+        if (!selectedIds.includes(cancha.id)) continue;
+        result.push({
+          sedeCanchaId: cancha.id,
+          nombre: cancha.nombre,
+          sedeName: sede.nombre,
+          horarios: horarios[cancha.id] || new Set(),
+        });
+      }
+    }
+    return result;
+  }, [sedes, selectedIds, horarios]);
 
   // ── Load data ──────────────────────────────────────────────────
   useEffect(() => { loadData(); }, []);
@@ -627,6 +650,34 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
           </div>
         )}
       </Card>
+
+      {/* Ocupación de canchas */}
+      {selectedIds.length > 0 && totalBlocks > 0 && (
+        <Card className="p-4">
+          <button
+            onClick={() => setShowOcupacion(!showOcupacion)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-400" />
+              Ocupación de Canchas
+            </h3>
+            <span className="flex items-center gap-1.5 text-sm text-light-secondary hover:text-light-text transition-colors">
+              {showOcupacion ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showOcupacion ? 'Ocultar' : 'Ver Ocupación'}
+            </span>
+          </button>
+          {showOcupacion && (
+            <div className="mt-4">
+              <OcupacionGrid
+                tournament={tournament}
+                torneoCanchas={canchasParaGrid}
+                slotMinutes={slotMinutes}
+              />
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm px-1">
