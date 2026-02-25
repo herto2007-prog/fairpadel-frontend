@@ -161,7 +161,11 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
     return ROUND_LABELS[roundKey] || roundKey.replace('RONDA_', 'Ronda ');
   };
 
-  const getStatusBadge = (status: MatchStatus) => {
+  const getStatusBadge = (status: MatchStatus, observaciones?: string | null) => {
+    // Descalificación: badge especial
+    if (status === MatchStatus.WO && observaciones?.startsWith('Descalificación:')) {
+      return <Badge variant="danger">DESC.</Badge>;
+    }
     const variants: Record<MatchStatus, { variant: 'success' | 'warning' | 'info' | 'default' | 'danger'; label: string }> = {
       [MatchStatus.PROGRAMADO]: { variant: 'default', label: 'Programado' },
       [MatchStatus.EN_JUEGO]: { variant: 'warning', label: 'En Juego' },
@@ -355,7 +359,7 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
                   {match.horaProgramada && ` ${match.horaProgramada}`}
                 </span>
               </div>
-              {isBye ? <Badge variant="info">BYE</Badge> : getStatusBadge(match.estado)}
+              {isBye ? <Badge variant="info">BYE</Badge> : getStatusBadge(match.estado, match.observaciones)}
             </div>
 
             {/* Pareja 1 */}

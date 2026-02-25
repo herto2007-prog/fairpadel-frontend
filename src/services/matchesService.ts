@@ -100,6 +100,13 @@ class MatchesService {
     return response.data;
   }
 
+  async reagendarSinCancha(tournamentId: string, categoryId: string): Promise<{ asignados: number; sinSlot: number }> {
+    const response = await api.post<{ asignados: number; sinSlot: number }>(
+      `/matches/torneo/${tournamentId}/categoria/${categoryId}/reagendar-sin-cancha`,
+    );
+    return response.data;
+  }
+
   async getMyMatches(): Promise<Match[]> {
     const response = await api.get<Match[]>('/matches/my');
     return response.data;

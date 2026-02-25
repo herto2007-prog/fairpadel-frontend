@@ -196,10 +196,15 @@ const DirectTab: React.FC<DirectTabProps> = ({
   const [set2P2, setSet2P2] = useState<string>(isEditing && match.set2Pareja2 != null ? String(match.set2Pareja2) : '');
   const [set3P1, setSet3P1] = useState<string>(isEditing && match.set3Pareja1 != null ? String(match.set3Pareja1) : '');
   const [set3P2, setSet3P2] = useState<string>(isEditing && match.set3Pareja2 != null ? String(match.set3Pareja2) : '');
-  const [esWalkOver, setEsWalkOver] = useState(isEditing && match.estado === 'WO');
+  const [esWalkOver, setEsWalkOver] = useState(isEditing && match.estado === 'WO' && !match.observaciones?.startsWith('Descalificación:'));
   const [esRetiro, setEsRetiro] = useState(isEditing && match.observaciones?.includes('Retiro'));
+  const [esDescalificacion, setEsDescalificacion] = useState(isEditing && match.observaciones?.startsWith('Descalificación:'));
   const [parejaGanadoraId, setParejaGanadoraId] = useState<string>(isEditing && match.parejaGanadoraId ? match.parejaGanadoraId : '');
-  const [observaciones, setObservaciones] = useState(isEditing && match.observaciones ? match.observaciones : '');
+  const [observaciones, setObservaciones] = useState(
+    isEditing && match.observaciones
+      ? (match.observaciones.startsWith('Descalificación: ') ? match.observaciones.replace('Descalificación: ', '') : match.observaciones)
+      : ''
+  );
 
   // Determinar si necesita set 3
   const set1Winner = set1P1 && set1P2 ? (Number(set1P1) > Number(set1P2) ? 1 : 2) : null;
@@ -251,18 +256,23 @@ const DirectTab: React.FC<DirectTabProps> = ({
       const dto: CargarResultadoDto = {
         esWalkOver,
         esRetiro,
+        esDescalificacion,
         observaciones: observaciones || undefined,
       };
 
-      if (esWalkOver || esRetiro) {
+      if (esWalkOver || esRetiro || esDescalificacion) {
         if (!parejaGanadoraId) {
-          toast.error('Selecciona la pareja ganadora');
+          toast.error(esDescalificacion ? 'Selecciona la pareja ganadora (no descalificada)' : 'Selecciona la pareja ganadora');
+          return;
+        }
+        if (esDescalificacion && !observaciones) {
+          toast.error('Indica el motivo de la descalificación');
           return;
         }
         dto.parejaGanadoraId = parejaGanadoraId;
 
-        // Si es retiro, incluir sets parciales si los hay
-        if (esRetiro) {
+        // Si es retiro o descalificación, incluir sets parciales si los hay
+        if (esRetiro || esDescalificacion) {
           if (set1P1) dto.set1Pareja1 = Number(set1P1);
           if (set1P2) dto.set1Pareja2 = Number(set1P2);
           if (set2P1) dto.set2Pareja1 = Number(set2P1);
@@ -317,7 +327,7 @@ const DirectTab: React.FC<DirectTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Scoreboard-style grid */}
+      {/* Scoreboard-style grid (ocultar solo en WO puro, mostrar en retiro/descalificación para scores parciales) */}
       {!esWalkOver && (
         <div className="bg-dark-surface rounded-lg p-3 sm:p-4">
           {/* Column headers */}
@@ -367,12 +377,12 @@ const DirectTab: React.FC<DirectTabProps> = ({
         </p>
       )}
 
-      {/* WO / Retiro toggle pills */}
+      {/* WO / Retiro / Descalificación toggle pills */}
       <div className="flex gap-2">
         <button
           onClick={() => {
             setEsWalkOver(!esWalkOver);
-            if (!esWalkOver) setEsRetiro(false);
+            if (!esWalkOver) { setEsRetiro(false); setEsDescalificacion(false); }
           }}
           className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
             esWalkOver
@@ -380,12 +390,12 @@ const DirectTab: React.FC<DirectTabProps> = ({
               : 'border-dark-border bg-dark-surface text-light-secondary hover:border-dark-border/80'
           }`}
         >
-          Walk Over
+          W.O.
         </button>
         <button
           onClick={() => {
             setEsRetiro(!esRetiro);
-            if (!esRetiro) setEsWalkOver(false);
+            if (!esRetiro) { setEsWalkOver(false); setEsDescalificacion(false); }
           }}
           className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
             esRetiro
@@ -393,12 +403,25 @@ const DirectTab: React.FC<DirectTabProps> = ({
               : 'border-dark-border bg-dark-surface text-light-secondary hover:border-dark-border/80'
           }`}
         >
-          Retiro / Lesión
+          Retiro
+        </button>
+        <button
+          onClick={() => {
+            setEsDescalificacion(!esDescalificacion);
+            if (!esDescalificacion) { setEsWalkOver(false); setEsRetiro(false); }
+          }}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${
+            esDescalificacion
+              ? 'border-red-500 bg-red-500/20 text-red-300'
+              : 'border-dark-border bg-dark-surface text-light-secondary hover:border-dark-border/80'
+          }`}
+        >
+          Descalif.
         </button>
       </div>
 
-      {/* Winner selector (WO/Retiro) */}
-      {(esWalkOver || esRetiro) && (
+      {/* Winner selector (WO/Retiro/Descalificación) */}
+      {(esWalkOver || esRetiro || esDescalificacion) && (
         <div className="space-y-2">
           <label className="text-xs font-medium text-light-secondary">Pareja Ganadora</label>
           <div className="grid grid-cols-2 gap-2">
@@ -426,17 +449,17 @@ const DirectTab: React.FC<DirectTabProps> = ({
         </div>
       )}
 
-      {/* Observaciones */}
-      {(esRetiro || esWalkOver) && (
+      {/* Observaciones / Motivo descalificación */}
+      {(esRetiro || esWalkOver || esDescalificacion) && (
         <div>
           <label className="text-xs font-medium text-light-secondary block mb-1">
-            Observaciones
+            {esDescalificacion ? 'Motivo de descalificación *' : 'Observaciones'}
           </label>
           <input
             type="text"
             value={observaciones}
             onChange={(e) => setObservaciones(e.target.value)}
-            placeholder={esRetiro ? 'Ej: Retiro por lesión de rodilla' : 'Opcional'}
+            placeholder={esDescalificacion ? 'Ej: Conducta antideportiva' : esRetiro ? 'Ej: Retiro por lesión de rodilla' : 'Opcional'}
             className="w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-sm text-light-text placeholder:text-light-secondary/50 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
           />
         </div>

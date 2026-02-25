@@ -549,6 +549,7 @@ export interface CargarResultadoDto {
   set3Pareja2?: number;
   esWalkOver: boolean;
   esRetiro?: boolean;
+  esDescalificacion?: boolean;
   parejaGanadoraId?: string;
   observaciones?: string;
 }

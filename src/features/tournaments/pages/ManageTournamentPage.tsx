@@ -45,6 +45,7 @@ import {
   FileText,
   FileSpreadsheet,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -1205,7 +1206,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     if (successCount === categories.length) {
       const fechaInfo = fecha ? ` (fecha: ${fecha})` : '';
       const warning = schedulingWarnings.length > 0
-        ? `. ⚠️ ${schedulingWarnings.join('; ')}. Verifique que hay canchas configuradas para la fecha.`
+        ? `. ⚠️ ${schedulingWarnings.join('; ')}. Agregue horarios en el último día desde la pestaña Canchas y use "Reagendar".`
         : '';
       setMessage(`Sorteo realizado para ${successCount} categoria${successCount > 1 ? 's' : ''}${fechaInfo}${warning}`);
       setMessageType(schedulingWarnings.length > 0 ? 'error' : 'success');
@@ -1635,6 +1636,36 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
               })()}
             </h3>
             <div className="flex gap-2 items-center flex-shrink-0">
+              {/* Botón Reagendar — visible si hay matches sin cancha */}
+              {fixtureData.some(m => !m.torneoCanchaId && m.estado !== 'WO' && m.estado !== 'CANCELADO') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!tournament?.id || !selectedCategory) return;
+                    try {
+                      setMessage('Reagendando partidos sin cancha...');
+                      setMessageType('success');
+                      const result = await matchesService.reagendarSinCancha(tournament.id, selectedCategory);
+                      if (result.asignados > 0) {
+                        setMessage(`✅ ${result.asignados} partidos reagendados${result.sinSlot > 0 ? `. ⚠️ ${result.sinSlot} aún sin horario en último día.` : '.'}`);
+                        setMessageType(result.sinSlot > 0 ? 'error' : 'success');
+                        await loadFixture(selectedCategory);
+                      } else {
+                        setMessage(`⚠️ No se pudo reagendar. ${result.sinSlot} partidos sin slot disponible. Agregue horarios en el último día.`);
+                        setMessageType('error');
+                      }
+                    } catch (error: any) {
+                      setMessage(error.response?.data?.message || 'Error al reagendar');
+                      setMessageType('error');
+                    }
+                  }}
+                  className="text-xs sm:text-sm"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                  Reagendar
+                </Button>
+              )}
               {isPremium ? (
                 <Button
                   variant={swapMode ? 'danger' : 'outline'}
