@@ -229,6 +229,7 @@ export interface Tournament {
   flyerUrl: string;
   costoInscripcion: number;
   minutosPorPartido?: number;
+  precioPelota?: number;
   // Campos legacy
   sede?: string;
   direccion?: string;

@@ -7,7 +7,7 @@ import { matchesService } from '@/services/matchesService';
 import inscripcionesService from '@/services/inscripcionesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate } from '@/lib/utils';
-import type { Tournament, TournamentCategory, TorneoCancha, TorneoPelotasRonda, Match, Pareja, Inscripcion } from '@/types';
+import type { Tournament, TournamentCategory, TorneoCancha, Match, Pareja, Inscripcion } from '@/types';
 import { BracketView } from '@/features/matches/components/BracketView';
 import { ScoreModal } from '@/features/matches/components/ScoreModal';
 import { CanchasTab } from '@/features/tournaments/components/CanchasTab';
@@ -49,7 +49,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'resumen' | 'editar' | 'inscripciones' | 'finanzas' | 'sorteo' | 'canchas' | 'pelotas' | 'ayudantes' | 'acreditacion' | 'reportes';
+type Tab = 'resumen' | 'editar' | 'inscripciones' | 'finanzas' | 'sorteo' | 'canchas' | 'ayudantes' | 'acreditacion' | 'reportes';
 
 interface TournamentStats {
   inscripcionesTotal: number;
@@ -131,7 +131,6 @@ export default function ManageTournamentPage() {
     { key: 'finanzas', label: 'Finanzas', icon: <DollarSign className="w-4 h-4" /> },
     { key: 'sorteo', label: 'Sorteo', icon: <Trophy className="w-4 h-4" /> },
     { key: 'canchas', label: 'Canchas y Horarios', icon: <Layers className="w-4 h-4" /> },
-    { key: 'pelotas', label: 'Pelotas por Ronda', icon: <CircleDot className="w-4 h-4" />, premium: true },
     { key: 'ayudantes', label: 'Ayudantes', icon: <UserPlus className="w-4 h-4" /> },
     { key: 'acreditacion', label: 'Acreditación', icon: <ClipboardCheck className="w-4 h-4" /> },
     { key: 'reportes', label: 'Reportes', icon: <FileText className="w-4 h-4" /> },
@@ -192,7 +191,6 @@ export default function ManageTournamentPage() {
         {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} stats={stats} onSaved={loadData} />}
-        {activeTab === 'pelotas' && <PelotasRondaTab tournament={tournament} stats={stats} isPremium={isPremium} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
         {activeTab === 'acreditacion' && <AcreditacionTab tournament={tournament} />}
         {activeTab === 'reportes' && <ReportesTab tournament={tournament} isPremium={isPremium} />}
@@ -356,149 +354,6 @@ function InscripcionesTab({ stats, onToggle, togglingCategory, tournament, onRef
 }
 
 // CanchasTab extracted to: @/features/tournaments/components/CanchasTab.tsx
-
-// ===================== TAB: PELOTAS POR RONDA (PREMIUM) =====================
-
-const RONDAS_DISPONIBLES = [
-  { key: 'ronda1', label: 'Ronda 1 (Fase de Grupos / Clasificación)', desc: 'Primeros partidos del torneo - fase inicial donde se definen posiciones' },
-  { key: 'ronda2', label: 'Ronda 2 (Zona / Repechaje)', desc: 'Segunda fase de grupos o repechaje para equipos eliminados' },
-  { key: 'ronda3', label: 'Ronda 3 (Cruce de Zonas)', desc: 'Cruces entre ganadores de diferentes zonas' },
-  { key: 'octavos', label: 'Octavos de Final', desc: '16 parejas compiten - se clasifican 8' },
-  { key: 'cuartos', label: 'Cuartos de Final', desc: '8 parejas compiten - se clasifican 4' },
-  { key: 'semis', label: 'Semifinales', desc: '4 parejas compiten - se clasifican 2 finalistas' },
-  { key: 'final', label: 'Final', desc: 'Partido definitorio del campeón' },
-];
-
-function PelotasRondaTab({ tournament, stats, isPremium }: { tournament: Tournament; stats: TournamentStats | null; isPremium: boolean }) {
-  const [rondas, setRondas] = useState<{ ronda: string; cantidadPelotas: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    loadPelotas();
-  }, []);
-
-  const loadPelotas = async () => {
-    try {
-      const data = await tournamentsService.getPelotasRonda(tournament.id);
-      if (data && data.length > 0) {
-        setRondas(data.map((r: TorneoPelotasRonda) => ({ ronda: r.ronda, cantidadPelotas: r.cantidadPelotas })));
-      } else {
-        // Configuración predeterminada: 2 pelotas por partido en todas las rondas
-        setRondas(RONDAS_DISPONIBLES.map((r) => ({ ronda: r.key, cantidadPelotas: 2 })));
-      }
-    } catch {
-      // Si falla (no premium), cargar defaults
-      setRondas(RONDAS_DISPONIBLES.map((r) => ({ ronda: r.key, cantidadPelotas: 2 })));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (ronda: string, value: number) => {
-    setRondas((prev) => prev.map((r) => (r.ronda === ronda ? { ...r, cantidadPelotas: value } : r)));
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage('');
-    try {
-      await tournamentsService.updatePelotasRonda(tournament.id, rondas);
-      setMessage('Configuración de pelotas guardada');
-    } catch {
-      setMessage('Error al guardar la configuración');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!isPremium) {
-    return (
-      <Card className="p-8 text-center">
-        <Crown className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">Configuración de Pelotas por Ronda</h3>
-        <p className="text-light-secondary mb-4 max-w-md mx-auto">
-          Configura la cantidad de pelotas que se usarán en cada ronda del torneo.
-          El predeterminado es 2 pelotas por partido. Esta función permite personalizar por ronda (ej: 3 pelotas en finales).
-        </p>
-        <Button variant="primary" className="bg-amber-500 hover:bg-amber-600">
-          <Crown className="w-4 h-4 mr-2" /> Hacete Premium
-        </Button>
-      </Card>
-    );
-  }
-
-  if (loading) return <div className="flex justify-center py-12"><Loading size="lg" /></div>;
-
-  const totalParejas = stats?.inscripcionesTotal || 0;
-  const totalPartidos = totalParejas > 0 ? totalParejas - 1 : 0;
-  const totalPelotas = rondas.reduce((acc, r) => {
-    // Estimación simple basada en partidos por ronda
-    const partidosRonda = r.ronda === 'final' ? 1 : r.ronda === 'semis' ? 2 : r.ronda === 'cuartos' ? 4 : r.ronda === 'octavos' ? 8 : Math.ceil(totalPartidos / RONDAS_DISPONIBLES.length);
-    return acc + partidosRonda * r.cantidadPelotas;
-  }, 0);
-
-  return (
-    <div className="space-y-6">
-      {message && (
-        <div className={`p-3 rounded-md text-sm ${message.includes('Error') ? 'bg-red-900/30 text-red-400 border border-red-500/50' : 'bg-green-900/30 text-green-400 border border-green-500/50'}`}>
-          {message}
-        </div>
-      )}
-
-      <Card className="p-6">
-        <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-          <CircleDot className="w-5 h-5 text-amber-500" />
-          Pelotas por Ronda
-        </h3>
-        <p className="text-sm text-light-secondary mb-6">
-          Configura cuántas pelotas se usarán por partido en cada ronda. El predeterminado es 2 pelotas.
-          Para finales normalmente se usan 3 pelotas nuevas.
-        </p>
-
-        <div className="space-y-3">
-          {RONDAS_DISPONIBLES.map((rondaDef) => {
-            const rondaData = rondas.find((r) => r.ronda === rondaDef.key);
-            const cantidad = rondaData?.cantidadPelotas || 2;
-            return (
-              <div key={rondaDef.key} className="flex items-center justify-between p-3 rounded-lg border border-dark-border bg-dark-card hover:bg-dark-hover">
-                <div>
-                  <span className="font-medium text-sm">{rondaDef.label}</span>
-                  <p className="text-xs text-light-secondary mt-0.5">{rondaDef.desc}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleChange(rondaDef.key, Math.max(1, cantidad - 1))}
-                    className="w-8 h-8 rounded-full bg-dark-surface hover:bg-dark-hover flex items-center justify-center text-lg font-bold"
-                  >-</button>
-                  <span className="w-8 text-center font-bold text-lg">{cantidad}</span>
-                  <button
-                    onClick={() => handleChange(rondaDef.key, Math.min(6, cantidad + 1))}
-                    className="w-8 h-8 rounded-full bg-dark-surface hover:bg-dark-hover flex items-center justify-center text-lg font-bold"
-                  >+</button>
-                  <span className="text-xs text-light-secondary ml-2">pelotas</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-6 p-4 bg-amber-900/30 border border-amber-500/50 rounded-lg">
-          <p className="text-sm text-amber-400">
-            <strong>Estimación total:</strong> ~{totalPelotas} pelotas necesarias para {totalPartidos} partidos estimados ({totalParejas} parejas)
-          </p>
-        </div>
-
-        <div className="mt-4 flex justify-end">
-          <Button variant="primary" onClick={handleSave} loading={saving}>
-            <Save className="w-4 h-4 mr-2" /> Guardar Configuración
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 // ===================== TAB: AYUDANTES =====================
 

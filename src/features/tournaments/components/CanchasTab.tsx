@@ -123,6 +123,13 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
   // Cancha principal state (for finals scheduling)
   const [principalCanchaId, setPrincipalCanchaId] = useState<string | null>(null);
 
+  // Pelotas modal state
+  const [showPelotasModal, setShowPelotasModal] = useState(false);
+  const [pelotasRondas, setPelotasRondas] = useState<{ ronda: string; cantidadPelotas: number }[]>([]);
+  const [precioPelota, setPrecioPelota] = useState<number>(Number(tournament.precioPelota) || 15000);
+  const [savingPelotas, setSavingPelotas] = useState(false);
+  const [loadingPelotas, setLoadingPelotas] = useState(false);
+
   // Derived
   const selectedSede = useMemo(() => sedes.find((s) => s.id === selectedSedeId), [sedes, selectedSedeId]);
   const selectedCancha = useMemo(() => {
@@ -223,6 +230,65 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
       setMessage('Error al guardar minutos por partido');
     } finally {
       setSavingMinutos(false);
+    }
+  };
+
+  // ── Pelotas modal handlers ────────────────────────────────────
+  const RONDAS_DISPONIBLES = useMemo(() => [
+    { key: 'ronda1', label: 'Ronda 1 (Clasificación)' },
+    { key: 'ronda2', label: 'Ronda 2 (Repechaje)' },
+    { key: 'ronda3', label: 'Ronda 3 (Cruce Zonas)' },
+    { key: 'octavos', label: 'Octavos de Final' },
+    { key: 'cuartos', label: 'Cuartos de Final' },
+    { key: 'semis', label: 'Semifinales' },
+    { key: 'final', label: 'Final' },
+  ], []);
+
+  const handleOpenPelotasModal = async () => {
+    setShowPelotasModal(true);
+    setLoadingPelotas(true);
+    try {
+      const data = await tournamentsService.getPelotasRonda(tournament.id);
+      if (data && data.length > 0) {
+        setPelotasRondas(data.map((r: any) => ({ ronda: r.ronda, cantidadPelotas: r.cantidadPelotas })));
+      } else {
+        setPelotasRondas(RONDAS_DISPONIBLES.map((r) => ({ ronda: r.key, cantidadPelotas: 2 })));
+      }
+    } catch {
+      setPelotasRondas(RONDAS_DISPONIBLES.map((r) => ({ ronda: r.key, cantidadPelotas: 2 })));
+    } finally {
+      setLoadingPelotas(false);
+    }
+  };
+
+  const totalPelotasCalc = useMemo(() => {
+    const totalParejas = stats?.inscripcionesTotal || 0;
+    const totalPartidos = totalParejas > 0 ? totalParejas - 1 : 0;
+    return pelotasRondas.reduce((acc, r) => {
+      const partidosRonda =
+        r.ronda === 'final' ? 1
+        : r.ronda === 'semis' ? 2
+        : r.ronda === 'cuartos' ? 4
+        : r.ronda === 'octavos' ? 8
+        : Math.ceil(totalPartidos / 7);
+      return acc + partidosRonda * r.cantidadPelotas;
+    }, 0);
+  }, [pelotasRondas, stats]);
+
+  const handleSavePelotas = async () => {
+    setSavingPelotas(true);
+    try {
+      await Promise.all([
+        tournamentsService.updatePelotasRonda(tournament.id, pelotasRondas),
+        tournamentsService.update(tournament.id, { precioPelota } as any),
+      ]);
+      setMessage('Configuración de pelotas guardada');
+      setShowPelotasModal(false);
+      onSaved?.();
+    } catch {
+      setMessage('Error al guardar la configuración de pelotas');
+    } finally {
+      setSavingPelotas(false);
     }
   };
 
@@ -435,6 +501,22 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
               <Save className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Configurar Pelotas */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <CircleDot className="w-4 h-4 text-amber-400" />
+              Pelotas por Ronda
+            </h3>
+            <p className="text-sm text-light-secondary">Cantidad de pelotas nuevas por ronda y precio unitario</p>
+          </div>
+          <Button variant="primary" onClick={handleOpenPelotasModal}>
+            <CircleDot className="w-4 h-4 mr-2" /> Configurar
+          </Button>
         </div>
       </Card>
 
@@ -830,6 +912,96 @@ export function CanchasTab({ tournament, stats, onSaved }: { tournament: Tournam
           <Save className="w-4 h-4 mr-2" /> Guardar Configuración
         </Button>
       </div>
+
+      {/* ── Modal: Configurar Pelotas ── */}
+      {showPelotasModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowPelotasModal(false)}
+        >
+          <div
+            className="bg-dark-card rounded-2xl border border-dark-border shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <CircleDot className="w-5 h-5 text-amber-500" />
+                  Configurar Pelotas
+                </h3>
+                <button onClick={() => setShowPelotasModal(false)} className="p-1.5 hover:bg-dark-hover rounded-lg">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-light-secondary mb-5">
+                Pelotas nuevas por ronda y costo unitario
+              </p>
+
+              {loadingPelotas ? (
+                <div className="flex justify-center py-8"><Loading size="md" /></div>
+              ) : (
+                <>
+                  {/* Per-round rows */}
+                  <div className="space-y-2 mb-5">
+                    {RONDAS_DISPONIBLES.map((rondaDef) => {
+                      const rondaData = pelotasRondas.find((r) => r.ronda === rondaDef.key);
+                      const cantidad = rondaData?.cantidadPelotas || 2;
+                      return (
+                        <div key={rondaDef.key} className="flex items-center justify-between p-2.5 rounded-lg border border-dark-border bg-dark-surface">
+                          <span className="font-medium text-sm min-w-0 truncate flex-1">{rondaDef.label}</span>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => setPelotasRondas((prev) =>
+                                prev.map((r) => r.ronda === rondaDef.key ? { ...r, cantidadPelotas: Math.max(1, cantidad - 1) } : r)
+                              )}
+                              className="w-7 h-7 rounded-full bg-dark-card hover:bg-dark-hover flex items-center justify-center font-bold text-sm"
+                            >-</button>
+                            <span className="w-6 text-center font-bold">{cantidad}</span>
+                            <button
+                              onClick={() => setPelotasRondas((prev) =>
+                                prev.map((r) => r.ronda === rondaDef.key ? { ...r, cantidadPelotas: Math.min(6, cantidad + 1) } : r)
+                              )}
+                              className="w-7 h-7 rounded-full bg-dark-card hover:bg-dark-hover flex items-center justify-center font-bold text-sm"
+                            >+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Precio por pelota */}
+                  <div className="p-4 rounded-lg border border-dark-border bg-dark-surface mb-5">
+                    <label className="block text-sm font-medium mb-2">Precio por pelota (Gs.)</label>
+                    <input
+                      type="number"
+                      value={precioPelota}
+                      onChange={(e) => setPrecioPelota(Math.max(0, Number(e.target.value)))}
+                      className="w-full px-3 py-2 rounded-lg bg-dark-card border border-dark-border text-lg font-bold text-light-text focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                      min={0}
+                      step={1000}
+                    />
+                  </div>
+
+                  {/* Estimation summary */}
+                  <div className="p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg mb-5">
+                    <p className="text-sm text-amber-400">
+                      <strong>Estimación:</strong> ~{totalPelotasCalc} pelotas × Gs. {precioPelota.toLocaleString()} = <strong>Gs. {(totalPelotasCalc * precioPelota).toLocaleString()}</strong>
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3">
+                    <Button variant="ghost" onClick={() => setShowPelotasModal(false)}>Cancelar</Button>
+                    <Button variant="primary" onClick={handleSavePelotas} loading={savingPelotas}>
+                      <Save className="w-4 h-4 mr-2" /> Guardar
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,7 +40,8 @@ export function ResumenResourceCards({ tournament, stats, pelotasConfig, loading
       }, 0)
     : totalPartidosEstimado * pelotasPorDefecto;
 
-  const costoPelotas = pelotasNecesarias * 15000;
+  const precioPorPelota = Number(tournament.precioPelota) || 15000;
+  const costoPelotas = pelotasNecesarias * precioPorPelota;
 
   if (loading && !stats) {
     return (
@@ -95,7 +96,7 @@ export function ResumenResourceCards({ tournament, stats, pelotasConfig, loading
           </div>
         </div>
         <p className="text-xs text-light-muted mt-2">
-          {pelotasNecesarias} x Gs. 15.000
+          {pelotasNecesarias} x Gs. {precioPorPelota.toLocaleString()}
         </p>
       </Card>
     </div>
