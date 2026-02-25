@@ -136,11 +136,11 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
       grouped[round].sort((a, b) => a.numeroRonda - b.numeroRonda);
     }
 
-    // Filtrar R2 BYEs — no son partidos reales del torneo, no deben mostrarse
+    // Filtrar R2 PLACEHOLDERs vacíos (sin parejas reales), mantener BYEs con pareja visible
     if (grouped['ACOMODACION_2']) {
       grouped['ACOMODACION_2'] = grouped['ACOMODACION_2'].filter(m =>
-        !(m.estado === MatchStatus.WO && m.observaciones?.includes('BYE'))
-        && !m.observaciones?.includes('PLACEHOLDER_BYE')
+        !m.observaciones?.includes('PLACEHOLDER_BYE')
+        && !(m.estado === MatchStatus.WO && m.observaciones?.includes('BYE') && !m.pareja1Id && !m.pareja2Id)
       );
       if (grouped['ACOMODACION_2'].length === 0) {
         delete grouped['ACOMODACION_2'];
