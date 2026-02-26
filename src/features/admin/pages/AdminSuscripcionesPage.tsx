@@ -10,8 +10,6 @@ import {
   X,
   DollarSign,
   Users,
-  TrendingUp,
-  TrendingDown,
   Ticket,
   Search,
   UserCheck,
@@ -22,11 +20,15 @@ import {
   Gift,
   AlertTriangle,
   Activity,
-  BarChart3,
   CalendarClock,
+  Wallet,
+  Trophy,
+  Settings,
+  Save,
+  Calendar,
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'usuarios' | 'suscripciones' | 'cupones' | 'actividad';
+type Tab = 'resumen' | 'torneos' | 'comision' | 'suscripciones' | 'cupones' | 'actividad';
 
 // ============ TIPOS ============
 
@@ -44,13 +46,6 @@ interface MetricasPremium {
   conCupon: number;
   autoRenovarActivo: number;
   proximosVencer: number;
-}
-
-interface Tendencia {
-  mes: string;
-  nuevas: number;
-  canceladas: number;
-  ingresos: number;
 }
 
 interface UsuarioPremium {
@@ -118,23 +113,16 @@ interface Cupon {
   createdAt: string;
 }
 
-interface EstadisticasCupones {
-  totalCupones: number;
-  cuponesActivos: number;
-  totalUsos: number;
-  descuentoTotal: number;
-  topCupones: { codigo: string; tipo: string; valor: number; usos: number; limite: number; estado: string }[];
-}
-
 // ============ COMPONENT PRINCIPAL ============
 
-const AdminSuscripcionesPage = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+const AdminFinanzasPage = () => {
+  const [activeTab, setActiveTab] = useState<Tab>('resumen');
 
   const tabs: { key: Tab; label: string; shortLabel: string; icon: React.ReactNode }[] = [
-    { key: 'dashboard', label: 'Dashboard Premium', shortLabel: 'Dashboard', icon: <Crown className="w-4 h-4" /> },
-    { key: 'usuarios', label: 'Usuarios Premium', shortLabel: 'Usuarios', icon: <Users className="w-4 h-4" /> },
-    { key: 'suscripciones', label: 'Suscripciones', shortLabel: 'Suscr.', icon: <CreditCard className="w-4 h-4" /> },
+    { key: 'resumen', label: 'Dashboard Financiero', shortLabel: 'Resumen', icon: <Wallet className="w-4 h-4" /> },
+    { key: 'torneos', label: 'Ingresos por Torneo', shortLabel: 'Torneos', icon: <Trophy className="w-4 h-4" /> },
+    { key: 'comision', label: 'Comisión', shortLabel: 'Comisión', icon: <Settings className="w-4 h-4" /> },
+    { key: 'suscripciones', label: 'Suscripciones', shortLabel: 'Suscr.', icon: <Crown className="w-4 h-4" /> },
     { key: 'cupones', label: 'Cupones', shortLabel: 'Cupones', icon: <Ticket className="w-4 h-4" /> },
     { key: 'actividad', label: 'Actividad Reciente', shortLabel: 'Actividad', icon: <Activity className="w-4 h-4" /> },
   ];
@@ -143,12 +131,12 @@ const AdminSuscripcionesPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-lg flex items-center justify-center">
-            <Crown className="w-6 h-6 text-black" />
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+            <DollarSign className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestión Premium</h1>
-            <p className="text-sm text-light-secondary">Dashboard completo de suscripciones, usuarios premium y métricas</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Finanzas</h1>
+            <p className="text-sm text-light-secondary">Control de ingresos, comisiones y suscripciones de la plataforma</p>
           </div>
         </div>
       </div>
@@ -161,7 +149,7 @@ const AdminSuscripcionesPage = () => {
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.key
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/50'
                 : 'bg-dark-card text-light-secondary hover:bg-dark-hover border border-dark-border'
             }`}
           >
@@ -172,21 +160,21 @@ const AdminSuscripcionesPage = () => {
         ))}
       </div>
 
-      {activeTab === 'dashboard' && <DashboardTab />}
-      {activeTab === 'usuarios' && <UsuariosPremiumTab />}
-      {activeTab === 'suscripciones' && <SuscripcionesTab />}
+      {activeTab === 'resumen' && <ResumenFinanzasTab />}
+      {activeTab === 'torneos' && <TorneosFinanzasTab />}
+      {activeTab === 'comision' && <ComisionTab />}
+      {activeTab === 'suscripciones' && <SuscripcionesConsolidadaTab />}
       {activeTab === 'cupones' && <CuponesTab />}
       {activeTab === 'actividad' && <ActividadTab />}
     </div>
   );
 };
 
-// ============ TAB: DASHBOARD ============
+// ============ TAB: RESUMEN FINANZAS ============
 
-function DashboardTab() {
-  const [metricas, setMetricas] = useState<MetricasPremium | null>(null);
-  const [tendencias, setTendencias] = useState<Tendencia[]>([]);
-  const [cuponStats, setCuponStats] = useState<EstadisticasCupones | null>(null);
+function ResumenFinanzasTab() {
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [premiumMetrics, setPremiumMetrics] = useState<MetricasPremium | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -196,220 +184,402 @@ function DashboardTab() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [m, t, c] = await Promise.all([
+      const [d, p] = await Promise.all([
+        adminService.getFinanzasDashboard(),
         adminService.getMetricasPremium(),
-        adminService.getTendenciasSuscripciones(),
-        adminService.getEstadisticasCupones(),
       ]);
-      setMetricas(m);
-      setTendencias(t);
-      setCuponStats(c);
+      setDashboard(d);
+      setPremiumMetrics(p);
     } catch (error) {
-      console.error('Error cargando dashboard premium:', error);
+      console.error('Error cargando finanzas:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loading size="lg" text="Cargando dashboard premium..." />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-16"><Loading size="lg" text="Cargando finanzas..." /></div>;
+  if (!dashboard) return null;
 
-  if (!metricas) return null;
+  const formatGs = (n: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(n))}`;
 
   return (
     <div className="space-y-6">
-      {/* KPI Cards */}
+      {/* Main KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <KPICard
-          title="Usuarios Premium"
-          value={metricas.totalPremium}
-          subtitle={`${metricas.tasaConversion}% del total`}
-          icon={<Crown className="w-5 h-5 text-yellow-400" />}
-          color="yellow"
-        />
-        <KPICard
-          title="MRR"
-          value={`$${metricas.mrr.toFixed(2)}`}
-          subtitle={`ARR: $${metricas.arr.toFixed(2)}`}
+          title="Ingresos Totales"
+          value={formatGs(dashboard.totalIngresos)}
+          subtitle="Comisiones + Suscripciones"
           icon={<DollarSign className="w-5 h-5 text-green-400" />}
           color="green"
         />
         <KPICard
-          title="Nuevos (30d)"
-          value={metricas.nuevosPremium30d}
-          subtitle={`${metricas.cancelaciones30d} cancelaciones`}
-          icon={<TrendingUp className="w-5 h-5 text-blue-400" />}
-          color="blue"
-          trend={metricas.nuevosPremium30d > metricas.cancelaciones30d ? 'up' : metricas.nuevosPremium30d < metricas.cancelaciones30d ? 'down' : undefined}
+          title="Comisiones"
+          value={formatGs(dashboard.totalIngresosComisiones)}
+          subtitle={`${dashboard.totalJugadoresInscriptos} jugadores`}
+          icon={<Trophy className="w-5 h-5 text-amber-400" />}
+          color="yellow"
         />
         <KPICard
-          title="Churn Rate"
-          value={`${metricas.churnRate}%`}
-          subtitle="Tasa de cancelación mensual"
-          icon={<TrendingDown className="w-5 h-5 text-red-400" />}
-          color={metricas.churnRate > 10 ? 'red' : metricas.churnRate > 5 ? 'orange' : 'green'}
+          title="Suscripciones"
+          value={formatGs(dashboard.mrrSuscripciones)}
+          subtitle={`${dashboard.suscripcionesActivas} activas (MRR)`}
+          icon={<Crown className="w-5 h-5 text-purple-400" />}
+          color="purple"
+        />
+        <KPICard
+          title="Ingresos del Mes"
+          value={formatGs(dashboard.ingresosMes)}
+          subtitle="Mes actual"
+          icon={<Calendar className="w-5 h-5 text-blue-400" />}
+          color="blue"
         />
       </div>
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MiniKPI icon={<AlertTriangle className="w-4 h-4 text-orange-400" />} label="Próximos a vencer" value={metricas.proximosVencer} />
-        <MiniKPI icon={<RefreshCw className="w-4 h-4 text-blue-400" />} label="Auto-renovación" value={metricas.autoRenovarActivo} />
-        <MiniKPI icon={<Ticket className="w-4 h-4 text-purple-400" />} label="Con cupón" value={metricas.conCupon} />
-        <MiniKPI icon={<Clock className="w-4 h-4 text-yellow-400" />} label="Pendientes pago" value={metricas.suscripcionesPendientes} />
+        <MiniKPI icon={<Settings className="w-4 h-4 text-green-400" />} label="Comisión actual/jugador" value={dashboard.comisionFijaPorJugador} />
+        <MiniKPI icon={<Trophy className="w-4 h-4 text-amber-400" />} label="Torneos con ingresos" value={dashboard.totalTorneosConIngresos} />
+        <MiniKPI icon={<Users className="w-4 h-4 text-blue-400" />} label="Jugadores inscritos" value={dashboard.totalJugadoresInscriptos} />
+        <MiniKPI icon={<Crown className="w-4 h-4 text-yellow-400" />} label="Usuarios Premium" value={premiumMetrics?.totalPremium || 0} />
       </div>
 
-      {/* Tendencias Chart (table-based) */}
+      {/* Premium metrics (condensed) */}
+      {premiumMetrics && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-400" />
+              Métricas Premium
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[10px] text-light-secondary uppercase tracking-wide">Tasa Conversión</p>
+                <p className="text-lg font-bold text-light-text">{premiumMetrics.tasaConversion}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-light-secondary uppercase tracking-wide">Churn Rate</p>
+                <p className={`text-lg font-bold ${premiumMetrics.churnRate > 10 ? 'text-red-400' : premiumMetrics.churnRate > 5 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {premiumMetrics.churnRate}%
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-light-secondary uppercase tracking-wide">Nuevos (30d)</p>
+                <p className="text-lg font-bold text-green-400">{premiumMetrics.nuevosPremium30d}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-light-secondary uppercase tracking-wide">Cancelaciones (30d)</p>
+                <p className="text-lg font-bold text-red-400">{premiumMetrics.cancelaciones30d}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ============ TAB: TORNEOS FINANZAS ============
+
+interface TorneoFinanzas {
+  id: string;
+  nombre: string;
+  flyerUrl: string | null;
+  estado: string;
+  fechaInicio: string;
+  fechaFin: string;
+  costoInscripcion: number;
+  inscripcionesTotal: number;
+  inscripcionesConfirmadas: number;
+  jugadoresInscriptos: number;
+  comisionesGeneradas: number;
+}
+
+function TorneosFinanzasTab() {
+  const [torneos, setTorneos] = useState<TorneoFinanzas[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filtroEstado, setFiltroEstado] = useState<string>('');
+  const [busqueda, setBusqueda] = useState('');
+
+  useEffect(() => {
+    loadTorneos();
+  }, [filtroEstado]);
+
+  const loadTorneos = async () => {
+    setLoading(true);
+    try {
+      const data = await adminService.getFinanzasTorneos(filtroEstado || undefined);
+      setTorneos(data);
+    } catch (error) {
+      console.error('Error cargando torneos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatGs = (n: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(n))}`;
+
+  const filtered = busqueda
+    ? torneos.filter((t) => t.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+    : torneos;
+
+  const totalComisiones = filtered.reduce((sum, t) => sum + t.comisionesGeneradas, 0);
+  const totalJugadores = filtered.reduce((sum, t) => sum + t.jugadoresInscriptos, 0);
+
+  if (loading) return <div className="flex justify-center py-16"><Loading size="lg" text="Cargando torneos..." /></div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Totales */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-green-400">{formatGs(totalComisiones)}</p>
+          <p className="text-xs text-light-secondary">Comisiones totales</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-light-text">{filtered.length}</p>
+          <p className="text-xs text-light-secondary">Torneos</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-blue-400">{totalJugadores}</p>
+          <p className="text-xs text-light-secondary">Jugadores inscritos</p>
+        </Card>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-light-secondary" />
+          <input
+            type="text"
+            placeholder="Buscar torneo..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm focus:outline-none focus:border-primary-500"
+          />
+        </div>
+        <select
+          value={filtroEstado}
+          onChange={(e) => setFiltroEstado(e.target.value)}
+          className="px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm focus:outline-none focus:border-primary-500"
+        >
+          <option value="">Todos los estados</option>
+          <option value="EN_CURSO">En curso</option>
+          <option value="FINALIZADO">Finalizados</option>
+          <option value="PUBLICADO">Publicados</option>
+        </select>
+      </div>
+
+      {/* Lista de torneos */}
+      <div className="space-y-2">
+        {filtered.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Trophy className="w-12 h-12 text-light-secondary mx-auto mb-3" />
+            <p className="text-light-secondary">No hay torneos con ingresos registrados</p>
+          </Card>
+        ) : (
+          filtered.map((torneo) => (
+            <Card key={torneo.id} className="p-4 hover:border-green-500/30 transition-colors">
+              <div className="flex items-center gap-4">
+                {/* Flyer miniatura */}
+                <div className="w-12 h-12 rounded-lg bg-dark-surface flex-shrink-0 overflow-hidden">
+                  {torneo.flyerUrl ? (
+                    <img src={torneo.flyerUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Trophy className="w-6 h-6 text-light-secondary/40" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-bold text-sm text-light-text truncate">{torneo.nombre}</h4>
+                    {estadoBadge(torneo.estado)}
+                  </div>
+                  <p className="text-xs text-light-secondary mt-0.5">
+                    {new Date(torneo.fechaInicio).toLocaleDateString('es-PY', { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {new Date(torneo.fechaFin).toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {torneo.costoInscripcion > 0 && (
+                      <span className="ml-2 text-light-muted">· Inscripción: {formatGs(torneo.costoInscripcion)}</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Métricas */}
+                <div className="flex items-center gap-6 flex-shrink-0">
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-light-text">{torneo.inscripcionesConfirmadas}</p>
+                    <p className="text-[10px] text-light-secondary">Parejas</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-blue-400">{torneo.jugadoresInscriptos}</p>
+                    <p className="text-[10px] text-light-secondary">Jugadores</p>
+                  </div>
+                  <div className="text-center min-w-[80px]">
+                    <p className="text-sm font-bold text-green-400">{formatGs(torneo.comisionesGeneradas)}</p>
+                    <p className="text-[10px] text-light-secondary">Comisión</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ TAB: COMISION ============
+
+function ComisionTab() {
+  const [montoFijo, setMontoFijo] = useState<number>(5000);
+  const [montoOriginal, setMontoOriginal] = useState<number>(5000);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadComision();
+  }, []);
+
+  const loadComision = async () => {
+    setLoading(true);
+    try {
+      const data = await adminService.getFinanzasDashboard();
+      setMontoFijo(data.comisionFijaPorJugador);
+      setMontoOriginal(data.comisionFijaPorJugador);
+    } catch (error) {
+      console.error('Error cargando comisión:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const result = await adminService.setComisionFija(montoFijo);
+      toast.success(result.message);
+      setMontoOriginal(montoFijo);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Error al actualizar comisión');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatGs = (n: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(n))}`;
+  const hasChanges = montoFijo !== montoOriginal;
+
+  if (loading) return <div className="flex justify-center py-16"><Loading size="lg" text="Cargando comisión..." /></div>;
+
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary-400" />
-            Tendencias (últimos 12 meses)
+            <DollarSign className="w-5 h-5 text-green-400" />
+            Comisión por Jugador Inscrito
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {tendencias.length > 0 ? (
-            <div className="overflow-x-auto">
-              {/* Visual bar chart */}
-              <div className="mb-6">
-                <div className="flex items-end gap-1 h-32">
-                  {tendencias.map((t, i) => {
-                    const maxNuevas = Math.max(...tendencias.map((x) => x.nuevas), 1);
-                    const h = (t.nuevas / maxNuevas) * 100;
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="text-[10px] text-light-secondary">{t.nuevas}</span>
-                        <div
-                          className="w-full bg-gradient-to-t from-yellow-500 to-amber-400 rounded-t-sm min-h-[2px] transition-all"
-                          style={{ height: `${Math.max(h, 2)}%` }}
-                        />
-                        <span className="text-[9px] text-light-muted leading-tight text-center">{t.mes}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-light-secondary mt-2 text-center">Nuevas suscripciones por mes</p>
-              </div>
+          <p className="text-sm text-light-secondary mb-6">
+            Monto fijo en Guaraníes que la plataforma cobra por cada jugador individual que se inscriba a un torneo.
+            Cada pareja son 2 jugadores.
+          </p>
 
-              {/* Data table */}
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-dark-border text-light-secondary">
-                    <th className="text-left py-2 px-1">Mes</th>
-                    <th className="text-center py-2 px-1">Nuevas</th>
-                    <th className="text-center py-2 px-1">Canceladas</th>
-                    <th className="text-center py-2 px-1">Neto</th>
-                    <th className="text-right py-2 px-1">Ingresos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tendencias.map((t, i) => {
-                    const neto = t.nuevas - t.canceladas;
-                    return (
-                      <tr key={i} className="border-b border-dark-border/30 hover:bg-dark-hover">
-                        <td className="py-1.5 px-1 text-light-text">{t.mes}</td>
-                        <td className="py-1.5 px-1 text-center">
-                          <span className="text-green-400">{t.nuevas}</span>
-                        </td>
-                        <td className="py-1.5 px-1 text-center">
-                          <span className="text-red-400">{t.canceladas}</span>
-                        </td>
-                        <td className="py-1.5 px-1 text-center">
-                          <span className={neto >= 0 ? 'text-green-400' : 'text-red-400'}>
-                            {neto >= 0 ? '+' : ''}{neto}
-                          </span>
-                        </td>
-                        <td className="py-1.5 px-1 text-right text-light-text">${t.ingresos.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-dark-border font-semibold text-light-text">
-                    <td className="py-2 px-1">Total</td>
-                    <td className="py-2 px-1 text-center text-green-400">{tendencias.reduce((a, t) => a + t.nuevas, 0)}</td>
-                    <td className="py-2 px-1 text-center text-red-400">{tendencias.reduce((a, t) => a + t.canceladas, 0)}</td>
-                    <td className="py-2 px-1 text-center">
-                      {(() => {
-                        const net = tendencias.reduce((a, t) => a + t.nuevas - t.canceladas, 0);
-                        return <span className={net >= 0 ? 'text-green-400' : 'text-red-400'}>{net >= 0 ? '+' : ''}{net}</span>;
-                      })()}
-                    </td>
-                    <td className="py-2 px-1 text-right">${tendencias.reduce((a, t) => a + t.ingresos, 0).toFixed(2)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+          <div className="flex items-end gap-4">
+            <div className="flex-1 max-w-xs">
+              <label className="block text-sm font-medium text-light-text mb-2">Monto por jugador (Gs.)</label>
+              <input
+                type="number"
+                value={montoFijo}
+                onChange={(e) => setMontoFijo(Math.max(0, Number(e.target.value)))}
+                className="w-full px-4 py-3 rounded-lg bg-dark-bg border border-dark-border text-2xl font-bold text-light-text text-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                min={0}
+                step={1000}
+              />
             </div>
-          ) : (
-            <p className="text-light-secondary text-center py-8">No hay datos de tendencias aún</p>
+            {hasChanges && (
+              <Button variant="success" onClick={handleSave} loading={saving}>
+                <Save className="w-4 h-4 mr-2" /> Guardar
+              </Button>
+            )}
+          </div>
+
+          {/* Preview */}
+          <div className="mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+            <p className="text-sm text-green-400 font-medium mb-2">Vista previa:</p>
+            <div className="space-y-1 text-sm text-light-secondary">
+              <p>Por cada jugador inscrito la plataforma cobra: <strong className="text-green-400">{formatGs(montoFijo)}</strong></p>
+              <p>Por cada pareja inscrita (2 jugadores): <strong className="text-green-400">{formatGs(montoFijo * 2)}</strong></p>
+              <p className="text-xs text-light-muted mt-2">
+                Ejemplo: Un torneo con 50 parejas inscriptas (100 jugadores) genera {formatGs(montoFijo * 100)} en comisiones.
+              </p>
+            </div>
+          </div>
+
+          {montoOriginal !== montoFijo && (
+            <p className="text-xs text-amber-400 mt-3">
+              Valor actual: {formatGs(montoOriginal)} → Nuevo: {formatGs(montoFijo)}
+            </p>
           )}
         </CardContent>
       </Card>
 
-      {/* Cupones stats */}
-      {cuponStats && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-purple-400" />
-              Resumen de Cupones
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <div className="p-3 bg-dark-surface rounded-lg text-center">
-                <p className="text-lg font-bold text-light-text">{cuponStats.totalCupones}</p>
-                <p className="text-xs text-light-secondary">Total</p>
-              </div>
-              <div className="p-3 bg-dark-surface rounded-lg text-center">
-                <p className="text-lg font-bold text-green-400">{cuponStats.cuponesActivos}</p>
-                <p className="text-xs text-light-secondary">Activos</p>
-              </div>
-              <div className="p-3 bg-dark-surface rounded-lg text-center">
-                <p className="text-lg font-bold text-blue-400">{cuponStats.totalUsos}</p>
-                <p className="text-xs text-light-secondary">Usos totales</p>
-              </div>
-              <div className="p-3 bg-dark-surface rounded-lg text-center">
-                <p className="text-lg font-bold text-yellow-400">${cuponStats.descuentoTotal.toFixed(2)}</p>
-                <p className="text-xs text-light-secondary">Descuentos ($)</p>
-              </div>
-            </div>
+      {/* Info card */}
+      <Card className="p-4 bg-blue-900/10 border-blue-500/20">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-light-secondary">
+            <p className="font-medium text-blue-400 mb-1">Nota importante</p>
+            <p>El cambio de comisión solo afecta a <strong>nuevas inscripciones</strong>. Las inscripciones ya realizadas mantienen la comisión con la que fueron creadas.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
-            {cuponStats.topCupones.length > 0 && (
-              <>
-                <h4 className="text-sm font-medium text-light-text mb-2">Top cupones por uso</h4>
-                <div className="space-y-2">
-                  {cuponStats.topCupones.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-dark-surface rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-light-muted w-4">{i + 1}.</span>
-                        <code className="bg-dark-bg px-2 py-0.5 rounded text-primary-400 font-mono text-xs">{c.codigo}</code>
-                        <Badge variant="info" className="text-[10px]">
-                          {c.tipo === 'PORCENTAJE' ? `${c.valor}%` : `$${c.valor}`}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-light-text">{c.usos}/{c.limite}</span>
-                        <div className="w-16 h-1.5 bg-dark-border rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-purple-400 rounded-full"
-                            style={{ width: `${Math.min((c.usos / c.limite) * 100, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+// ============ TAB: SUSCRIPCIONES CONSOLIDADA ============
+
+function SuscripcionesConsolidadaTab() {
+  const [subTab, setSubTab] = useState<'usuarios' | 'listado'>('usuarios');
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setSubTab('usuarios')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            subTab === 'usuarios'
+              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+              : 'bg-dark-card text-light-secondary hover:bg-dark-hover border border-dark-border'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5 inline mr-1.5" />
+          Usuarios Premium
+        </button>
+        <button
+          onClick={() => setSubTab('listado')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            subTab === 'listado'
+              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+              : 'bg-dark-card text-light-secondary hover:bg-dark-hover border border-dark-border'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5 inline mr-1.5" />
+          Suscripciones
+        </button>
+      </div>
+
+      {subTab === 'usuarios' && <UsuariosPremiumTab />}
+      {subTab === 'listado' && <SuscripcionesTab />}
     </div>
   );
 }
@@ -1407,4 +1577,4 @@ function estadoBadge(estado: string) {
   }
 }
 
-export default AdminSuscripcionesPage;
+export default AdminFinanzasPage;

@@ -262,6 +262,45 @@ export const adminService = {
     return response.data;
   },
 
+  // ============ FINANZAS DE LA PLATAFORMA ============
+  getFinanzasDashboard: async (): Promise<{
+    comisionFijaPorJugador: number;
+    totalIngresosComisiones: number;
+    comisionesMes: number;
+    mrrSuscripciones: number;
+    suscripcionesActivas: number;
+    totalIngresos: number;
+    ingresosMes: number;
+    totalJugadoresInscriptos: number;
+    totalTorneosConIngresos: number;
+  }> => {
+    const response = await api.get('/admin/finanzas/dashboard');
+    return response.data;
+  },
+
+  getFinanzasTorneos: async (estado?: string): Promise<{
+    id: string;
+    nombre: string;
+    flyerUrl: string | null;
+    estado: string;
+    fechaInicio: string;
+    fechaFin: string;
+    costoInscripcion: number;
+    inscripcionesTotal: number;
+    inscripcionesConfirmadas: number;
+    jugadoresInscriptos: number;
+    comisionesGeneradas: number;
+  }[]> => {
+    const params = estado ? `?estado=${estado}` : '';
+    const response = await api.get(`/admin/finanzas/torneos${params}`);
+    return response.data;
+  },
+
+  setComisionFija: async (montoFijo: number): Promise<{ message: string; montoFijo: number }> => {
+    const response = await api.put('/admin/finanzas/comision', { montoFijo });
+    return response.data;
+  },
+
   // ============ SEED TEST DATA (TEMPORAL) ============
   seedTestData: async (tournamentId: string, parejasPorCategoria: Record<string, number>) => {
     const response = await api.post(`/admin/torneos/${tournamentId}/seed-test-data`, { parejasPorCategoria });

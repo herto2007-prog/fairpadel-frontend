@@ -18,6 +18,7 @@ import {
   MapPin,
   UserPlus,
   Shield,
+  DollarSign,
   CreditCard,
   Layers,
   Bell,
@@ -379,12 +380,12 @@ const Header = () => {
                             Moderación
                           </Link>
                           <Link
-                            to="/admin/suscripciones"
+                            to="/admin/finanzas"
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
                           >
-                            <CreditCard className="h-4 w-4" />
-                            Suscripciones
+                            <DollarSign className="h-4 w-4" />
+                            Finanzas
                           </Link>
                           <Link
                             to="/admin/circuitos"
@@ -629,12 +630,12 @@ const Header = () => {
                         Moderación
                       </Link>
                       <Link
-                        to="/admin/suscripciones"
+                        to="/admin/finanzas"
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
                       >
-                        <CreditCard className="h-5 w-5" />
-                        Suscripciones
+                        <DollarSign className="h-5 w-5" />
+                        Finanzas
                       </Link>
                       <Link
                         to="/admin/circuitos"

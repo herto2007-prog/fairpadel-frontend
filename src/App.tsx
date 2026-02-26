@@ -17,7 +17,7 @@ import AdminPage from '@/features/admin/pages/AdminPage';
 import AdminSedesPage from '@/features/admin/pages/AdminSedesPage';
 import AdminOrganizadoresPage from '@/features/admin/pages/AdminOrganizadoresPage';
 import AdminModeracionPage from '@/features/admin/pages/AdminModeracionPage';
-import AdminSuscripcionesPage from '@/features/admin/pages/AdminSuscripcionesPage';
+import AdminFinanzasPage from '@/features/admin/pages/AdminSuscripcionesPage';
 import AdminConfiguracionPage from '@/features/admin/pages/AdminConfiguracionPage';
 import AdminCircuitosPage from '@/features/admin/pages/AdminCircuitosPage';
 import AdminCategoriasPage from '@/features/admin/pages/AdminCategoriasPage';
@@ -106,10 +106,10 @@ function App() {
               }
             />
             <Route
-              path="/admin/suscripciones"
+              path="/admin/finanzas"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminSuscripcionesPage />
+                  <AdminFinanzasPage />
                 </ProtectedRoute>
               }
             />
