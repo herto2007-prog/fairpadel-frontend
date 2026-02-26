@@ -33,6 +33,7 @@ import SuscripcionConfirmacionPage from '@/features/suscripciones/pages/Suscripc
 import SuscripcionCanceladoPage from '@/features/suscripciones/pages/SuscripcionCanceladoPage';
 import FeedPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
+import SolicitudesPage from '@/features/social/pages/SolicitudesPage';
 import FeaturesPage from '@/features/home/FeaturesPage';
 
 function App() {
@@ -182,6 +183,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MisInscripcionesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/solicitudes"
+              element={
+                <ProtectedRoute>
+                  <SolicitudesPage />
                 </ProtectedRoute>
               }
             />

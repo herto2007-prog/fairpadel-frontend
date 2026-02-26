@@ -30,6 +30,32 @@ export const rankingsService = {
     const response = await api.get(`/rankings/jugador/${userId}/historial`);
     return response.data;
   },
+
+  // Export career PDF (Premium)
+  exportCareerPdf: async (): Promise<void> => {
+    const response = await api.get('/rankings/me/export-pdf', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `FairPadel_Carrera_${Date.now()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  // Export history Excel (Premium)
+  exportHistoryExcel: async (): Promise<void> => {
+    const response = await api.get('/rankings/me/export-excel', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `FairPadel_Historial_${Date.now()}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 export default rankingsService;

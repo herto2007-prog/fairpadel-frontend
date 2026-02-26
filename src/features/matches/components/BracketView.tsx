@@ -1,5 +1,6 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, Badge } from '@/components/ui';
+import { Crown } from 'lucide-react';
 import type { Match, User } from '@/types';
 import { MatchStatus } from '@/types';
 
@@ -180,17 +181,25 @@ export const BracketView: React.FC<BracketViewProps> = ({ matches, onMatchClick 
 
   const getParejaName = (match: Match, parejaNum: 1 | 2) => {
     const pareja = parejaNum === 1 ? match.pareja1 : match.pareja2;
-    if (!pareja) return 'TBD';
+    if (!pareja) return <span>TBD</span>;
 
     const j1 = pareja.jugador1;
     const j2 = pareja.jugador2;
 
-    if (!j1) return 'TBD';
+    if (!j1) return <span>TBD</span>;
 
     const name1 = `${j1.nombre?.charAt(0)}. ${j1.apellido}`;
     const name2 = j2 ? `${j2.nombre?.charAt(0)}. ${j2.apellido}` : 'TBD';
 
-    return `${name1} / ${name2}`;
+    return (
+      <span className="inline-flex items-center gap-0.5">
+        {name1}
+        {(j1 as any).esPremium && <Crown className="h-3 w-3 text-yellow-500 inline flex-shrink-0" />}
+        {' / '}
+        {name2}
+        {j2 && (j2 as any).esPremium && <Crown className="h-3 w-3 text-yellow-500 inline flex-shrink-0" />}
+      </span>
+    );
   };
 
   const getScore = (match: Match, parejaNum: 1 | 2) => {

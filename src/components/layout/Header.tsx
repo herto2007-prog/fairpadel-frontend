@@ -30,6 +30,7 @@ import {
   Megaphone,
   Newspaper,
   Users,
+  Gamepad2,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -328,6 +329,14 @@ const Header = () => {
                         Mis Inscripciones
                       </Link>
                       <Link
+                        to="/solicitudes"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                      >
+                        <Gamepad2 className="h-4 w-4" />
+                        Solicitudes de Juego
+                      </Link>
+                      <Link
                         to="/premium"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover"
@@ -575,6 +584,14 @@ const Header = () => {
                   >
                     <Calendar className="h-5 w-5" />
                     Mis Inscripciones
+                  </Link>
+                  <Link
+                    to="/solicitudes"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                  >
+                    <Gamepad2 className="h-5 w-5" />
+                    Solicitudes de Juego
                   </Link>
                   <Link
                     to="/premium"

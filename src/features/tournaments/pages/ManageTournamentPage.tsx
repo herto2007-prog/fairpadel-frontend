@@ -188,7 +188,7 @@ export default function ManageTournamentPage() {
         {activeTab === 'resumen' && <ResumenTab tournament={tournament} stats={stats} onRefresh={loadData} />}
         {activeTab === 'editar' && <EditarTab tournament={tournament} canEdit={canEdit} navigate={navigate} />}
         {activeTab === 'inscripciones' && <InscripcionesTab stats={stats} onToggle={handleToggleInscripcion} togglingCategory={togglingCategory} tournament={tournament} onRefresh={loadData} />}
-        {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} />}
+        {activeTab === 'finanzas' && <FinanzasTab tournament={tournament} isPremium={isPremium} />}
         {activeTab === 'sorteo' && <SorteoTab tournament={tournament} stats={stats} onRefresh={loadData} isPremium={user?.esPremium || false} />}
         {activeTab === 'canchas' && <CanchasTab tournament={tournament} stats={stats} onSaved={loadData} />}
         {activeTab === 'ayudantes' && <AyudantesTab tournament={tournament} />}
@@ -816,7 +816,7 @@ function ReportesTab({ tournament, isPremium }: { tournament: Tournament; isPrem
       formatIcon: <FileSpreadsheet className="w-4 h-4" />,
       color: 'border-green-500/30 bg-green-900/10',
       buttonColor: 'bg-green-600 hover:bg-green-700',
-      premium: false,
+      premium: true,
       requiresState: [] as string[],
     },
     {
@@ -828,7 +828,7 @@ function ReportesTab({ tournament, isPremium }: { tournament: Tournament; isPrem
       formatIcon: <FileSpreadsheet className="w-4 h-4" />,
       color: 'border-blue-500/30 bg-blue-900/10',
       buttonColor: 'bg-blue-600 hover:bg-blue-700',
-      premium: false,
+      premium: true,
       requiresState: [] as string[],
     },
   ];

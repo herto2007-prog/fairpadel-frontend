@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui';
 import type { MatchResumen } from '@/types';
-import { Trophy, Swords } from 'lucide-react';
+import { Trophy, Swords, Crown } from 'lucide-react';
 
 interface Props {
   matches: MatchResumen[];
@@ -27,14 +27,15 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function PlayerName({ player }: { player: { id: string; nombre: string; apellido: string } | null }) {
+function PlayerName({ player }: { player: { id: string; nombre: string; apellido: string; esPremium?: boolean } | null }) {
   if (!player) return <span className="text-light-tertiary">—</span>;
   return (
     <Link
       to={`/profile/${player.id}`}
-      className="hover:text-primary-400 transition-colors"
+      className="hover:text-primary-400 transition-colors inline-flex items-center gap-0.5"
     >
       {player.nombre} {player.apellido.charAt(0)}.
+      {player.esPremium && <Crown className="h-3 w-3 text-yellow-500 inline flex-shrink-0" />}
     </Link>
   );
 }

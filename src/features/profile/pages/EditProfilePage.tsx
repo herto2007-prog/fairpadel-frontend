@@ -328,6 +328,9 @@ const EditProfilePage = () => {
           <p className="text-sm text-light-secondary mb-4">
             Controla como quieres recibir notificaciones. La campanita in-app siempre esta activa.
           </p>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 mb-4 text-xs text-blue-300">
+            💡 El resumen semanal se envía cada lunes (Premium). Desactiva el email de "Sistema" para no recibirlo.
+          </div>
 
           {loadingPrefs ? (
             <div className="text-center text-light-muted py-6 text-sm">Cargando preferencias...</div>

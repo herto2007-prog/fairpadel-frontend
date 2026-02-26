@@ -256,6 +256,12 @@ export const tournamentsService = {
   deleteCuentaBancaria: async (tournamentId: string, cuentaId: string): Promise<void> => {
     await api.delete(`/tournaments/${tournamentId}/cuentas-bancarias/${cuentaId}`);
   },
+
+  // GET /tournaments/:id/insights-premium — Premium organizer insights
+  getPremiumInsights: async (tournamentId: string) => {
+    const response = await api.get(`/tournaments/${tournamentId}/insights-premium`);
+    return response.data;
+  },
 };
 
 export default tournamentsService;

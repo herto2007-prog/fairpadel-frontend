@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, UpdateProfileDto, PerfilCompleto } from '@/types';
+import type { User, UpdateProfileDto, PerfilCompleto, EstadisticasAvanzadas } from '@/types';
 
 class UsersService {
   async getById(id: string): Promise<User> {
@@ -19,6 +19,11 @@ class UsersService {
 
   async getPerfilCompleto(id: string): Promise<PerfilCompleto> {
     const response = await api.get<PerfilCompleto>(`/users/${id}/perfil-completo`);
+    return response.data;
+  }
+
+  async getEstadisticasAvanzadas(userId: string): Promise<EstadisticasAvanzadas> {
+    const response = await api.get<EstadisticasAvanzadas>(`/users/${userId}/estadisticas-avanzadas`);
     return response.data;
   }
 

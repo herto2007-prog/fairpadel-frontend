@@ -16,6 +16,10 @@ import {
   LogIn,
   Crown,
   Loader2,
+  MapPin,
+  Calendar,
+  Clock,
+  Send,
 } from 'lucide-react';
 import type { PerfilCompleto } from '@/types';
 import toast from 'react-hot-toast';
@@ -46,6 +50,10 @@ const SocialActions = ({ perfil, onFollowToggle }: Props) => {
   // Block confirmation modal
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+
+  // Invite to play modal
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ fechaPropuesta: '', hora: '', lugar: '', mensaje: '' });
 
   // Report modal
   const [showReportModal, setShowReportModal] = useState(false);
@@ -148,13 +156,22 @@ const SocialActions = ({ perfil, onFollowToggle }: Props) => {
   };
 
   const handleInviteToPlay = async () => {
+    if (!inviteForm.fechaPropuesta || !inviteForm.hora || !inviteForm.lugar.trim()) {
+      toast.error('Completa fecha, hora y lugar');
+      return;
+    }
     setInviteLoading(true);
     try {
       await socialService.enviarSolicitudJugar({
         receptorId: usuario.id,
-        mensaje: '¡Juguemos un partido!',
+        fechaPropuesta: inviteForm.fechaPropuesta,
+        hora: inviteForm.hora,
+        lugar: inviteForm.lugar.trim(),
+        mensaje: inviteForm.mensaje.trim() || undefined,
       });
-      toast.success('Solicitud enviada');
+      toast.success('Solicitud de juego enviada');
+      setShowInviteModal(false);
+      setInviteForm({ fechaPropuesta: '', hora: '', lugar: '', mensaje: '' });
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Error al enviar solicitud');
     } finally {
@@ -197,15 +214,10 @@ const SocialActions = ({ perfil, onFollowToggle }: Props) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleInviteToPlay}
-            disabled={inviteLoading}
+            onClick={() => setShowInviteModal(true)}
             title="Invitar a jugar"
           >
-            {inviteLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Gamepad2 className="h-4 w-4" />
-            )}
+            <Gamepad2 className="h-4 w-4" />
           </Button>
         ) : (
           <Link to="/premium">
@@ -267,6 +279,87 @@ const SocialActions = ({ perfil, onFollowToggle }: Props) => {
           )}
         </div>
       </div>
+
+      {/* Invite to Play Modal */}
+      <Modal
+        isOpen={showInviteModal}
+        onClose={() => { setShowInviteModal(false); setInviteForm({ fechaPropuesta: '', hora: '', lugar: '', mensaje: '' }); }}
+        title="Invitar a jugar"
+        size="sm"
+      >
+        <p className="text-sm text-light-secondary mb-4">
+          Propone una fecha y lugar para jugar con {usuario.nombre} {usuario.apellido}
+        </p>
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-light-secondary mb-1">
+              <Calendar className="h-3.5 w-3.5" /> Fecha
+            </label>
+            <input
+              type="date"
+              value={inviteForm.fechaPropuesta}
+              onChange={(e) => setInviteForm(prev => ({ ...prev, fechaPropuesta: e.target.value }))}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-light-text text-sm focus:outline-none focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-light-secondary mb-1">
+              <Clock className="h-3.5 w-3.5" /> Hora
+            </label>
+            <input
+              type="time"
+              value={inviteForm.hora}
+              onChange={(e) => setInviteForm(prev => ({ ...prev, hora: e.target.value }))}
+              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-light-text text-sm focus:outline-none focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-light-secondary mb-1">
+              <MapPin className="h-3.5 w-3.5" /> Lugar
+            </label>
+            <input
+              type="text"
+              value={inviteForm.lugar}
+              onChange={(e) => setInviteForm(prev => ({ ...prev, lugar: e.target.value }))}
+              placeholder="Ej: Club Nacional, cancha 3"
+              maxLength={200}
+              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-light-text placeholder:text-light-muted text-sm focus:outline-none focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-light-secondary mb-1 block">Mensaje (opcional)</label>
+            <textarea
+              value={inviteForm.mensaje}
+              onChange={(e) => setInviteForm(prev => ({ ...prev, mensaje: e.target.value }))}
+              placeholder="Ej: Necesito un rival para practicar"
+              maxLength={300}
+              rows={2}
+              className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-light-text placeholder:text-light-muted text-sm resize-none focus:outline-none focus:border-primary-500"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setShowInviteModal(false); setInviteForm({ fechaPropuesta: '', hora: '', lugar: '', mensaje: '' }); }}
+            disabled={inviteLoading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleInviteToPlay}
+            loading={inviteLoading}
+            disabled={!inviteForm.fechaPropuesta || !inviteForm.hora || !inviteForm.lugar.trim()}
+          >
+            <Send className="h-3.5 w-3.5 mr-1.5" />
+            Enviar invitacion
+          </Button>
+        </div>
+      </Modal>
 
       {/* Block Confirmation Modal */}
       <Modal

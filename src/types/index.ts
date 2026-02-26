@@ -610,6 +610,7 @@ export interface UserBrief {
   nombre: string;
   apellido: string;
   fotoUrl?: string;
+  esPremium?: boolean;
 }
 
 export interface EstadisticasJugador {
@@ -637,6 +638,36 @@ export interface MatchResumen {
   oponentes: { jugador1: UserBrief | null; jugador2: UserBrief | null } | null;
   victoria: boolean;
   esWO: boolean;
+}
+
+// ==================== ESTADÍSTICAS AVANZADAS ====================
+
+export interface H2HRecord {
+  opponent: UserBrief;
+  partidos: number;
+  victorias: number;
+  derrotas: number;
+  winRate: number;
+}
+
+export interface SinergiaCompanero {
+  partner: UserBrief;
+  partidos: number;
+  victorias: number;
+  winRate: number;
+}
+
+export interface TendenciaMensual {
+  mes: string;
+  puntos: number;
+  victorias: number;
+  derrotas: number;
+}
+
+export interface EstadisticasAvanzadas {
+  h2h: H2HRecord[];
+  sinergia: SinergiaCompanero[];
+  tendencia: TendenciaMensual[];
 }
 
 export interface HistorialPuntosExtended {
@@ -700,9 +731,10 @@ export interface MensajeDto {
 
 export interface SolicitudJugarDto {
   receptorId: string;
+  fechaPropuesta: string;
+  hora: string;
+  lugar: string;
   mensaje?: string;
-  fechaPropuesta?: string;
-  lugarPropuesto?: string;
 }
 
 export interface MensajePrivado {
@@ -724,13 +756,14 @@ export interface Conversacion {
 
 export interface SolicitudJugar {
   id: string;
-  solicitanteId: string;
+  emisorId: string;
   receptorId: string;
+  fechaPropuesta: string;
+  hora: string;
+  lugar: string;
   mensaje?: string;
-  fechaPropuesta?: string;
-  lugarPropuesto?: string;
-  estado: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
-  solicitante?: UserBrief;
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  emisor?: UserBrief;
   receptor?: UserBrief;
   createdAt: string;
 }
