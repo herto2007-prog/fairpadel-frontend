@@ -26,9 +26,14 @@ import {
   Settings,
   Save,
   Calendar,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
-type Tab = 'resumen' | 'torneos' | 'comision' | 'suscripciones' | 'cupones' | 'actividad';
+type Tab = 'resumen' | 'torneos' | 'comision' | 'suscripciones' | 'cupones' | 'actividad' | 'sms';
 
 // ============ TIPOS ============
 
@@ -125,6 +130,7 @@ const AdminFinanzasPage = () => {
     { key: 'suscripciones', label: 'Suscripciones', shortLabel: 'Suscr.', icon: <Crown className="w-4 h-4" /> },
     { key: 'cupones', label: 'Cupones', shortLabel: 'Cupones', icon: <Ticket className="w-4 h-4" /> },
     { key: 'actividad', label: 'Actividad Reciente', shortLabel: 'Actividad', icon: <Activity className="w-4 h-4" /> },
+    { key: 'sms', label: 'SMS Tigo', shortLabel: 'SMS', icon: <MessageSquare className="w-4 h-4" /> },
   ];
 
   return (
@@ -166,6 +172,7 @@ const AdminFinanzasPage = () => {
       {activeTab === 'suscripciones' && <SuscripcionesConsolidadaTab />}
       {activeTab === 'cupones' && <CuponesTab />}
       {activeTab === 'actividad' && <ActividadTab />}
+      {activeTab === 'sms' && <SmsTab />}
     </div>
   );
 };
@@ -1515,6 +1522,300 @@ function ActividadTab() {
 }
 
 // ============ COMPONENTES COMPARTIDOS ============
+
+// ============ TAB: SMS TIGO ============
+
+function SmsTab() {
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+
+  const tiposNotificacion = ['SISTEMA', 'TORNEO', 'INSCRIPCION', 'PARTIDO', 'RANKING', 'SOCIAL', 'PAGO', 'MENSAJE'];
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      const data = await adminService.getSmsDashboard();
+      setDashboard(data);
+    } catch {
+      toast.error('Error cargando dashboard SMS');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const data = await adminService.getSmsLogs({
+        page,
+        limit: 15,
+        tipo: filtroTipo || undefined,
+        exitoso: filtroEstado || undefined,
+        fechaDesde: fechaDesde || undefined,
+        fechaHasta: fechaHasta || undefined,
+      });
+      setLogs(data.logs);
+      setTotalPages(data.totalPages);
+      setTotalLogs(data.total);
+    } catch {
+      toast.error('Error cargando logs SMS');
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [page, filtroTipo, filtroEstado, fechaDesde, fechaHasta]);
+
+  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  const formatGs = (n: number) => `Gs. ${new Intl.NumberFormat('es-PY').format(Math.round(n))}`;
+  const formatMes = (mes: string) => {
+    const [y, m] = mes.split('-');
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${meses[parseInt(m) - 1]} ${y}`;
+  };
+  const maskPhone = (tel: string) => tel ? `***${tel.slice(-4)}` : '—';
+
+  if (loading) return <Loading text="Cargando dashboard SMS..." />;
+
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="SMS este mes"
+          value={dashboard?.totalMes || 0}
+          subtitle="Total enviados"
+          icon={<MessageSquare className="w-5 h-5 text-blue-400" />}
+          color="blue"
+        />
+        <KPICard
+          title="Costo estimado"
+          value={formatGs(dashboard?.costoEstimadoMes || 0)}
+          subtitle="Mes actual"
+          icon={<DollarSign className="w-5 h-5 text-green-400" />}
+          color="green"
+        />
+        <KPICard
+          title="Exitosos"
+          value={dashboard?.exitososMes || 0}
+          subtitle="Entregados correctamente"
+          icon={<CheckCircle className="w-5 h-5 text-green-400" />}
+          color="green"
+        />
+        <KPICard
+          title="Fallidos"
+          value={dashboard?.fallidosMes || 0}
+          subtitle="Error de envio"
+          icon={<XCircle className="w-5 h-5 text-red-400" />}
+          color="red"
+        />
+      </div>
+
+      {/* Resumen Mensual + Desglose por Tipo */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Resumen Mensual */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-400" />
+              Resumen Mensual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-dark-border text-light-secondary">
+                    <th className="text-left py-2 px-3">Mes</th>
+                    <th className="text-right py-2 px-3">Total</th>
+                    <th className="text-right py-2 px-3">Exitosos</th>
+                    <th className="text-right py-2 px-3">Fallidos</th>
+                    <th className="text-right py-2 px-3">Costo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboard?.resumenMensual?.map((m: any) => (
+                    <tr key={m.mes} className="border-b border-dark-border/50 hover:bg-dark-hover">
+                      <td className="py-2 px-3 text-light-text font-medium">{formatMes(m.mes)}</td>
+                      <td className="py-2 px-3 text-right text-light-text">{m.total}</td>
+                      <td className="py-2 px-3 text-right text-green-400">{m.exitosos}</td>
+                      <td className="py-2 px-3 text-right text-red-400">{m.fallidos}</td>
+                      <td className="py-2 px-3 text-right text-light-secondary">{formatGs(m.costo)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Desglose por Tipo */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="w-5 h-5 text-purple-400" />
+              Por Tipo (este mes)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {dashboard?.porTipo?.length > 0 ? (
+                dashboard.porTipo.map((item: any) => (
+                  <div key={item.tipo || 'null'} className="flex items-center justify-between p-2 bg-dark-hover rounded-lg">
+                    <Badge variant={item.tipo === 'PARTIDO' ? 'info' : item.tipo === 'SOCIAL' ? 'success' : 'default'}>
+                      {item.tipo || 'SIN TIPO'}
+                    </Badge>
+                    <span className="text-light-text font-semibold">{item.count}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-light-secondary text-sm text-center py-4">Sin datos este mes</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Search className="w-5 h-5 text-yellow-400" />
+            Historial de SMS
+            <span className="text-sm font-normal text-light-secondary ml-2">({totalLogs} registros)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <select
+              value={filtroTipo}
+              onChange={(e) => { setFiltroTipo(e.target.value); setPage(1); }}
+              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-light-text"
+            >
+              <option value="">Todos los tipos</option>
+              {tiposNotificacion.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select
+              value={filtroEstado}
+              onChange={(e) => { setFiltroEstado(e.target.value); setPage(1); }}
+              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-light-text"
+            >
+              <option value="">Todos</option>
+              <option value="true">Exitosos</option>
+              <option value="false">Fallidos</option>
+            </select>
+            <input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => { setFechaDesde(e.target.value); setPage(1); }}
+              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-light-text"
+              placeholder="Desde"
+            />
+            <input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => { setFechaHasta(e.target.value); setPage(1); }}
+              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-light-text"
+              placeholder="Hasta"
+            />
+          </div>
+
+          {/* Tabla de logs */}
+          {logsLoading ? (
+            <div className="py-8 text-center text-light-secondary">Cargando...</div>
+          ) : logs.length === 0 ? (
+            <div className="py-8 text-center text-light-secondary">No hay registros SMS</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-dark-border text-light-secondary">
+                    <th className="text-left py-2 px-2">Fecha</th>
+                    <th className="text-left py-2 px-2">Usuario</th>
+                    <th className="text-left py-2 px-2">Telefono</th>
+                    <th className="text-left py-2 px-2">Tipo</th>
+                    <th className="text-center py-2 px-2">Estado</th>
+                    <th className="text-right py-2 px-2">Costo</th>
+                    <th className="text-left py-2 px-2">Mensaje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id} className="border-b border-dark-border/50 hover:bg-dark-hover">
+                      <td className="py-2 px-2 text-light-secondary whitespace-nowrap text-xs">
+                        {new Date(log.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}{' '}
+                        {new Date(log.createdAt).toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-2 px-2 text-light-text text-xs">
+                        {log.user ? `${log.user.nombre} ${log.user.apellido}` : '—'}
+                      </td>
+                      <td className="py-2 px-2 text-light-secondary font-mono text-xs">{maskPhone(log.telefono)}</td>
+                      <td className="py-2 px-2">
+                        {log.tipo ? (
+                          <Badge variant={log.tipo === 'PARTIDO' ? 'info' : log.tipo === 'SOCIAL' ? 'success' : 'default'} className="text-[10px]">
+                            {log.tipo}
+                          </Badge>
+                        ) : '—'}
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        {log.exitoso ? (
+                          <Badge variant="success" className="text-[10px]">Enviado</Badge>
+                        ) : (
+                          <Badge variant="danger" className="text-[10px]">Fallido</Badge>
+                        )}
+                      </td>
+                      <td className="py-2 px-2 text-right text-light-secondary text-xs">{formatGs(log.costoEstimado)}</td>
+                      <td className="py-2 px-2 text-light-secondary text-xs max-w-[200px] truncate" title={log.mensaje}>
+                        {log.mensaje.length > 50 ? log.mensaje.substring(0, 50) + '...' : log.mensaje}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Paginacion */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-dark-border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <span className="text-sm text-light-secondary">
+                Pagina {page} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Siguiente <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ============ HELPERS COMPARTIDOS ============
 
 function KPICard({
   title,

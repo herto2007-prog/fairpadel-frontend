@@ -306,6 +306,54 @@ export const adminService = {
     const response = await api.post(`/admin/torneos/${tournamentId}/seed-test-data`, { parejasPorCategoria });
     return response.data;
   },
+
+  // ============ SMS DASHBOARD ============
+  getSmsDashboard: async (): Promise<{
+    totalMes: number;
+    exitososMes: number;
+    fallidosMes: number;
+    costoEstimadoMes: number;
+    resumenMensual: { mes: string; total: number; exitosos: number; fallidos: number; costo: number }[];
+    porTipo: { tipo: string | null; count: number }[];
+  }> => {
+    const response = await api.get('/admin/sms/dashboard');
+    return response.data;
+  },
+
+  getSmsLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    tipo?: string;
+    exitoso?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+  }): Promise<{
+    logs: {
+      id: string;
+      userId: string | null;
+      telefono: string;
+      mensaje: string;
+      tipo: string | null;
+      exitoso: boolean;
+      costoEstimado: number;
+      createdAt: string;
+      user: { id: string; nombre: string; apellido: string; documento: string } | null;
+    }[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> => {
+    const p = new URLSearchParams();
+    if (params?.page) p.append('page', String(params.page));
+    if (params?.limit) p.append('limit', String(params.limit));
+    if (params?.tipo) p.append('tipo', params.tipo);
+    if (params?.exitoso) p.append('exitoso', params.exitoso);
+    if (params?.fechaDesde) p.append('fechaDesde', params.fechaDesde);
+    if (params?.fechaHasta) p.append('fechaHasta', params.fechaHasta);
+    const query = p.toString();
+    const response = await api.get(`/admin/sms/logs${query ? `?${query}` : ''}`);
+    return response.data;
+  },
 };
 
 export default adminService;
