@@ -8,8 +8,8 @@ export const adminService = {
     return response.data;
   },
 
-  aprobarTorneo: async (id: string): Promise<{ message: string }> => {
-    const response = await api.put(`/admin/torneos/${id}/aprobar`);
+  aprobarTorneo: async (id: string, circuitoId?: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/torneos/${id}/aprobar`, circuitoId ? { circuitoId } : {});
     return response.data;
   },
 

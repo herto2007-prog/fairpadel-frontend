@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tournamentsService } from '@/services/tournamentsService';
-import { circuitosService } from '@/services/circuitosService';
 import { Button, Input, Card, Checkbox } from '@/components/ui';
-import type { Category, Sede, Circuito } from '@/types';
+import type { Category, Sede } from '@/types';
 import { Modalidad } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import SedeSelector from '../components/SedeSelector';
@@ -42,12 +41,9 @@ const CreateTournamentPage = () => {
 
   // Data
   const [categories, setCategories] = useState<Category[]>([]);
-  const [circuitos, setCircuitos] = useState<Circuito[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedModalidades, setSelectedModalidades] = useState<Modalidad[]>([Modalidad.TRADICIONAL]);
   const [selectedSede, setSelectedSede] = useState<Sede | null>(null);
-  const [selectedCircuito, setSelectedCircuito] = useState<string>('');
-
   // Flyer
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [flyerPreview, setFlyerPreview] = useState<string>('');
@@ -73,12 +69,8 @@ const CreateTournamentPage = () => {
 
   const loadInitialData = async () => {
     try {
-      const [cats, circs] = await Promise.all([
-        tournamentsService.getCategories(),
-        circuitosService.getAll().catch(() => []),
-      ]);
+      const cats = await tournamentsService.getCategories();
       setCategories(cats);
-      setCircuitos(circs.filter((c: Circuito) => c.estado === 'ACTIVO'));
     } catch (err) {
       console.error('Error loading data:', err);
     }
@@ -339,25 +331,6 @@ const CreateTournamentPage = () => {
             value={formData.costoInscripcion}
             onChange={(e) => setFormData({ ...formData, costoInscripcion: Number(e.target.value) })}
           />
-
-          {/* Circuito (opcional) */}
-          {circuitos.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-light-text mb-1">
-                Circuito (opcional)
-              </label>
-              <select
-                className="w-full rounded-lg border border-dark-border bg-dark-card px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={selectedCircuito}
-                onChange={(e) => setSelectedCircuito(e.target.value)}
-              >
-                <option value="">Sin circuito</option>
-                {circuitos.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* Flyer */}
           <div>
@@ -635,9 +608,6 @@ const CreateTournamentPage = () => {
               <SummaryRow label="Ubicación" value={`${formData.ciudad}, ${formData.region}, ${formData.pais}`} />
               <SummaryRow label="Costo" value={formatGs(formData.costoInscripcion)} />
               {selectedSede && <SummaryRow label="Sede" value={selectedSede.nombre} />}
-              {selectedCircuito && (
-                <SummaryRow label="Circuito" value={circuitos.find((c) => c.id === selectedCircuito)?.nombre || ''} />
-              )}
             </div>
             <div className="space-y-3">
               <SummaryRow label="Inicio" value={formatDateDisplay(formData.fechaInicio)} />

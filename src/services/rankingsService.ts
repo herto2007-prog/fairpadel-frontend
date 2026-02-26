@@ -2,13 +2,20 @@ import api from './api';
 import type { Ranking, RankingFilters, HistorialPuntos, Gender } from '@/types';
 
 export const rankingsService = {
+  // GET /rankings/temporadas - Obtener temporadas disponibles
+  getTemporadas: async (): Promise<string[]> => {
+    const response = await api.get('/rankings/temporadas');
+    return response.data;
+  },
+
   // GET /rankings - Obtener rankings con filtros
-  getAll: async (filters?: RankingFilters): Promise<Ranking[]> => {
+  getAll: async (filters?: RankingFilters & { temporada?: string }): Promise<Ranking[]> => {
     const params = new URLSearchParams();
     if (filters?.genero) params.append('genero', filters.genero);
     if (filters?.tipoRanking) params.append('tipoRanking', filters.tipoRanking);
     if (filters?.limit) params.append('limit', filters.limit.toString());
-    
+    if (filters?.temporada) params.append('temporada', filters.temporada);
+
     const response = await api.get(`/rankings?${params.toString()}`);
     return response.data;
   },

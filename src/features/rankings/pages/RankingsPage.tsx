@@ -3,7 +3,7 @@ import { rankingsService } from '@/services/rankingsService';
 import { Loading, Card, CardContent, Badge, Select } from '@/components/ui';
 import type { Ranking } from '@/types';
 import { Gender, TipoRanking } from '@/types';
-import { Trophy, TrendingUp, TrendingDown, Minus, Crown } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus, Crown, Calendar } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
 
 const RankingsPage = () => {
@@ -11,10 +11,18 @@ const RankingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [genero, setGenero] = useState<Gender>(Gender.MASCULINO);
   const [tipoRanking, setTipoRanking] = useState<TipoRanking>(TipoRanking.GLOBAL);
+  const [temporada, setTemporada] = useState(new Date().getFullYear().toString());
+  const [temporadasDisponibles, setTemporadasDisponibles] = useState<string[]>([]);
+
+  useEffect(() => {
+    rankingsService.getTemporadas()
+      .then(setTemporadasDisponibles)
+      .catch(() => setTemporadasDisponibles([new Date().getFullYear().toString()]));
+  }, []);
 
   useEffect(() => {
     loadRankings();
-  }, [genero, tipoRanking]);
+  }, [genero, tipoRanking, temporada]);
 
   const loadRankings = async () => {
     setLoading(true);
@@ -22,6 +30,7 @@ const RankingsPage = () => {
       const data = await rankingsService.getAll({
         genero,
         tipoRanking,
+        temporada,
         limit: 100,
       });
       setRankings(data);
@@ -111,6 +120,21 @@ const RankingsPage = () => {
           <option value={TipoRanking.PAIS}>País</option>
           <option value={TipoRanking.CIUDAD}>Ciudad</option>
         </Select>
+
+        {temporadasDisponibles.length > 1 && (
+          <Select
+            value={temporada}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTemporada(e.target.value)}
+            className="w-28 sm:w-36"
+          >
+            {temporadasDisponibles.map((t) => (
+              <option key={t} value={t}>
+                <Calendar className="h-4 w-4" />
+                {t}
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       {rankings.length === 0 ? (
@@ -119,7 +143,7 @@ const RankingsPage = () => {
             <div className="text-6xl mb-4">🏆</div>
             <h3 className="text-xl font-semibold mb-2">No hay rankings disponibles</h3>
             <p className="text-light-secondary">
-              Aún no hay datos de ranking para estos filtros
+              Aún no hay datos de ranking para la temporada {temporada}
             </p>
           </CardContent>
         </Card>
