@@ -61,7 +61,7 @@ const generoLabels: Record<string, string> = {
 const AdminConfiguracionPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>('puntos');
   const [configPuntos, setConfigPuntos] = useState<ConfigPuntos[]>([]);
-  const [editedPuntos, setEditedPuntos] = useState<Record<string, { puntosBase: number; multiplicador: number }>>({});
+  const [editedPuntos, setEditedPuntos] = useState<Record<string, { puntosBase: number }>>({});
   const [metricasUsuarios, setMetricasUsuarios] = useState<MetricasUsuarios | null>(null);
   const [metricasTorneos, setMetricasTorneos] = useState<MetricasTorneos | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,16 +95,13 @@ const AdminConfiguracionPage = () => {
     }
   };
 
-  const handleEditPuntos = (id: string, field: 'puntosBase' | 'multiplicador', value: string) => {
-    const numValue = field === 'puntosBase' ? parseInt(value, 10) : parseFloat(value);
+  const handleEditPuntos = (id: string, value: string) => {
+    const numValue = parseInt(value, 10);
     if (isNaN(numValue)) return;
 
     setEditedPuntos(prev => ({
       ...prev,
-      [id]: {
-        puntosBase: field === 'puntosBase' ? numValue : (prev[id]?.puntosBase ?? configPuntos.find(c => c.id === id)!.puntosBase),
-        multiplicador: field === 'multiplicador' ? numValue : (prev[id]?.multiplicador ?? configPuntos.find(c => c.id === id)!.multiplicador),
-      },
+      [id]: { puntosBase: numValue },
     }));
     // Remove from saved if re-edited
     setSavedIds(prev => {
@@ -120,7 +117,7 @@ const AdminConfiguracionPage = () => {
 
     setSaving(id);
     try {
-      await adminService.actualizarConfiguracionPuntos(id, edited);
+      await adminService.actualizarConfiguracionPuntos(id, { puntosBase: edited.puntosBase, multiplicador: 1 });
       setConfigPuntos(prev =>
         prev.map(c => c.id === id ? { ...c, ...edited } : c)
       );
@@ -207,10 +204,10 @@ function PuntosTab({
   onSave,
 }: {
   config: ConfigPuntos[];
-  editedPuntos: Record<string, { puntosBase: number; multiplicador: number }>;
+  editedPuntos: Record<string, { puntosBase: number }>;
   saving: string | null;
   savedIds: Set<string>;
-  onEdit: (id: string, field: 'puntosBase' | 'multiplicador', value: string) => void;
+  onEdit: (id: string, value: string) => void;
   onSave: (id: string) => void;
 }) {
   return (
@@ -218,22 +215,20 @@ function PuntosTab({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="w-5 h-5" />
-          Configuración de Puntos por Posición
+          Tabla Global de Puntos
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-light-secondary mb-4">
-          Define cuántos puntos se otorgan por posición en cada torneo. El multiplicador permite ajustar puntos por tipo de torneo.
+          Define los puntos base que se otorgan por posicion. Estos puntos se multiplican por el multiplicador de cada circuito (configurable en Gestionar Circuitos).
         </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-dark-border text-light-secondary">
-                <th className="text-left py-3 px-2">Posición</th>
+                <th className="text-left py-3 px-2">Posicion</th>
                 <th className="text-left py-3 px-2">Puntos Base</th>
-                <th className="text-left py-3 px-2">Multiplicador</th>
-                <th className="text-left py-3 px-2">Puntos Efectivos</th>
                 <th className="text-left py-3 px-2">Acciones</th>
               </tr>
             </thead>
@@ -241,8 +236,6 @@ function PuntosTab({
               {config.map((c) => {
                 const edited = editedPuntos[c.id];
                 const puntosBase = edited?.puntosBase ?? c.puntosBase;
-                const multiplicador = edited?.multiplicador ?? c.multiplicador;
-                const puntosEfectivos = Math.round(puntosBase * multiplicador);
                 const hasChanges = !!edited;
                 const wasSaved = savedIds.has(c.id);
 
@@ -258,24 +251,9 @@ function PuntosTab({
                         type="number"
                         min="0"
                         value={puntosBase}
-                        onChange={(e) => onEdit(c.id, 'puntosBase', e.target.value)}
+                        onChange={(e) => onEdit(c.id, e.target.value)}
                         className="w-24 px-2 py-1 bg-dark-bg border border-dark-border rounded text-sm text-light-text focus:outline-none focus:border-primary-500"
                       />
-                    </td>
-                    <td className="py-3 px-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={multiplicador}
-                        onChange={(e) => onEdit(c.id, 'multiplicador', e.target.value)}
-                        className="w-24 px-2 py-1 bg-dark-bg border border-dark-border rounded text-sm text-light-text focus:outline-none focus:border-primary-500"
-                      />
-                    </td>
-                    <td className="py-3 px-2">
-                      <Badge variant={puntosEfectivos >= 50 ? 'success' : puntosEfectivos >= 10 ? 'warning' : 'info'}>
-                        {puntosEfectivos} pts
-                      </Badge>
                     </td>
                     <td className="py-3 px-2">
                       {hasChanges ? (
@@ -298,6 +276,13 @@ function PuntosTab({
               })}
             </tbody>
           </table>
+        </div>
+
+        <div className="mt-4 p-3 bg-dark-surface rounded-lg border border-dark-border">
+          <p className="text-xs text-light-secondary">
+            <strong className="text-light-text">Formula:</strong> Puntos Ganados = Puntos Base x Multiplicador del Circuito.
+            Los torneos sin circuito usan multiplicador 1x.
+          </p>
         </div>
       </CardContent>
     </Card>

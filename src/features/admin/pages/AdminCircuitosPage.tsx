@@ -114,6 +114,7 @@ const CircuitoForm: React.FC<CircuitoFormProps> = ({
       : '',
     fechaFin: circuito?.fechaFin ? circuito.fechaFin.substring(0, 10) : '',
     logoUrl: circuito?.logoUrl || '',
+    multiplicador: circuito?.multiplicador || 1.0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -235,15 +236,36 @@ const CircuitoForm: React.FC<CircuitoFormProps> = ({
             />
           </div>
 
-          <Input
-            label="URL Logo"
-            type="url"
-            value={formData.logoUrl || ''}
-            onChange={(e) =>
-              setFormData({ ...formData, logoUrl: e.target.value })
-            }
-            placeholder="https://..."
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="URL Logo"
+              type="url"
+              value={formData.logoUrl || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, logoUrl: e.target.value })
+              }
+              placeholder="https://..."
+            />
+            <div>
+              <Input
+                label="Multiplicador de Puntos"
+                type="number"
+                value={formData.multiplicador ?? 1.0}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    multiplicador: parseFloat(e.target.value) || 1.0,
+                  })
+                }
+                min={0.5}
+                max={5.0}
+                step={0.1}
+              />
+              <p className="text-xs text-light-secondary mt-1">
+                Los puntos base se multiplican por este valor (ej: 1.5x = Campeon obtiene 150 pts)
+              </p>
+            </div>
+          </div>
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onCancel}>
@@ -496,6 +518,11 @@ const CircuitoCard: React.FC<CircuitoCardProps> = ({
                 <Badge variant={estadoBadgeVariant(circuito.estado)}>
                   {circuito.estado}
                 </Badge>
+                {circuito.multiplicador && circuito.multiplicador !== 1.0 && (
+                  <Badge variant="info" className="text-xs">
+                    x{circuito.multiplicador} pts
+                  </Badge>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3 text-sm text-light-secondary mt-1">
                 <span className="flex items-center gap-1">

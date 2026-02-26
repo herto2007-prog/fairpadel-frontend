@@ -135,6 +135,11 @@ const CircuitoDetailPage = () => {
                 <Badge variant={getCircuitoEstadoBadgeVariant(circuito.estado)}>
                   {circuito.estado}
                 </Badge>
+                {circuito.multiplicador && circuito.multiplicador !== 1.0 && (
+                  <Badge variant="warning">
+                    x{circuito.multiplicador} puntos
+                  </Badge>
+                )}
               </div>
 
               <p className="text-primary-400 font-medium text-lg mb-3">

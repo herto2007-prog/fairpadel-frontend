@@ -584,6 +584,7 @@ export interface Circuito {
   fechaFin: string;
   estado: CircuitoEstado;
   logoUrl?: string;
+  multiplicador?: number;
   torneos?: Tournament[];
   _count?: { torneos: number };
   createdAt?: string;
@@ -783,6 +784,7 @@ export interface CreateCircuitoDto {
   fechaInicio: string;
   fechaFin: string;
   logoUrl?: string;
+  multiplicador?: number;
 }
 
 // ═══════════════════════════════════════════
