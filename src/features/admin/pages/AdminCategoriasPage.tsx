@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Card, Button, Loading } from '@/components/ui';
+import { Card, Button, Loading, Badge, Modal } from '@/components/ui';
 import { categoriasService } from '@/services/categoriasService';
+import { adminService } from '@/services/adminService';
 import tournamentsService from '@/services/tournamentsService';
 import type { ReglaAscenso, HistorialCategoria, Category, User } from '@/types';
 import {
@@ -12,15 +13,24 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  ShieldAlert,
+  Check,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type Tab = 'reglas' | 'jugadores' | 'historial';
+type Tab = 'reglas' | 'jugadores' | 'historial' | 'pendientes';
 
 const AdminCategoriasPage = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('reglas');
+  const [activeTab, setActiveTab] = useState<Tab>('pendientes');
+  const [pendientesCount, setPendientesCount] = useState(0);
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  useEffect(() => {
+    adminService.countAscensosPendientes().then((r) => setPendientesCount(r.count)).catch(() => {});
+  }, []);
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
+    { key: 'pendientes', label: 'Ascensos Pendientes', icon: <ShieldAlert className="w-4 h-4" />, badge: pendientesCount },
     { key: 'reglas', label: 'Reglas de Ascenso', icon: <Layers className="w-4 h-4" /> },
     { key: 'jugadores', label: 'Gestión de Jugadores', icon: <Users className="w-4 h-4" /> },
     { key: 'historial', label: 'Historial de Movimientos', icon: <History className="w-4 h-4" /> },
@@ -43,16 +53,214 @@ const AdminCategoriasPage = () => {
           >
             {tab.icon}
             {tab.label}
+            {tab.badge != null && tab.badge > 0 && (
+              <Badge variant="danger">{tab.badge}</Badge>
+            )}
           </button>
         ))}
       </div>
 
+      {activeTab === 'pendientes' && <PendientesTab onCountChange={setPendientesCount} />}
       {activeTab === 'reglas' && <ReglasTab />}
       {activeTab === 'jugadores' && <JugadoresTab />}
       {activeTab === 'historial' && <HistorialTab />}
     </div>
   );
 };
+
+// ═══════════════════════════════════════════
+// TAB: ASCENSOS PENDIENTES
+// ═══════════════════════════════════════════
+
+function PendientesTab({ onCountChange }: { onCountChange: (n: number) => void }) {
+  const [pendientes, setPendientes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [rechazarId, setRechazarId] = useState<string | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+
+  useEffect(() => {
+    loadPendientes();
+  }, []);
+
+  const loadPendientes = async () => {
+    try {
+      const data = await adminService.getAscensosPendientes();
+      setPendientes(data);
+      onCountChange(data.length);
+    } catch {
+      toast.error('Error al cargar ascensos pendientes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAprobar = async (id: string) => {
+    setProcessing(id);
+    try {
+      const result = await adminService.aprobarAscenso(id);
+      toast.success(result.message);
+      await loadPendientes();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al aprobar');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleRechazar = async () => {
+    if (!rechazarId || !motivoRechazo.trim()) return;
+    setProcessing(rechazarId);
+    try {
+      const result = await adminService.rechazarAscenso(rechazarId, motivoRechazo.trim());
+      toast.success(result.message);
+      setRechazarId(null);
+      setMotivoRechazo('');
+      await loadPendientes();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error al rechazar');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const getTipoBadge = (tipo: string) => {
+    const colors: Record<string, string> = {
+      ASCENSO_AUTOMATICO: 'bg-green-900/30 text-green-400',
+      ASCENSO_POR_DEMOSTRACION: 'bg-blue-900/30 text-blue-400',
+    };
+    const labels: Record<string, string> = {
+      ASCENSO_AUTOMATICO: 'Automático',
+      ASCENSO_POR_DEMOSTRACION: 'Demostración',
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[tipo] || 'bg-dark-surface text-light-secondary'}`}>
+        {labels[tipo] || tipo}
+      </span>
+    );
+  };
+
+  if (loading) return <Loading size="lg" text="Cargando ascensos pendientes..." />;
+
+  if (pendientes.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <Check className="w-12 h-12 mx-auto mb-3 text-green-400 opacity-50" />
+        <p className="text-light-text font-medium">No hay ascensos pendientes</p>
+        <p className="text-sm text-light-secondary mt-1">Todos los ascensos han sido revisados</p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-light-secondary">
+        Estos jugadores cumplen con los requisitos para ascender. Revisá y aprobá o rechazá cada caso.
+      </p>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-dark-border text-left">
+                <th className="px-4 py-3 text-light-secondary font-medium">Jugador</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Documento</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Categoría Actual → Nueva</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Tipo</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Motivo</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Fecha</th>
+                <th className="px-4 py-3 text-light-secondary font-medium">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendientes.map((p) => (
+                <tr key={p.id} className="border-b border-dark-border/50 hover:bg-dark-hover/30">
+                  <td className="px-4 py-3 font-medium text-light-text">
+                    {p.user?.nombre} {p.user?.apellido}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-light-secondary text-xs">
+                    {p.user?.documento}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-light-secondary">
+                      {p.user?.categoriaActual?.nombre || '—'}
+                    </span>
+                    <span className="mx-1 text-light-secondary">→</span>
+                    <span className="text-green-400 font-medium">
+                      {p.categoriaNueva?.nombre}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{getTipoBadge(p.tipo)}</td>
+                  <td className="px-4 py-3 text-light-secondary text-xs max-w-[200px] truncate">
+                    {p.motivo}
+                  </td>
+                  <td className="px-4 py-3 text-light-secondary text-xs">
+                    {new Date(p.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleAprobar(p.id)}
+                        disabled={processing === p.id}
+                        className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <Check className="w-3 h-3" />
+                        Aprobar
+                      </button>
+                      <button
+                        onClick={() => setRechazarId(p.id)}
+                        disabled={processing === p.id}
+                        className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        Rechazar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Rechazar Modal */}
+      {rechazarId && (
+        <Modal isOpen onClose={() => { setRechazarId(null); setMotivoRechazo(''); }} title="Rechazar Ascenso">
+          <div className="space-y-4">
+            <p className="text-sm text-light-secondary">
+              Indicá el motivo por el cual se rechaza este ascenso. El jugador será notificado.
+            </p>
+            <div>
+              <label className="block text-sm text-light-secondary mb-1">Motivo (requerido)</label>
+              <textarea
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+                placeholder="Ej: Se requiere verificar resultados del último torneo"
+                rows={3}
+                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-light-text placeholder-light-secondary/50 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => { setRechazarId(null); setMotivoRechazo(''); }}>
+                Cancelar
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleRechazar}
+                loading={processing === rechazarId}
+                disabled={!motivoRechazo.trim()}
+              >
+                Confirmar Rechazo
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════
 // TAB 1: REGLAS DE ASCENSO

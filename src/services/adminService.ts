@@ -359,6 +359,27 @@ export const adminService = {
     const response = await api.get(`/admin/sms/logs${query ? `?${query}` : ''}`);
     return response.data;
   },
+
+  // ============ ASCENSOS PENDIENTES ============
+  getAscensosPendientes: async (): Promise<any[]> => {
+    const response = await api.get('/admin/ascensos-pendientes');
+    return response.data;
+  },
+
+  countAscensosPendientes: async (): Promise<{ count: number }> => {
+    const response = await api.get('/admin/ascensos-pendientes/count');
+    return response.data;
+  },
+
+  aprobarAscenso: async (id: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/ascensos-pendientes/${id}/aprobar`);
+    return response.data;
+  },
+
+  rechazarAscenso: async (id: string, motivo: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/ascensos-pendientes/${id}/rechazar`, { motivo });
+    return response.data;
+  },
 };
 
 export default adminService;

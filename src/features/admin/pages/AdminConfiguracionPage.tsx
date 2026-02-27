@@ -7,9 +7,11 @@ import {
   Users,
   BarChart2,
   PieChart,
+  Settings,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-type Tab = 'puntos' | 'estadisticas';
+type Tab = 'puntos' | 'estadisticas' | 'sistema';
 
 interface ConfigPuntos {
   id: string;
@@ -137,6 +139,7 @@ const AdminConfiguracionPage = () => {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'puntos', label: 'Tabla de Puntos', icon: <Trophy className="w-4 h-4" /> },
+    { key: 'sistema', label: 'Sistema', icon: <Settings className="w-4 h-4" /> },
     { key: 'estadisticas', label: 'Estadísticas Generales', icon: <PieChart className="w-4 h-4" /> },
   ];
 
@@ -181,6 +184,7 @@ const AdminConfiguracionPage = () => {
               onSave={handleSavePuntos}
             />
           )}
+          {activeTab === 'sistema' && <SistemaTab />}
           {activeTab === 'estadisticas' && metricasUsuarios && metricasTorneos && (
             <EstadisticasTab
               metricasUsuarios={metricasUsuarios}
@@ -398,6 +402,134 @@ function EstadisticasTab({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ========== Tab: Sistema ==========
+
+function SistemaTab() {
+  const [configs, setConfigs] = useState<{ clave: string; valor: string; descripcion: string | null }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadConfigs();
+  }, []);
+
+  const loadConfigs = async () => {
+    try {
+      const data = await adminService.getConfiguracionSistema();
+      setConfigs(data);
+    } catch {
+      toast.error('Error al cargar configuración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggle = async (clave: string, currentValue: string) => {
+    const newValue = currentValue === 'true' ? 'false' : 'true';
+    setSaving(clave);
+    try {
+      await adminService.actualizarConfiguracionSistema(clave, newValue);
+      setConfigs((prev) =>
+        prev.map((c) => (c.clave === clave ? { ...c, valor: newValue } : c)),
+      );
+      toast.success('Configuración actualizada');
+    } catch {
+      toast.error('Error al actualizar');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (loading) return <Loading size="lg" text="Cargando configuración..." />;
+
+  // Find boolean configs (value is "true" or "false")
+  const booleanConfigs = configs.filter(
+    (c) => c.valor === 'true' || c.valor === 'false',
+  );
+  const otherConfigs = configs.filter(
+    (c) => c.valor !== 'true' && c.valor !== 'false',
+  );
+
+  const labelMap: Record<string, string> = {
+    ASCENSOS_REQUIEREN_APROBACION: 'Ascensos requieren aprobación',
+  };
+
+  return (
+    <div className="space-y-6">
+      {booleanConfigs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Configuración del Sistema
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {booleanConfigs.map((config) => (
+                <div
+                  key={config.clave}
+                  className="flex items-center justify-between p-4 bg-dark-surface rounded-lg border border-dark-border"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-light-text text-sm">
+                      {labelMap[config.clave] || config.clave}
+                    </p>
+                    {config.descripcion && (
+                      <p className="text-xs text-light-secondary mt-1">{config.descripcion}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleToggle(config.clave, config.valor)}
+                    disabled={saving === config.clave}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      config.valor === 'true' ? 'bg-primary-500' : 'bg-dark-border'
+                    } ${saving === config.clave ? 'opacity-50' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        config.valor === 'true' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {otherConfigs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Valores del Sistema</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {otherConfigs.map((config) => (
+                <div
+                  key={config.clave}
+                  className="flex items-center justify-between p-3 bg-dark-surface rounded-lg border border-dark-border"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-light-text">{config.clave}</p>
+                    {config.descripcion && (
+                      <p className="text-xs text-light-secondary">{config.descripcion}</p>
+                    )}
+                  </div>
+                  <span className="text-sm font-mono text-primary-400 bg-dark-bg px-3 py-1 rounded">
+                    {config.valor}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
