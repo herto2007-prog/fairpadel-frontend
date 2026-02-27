@@ -1098,7 +1098,7 @@ export interface HorarioSlot {
 export interface ReservaInstructor {
   id: string;
   instructorId: string;
-  solicitanteId: string;
+  solicitanteId: string | null;
   tipo: TipoClase;
   fecha: string;
   horaInicio: string;
@@ -1110,6 +1110,41 @@ export interface ReservaInstructor {
   respuesta: string | null;
   createdAt: string;
   updatedAt: string;
+  // Fase 3: Gestión
+  alumnoExternoNombre: string | null;
+  alumnoExternoTelefono: string | null;
+  asistio: boolean | null;
+  pagado: boolean;
+  metodoPago: string | null;
+  notas: string | null;
+  creadoPorInstructor: boolean;
   instructor?: Instructor & { user?: { nombre: string; apellido: string; fotoUrl: string | null } };
-  solicitante?: { id: string; nombre: string; apellido: string; email: string; fotoUrl: string | null };
+  solicitante?: { id: string; nombre: string; apellido: string; fotoUrl: string | null; telefono?: string };
+}
+
+export interface AlumnoResumen {
+  tipo: 'registrado' | 'externo';
+  id?: string;
+  nombre: string;
+  apellido?: string;
+  telefono?: string;
+  fotoUrl?: string | null;
+  totalClases: number;
+  ultimaClase: string;
+  deudaPendiente: number;
+}
+
+export interface FinanzasResumen {
+  totalCobrado: number;
+  totalPendiente: number;
+  clasesCompletadas: number;
+  clasesCanceladas: number;
+  periodo: { desde: string; hasta: string };
+}
+
+export interface FinanzasMensual {
+  fecha: string;
+  clases: number;
+  cobrado: number;
+  pendiente: number;
 }

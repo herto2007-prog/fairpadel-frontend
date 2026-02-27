@@ -19,19 +19,25 @@ import {
   Loader2,
   Clock,
   ClipboardList,
+  Plus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Instructor } from '@/types';
+import type { Instructor, FinanzasResumen } from '@/types';
 import DisponibilidadConfig from '../components/DisponibilidadConfig';
 import AgendaSemanal from '../components/AgendaSemanal';
 import ReservasSolicitudes from '../components/ReservasSolicitudes';
+import AlumnosList from '../components/AlumnosList';
+import FinanzasResumenComponent from '../components/FinanzasResumen';
+import CrearClaseModal from '../components/CrearClaseModal';
 
-type Tab = 'agenda' | 'disponibilidad' | 'solicitudes' | 'perfil';
+type Tab = 'agenda' | 'disponibilidad' | 'solicitudes' | 'alumnos' | 'finanzas' | 'perfil';
 
 const TABS: { key: Tab; label: string; icon: typeof Calendar }[] = [
   { key: 'agenda', label: 'Agenda', icon: Calendar },
   { key: 'disponibilidad', label: 'Disponibilidad', icon: Clock },
   { key: 'solicitudes', label: 'Solicitudes', icon: ClipboardList },
+  { key: 'alumnos', label: 'Alumnos', icon: Users },
+  { key: 'finanzas', label: 'Finanzas', icon: DollarSign },
   { key: 'perfil', label: 'Perfil', icon: BookOpen },
 ];
 
@@ -43,6 +49,11 @@ const InstructorDashboardPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>('agenda');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCrearClase, setShowCrearClase] = useState(false);
+
+  // Stats
+  const [stats, setStats] = useState<FinanzasResumen | null>(null);
+  const [alumnosCount, setAlumnosCount] = useState<number>(0);
 
   // Editable fields
   const [descripcion, setDescripcion] = useState('');
@@ -62,6 +73,9 @@ const InstructorDashboardPage = () => {
       setPrecioIndividual(data.precioIndividual?.toString() || '');
       setPrecioGrupal(data.precioGrupal?.toString() || '');
       setAceptaDomicilio(data.aceptaDomicilio);
+
+      // Load stats in background
+      loadStats();
     } catch (err: any) {
       console.error('Error loading instructor profile:', err);
       if (err?.response?.status === 404 || err?.response?.status === 403) {
@@ -69,6 +83,19 @@ const InstructorDashboardPage = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const [finanzas, alumnos] = await Promise.all([
+        instructoresService.obtenerFinanzas(),
+        instructoresService.obtenerAlumnos(),
+      ]);
+      setStats(finanzas);
+      setAlumnosCount(alumnos.length);
+    } catch (err) {
+      // Stats are non-critical, silently fail
     }
   };
 
@@ -99,6 +126,10 @@ const InstructorDashboardPage = () => {
       setAceptaDomicilio(instructor.aceptaDomicilio);
     }
     setEditing(false);
+  };
+
+  const handleClaseCreada = () => {
+    loadStats();
   };
 
   if (loading) {
@@ -135,6 +166,10 @@ const InstructorDashboardPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={() => setShowCrearClase(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nueva Clase
+          </Button>
           <Badge variant={instructor.estado === 'APROBADO' ? 'success' : 'danger'}>
             {instructor.estado}
           </Badge>
@@ -166,24 +201,48 @@ const InstructorDashboardPage = () => {
       {activeTab === 'agenda' && <AgendaSemanal />}
       {activeTab === 'disponibilidad' && <DisponibilidadConfig />}
       {activeTab === 'solicitudes' && <ReservasSolicitudes />}
+      {activeTab === 'alumnos' && <AlumnosList />}
+      {activeTab === 'finanzas' && <FinanzasResumenComponent />}
       {activeTab === 'perfil' && (
         <div className="space-y-6">
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: Calendar, label: 'Clases este mes', value: '—', color: 'text-blue-400' },
-              { icon: Users, label: 'Alumnos activos', value: '—', color: 'text-green-400' },
-              { icon: BarChart2, label: 'Valoración', value: '—', color: 'text-yellow-400' },
-              { icon: DollarSign, label: 'Ingresos del mes', value: '—', color: 'text-primary-400' },
-            ].map(({ icon: Icon, label, value, color }) => (
-              <Card key={label}>
-                <CardContent className="p-4 text-center">
-                  <Icon className={`h-6 w-6 mx-auto mb-1 ${color}`} />
-                  <p className="text-xl font-bold text-light-text">{value}</p>
-                  <p className="text-xs text-light-muted">{label}</p>
-                </CardContent>
-              </Card>
-            ))}
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Calendar className="h-6 w-6 mx-auto mb-1 text-blue-400" />
+                <p className="text-xl font-bold text-light-text">
+                  {stats ? stats.clasesCompletadas : '—'}
+                </p>
+                <p className="text-xs text-light-muted">Clases este mes</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 mx-auto mb-1 text-green-400" />
+                <p className="text-xl font-bold text-light-text">
+                  {alumnosCount > 0 ? alumnosCount : '—'}
+                </p>
+                <p className="text-xs text-light-muted">Alumnos</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <BarChart2 className="h-6 w-6 mx-auto mb-1 text-yellow-400" />
+                <p className="text-xl font-bold text-light-text">—</p>
+                <p className="text-xs text-light-muted">Valoración</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <DollarSign className="h-6 w-6 mx-auto mb-1 text-primary-400" />
+                <p className="text-xl font-bold text-light-text">
+                  {stats && stats.totalCobrado > 0
+                    ? `${(stats.totalCobrado / 1000).toFixed(0)}k`
+                    : '—'}
+                </p>
+                <p className="text-xs text-light-muted">Ingresos del mes</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Perfil Editable */}
@@ -353,6 +412,16 @@ const InstructorDashboardPage = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Crear Clase Modal */}
+      {instructor && (
+        <CrearClaseModal
+          isOpen={showCrearClase}
+          onClose={() => setShowCrearClase(false)}
+          instructor={instructor}
+          onCreated={handleClaseCreada}
+        />
       )}
     </div>
   );

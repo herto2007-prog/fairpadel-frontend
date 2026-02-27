@@ -6,6 +6,9 @@ import type {
   InstructorBloqueo,
   HorarioSlot,
   ReservaInstructor,
+  AlumnoResumen,
+  FinanzasResumen,
+  FinanzasMensual,
 } from '@/types';
 
 export const instructoresService = {
@@ -181,6 +184,66 @@ export const instructoresService = {
     mensaje?: string;
   }): Promise<ReservaInstructor> => {
     const response = await api.post(`/instructores/${instructorId}/reservar`, dto);
+    return response.data;
+  },
+
+  // ── Fase 3: Gestión de instructor ───────────────────
+
+  crearClaseManual: async (dto: {
+    tipo: string;
+    fecha: string;
+    horaInicio: string;
+    duracionMinutos?: number;
+    precio?: number;
+    solicitanteId?: string;
+    alumnoExternoNombre?: string;
+    alumnoExternoTelefono?: string;
+    notas?: string;
+  }): Promise<ReservaInstructor> => {
+    const response = await api.post('/instructores/clases', dto);
+    return response.data;
+  },
+
+  marcarAsistencia: async (id: string, asistio: boolean): Promise<ReservaInstructor> => {
+    const response = await api.put(`/instructores/reservas/${id}/asistencia`, { asistio });
+    return response.data;
+  },
+
+  marcarPago: async (id: string, pagado: boolean, metodoPago?: string): Promise<ReservaInstructor> => {
+    const response = await api.put(`/instructores/reservas/${id}/pago`, { pagado, metodoPago });
+    return response.data;
+  },
+
+  guardarNotas: async (id: string, notas: string): Promise<ReservaInstructor> => {
+    const response = await api.put(`/instructores/reservas/${id}/notas`, { notas });
+    return response.data;
+  },
+
+  obtenerAlumnos: async (): Promise<AlumnoResumen[]> => {
+    const response = await api.get('/instructores/alumnos');
+    return response.data;
+  },
+
+  obtenerHistorialAlumno: async (alumnoId: string, externoNombre?: string): Promise<ReservaInstructor[]> => {
+    if (alumnoId === 'externo' && externoNombre) {
+      const response = await api.get(`/instructores/alumnos/externo/historial?externoNombre=${encodeURIComponent(externoNombre)}`);
+      return response.data;
+    }
+    const response = await api.get(`/instructores/alumnos/${alumnoId}/historial`);
+    return response.data;
+  },
+
+  obtenerFinanzas: async (desde?: string, hasta?: string): Promise<FinanzasResumen> => {
+    const params = new URLSearchParams();
+    if (desde) params.append('desde', desde);
+    if (hasta) params.append('hasta', hasta);
+    const query = params.toString();
+    const response = await api.get(`/instructores/finanzas${query ? `?${query}` : ''}`);
+    return response.data;
+  },
+
+  obtenerFinanzasMensual: async (anio: number, mes: number): Promise<FinanzasMensual[]> => {
+    const response = await api.get(`/instructores/finanzas/mensual?anio=${anio}&mes=${mes}`);
     return response.data;
   },
 };
