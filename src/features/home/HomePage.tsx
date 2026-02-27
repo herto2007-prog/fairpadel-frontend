@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { tournamentsService } from '@/services/tournamentsService';
@@ -16,7 +16,7 @@ import {
   UserPlus, GitBranch, BarChart2, DollarSign, Camera,
   Settings, MapPin, Shuffle, FileSpreadsheet, ClipboardCheck,
   Star, Bell, MessageSquare, Image, Crown, Zap, Shield,
-  Smartphone, ChevronRight,
+  Smartphone, ChevronRight, Play, CheckCircle,
 } from 'lucide-react';
 
 // ══════ Constants from FeaturesPage ══════
@@ -104,7 +104,7 @@ const PREMIUM_BENEFITS = [
 
 const HomePage = () => {
   const { isAuthenticated } = useAuthStore();
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState({ torneos: 0, jugadores: 0, partidos: 0, categorias: 0 });
@@ -116,11 +116,11 @@ const HomePage = () => {
   const loadData = async () => {
     try {
       const [tournamentsData, rankingsData, statsData] = await Promise.all([
-        tournamentsService.getByStatus(TournamentStatus.PUBLICADO),
+        tournamentsService.getAll(),
         rankingsService.getTop10(Gender.MASCULINO),
         api.get('/stats').then(r => r.data).catch(() => null),
       ]);
-      setTournaments(tournamentsData.slice(0, 6));
+      setAllTournaments(tournamentsData);
       setRankings(rankingsData);
       if (statsData) setStats(statsData);
     } catch (error) {
@@ -129,6 +129,25 @@ const HomePage = () => {
       setDataLoading(false);
     }
   };
+
+  const { enCurso, proximos, finalizados } = useMemo(() => {
+    const enCurso = allTournaments
+      .filter((t) => t.estado === TournamentStatus.EN_CURSO)
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime())
+      .slice(0, 3);
+
+    const proximos = allTournaments
+      .filter((t) => t.estado === TournamentStatus.PUBLICADO)
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime())
+      .slice(0, 3);
+
+    const finalizados = allTournaments
+      .filter((t) => t.estado === TournamentStatus.FINALIZADO)
+      .sort((a, b) => new Date(b.fechaFin).getTime() - new Date(a.fechaFin).getTime())
+      .slice(0, 3);
+
+    return { enCurso, proximos, finalizados };
+  }, [allTournaments]);
 
   const heroStats = [
     { icon: Trophy, value: stats.torneos, label: 'Torneos' },
@@ -252,13 +271,13 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ═══════ 4. PROXIMOS TORNEOS ═══════ */}
+      {/* ═══════ 4. TORNEOS ═══════ */}
       <AnimatedSection className="py-8 sm:py-12">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-6 sm:mb-8 gap-4">
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-light-text">Proximos Torneos</h2>
-              <p className="text-sm sm:text-base text-light-secondary">Inscribite en los mejores torneos</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-light-text">Torneos</h2>
+              <p className="text-sm sm:text-base text-light-secondary">Inscribite y competí en los mejores torneos</p>
             </div>
             <Link to="/tournaments" className="flex-shrink-0">
               <Button variant="outline" size="sm" className="sm:hidden">Ver todos</Button>
@@ -270,17 +289,61 @@ const HomePage = () => {
 
           {dataLoading ? (
             <div className="flex justify-center py-12"><Loading size="lg" text="Cargando torneos..." /></div>
-          ) : tournaments.length === 0 ? (
+          ) : (enCurso.length === 0 && proximos.length === 0 && finalizados.length === 0) ? (
             <Card>
               <CardContent className="text-center py-12">
                 <p className="text-light-secondary">No hay torneos disponibles en este momento</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tournaments.map((tournament) => (
-                <TournamentCard key={tournament.id} tournament={tournament} />
-              ))}
+            <div className="space-y-8">
+              {/* En Curso */}
+              {enCurso.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Play className="h-5 w-5 text-green-400" />
+                    <h3 className="text-lg font-semibold text-green-400">En Curso</h3>
+                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{enCurso.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {enCurso.map((t) => (
+                      <TournamentCard key={t.id} tournament={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Próximos */}
+              {proximos.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="h-5 w-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold text-blue-400">Próximos</h3>
+                    <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{proximos.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {proximos.map((t) => (
+                      <TournamentCard key={t.id} tournament={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Finalizados Recientes */}
+              {finalizados.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <CheckCircle className="h-5 w-5 text-light-secondary" />
+                    <h3 className="text-lg font-semibold text-light-secondary">Finalizados Recientes</h3>
+                    <span className="text-xs bg-dark-surface text-light-secondary px-2 py-0.5 rounded-full">{finalizados.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {finalizados.map((t) => (
+                      <TournamentCard key={t.id} tournament={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
