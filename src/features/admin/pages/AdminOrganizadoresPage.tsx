@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
 import { Loading, Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
-import { Check, X, UserPlus, Mail, Phone, MapPin, Clock, FileText, Search, ShieldCheck } from 'lucide-react';
+import { Check, X, UserPlus, Mail, Phone, MapPin, Clock, FileText, Search, ShieldCheck, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface SolicitudOrganizador {
@@ -36,6 +36,11 @@ const AdminOrganizadoresPage = () => {
   const [promoviendo, setPromoviendo] = useState(false);
   const [promoverResult, setPromoverResult] = useState<{ message: string; usuario?: { nombre: string; apellido: string; email: string } } | null>(null);
 
+  // Admin promotion
+  const [documentoAdmin, setDocumentoAdmin] = useState('');
+  const [promoviendoAdmin, setPromoviendoAdmin] = useState(false);
+  const [promoverAdminResult, setPromoverAdminResult] = useState<{ message: string; usuario?: { nombre: string; apellido: string; email: string } } | null>(null);
+
   useEffect(() => {
     loadData();
   }, [filterEstado]);
@@ -69,6 +74,26 @@ const AdminOrganizadoresPage = () => {
       setPromoverResult({ message: msg });
     } finally {
       setPromoviendo(false);
+    }
+  };
+
+  const handlePromoverAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!documentoAdmin.trim()) return;
+
+    setPromoviendoAdmin(true);
+    setPromoverAdminResult(null);
+    try {
+      const result = await adminService.promoverAdmin(documentoAdmin.trim());
+      setPromoverAdminResult(result);
+      setDocumentoAdmin('');
+      toast.success(result.message);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Error al promover usuario a admin';
+      toast.error(msg);
+      setPromoverAdminResult({ message: msg });
+    } finally {
+      setPromoviendoAdmin(false);
     }
   };
 
@@ -164,6 +189,65 @@ const AdminOrganizadoresPage = () => {
               {promoverResult.usuario && (
                 <p className="text-xs mt-1 text-light-secondary">
                   {promoverResult.usuario.nombre} {promoverResult.usuario.apellido} — {promoverResult.usuario.email}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Promover Admin por Documento */}
+      <Card className="mb-6 border-yellow-600/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-yellow-400">
+            <ShieldAlert className="w-5 h-5" />
+            Asignar Rol de Administrador
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-light-secondary mb-1">
+            Asigna el rol de administrador a otro usuario para que pueda gestionar la plataforma.
+          </p>
+          <p className="text-xs text-yellow-500/80 mb-4">
+            Precaución: Los administradores tienen acceso total al sistema.
+          </p>
+          <form onSubmit={handlePromoverAdmin} className="flex gap-3 items-end">
+            <div className="flex-1 max-w-sm">
+              <label className="block text-sm font-medium text-light-text mb-1">
+                Nro. de Documento
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-light-secondary" />
+                <input
+                  type="text"
+                  value={documentoAdmin}
+                  onChange={(e) => setDocumentoAdmin(e.target.value)}
+                  placeholder="Ej: 4567890"
+                  className="w-full pl-10 pr-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-sm text-light-text placeholder-light-secondary/50 focus:outline-none focus:border-yellow-500"
+                />
+              </div>
+            </div>
+            <Button
+              type="submit"
+              variant="warning"
+              loading={promoviendoAdmin}
+              disabled={promoviendoAdmin || !documentoAdmin.trim()}
+            >
+              <ShieldAlert className="h-4 w-4 mr-1" />
+              Hacer Admin
+            </Button>
+          </form>
+
+          {promoverAdminResult && (
+            <div className={`mt-3 p-3 rounded-lg text-sm ${
+              promoverAdminResult.usuario
+                ? 'bg-green-900/30 text-green-400 border border-green-800'
+                : 'bg-red-900/30 text-red-400 border border-red-800'
+            }`}>
+              <p>{promoverAdminResult.message}</p>
+              {promoverAdminResult.usuario && (
+                <p className="text-xs mt-1 text-light-secondary">
+                  {promoverAdminResult.usuario.nombre} {promoverAdminResult.usuario.apellido} — {promoverAdminResult.usuario.email}
                 </p>
               )}
             </div>

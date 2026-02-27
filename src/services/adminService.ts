@@ -70,6 +70,11 @@ export const adminService = {
     return response.data;
   },
 
+  promoverAdmin: async (documento: string): Promise<{ message: string; usuario?: any }> => {
+    const response = await api.post('/admin/promover-admin', { documento });
+    return response.data;
+  },
+
   // ============ MODERACIÓN FOTOS ============
   getFotosModeracion: async (): Promise<any[]> => {
     const response = await api.get('/admin/fotos-moderacion');
