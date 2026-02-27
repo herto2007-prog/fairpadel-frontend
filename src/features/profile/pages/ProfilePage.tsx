@@ -205,10 +205,10 @@ const ProfilePage = () => {
       </div>
 
       {/* Photo Gallery */}
-      {(perfil.fotos.length > 0 || perfil.social.isOwnProfile) && (
+      {((perfil.fotos?.length ?? 0) > 0 || perfil.social.isOwnProfile) && (
         <div className="container mx-auto px-4 mt-4 pb-8">
           <ProfilePhotoGallery
-            fotos={perfil.fotos}
+            fotos={perfil.fotos || []}
             totalFotos={perfil.totalFotos}
             isOwnProfile={perfil.social.isOwnProfile}
             userId={profileId}

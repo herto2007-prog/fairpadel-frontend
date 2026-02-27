@@ -103,7 +103,8 @@ const PREMIUM_BENEFITS = [
 // ══════ Component ══════
 
 const HomePage = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, hasRole } = useAuthStore();
+  const isOrganizador = hasRole('organizador') || hasRole('admin');
   const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -445,11 +446,25 @@ const HomePage = () => {
                   );
                 })}
               </div>
-              <Link to={isAuthenticated ? '/my-tournaments' : '/register'} className="inline-block mt-6">
-                <Button variant="primary" className="bg-amber-500 hover:bg-amber-600">
-                  {isAuthenticated ? 'Mis Torneos' : 'Empeza a Organizar'} <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </Link>
+              {isOrganizador ? (
+                <Link to="/my-tournaments" className="inline-block mt-6">
+                  <Button variant="primary" className="bg-amber-500 hover:bg-amber-600">
+                    Mis Torneos <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              ) : isAuthenticated ? (
+                <Link to="/profile/edit" className="inline-block mt-6">
+                  <Button variant="primary" className="bg-amber-500 hover:bg-amber-600">
+                    Solicitar ser Organizador <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/register" className="inline-block mt-6">
+                  <Button variant="primary" className="bg-amber-500 hover:bg-amber-600">
+                    Empezá a Organizar <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              )}
             </AnimatedSection>
 
             {/* Dashboard mockup */}
@@ -706,7 +721,7 @@ const HomePage = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-500/10 via-transparent to-transparent" />
           <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">
-              Empeza <span className="text-primary-500">ahora</span>
+              Empezá <span className="text-primary-500">ahora</span>
             </h2>
             <p className="text-light-secondary mb-8 max-w-md mx-auto">
               Unite a la comunidad de padel mas grande de Paraguay

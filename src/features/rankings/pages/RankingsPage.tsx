@@ -93,7 +93,7 @@ const RankingsPage = () => {
       </div>
 
       {/* Podium — only on Global tab when data exists */}
-      {activeTab === 'global' && !loading && rankings.length >= 3 && (
+      {activeTab === 'global' && !loading && rankings.length > 0 && (
         <RankingsPodium rankings={rankings} />
       )}
 

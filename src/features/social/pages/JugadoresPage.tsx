@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import socialService, { type JugadorBusqueda } from '@/services/socialService';
@@ -52,15 +52,17 @@ const JugadoresPage = () => {
       .catch(() => {});
   }, [isAuthenticated, user]);
 
-  // Search players
-  const buscar = useCallback(async () => {
+  // Debounced search
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const buscar = useCallback(async (query: string, city: string, gen: string, pg: number) => {
     setLoading(true);
     try {
       const data = await socialService.buscarJugadores(
-        searchQuery || undefined,
-        ciudad || undefined,
-        genero || undefined,
-        page,
+        query || undefined,
+        city || undefined,
+        gen || undefined,
+        pg,
         LIMIT,
       );
       setJugadores(data.jugadores);
@@ -71,12 +73,16 @@ const JugadoresPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, ciudad, genero, page]);
+  }, []);
 
-  // Trigger search on filter/page changes
+  // Trigger search on filter/page changes with debounce for text input
   useEffect(() => {
-    buscar();
-  }, [buscar]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      buscar(searchQuery, ciudad, genero, page);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery, ciudad, genero, page, buscar]);
 
   // Reset page when filters change
   const handleFilterChange = (setter: (v: string) => void, value: string) => {
@@ -87,8 +93,9 @@ const JugadoresPage = () => {
   // Handle search submit
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    buscar(searchQuery, ciudad, genero, 1);
     setPage(1);
-    buscar();
   };
 
   // Follow / unfollow
@@ -304,7 +311,7 @@ const JugadoresPage = () => {
               </button>
 
               <span className="text-light-secondary text-sm">
-                Pagina {page} de {totalPages}
+                Página {page} de {totalPages}
               </span>
 
               <button

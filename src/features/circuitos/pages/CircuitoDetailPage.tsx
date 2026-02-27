@@ -38,6 +38,7 @@ const CircuitoDetailPage = () => {
   const [circuito, setCircuito] = useState<Circuito | null>(null);
   const [standings, setStandings] = useState<CircuitoStanding[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [standingsLoading, setStandingsLoading] = useState(true);
   const [generoTab, setGeneroTab] = useState<Gender>(Gender.MASCULINO);
 
@@ -55,11 +56,13 @@ const CircuitoDetailPage = () => {
 
   const loadCircuito = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await circuitosService.getById(id!);
       setCircuito(data);
     } catch (error) {
       console.error('Error loading circuito:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -86,24 +89,34 @@ const CircuitoDetailPage = () => {
     );
   }
 
-  if (!circuito) {
+  if (loadError || !circuito) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="text-center py-12">
             <Trophy className="h-16 w-16 text-light-secondary mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-light-text mb-2">
-              Circuito no encontrado
+              {loadError ? 'Error al cargar el circuito' : 'Circuito no encontrado'}
             </h3>
             <p className="text-light-secondary mb-4">
-              El circuito que buscas no existe o fue eliminado.
+              {loadError ? 'Hubo un problema de conexión. Intentá de nuevo.' : 'El circuito que buscás no existe o fue eliminado.'}
             </p>
-            <Link
-              to="/circuitos"
-              className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
-            >
-              Volver a Circuitos
-            </Link>
+            <div className="flex gap-3 justify-center">
+              {loadError && (
+                <button
+                  onClick={() => { setLoading(true); loadCircuito(); }}
+                  className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
+                >
+                  Reintentar
+                </button>
+              )}
+              <Link
+                to="/circuitos"
+                className="px-4 py-2 border border-dark-border text-light-secondary rounded-lg hover:text-light-text hover:border-primary-500/50 transition-colors font-medium"
+              >
+                Volver a Circuitos
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -202,7 +215,7 @@ const CircuitoDetailPage = () => {
                 <div className="text-center py-8">
                   <Trophy className="h-12 w-12 text-light-secondary mx-auto mb-3" />
                   <p className="text-light-secondary">
-                    Este circuito aun no tiene torneos asignados.
+                    Este circuito aún no tiene torneos asignados.
                   </p>
                 </div>
               ) : (
@@ -294,7 +307,7 @@ const CircuitoDetailPage = () => {
                 <div className="text-center py-8">
                   <Medal className="h-12 w-12 text-light-secondary mx-auto mb-3" />
                   <p className="text-sm text-light-secondary">
-                    No hay standings disponibles para esta categoria.
+                    No hay standings disponibles para esta categoría.
                   </p>
                 </div>
               ) : (
@@ -317,7 +330,7 @@ const CircuitoDetailPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-dark-border">
-                      {standings.map((standing) => (
+                      {standings.filter(s => s.jugador).map((standing) => (
                         <tr
                           key={standing.jugador.id}
                           className="hover:bg-dark-hover transition-colors"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Loading } from '@/components/ui';
+import { AlertTriangle } from 'lucide-react';
 import tournamentsService from '@/services/tournamentsService';
 
 /**
@@ -13,10 +14,16 @@ export default function TournamentSlugRedirect() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Reset error when slug changes
+    setError('');
+
     if (!slug) {
       navigate('/tournaments', { replace: true });
       return;
     }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     tournamentsService
       .getBySlug(slug)
@@ -25,22 +32,28 @@ export default function TournamentSlugRedirect() {
       })
       .catch(() => {
         setError('Torneo no encontrado');
-      });
+      })
+      .finally(() => clearTimeout(timeout));
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [slug, navigate]);
 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-4xl mb-4">🏸</p>
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Torneo no encontrado</h2>
           <p className="text-light-secondary mb-4">El enlace que seguiste no es válido o el torneo ya no existe.</p>
-          <button
-            onClick={() => navigate('/tournaments')}
-            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          <Link
+            to="/tournaments"
+            className="inline-block px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
           >
             Ver todos los torneos
-          </button>
+          </Link>
         </div>
       </div>
     );

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { matchesService } from '@/services/matchesService';
 import { tournamentsService } from '@/services/tournamentsService';
 import { Loading, Card, CardContent, Select, Button } from '@/components/ui';
 import { BracketView } from '../components/BracketView';
-import { Printer } from 'lucide-react';
+import { Printer, AlertTriangle } from 'lucide-react';
 import type { Match, Tournament, Category } from '@/types';
 
 const FixturePage = () => {
@@ -14,6 +14,8 @@ const FixturePage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [matchesLoading, setMatchesLoading] = useState(false);
 
   useEffect(() => {
     if (tournamentId) {
@@ -29,23 +31,30 @@ const FixturePage = () => {
 
   const loadData = async () => {
     try {
+      setLoadError(false);
       const tournamentData = await tournamentsService.getById(tournamentId!);
       setTournament(tournamentData);
-      
+
       // Mapear las categorías del torneo correctamente
       if (tournamentData.categorias && tournamentData.categorias.length > 0) {
-        const mappedCategories = tournamentData.categorias.map(tc => tc.category);
+        const mappedCategories = tournamentData.categorias
+          .map(tc => tc.category)
+          .filter(Boolean);
         setCategories(mappedCategories);
-        setSelectedCategory(mappedCategories[0].id);
+        if (mappedCategories.length > 0) {
+          setSelectedCategory(mappedCategories[0].id);
+        }
       }
     } catch (error) {
       console.error('Error loading tournament:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
 
   const loadMatches = async () => {
+    setMatchesLoading(true);
     try {
       const data = await matchesService.obtenerFixture(tournamentId!, selectedCategory);
       const catData = data[selectedCategory];
@@ -57,6 +66,9 @@ const FixturePage = () => {
       }
     } catch (error) {
       console.error('Error loading matches:', error);
+      setMatches([]);
+    } finally {
+      setMatchesLoading(false);
     }
   };
 
@@ -68,12 +80,28 @@ const FixturePage = () => {
     );
   }
 
-  if (!tournament) {
+  if (loadError || !tournament) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="text-center py-12">
-            <h3 className="text-xl font-semibold mb-2">Torneo no encontrado</h3>
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <h3 className="text-xl font-semibold mb-2">
+              {loadError ? 'Error al cargar el torneo' : 'Torneo no encontrado'}
+            </h3>
+            <p className="text-light-secondary mb-4">
+              {loadError ? 'Hubo un problema de conexión. Intentá de nuevo.' : 'El torneo que buscás no existe.'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              {loadError && (
+                <Button variant="primary" onClick={() => { setLoading(true); loadData(); }}>
+                  Reintentar
+                </Button>
+              )}
+              <Link to="/tournaments">
+                <Button variant="outline">Ver torneos</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -122,11 +150,15 @@ const FixturePage = () => {
         </p>
       </div>
 
-      {matches.length === 0 ? (
+      {matchesLoading ? (
+        <div className="flex justify-center py-12">
+          <Loading size="lg" text="Cargando partidos..." />
+        </div>
+      ) : matches.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold mb-2">Sin partidos</h3>
+            <AlertTriangle className="h-10 w-10 text-light-muted mx-auto mb-3" />
+            <h3 className="text-xl font-semibold mb-2">Fixture no disponible</h3>
             <p className="text-light-secondary">
               Aún no se ha generado el fixture para esta categoría
             </p>

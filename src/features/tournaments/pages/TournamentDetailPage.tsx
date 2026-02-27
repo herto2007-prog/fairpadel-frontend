@@ -7,7 +7,7 @@ import { matchesService } from '@/services/matchesService';
 import { useAuthStore } from '@/store/authStore';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Tournament, Match } from '@/types';
-import { Settings, Users, ChevronDown, ChevronUp, Trophy, ChevronRight } from 'lucide-react';
+import { Settings, Users, ChevronDown, ChevronUp, Trophy, ChevronRight, AlertTriangle } from 'lucide-react';
 import BannerZone from '@/components/BannerZone';
 import { BracketView } from '@/features/matches/components/BracketView';
 
@@ -18,6 +18,7 @@ export default function TournamentDetailPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [inscripciones, setInscripciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   // Fixture state
@@ -41,6 +42,7 @@ export default function TournamentDetailPage() {
 
   const loadTournament = async () => {
     try {
+      setLoadError(false);
       const [data, inscData] = await Promise.all([
         tournamentsService.getById(id!),
         inscripcionesService.getByTournament(id!).catch(() => []),
@@ -49,6 +51,7 @@ export default function TournamentDetailPage() {
       setInscripciones(inscData);
     } catch (error) {
       console.error('Error loading tournament:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -130,14 +133,27 @@ export default function TournamentDetailPage() {
     );
   }
 
-  if (!tournament) {
+  if (loadError || !tournament) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="p-12 text-center">
-          <p className="text-light-secondary">Torneo no encontrado</p>
-          <Button className="mt-4" onClick={() => navigate('/tournaments')}>
-            Volver a Torneos
-          </Button>
+          <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+          <h3 className="text-xl font-semibold mb-2">
+            {loadError ? 'Error al cargar el torneo' : 'Torneo no encontrado'}
+          </h3>
+          <p className="text-light-secondary mb-4">
+            {loadError ? 'Hubo un problema de conexión. Intentá de nuevo.' : 'El torneo que buscás no existe.'}
+          </p>
+          <div className="flex gap-3 justify-center">
+            {loadError && (
+              <Button variant="primary" onClick={() => { setLoading(true); loadTournament(); }}>
+                Reintentar
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate('/tournaments')}>
+              Ver torneos
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -147,10 +163,13 @@ export default function TournamentDetailPage() {
     (tc: any) => tc.inscripcionAbierta || tc.estado === 'INSCRIPCIONES_ABIERTAS'
   ) ?? false;
 
-  // Check if inscription deadline has passed
-  const isDeadlineExpired = tournament.fechaLimiteInscr
-    ? new Date(tournament.fechaLimiteInscr) < new Date()
-    : false;
+  // Check if inscription deadline has passed (compare end of day so same-day is not expired)
+  const isDeadlineExpired = (() => {
+    if (!tournament.fechaLimiteInscr) return false;
+    const deadline = new Date(tournament.fechaLimiteInscr);
+    deadline.setHours(23, 59, 59, 999);
+    return deadline < new Date();
+  })();
 
   const canInscribe = ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) && hasOpenCategories && !isDeadlineExpired;
 
@@ -215,15 +234,15 @@ export default function TournamentDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Descripcion */}
             <Card className="p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Descripcion</h2>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Descripción</h2>
               <p className="text-light-text whitespace-pre-line">
-                {tournament.descripcion || 'Sin descripcion disponible'}
+                {tournament.descripcion || 'Sin descripción disponible'}
               </p>
             </Card>
 
             {/* Categorias */}
             <Card className="p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Categorias</h2>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Categorías</h2>
               {tournament.categorias && tournament.categorias.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -248,7 +267,7 @@ export default function TournamentDetailPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-light-secondary">Sin categorias</p>
+                <p className="text-light-secondary">Sin categorías</p>
               )}
             </Card>
 
@@ -315,7 +334,7 @@ export default function TournamentDetailPage() {
                 {(() => {
                   const grouped: Record<string, any[]> = {};
                   inscripciones.forEach((insc) => {
-                    const catName = insc.category?.nombre || 'Sin categoria';
+                    const catName = insc.category?.nombre || 'Sin categoría';
                     if (!grouped[catName]) grouped[catName] = [];
                     grouped[catName].push(insc);
                   });
@@ -434,7 +453,7 @@ export default function TournamentDetailPage() {
           <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
             {/* Info Card */}
             <Card className="p-4 sm:p-6">
-              <h3 className="font-bold text-lg mb-3 sm:mb-4">Informacion</h3>
+              <h3 className="font-bold text-lg mb-3 sm:mb-4">Información</h3>
 
               <div className="space-y-4 mb-6">
                 <div>
@@ -448,7 +467,7 @@ export default function TournamentDetailPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-light-secondary mb-1">Limite inscripcion</p>
+                  <p className="text-sm text-light-secondary mb-1">Límite inscripción</p>
                   <p className={`font-medium ${isDeadlineExpired ? 'text-red-400' : ''}`}>
                     {formatDate(tournament.fechaLimiteInscr)}
                     {isDeadlineExpired && (
@@ -495,7 +514,7 @@ export default function TournamentDetailPage() {
               ) : (
                 <div className="text-center p-4 bg-dark-surface rounded-lg">
                   <p className="text-sm text-light-secondary">
-                    Torneo {tournament.estado.replace('_', ' ').toLowerCase()}
+                    Torneo {tournament.estado.replace(/_/g, ' ').toLowerCase()}
                   </p>
                 </div>
               )}

@@ -6,11 +6,16 @@ interface RankingsPodiumProps {
 }
 
 const RankingsPodium: React.FC<RankingsPodiumProps> = ({ rankings }) => {
-  if (rankings.length < 3) return null;
+  if (rankings.length === 0) return null;
 
   const top3 = rankings.slice(0, 3);
-  // Display order: 2nd | 1st | 3rd
-  const ordered = [top3[1], top3[0], top3[2]];
+  // Display order: 2nd | 1st | 3rd (fill missing spots with null)
+  const ordered: (Ranking | null)[] =
+    top3.length >= 3
+      ? [top3[1], top3[0], top3[2]]
+      : top3.length === 2
+        ? [top3[1], top3[0], null]
+        : [null, top3[0], null];
 
   const podiumConfig = [
     { // 2nd place
@@ -55,6 +60,10 @@ const RankingsPodium: React.FC<RankingsPodiumProps> = ({ rankings }) => {
       <div className="flex items-end justify-center gap-3 sm:gap-6">
         {ordered.map((ranking, idx) => {
           const config = podiumConfig[idx];
+          if (!ranking) {
+            // Empty placeholder for missing podium spot
+            return <div key={`empty-${idx}`} className="flex-1 max-w-[180px]" />;
+          }
           const change = getChange(ranking);
           const isFirst = idx === 1;
 
