@@ -402,6 +402,7 @@ const CircuitoCard: React.FC<CircuitoCardProps> = ({
   const [torneos, setTorneos] = useState<Tournament[]>(
     circuito.torneos || []
   );
+  const [torneosLoading, setTorneosLoading] = useState(false);
   const [torneosDisponibles, setTorneosDisponibles] = useState<any[]>([]);
   const [selectedTorneoId, setSelectedTorneoId] = useState('');
   const [addingTorneo, setAddingTorneo] = useState(false);
@@ -415,8 +416,26 @@ const CircuitoCard: React.FC<CircuitoCardProps> = ({
   useEffect(() => {
     if (isExpanded) {
       loadTorneosDisponibles();
+      // Load full circuit detail to get tournaments list
+      if (torneos.length === 0 && (circuito._count?.torneos || 0) > 0) {
+        loadCircuitoDetail();
+      }
     }
   }, [isExpanded]);
+
+  const loadCircuitoDetail = async () => {
+    setTorneosLoading(true);
+    try {
+      const detail = await circuitosService.getById(circuito.id);
+      if (detail.torneos) {
+        setTorneos(detail.torneos);
+      }
+    } catch {
+      toast.error('Error al cargar torneos del circuito');
+    } finally {
+      setTorneosLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (showStandings) {
@@ -595,7 +614,11 @@ const CircuitoCard: React.FC<CircuitoCardProps> = ({
         {isExpanded && (
           <div className="mt-3 border-t border-dark-border pt-3 space-y-3">
             {/* Torneos list */}
-            {torneos.length === 0 ? (
+            {torneosLoading ? (
+              <div className="py-4">
+                <Loading size="sm" text="Cargando torneos..." />
+              </div>
+            ) : torneos.length === 0 ? (
               <p className="text-sm text-light-secondary text-center py-4">
                 No hay torneos asociados a este circuito
               </p>
