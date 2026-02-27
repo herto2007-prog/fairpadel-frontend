@@ -728,7 +728,7 @@ export interface SeguirResponse {
 }
 
 export interface MensajeDto {
-  receptorId: string;
+  destinatarioId: string;
   contenido: string;
 }
 
@@ -742,17 +742,17 @@ export interface SolicitudJugarDto {
 
 export interface MensajePrivado {
   id: string;
-  emisorId: string;
-  receptorId: string;
+  remitenteId: string;
+  destinatarioId: string;
   contenido: string;
   leido: boolean;
-  emisor?: UserBrief;
-  receptor?: UserBrief;
+  remitente?: UserBrief;
+  destinatario?: UserBrief;
   createdAt: string;
 }
 
 export interface Conversacion {
-  otroUsuario: UserBrief;
+  usuario: UserBrief;
   ultimoMensaje: MensajePrivado;
   noLeidos: number;
 }

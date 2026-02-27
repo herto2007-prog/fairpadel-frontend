@@ -34,6 +34,7 @@ import SuscripcionCanceladoPage from '@/features/suscripciones/pages/Suscripcion
 import NovedadesPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
 import SolicitudesPage from '@/features/social/pages/SolicitudesPage';
+import MensajesPage from '@/features/social/pages/MensajesPage';
 // FeaturesPage removed — content merged into HomePage
 
 function App() {
@@ -192,6 +193,23 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SolicitudesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/mensajes"
+              element={
+                <ProtectedRoute>
+                  <MensajesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mensajes/:userId"
+              element={
+                <ProtectedRoute>
+                  <MensajesPage />
                 </ProtectedRoute>
               }
             />

@@ -70,6 +70,20 @@ class SocialService {
     await api.post(`/social/mensajes/${mensajeId}/leer`);
   }
 
+  async contarMensajesNoLeidos(): Promise<{ count: number }> {
+    const response = await api.get('/social/mensajes/no-leidos');
+    return response.data;
+  }
+
+  async marcarConversacionComoLeida(otroUserId: string): Promise<void> {
+    await api.post(`/social/mensajes/conversacion/${otroUserId}/leer`);
+  }
+
+  async eliminarMensaje(mensajeId: string): Promise<{ message: string }> {
+    const response = await api.delete(`/social/mensajes/${mensajeId}`);
+    return response.data;
+  }
+
   // ============ SOLICITUDES JUGAR ============
 
   async enviarSolicitudJugar(dto: SolicitudJugarDto): Promise<SolicitudJugar> {

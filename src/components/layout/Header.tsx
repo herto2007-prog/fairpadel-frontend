@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button, Badge } from '@/components/ui';
 import { notificacionesService } from '@/services/notificacionesService';
+import { socialService } from '@/services/socialService';
 import type { Notificacion } from '@/types';
 import {
   Menu,
@@ -31,6 +32,7 @@ import {
   Newspaper,
   Users,
   Gamepad2,
+  MessageCircle,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -77,6 +79,9 @@ const Header = () => {
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  // Message unread count
+  const [msgCount, setMsgCount] = useState(0);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -85,18 +90,22 @@ const Header = () => {
   const isAdmin = hasRole('admin');
   const isOrganizador = hasRole('organizador') || isAdmin;
 
-  // Fetch unread count on demand
+  // Fetch unread counts on demand
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const data = await notificacionesService.contarNoLeidas();
-      setNotifCount(data.count);
+      const [notifData, msgData] = await Promise.all([
+        notificacionesService.contarNoLeidas(),
+        socialService.contarMensajesNoLeidos().catch(() => ({ count: 0 })),
+      ]);
+      setNotifCount(notifData.count);
+      setMsgCount(msgData.count);
     } catch {
       // silently ignore
     }
   }, [isAuthenticated]);
 
-  // Poll for unread count every 10s for near real-time updates
+  // Poll for unread counts every 10s for near real-time updates
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchUnreadCount();
@@ -198,6 +207,20 @@ const Header = () => {
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
+                {/* Messages */}
+                <Link
+                  to="/mensajes"
+                  className="relative p-2 hover:bg-dark-hover rounded-lg transition-colors"
+                  title="Mensajes"
+                >
+                  <MessageCircle className="h-5 w-5 text-light-secondary" />
+                  {msgCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-primary-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {msgCount > 99 ? '99+' : msgCount}
+                    </span>
+                  )}
+                </Link>
+
                 {/* Notification Bell */}
                 <div className="relative" ref={notifRef}>
                   <button
@@ -327,6 +350,19 @@ const Header = () => {
                       >
                         <Calendar className="h-4 w-4" />
                         Mis Inscripciones
+                      </Link>
+                      <Link
+                        to="/mensajes"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Mensajes
+                        {msgCount > 0 && (
+                          <span className="ml-auto bg-primary-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                            {msgCount}
+                          </span>
+                        )}
                       </Link>
                       <Link
                         to="/solicitudes"
@@ -584,6 +620,19 @@ const Header = () => {
                   >
                     <Calendar className="h-5 w-5" />
                     Mis Inscripciones
+                  </Link>
+                  <Link
+                    to="/mensajes"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    Mensajes
+                    {msgCount > 0 && (
+                      <span className="ml-auto bg-primary-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {msgCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/solicitudes"
