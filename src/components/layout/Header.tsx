@@ -168,7 +168,7 @@ const Header = () => {
     { to: '/jugadores', label: 'Jugadores', icon: Users },
     { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
-    ...(isAuthenticated ? [{ to: '/feed', label: 'Feed', icon: Newspaper }] : []),
+    ...(isAuthenticated ? [{ to: '/novedades', label: 'Novedades', icon: Newspaper }] : []),
   ];
 
   return (

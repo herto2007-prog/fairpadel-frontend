@@ -31,7 +31,7 @@ import TournamentSlugRedirect from '@/features/tournaments/pages/TournamentSlugR
 import PremiumPage from '@/features/suscripciones/pages/PremiumPage';
 import SuscripcionConfirmacionPage from '@/features/suscripciones/pages/SuscripcionConfirmacionPage';
 import SuscripcionCanceladoPage from '@/features/suscripciones/pages/SuscripcionCanceladoPage';
-import FeedPage from '@/features/feed/pages/FeedPage';
+import NovedadesPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
 import SolicitudesPage from '@/features/social/pages/SolicitudesPage';
 // FeaturesPage removed — content merged into HomePage
@@ -147,12 +147,12 @@ function App() {
               }
             />
 
-            {/* Protected - Feed */}
+            {/* Protected - Novedades */}
             <Route
-              path="/feed"
+              path="/novedades"
               element={
                 <ProtectedRoute>
-                  <FeedPage />
+                  <NovedadesPage />
                 </ProtectedRoute>
               }
             />

@@ -85,7 +85,7 @@ const PLAYER_FEATURES = [
   { icon: UserPlus, text: 'Inscripcion rapida a torneos' },
   { icon: BarChart2, text: 'Rankings automaticos por categoria' },
   { icon: Bell, text: 'Alertas personalizadas de torneos' },
-  { icon: MessageSquare, text: 'Feed social y mensajes directos' },
+  { icon: MessageSquare, text: 'Novedades y mensajes directos' },
   { icon: Image, text: 'Galeria de fotos con likes' },
 ];
 
