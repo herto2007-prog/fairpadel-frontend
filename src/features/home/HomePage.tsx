@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { tournamentsService } from '@/services/tournamentsService';
 import { rankingsService } from '@/services/rankingsService';
+import api from '@/services/api';
 import { Card, CardContent, Button, Loading } from '@/components/ui';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import { TournamentCard } from '@/features/tournaments/components/TournamentCard';
@@ -99,13 +100,6 @@ const PREMIUM_BENEFITS = [
   { icon: Smartphone, title: 'Notificaciones SMS', description: 'Avisos directos al celular' },
 ];
 
-const HERO_STATS = [
-  { icon: Trophy, value: '50+', label: 'Torneos' },
-  { icon: Users, value: '500+', label: 'Jugadores' },
-  { icon: Calendar, value: '100+', label: 'Partidos' },
-  { icon: TrendingUp, value: '16', label: 'Categorias' },
-];
-
 // ══════ Component ══════
 
 const HomePage = () => {
@@ -113,6 +107,7 @@ const HomePage = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [stats, setStats] = useState({ torneos: 0, jugadores: 0, partidos: 0, categorias: 0 });
 
   useEffect(() => {
     loadData();
@@ -120,18 +115,27 @@ const HomePage = () => {
 
   const loadData = async () => {
     try {
-      const [tournamentsData, rankingsData] = await Promise.all([
+      const [tournamentsData, rankingsData, statsData] = await Promise.all([
         tournamentsService.getByStatus(TournamentStatus.PUBLICADO),
         rankingsService.getTop10(Gender.MASCULINO),
+        api.get('/stats').then(r => r.data).catch(() => null),
       ]);
       setTournaments(tournamentsData.slice(0, 6));
       setRankings(rankingsData);
+      if (statsData) setStats(statsData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setDataLoading(false);
     }
   };
+
+  const heroStats = [
+    { icon: Trophy, value: stats.torneos, label: 'Torneos' },
+    { icon: Users, value: stats.jugadores, label: 'Jugadores' },
+    { icon: Calendar, value: stats.partidos, label: 'Partidos' },
+    { icon: TrendingUp, value: stats.categorias, label: 'Categorías' },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -164,13 +168,13 @@ const HomePage = () => {
 
           {/* Inline stats pills */}
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8 opacity-0 animate-fade-up-delay-2">
-            {HERO_STATS.map(({ icon: Icon, value, label }) => (
+            {heroStats.map(({ icon: Icon, value, label }) => (
               <div
                 key={label}
                 className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20"
               >
                 <Icon className="h-4 w-4 text-red-200" />
-                <span className="font-bold text-sm sm:text-base animate-count-up">{value}</span>
+                <span className="font-bold text-sm sm:text-base animate-count-up">{value.toLocaleString()}</span>
                 <span className="text-red-200/70 text-xs sm:text-sm">{label}</span>
               </div>
             ))}
