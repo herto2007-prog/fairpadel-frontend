@@ -35,9 +35,11 @@ const FixturePage = () => {
       const tournamentData = await tournamentsService.getById(tournamentId!);
       setTournament(tournamentData);
 
-      // Mapear las categorías del torneo correctamente
+      // Solo mostrar categorías con fixture publicado (SORTEO_REALIZADO, EN_CURSO, FINALIZADA)
       if (tournamentData.categorias && tournamentData.categorias.length > 0) {
+        const estadosPublicados = ['SORTEO_REALIZADO', 'EN_CURSO', 'FINALIZADA'];
         const mappedCategories = tournamentData.categorias
+          .filter(tc => estadosPublicados.includes(tc.estado))
           .map(tc => tc.category)
           .filter(Boolean);
         setCategories(mappedCategories);

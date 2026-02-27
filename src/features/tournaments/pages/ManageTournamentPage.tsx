@@ -1014,6 +1014,11 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   };
 
   const handleSortear = (categoryId: string) => {
+    const tc = categorias.find((c) => c.categoryId === categoryId);
+    if (tc?.estado === 'FIXTURE_BORRADOR') {
+      const catName = tc.category?.nombre || 'esta categoría';
+      if (!window.confirm(`Re-sortear "${catName}" eliminará el fixture actual. ¿Continuar?`)) return;
+    }
     openDateModal([categoryId]);
   };
 
@@ -1021,7 +1026,12 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     const ids = sortableCategories
       .filter((tc) => selectedForSorteo.has(tc.categoryId))
       .map((tc) => tc.categoryId);
-    if (ids.length > 0) openDateModal(ids);
+    if (ids.length === 0) return;
+    const reSorteoIds = ids.filter((id) => categorias.find((c) => c.categoryId === id)?.estado === 'FIXTURE_BORRADOR');
+    if (reSorteoIds.length > 0) {
+      if (!window.confirm(`${reSorteoIds.length} categoría(s) ya tienen fixture borrador. Re-sortear eliminará sus partidos actuales. ¿Continuar?`)) return;
+    }
+    openDateModal(ids);
   };
 
   const handleConfirmSorteo = async () => {
@@ -1061,9 +1071,9 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
     if (successCount === categories.length) {
       const fechaInfo = fecha ? ` (fecha: ${fecha})` : '';
       const warning = schedulingWarnings.length > 0
-        ? `. ⚠️ ${schedulingWarnings.join('; ')}. Agregue horarios en el último día desde la pestaña Canchas y use "Reagendar".`
+        ? `. ⚠️ ${schedulingWarnings.join('; ')}. Agregá horarios en el último día desde la pestaña Canchas y usá "Reagendar".`
         : '';
-      setMessage(`Sorteo realizado para ${successCount} categoria${successCount > 1 ? 's' : ''}${fechaInfo}${warning}`);
+      setMessage(`Sorteo realizado para ${successCount} categoría${successCount > 1 ? 's' : ''}${fechaInfo}${warning}`);
       setMessageType(schedulingWarnings.length > 0 ? 'error' : 'success');
     } else if (successCount > 0) {
       setMessage(`${successCount}/${categories.length} exitosos. Error: ${lastError}`);
@@ -1264,7 +1274,7 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   const canSortear = (tc: TournamentCategory & { inscripcionesCount: number }) => {
     return (
       (tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') &&
-      tc.inscripcionesCount >= 2 &&
+      tc.inscripcionesCount >= 8 &&
       ['PUBLICADO', 'EN_CURSO'].includes(tournament.estado) &&
       hasCanchas
     );
@@ -1367,13 +1377,13 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
             </Button>
           )}
           {tc.estado === 'INSCRIPCIONES_ABIERTAS' && (
-            <span className="text-xs text-yellow-400">Cierra inscripciones primero</span>
+            <span className="text-xs text-yellow-400">Cerrá inscripciones primero</span>
           )}
-          {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 2 && (
-            <span className="text-xs text-red-400">Min. 2 parejas</span>
+          {tc.estado === 'INSCRIPCIONES_CERRADAS' && tc.inscripcionesCount < 8 && (
+            <span className="text-xs text-red-400">Min. 8 parejas</span>
           )}
-          {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 2 && !hasCanchas && (
-            <span className="text-xs text-orange-400">Configura canchas primero</span>
+          {(tc.estado === 'INSCRIPCIONES_CERRADAS' || tc.estado === 'FIXTURE_BORRADOR') && tc.inscripcionesCount >= 8 && !hasCanchas && (
+            <span className="text-xs text-orange-400">Configurá canchas primero</span>
           )}
           {['SORTEO_REALIZADO', 'EN_CURSO'].includes(tc.estado) && isCategoryComplete(tc.categoryId) && (
             <Button
@@ -1399,10 +1409,10 @@ function SorteoTab({ tournament, stats, onRefresh, isPremium }: { tournament: To
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h3 className="font-bold text-lg mb-2">Sorteo y Fixture por Categoria</h3>
+        <h3 className="font-bold text-lg mb-2">Sorteo y Fixture por Categoría</h3>
         <p className="text-sm text-light-secondary mb-4">
-          Cierra inscripciones → Sortear (genera fixture borrador con seeding) → Revisar/Editar → Publicar.
-          Las demas categorias pueden seguir recibiendo inscripciones.
+          Cerrá inscripciones → Sortear (genera fixture borrador con seeding) → Revisar/Editar → Publicar.
+          Las demás categorías pueden seguir recibiendo inscripciones.
         </p>
 
         {sortableCategories.length > 1 && (

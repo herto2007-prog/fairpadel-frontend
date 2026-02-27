@@ -68,6 +68,8 @@ const ROUND_LABELS: Record<string, string> = {
   ACOMODACION_1: 'Acomodación 1',
   ACOMODACION_2: 'Acomodación 2',
   DIECISEISAVOS: 'Dieciseisavos',
+  RONDA_6: 'Ronda 6',
+  RONDA_5: 'Ronda 5',
   OCTAVOS: 'Octavos',
   CUARTOS: 'Cuartos',
   SEMIFINAL: 'Semifinal',
