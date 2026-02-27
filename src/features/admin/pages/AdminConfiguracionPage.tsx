@@ -231,7 +231,7 @@ function PuntosTab({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-dark-border text-light-secondary">
-                <th className="text-left py-3 px-2">Posicion</th>
+                <th className="text-left py-3 px-2">Posición</th>
                 <th className="text-left py-3 px-2">Puntos Base</th>
                 <th className="text-left py-3 px-2">Acciones</th>
               </tr>
@@ -284,7 +284,7 @@ function PuntosTab({
 
         <div className="mt-4 p-3 bg-dark-surface rounded-lg border border-dark-border">
           <p className="text-xs text-light-secondary">
-            <strong className="text-light-text">Formula:</strong> Puntos Ganados = Puntos Base x Multiplicador del Circuito.
+            <strong className="text-light-text">Fórmula:</strong> Puntos Ganados = Puntos Base x Multiplicador del Circuito.
             Los torneos sin circuito usan multiplicador 1x.
           </p>
         </div>

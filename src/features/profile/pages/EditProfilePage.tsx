@@ -18,7 +18,7 @@ const TIPO_LABELS: Record<string, string> = {
   TORNEO: 'Torneos',
   INSCRIPCION: 'Inscripciones',
   PARTIDO: 'Partidos',
-  RANKING: 'Rankings y Categorias',
+  RANKING: 'Rankings y Categorías',
   SOCIAL: 'Social',
   PAGO: 'Pagos',
   MENSAJE: 'Mensajes',
@@ -220,7 +220,7 @@ const EditProfilePage = () => {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  `${user.nombre.charAt(0)}${user.apellido.charAt(0)}`
+                  `${user.nombre?.charAt(0) || ''}${user.apellido?.charAt(0) || ''}`
                 )}
               </div>
               <label className="absolute bottom-0 right-0 h-8 w-8 bg-primary-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-600">
@@ -258,7 +258,7 @@ const EditProfilePage = () => {
             </div>
 
             <Input
-              label="Telefono"
+              label="Teléfono"
               type="tel"
               value={formData.telefono}
               onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
@@ -280,13 +280,13 @@ const EditProfilePage = () => {
 
             <div>
               <label className="block text-sm font-medium text-light-text mb-1">
-                Biografia
+                Biografía
               </label>
               <textarea
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 rows={3}
                 maxLength={500}
-                placeholder="Cuentanos sobre ti..."
+                placeholder="Contanos sobre vos..."
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               />
@@ -326,7 +326,7 @@ const EditProfilePage = () => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-light-secondary mb-4">
-            Controla como quieres recibir notificaciones. La campanita in-app siempre esta activa.
+            Controlá cómo querés recibir notificaciones. La campanita in-app siempre está activa.
           </p>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 mb-4 text-xs text-blue-300">
             💡 El resumen semanal se envía cada lunes (Premium). Desactiva el email de "Sistema" para no recibirlo.
@@ -406,7 +406,7 @@ const EditProfilePage = () => {
             <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg flex items-center gap-2">
               <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />
               <p className="text-xs text-yellow-400">
-                Las notificaciones por SMS estan disponibles solo para usuarios Premium.
+                Las notificaciones por SMS están disponibles solo para usuarios Premium.
               </p>
             </div>
           )}
@@ -428,7 +428,7 @@ const EditProfilePage = () => {
           {user?.esPremium ? (
             <>
               <p className="text-sm text-light-secondary mb-4">
-                Recibe notificaciones automaticas cuando ocurran eventos relevantes para ti.
+                Recibí notificaciones automáticas cuando ocurran eventos relevantes para vos.
               </p>
 
               {loadingAlertas ? (
@@ -468,8 +468,8 @@ const EditProfilePage = () => {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <Target className="h-5 w-5 text-primary-400 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-light-text">Torneo de mi categoria</p>
-                        <p className="text-xs text-light-secondary">Cuando se publique un torneo con tu categoria</p>
+                        <p className="text-sm font-medium text-light-text">Torneo de mi categoría</p>
+                        <p className="text-xs text-light-secondary">Cuando se publique un torneo con tu categoría</p>
                       </div>
                     </div>
                     <button
@@ -525,7 +525,7 @@ const EditProfilePage = () => {
                       <BarChart3 className="h-5 w-5 text-primary-400 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-light-text">Cambio de ranking</p>
-                        <p className="text-xs text-light-secondary">Cuando tu posicion en el ranking cambie</p>
+                        <p className="text-xs text-light-secondary">Cuando tu posición en el ranking cambie</p>
                       </div>
                     </div>
                     <button
@@ -552,9 +552,9 @@ const EditProfilePage = () => {
           ) : (
             <div className="text-center py-6">
               <Crown className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-light-text mb-1">Funcion Premium</h3>
+              <h3 className="text-sm font-semibold text-light-text mb-1">Función Premium</h3>
               <p className="text-xs text-light-secondary mb-3">
-                Activa alertas personalizadas para enterarte de torneos en tu ciudad, tu categoria, y mas.
+                Activá alertas personalizadas para enterarte de torneos en tu ciudad, tu categoría, y más.
               </p>
               <Button
                 variant="outline"

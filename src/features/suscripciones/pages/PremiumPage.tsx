@@ -279,21 +279,21 @@ export default function PremiumPage() {
                 <Trophy className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-dark-text text-sm font-medium">Badges Exclusivos</p>
-                  <p className="text-dark-textSecondary text-xs">Desbloquea badges premium como Racha de 5, Top 3, Leyenda y mas</p>
+                  <p className="text-dark-textSecondary text-xs">Desbloqueá badges premium como Racha de 5, Top 3, Leyenda y más</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
                 <Bell className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-dark-text text-sm font-medium">Alertas Personalizadas</p>
-                  <p className="text-dark-textSecondary text-xs">Torneos en tu ciudad, tu categoria, rivales inscritos, cambios de ranking</p>
+                  <p className="text-dark-textSecondary text-xs">Torneos en tu ciudad, tu categoría, rivales inscritos, cambios de ranking</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/10">
                 <Mail className="h-5 w-5 text-yellow-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-dark-text text-sm font-medium">Resumen Semanal</p>
-                  <p className="text-dark-textSecondary text-xs">Email cada lunes con tus estadisticas, ranking y logros de la semana</p>
+                  <p className="text-dark-textSecondary text-xs">Email cada lunes con tus estadísticas, ranking y logros de la semana</p>
                 </div>
               </div>
             </div>

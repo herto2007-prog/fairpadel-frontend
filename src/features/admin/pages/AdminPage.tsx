@@ -244,7 +244,7 @@ const AdminPage = () => {
                   ))}
                 </select>
                 <p className="text-xs text-light-secondary mt-1">
-                  Tambien puedes asignar circuitos desde Gestionar Circuitos
+                  También podés asignar circuitos desde Gestionar Circuitos
                 </p>
               </div>
 

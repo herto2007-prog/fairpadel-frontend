@@ -98,7 +98,7 @@ const SolicitudesPage = () => {
             <Crown className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Match Inteligente</h3>
             <p className="text-light-secondary mb-6 max-w-md mx-auto">
-              Envia invitaciones de juego a otros jugadores. Propone fecha, hora y lugar para coordinar partidos.
+              Enviá invitaciones de juego a otros jugadores. Proponé fecha, hora y lugar para coordinar partidos.
             </p>
             <Link to="/premium">
               <Button className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600">
@@ -164,7 +164,7 @@ const SolicitudesPage = () => {
                 <Card>
                   <CardContent className="text-center py-12">
                     <Inbox className="h-10 w-10 text-light-muted mx-auto mb-3" />
-                    <p className="text-light-secondary">No tenes solicitudes de juego pendientes</p>
+                    <p className="text-light-secondary">No tenés solicitudes de juego pendientes</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -246,8 +246,8 @@ const SolicitudesPage = () => {
                 <Card>
                   <CardContent className="text-center py-12">
                     <Send className="h-10 w-10 text-light-muted mx-auto mb-3" />
-                    <p className="text-light-secondary">No enviaste solicitudes de juego aun</p>
-                    <p className="text-xs text-light-muted mt-1">Visita el perfil de un jugador y presiona el boton de invitar a jugar</p>
+                    <p className="text-light-secondary">No enviaste solicitudes de juego aún</p>
+                    <p className="text-xs text-light-muted mt-1">Visitá el perfil de un jugador y presioná el botón de invitar a jugar</p>
                   </CardContent>
                 </Card>
               ) : (

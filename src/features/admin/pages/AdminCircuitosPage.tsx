@@ -174,7 +174,7 @@ const CircuitoForm: React.FC<CircuitoFormProps> = ({
 
           <div className="w-full">
             <label className="block text-sm font-medium text-light-secondary mb-1">
-              Descripcion
+              Descripción
             </label>
             <textarea
               className="flex w-full rounded-md border bg-dark-input border-dark-border text-light-text px-3 py-2 text-sm ring-offset-dark-bg placeholder:text-light-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px] resize-y"
@@ -182,7 +182,7 @@ const CircuitoForm: React.FC<CircuitoFormProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, descripcion: e.target.value })
               }
-              placeholder="Descripcion del circuito..."
+              placeholder="Descripción del circuito..."
               rows={3}
             />
           </div>
@@ -198,7 +198,7 @@ const CircuitoForm: React.FC<CircuitoFormProps> = ({
               required
             />
             <Input
-              label="Region"
+              label="Región"
               value={formData.region || ''}
               onChange={(e) =>
                 setFormData({ ...formData, region: e.target.value })
@@ -792,7 +792,7 @@ const AdminCircuitosPage = () => {
   const handleDelete = async (id: string) => {
     if (
       !confirm(
-        'Estas seguro de eliminar este circuito? Se removeran todas las asociaciones con torneos.'
+        '¿Estás seguro de eliminar este circuito? Se removerán todas las asociaciones con torneos.'
       )
     )
       return;

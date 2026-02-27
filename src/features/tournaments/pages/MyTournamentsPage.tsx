@@ -4,11 +4,13 @@ import { tournamentsService } from '@/services/tournamentsService';
 import { Button, Loading, Card, CardContent, Badge, Select } from '@/components/ui';
 import type { Tournament } from '@/types';
 import { TournamentStatus } from '@/types';
-import { Plus, Calendar, MapPin, Users } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Trophy, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const MyTournamentsPage = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -18,10 +20,12 @@ const MyTournamentsPage = () => {
 
   const loadTournaments = async () => {
     try {
+      setLoadError(false);
       const data = await tournamentsService.getMyTournaments();
       setTournaments(data);
     } catch (error) {
       console.error('Error loading tournaments:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -31,9 +35,10 @@ const MyTournamentsPage = () => {
     setActionLoading(id);
     try {
       await tournamentsService.publish(id);
+      toast.success('Torneo enviado a aprobación');
       loadTournaments();
-    } catch (error) {
-      console.error('Error publishing tournament:', error);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Error al publicar torneo');
     } finally {
       setActionLoading(null);
     }
@@ -61,6 +66,23 @@ const MyTournamentsPage = () => {
     return (
       <div className="flex justify-center py-12">
         <Loading size="lg" text="Cargando tus torneos..." />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertTriangle className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
+            <h3 className="text-xl font-semibold mb-2">Error al cargar torneos</h3>
+            <p className="text-light-secondary mb-4">Hubo un problema de conexión. Intentá de nuevo.</p>
+            <Button variant="primary" onClick={() => { setLoading(true); loadTournaments(); }}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -98,10 +120,10 @@ const MyTournamentsPage = () => {
       {filteredTournaments.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <div className="text-6xl mb-4">🎾</div>
-            <h3 className="text-xl font-semibold mb-2">No tienes torneos</h3>
+            <Trophy className="h-12 w-12 text-light-muted mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No tenés torneos</h3>
             <p className="text-light-secondary mb-6">
-              Comienza creando tu primer torneo
+              Empezá creando tu primer torneo
             </p>
             <Link to="/tournaments/create">
               <Button variant="primary">Crear mi primer torneo</Button>
@@ -122,7 +144,7 @@ const MyTournamentsPage = () => {
                     <div className="flex flex-wrap gap-4 text-sm text-light-secondary">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {new Date(tournament.fechaInicio).toLocaleDateString()}
+                        {new Date(tournament.fechaInicio).toLocaleDateString('es-PY')}
                       </span>
                       <span className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />

@@ -1742,7 +1742,7 @@ function SmsTab() {
                   <tr className="border-b border-dark-border text-light-secondary">
                     <th className="text-left py-2 px-2">Fecha</th>
                     <th className="text-left py-2 px-2">Usuario</th>
-                    <th className="text-left py-2 px-2">Telefono</th>
+                    <th className="text-left py-2 px-2">Teléfono</th>
                     <th className="text-left py-2 px-2">Tipo</th>
                     <th className="text-center py-2 px-2">Estado</th>
                     <th className="text-right py-2 px-2">Costo</th>

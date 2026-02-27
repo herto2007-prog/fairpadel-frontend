@@ -110,7 +110,7 @@ const SedeForm: React.FC<SedeFormProps> = ({ sede, onSubmit, onCancel, loading }
       </div>
 
       <Input
-        label="Direccion"
+        label="Dirección"
         value={formData.direccion || ''}
         onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
         placeholder="Av. Principal 123"
@@ -118,7 +118,7 @@ const SedeForm: React.FC<SedeFormProps> = ({ sede, onSubmit, onCancel, loading }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="Telefono"
+          label="Teléfono"
           value={formData.telefono || ''}
           onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
           placeholder="+595 981 123456"
@@ -140,7 +140,7 @@ const SedeForm: React.FC<SedeFormProps> = ({ sede, onSubmit, onCancel, loading }
       />
 
       <Input
-        label="Horario de Atencion"
+        label="Horario de Atención"
         value={formData.horarioAtencion || ''}
         onChange={(e) => setFormData({ ...formData, horarioAtencion: e.target.value })}
         placeholder="Lun-Vie 07:00-22:00, Sab-Dom 08:00-20:00"
@@ -735,7 +735,7 @@ const AdminSedesPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestion de Sedes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestión de Sedes</h1>
           <p className="text-sm sm:text-base text-light-secondary mt-1 sm:mt-2">Administra sedes y canchas para los torneos</p>
         </div>
         <Button

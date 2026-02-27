@@ -167,6 +167,10 @@ const AdminPublicidadPage = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Revoke previous object URL to prevent memory leak
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -269,7 +273,7 @@ const AdminPublicidadPage = () => {
           }`}
         >
           <BarChart2 className="h-4 w-4 inline-block mr-1" />
-          Estadisticas
+          Estadísticas
         </button>
       </div>
 
@@ -289,7 +293,7 @@ const AdminPublicidadPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-light-secondary mb-1">Titulo</label>
+                  <label className="block text-sm font-medium text-light-secondary mb-1">Título</label>
                   <input
                     type="text"
                     value={formData.titulo}
@@ -332,7 +336,7 @@ const AdminPublicidadPage = () => {
                       ))}
                     </select>
                     <p className="text-xs text-light-muted mt-1">
-                      Este banner solo aparecera en la pagina de este torneo
+                      Este banner solo aparecerá en la página de este torneo
                     </p>
                   </div>
                 )}
