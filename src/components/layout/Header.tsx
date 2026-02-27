@@ -33,6 +33,8 @@ import {
   Users,
   Gamepad2,
   MessageCircle,
+  GraduationCap,
+  BookOpen,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -89,6 +91,7 @@ const Header = () => {
 
   const isAdmin = hasRole('admin');
   const isOrganizador = hasRole('organizador') || isAdmin;
+  const isInstructor = hasRole('instructor');
 
   // Fetch unread counts on demand
   const fetchUnreadCount = useCallback(async () => {
@@ -390,6 +393,16 @@ const Header = () => {
                           Mis Torneos
                         </Link>
                       )}
+                      {isInstructor && (
+                        <Link
+                          to="/instructor"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <GraduationCap className="h-4 w-4" />
+                          Mi Panel Instructor
+                        </Link>
+                      )}
                       {isAdmin && (
                         <>
                           <Link
@@ -455,6 +468,14 @@ const Header = () => {
                           >
                             <Megaphone className="h-4 w-4" />
                             Publicidad
+                          </Link>
+                          <Link
+                            to="/admin/instructores"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                          >
+                            <BookOpen className="h-4 w-4" />
+                            Instructores
                           </Link>
                           <Link
                             to="/admin/configuracion"
@@ -660,6 +681,16 @@ const Header = () => {
                       Mis Torneos
                     </Link>
                   )}
+                  {isInstructor && (
+                    <Link
+                      to="/instructor"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                    >
+                      <GraduationCap className="h-5 w-5" />
+                      Mi Panel Instructor
+                    </Link>
+                  )}
                   {isAdmin && (
                     <>
                       <hr className="my-2 border-dark-border" />
@@ -726,6 +757,14 @@ const Header = () => {
                       >
                         <Megaphone className="h-5 w-5" />
                         Publicidad
+                      </Link>
+                      <Link
+                        to="/admin/instructores"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <BookOpen className="h-5 w-5" />
+                        Instructores
                       </Link>
                       <Link
                         to="/admin/configuracion"

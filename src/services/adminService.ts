@@ -75,6 +75,28 @@ export const adminService = {
     return response.data;
   },
 
+  // ============ SOLICITUDES INSTRUCTOR ============
+  getSolicitudesInstructor: async (estado?: string): Promise<any[]> => {
+    const params = estado ? `?estado=${estado}` : '';
+    const response = await api.get(`/admin/solicitudes-instructor${params}`);
+    return response.data;
+  },
+
+  aprobarSolicitudInstructor: async (id: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/solicitudes-instructor/${id}/aprobar`);
+    return response.data;
+  },
+
+  rechazarSolicitudInstructor: async (id: string, motivo: string): Promise<{ message: string }> => {
+    const response = await api.put(`/admin/solicitudes-instructor/${id}/rechazar`, { motivo });
+    return response.data;
+  },
+
+  promoverInstructor: async (documento: string): Promise<{ message: string; usuario?: any }> => {
+    const response = await api.post('/admin/promover-instructor', { documento });
+    return response.data;
+  },
+
   // ============ MODERACIÓN FOTOS ============
   getFotosModeracion: async (): Promise<any[]> => {
     const response = await api.get('/admin/fotos-moderacion');

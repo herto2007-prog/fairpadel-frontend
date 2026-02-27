@@ -992,3 +992,66 @@ export interface DashboardFinanciero {
     valorEspecie: number;
   };
 }
+
+// ═══════════════════════════════════════════════════════
+// INSTRUCTORES
+// ═══════════════════════════════════════════════════════
+
+export interface SolicitudInstructor {
+  id: string;
+  userId: string;
+  experienciaAnios: number;
+  certificaciones: string | null;
+  especialidades: string | null;
+  nivelesEnsenanza: string | null;
+  descripcion: string | null;
+  precioIndividual: number | null;
+  precioGrupal: number | null;
+  ciudades: string | null;
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  motivo: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+    ciudad: string;
+    fotoUrl: string | null;
+  };
+}
+
+export interface Instructor {
+  id: string;
+  userId: string;
+  estado: 'APROBADO' | 'SUSPENDIDO';
+  experienciaAnios: number;
+  certificaciones: string | null;
+  especialidades: string | null;
+  nivelesEnsenanza: string | null;
+  descripcion: string | null;
+  precioIndividual: number | null;
+  precioGrupal: number | null;
+  aceptaDomicilio: boolean;
+  verificado: boolean;
+  ubicaciones?: InstructorUbicacion[];
+  user?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    ciudad: string | null;
+    fotoUrl: string | null;
+  };
+  createdAt: string;
+}
+
+export interface InstructorUbicacion {
+  id: string;
+  instructorId: string;
+  sedeId: string | null;
+  nombreCustom: string | null;
+  ciudad: string;
+  esPrincipal: boolean;
+  sede?: { id: string; nombre: string; ciudad: string };
+}

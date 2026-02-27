@@ -37,6 +37,13 @@ import SolicitudesPage from '@/features/social/pages/SolicitudesPage';
 import MensajesPage from '@/features/social/pages/MensajesPage';
 // FeaturesPage removed — content merged into HomePage
 
+// Instructores
+import SolicitarInstructorPage from '@/features/instructores/pages/SolicitarInstructorPage';
+import InstructorDashboardPage from '@/features/instructores/pages/InstructorDashboardPage';
+import InstructorPublicoPage from '@/features/instructores/pages/InstructorPublicoPage';
+import BuscarInstructoresPage from '@/features/instructores/pages/BuscarInstructoresPage';
+import AdminInstructoresPage from '@/features/admin/pages/AdminInstructoresPage';
+
 function App() {
   return (
     <ToastProvider>
@@ -73,6 +80,8 @@ function App() {
             <Route path="/suscripcion/cancelado" element={<SuscripcionCanceladoPage />} />
             <Route path="/jugadores" element={<JugadoresPage />} />
             <Route path="/jugadores/:id" element={<ProfilePage />} />
+            <Route path="/instructores" element={<BuscarInstructoresPage />} />
+            <Route path="/instructores/:id" element={<InstructorPublicoPage />} />
 
             {/* Protected - Admin */}
             <Route
@@ -144,6 +153,32 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminPublicidadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/instructores"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminInstructoresPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected - Instructores */}
+            <Route
+              path="/instructor/solicitar"
+              element={
+                <ProtectedRoute>
+                  <SolicitarInstructorPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/instructor"
+              element={
+                <ProtectedRoute requiredRole="instructor">
+                  <InstructorDashboardPage />
                 </ProtectedRoute>
               }
             />
