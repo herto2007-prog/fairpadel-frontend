@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui';
 import { Layout } from '@/components/layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -34,7 +34,7 @@ import SuscripcionCanceladoPage from '@/features/suscripciones/pages/Suscripcion
 import FeedPage from '@/features/feed/pages/FeedPage';
 import JugadoresPage from '@/features/social/pages/JugadoresPage';
 import SolicitudesPage from '@/features/social/pages/SolicitudesPage';
-import FeaturesPage from '@/features/home/FeaturesPage';
+// FeaturesPage removed — content merged into HomePage
 
 function App() {
   return (
@@ -52,7 +52,7 @@ function App() {
           <Route element={<Layout />}>
             {/* Public */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/features" element={<Navigate to="/" replace />} />
             <Route path="/tournaments" element={<TournamentsListPage />} />
             <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
             <Route path="/rankings" element={<RankingsPage />} />

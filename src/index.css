@@ -125,6 +125,35 @@ input, select, textarea {
     backdrop-filter: blur(8px);
     background-color: rgba(15, 15, 19, 0.7);
   }
+
+  /* Shimmer overlay for premium elements */
+  .shimmer-overlay {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(251, 191, 36, 0.06) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  /* Glow border on hover — set --glow-color on the element */
+  .glow-border-hover {
+    @apply transition-all duration-300;
+  }
+  .glow-border-hover:hover {
+    box-shadow: 0 0 20px -4px var(--glow-color, rgba(230, 57, 70, 0.3));
+  }
+}
+
+/* Accessibility: respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Smooth fade for route transitions */
