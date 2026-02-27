@@ -376,6 +376,14 @@ const Header = () => {
                         Solicitudes de Juego
                       </Link>
                       <Link
+                        to="/mis-clases"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                      >
+                        <GraduationCap className="h-4 w-4" />
+                        Mis Clases
+                      </Link>
+                      <Link
                         to="/premium"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover"
@@ -662,6 +670,14 @@ const Header = () => {
                   >
                     <Gamepad2 className="h-5 w-5" />
                     Solicitudes de Juego
+                  </Link>
+                  <Link
+                    to="/mis-clases"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                  >
+                    <GraduationCap className="h-5 w-5" />
+                    Mis Clases
                   </Link>
                   <Link
                     to="/premium"

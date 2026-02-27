@@ -1055,3 +1055,61 @@ export interface InstructorUbicacion {
   esPrincipal: boolean;
   sede?: { id: string; nombre: string; ciudad: string };
 }
+
+// ==================== INSTRUCTOR AGENDA & RESERVAS ====================
+
+export enum TipoClase {
+  INDIVIDUAL = 'INDIVIDUAL',
+  GRUPAL = 'GRUPAL',
+}
+
+export enum ReservaEstado {
+  PENDIENTE = 'PENDIENTE',
+  CONFIRMADA = 'CONFIRMADA',
+  RECHAZADA = 'RECHAZADA',
+  CANCELADA = 'CANCELADA',
+  COMPLETADA = 'COMPLETADA',
+}
+
+export interface InstructorDisponibilidad {
+  id: string;
+  instructorId: string;
+  diaSemana: number; // 0=dom..6=sab
+  horaInicio: string; // "HH:MM"
+  horaFin: string;
+  activo: boolean;
+}
+
+export interface InstructorBloqueo {
+  id: string;
+  instructorId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  motivo: string | null;
+  createdAt: string;
+}
+
+export interface HorarioSlot {
+  horaInicio: string;
+  horaFin: string;
+  disponible: boolean;
+}
+
+export interface ReservaInstructor {
+  id: string;
+  instructorId: string;
+  solicitanteId: string;
+  tipo: TipoClase;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  duracionMinutos: number;
+  precio: number;
+  estado: ReservaEstado;
+  mensaje: string | null;
+  respuesta: string | null;
+  createdAt: string;
+  updatedAt: string;
+  instructor?: Instructor & { user?: { nombre: string; apellido: string; fotoUrl: string | null } };
+  solicitante?: { id: string; nombre: string; apellido: string; email: string; fotoUrl: string | null };
+}

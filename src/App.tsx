@@ -42,6 +42,7 @@ import SolicitarInstructorPage from '@/features/instructores/pages/SolicitarInst
 import InstructorDashboardPage from '@/features/instructores/pages/InstructorDashboardPage';
 import InstructorPublicoPage from '@/features/instructores/pages/InstructorPublicoPage';
 import BuscarInstructoresPage from '@/features/instructores/pages/BuscarInstructoresPage';
+import MisReservasPage from '@/features/instructores/pages/MisReservasPage';
 import AdminInstructoresPage from '@/features/admin/pages/AdminInstructoresPage';
 
 function App() {
@@ -179,6 +180,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="instructor">
                   <InstructorDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mis-clases"
+              element={
+                <ProtectedRoute>
+                  <MisReservasPage />
                 </ProtectedRoute>
               }
             />

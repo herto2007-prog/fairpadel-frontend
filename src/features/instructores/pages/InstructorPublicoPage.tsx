@@ -11,10 +11,10 @@ import {
   CheckCircle,
   ArrowLeft,
   User,
-  Calendar,
   Home,
 } from 'lucide-react';
 import type { Instructor } from '@/types';
+import ReservarClaseForm from '../components/ReservarClaseForm';
 
 const InstructorPublicoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -237,14 +237,8 @@ const InstructorPublicoPage = () => {
         </Card>
       )}
 
-      {/* CTA - Reservar (disabled, Fase 2) */}
-      <div className="text-center">
-        <Button variant="primary" size="lg" disabled className="opacity-60 cursor-not-allowed">
-          <Calendar className="h-4 w-4 mr-2" />
-          Reservar Clase (Próximamente)
-        </Button>
-        <p className="text-xs text-light-muted mt-2">La reserva de clases estará disponible pronto</p>
-      </div>
+      {/* Reservar Clase */}
+      <ReservarClaseForm instructor={instructor} />
     </div>
   );
 };
