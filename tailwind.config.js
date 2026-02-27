@@ -59,6 +59,11 @@ export default {
           '0%, 100%': { boxShadow: '0 0 0 0 rgba(230, 57, 70, 0.4)' },
           '50%': { boxShadow: '0 0 20px 4px rgba(230, 57, 70, 0.2)' },
         },
+        'podium-rise': {
+          '0%': { opacity: '0', transform: 'translateY(40px) scale(0.9)' },
+          '60%': { opacity: '1', transform: 'translateY(-8px) scale(1.02)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.5s ease-out forwards',
@@ -70,6 +75,9 @@ export default {
         'count-up': 'count-up 0.6s ease-out forwards',
         'slide-in': 'slide-in 0.3s ease-out',
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+        'podium-rise': 'podium-rise 0.7s ease-out forwards',
+        'podium-rise-delay-1': 'podium-rise 0.7s ease-out 0.15s forwards',
+        'podium-rise-delay-2': 'podium-rise 0.7s ease-out 0.3s forwards',
       },
     },
   },

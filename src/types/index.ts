@@ -367,6 +367,8 @@ export interface Ranking {
   victorias: number;
   derrotas: number;
   campeonatos: number;
+  rachaActual?: number;
+  mejorPosicion?: number;
   porcentajeVictorias?: number;
   jugador?: User;
 }
