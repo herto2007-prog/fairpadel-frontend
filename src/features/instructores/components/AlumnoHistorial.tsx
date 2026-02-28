@@ -89,6 +89,34 @@ const AlumnoHistorial = ({ alumno }: Props) => {
   const totalPagado = reservas.filter((r) => r.pagado).reduce((sum, r) => sum + r.precio, 0);
   const deuda = reservas.filter((r) => !r.pagado && ['CONFIRMADA', 'COMPLETADA'].includes(r.estado)).reduce((sum, r) => sum + r.precio, 0);
 
+  // Attendance stats
+  const clasesConAsistencia = reservas.filter((r) => r.asistio !== null && r.asistio !== undefined);
+  const asistidas = clasesConAsistencia.filter((r) => r.asistio === true).length;
+  const ausentes = clasesConAsistencia.filter((r) => r.asistio === false).length;
+  const porcentajeAsistencia = clasesConAsistencia.length > 0 ? Math.round((asistidas / clasesConAsistencia.length) * 100) : 0;
+
+  // Notes timeline
+  const reservasConNotas = reservas.filter((r) => r.notas && r.notas.trim());
+
+  // Monthly mini-bars (last 6 months)
+  const monthlyClases = (() => {
+    const now = new Date();
+    const result: { mes: string; count: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mesStr = d.toLocaleDateString('es-PY', { month: 'short' });
+      const mesInicio = new Date(d.getFullYear(), d.getMonth(), 1);
+      const mesFin = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      const count = reservas.filter((r) => {
+        const f = new Date(r.fecha + (r.fecha.includes('T') ? '' : 'T00:00:00'));
+        return f >= mesInicio && f <= mesFin;
+      }).length;
+      result.push({ mes: mesStr, count });
+    }
+    return result;
+  })();
+  const maxMonthly = Math.max(...monthlyClases.map((m) => m.count), 1);
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -151,6 +179,79 @@ const AlumnoHistorial = ({ alumno }: Props) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Attendance + Activity Stats */}
+      {reservas.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            {/* Attendance Bar */}
+            {clasesConAsistencia.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-light-text mb-2">Asistencia</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-3 bg-dark-surface rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${porcentajeAsistencia}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-light-text whitespace-nowrap">
+                    {porcentajeAsistencia}%
+                  </span>
+                </div>
+                <div className="flex justify-between text-[10px] text-light-muted mt-1">
+                  <span>{asistidas} asistió</span>
+                  <span>{ausentes} ausente</span>
+                  <span>{clasesConAsistencia.length} registradas</span>
+                </div>
+              </div>
+            )}
+
+            {/* Monthly Mini-bars */}
+            <div>
+              <p className="text-xs font-medium text-light-text mb-2">Actividad (últimos 6 meses)</p>
+              <div className="flex items-end gap-1.5 h-16">
+                {monthlyClases.map((m) => (
+                  <div key={m.mes} className="flex-1 flex flex-col items-center gap-0.5">
+                    <span className="text-[9px] text-light-muted">{m.count || ''}</span>
+                    <div
+                      className="w-full rounded-t transition-all"
+                      style={{
+                        height: `${Math.max((m.count / maxMonthly) * 40, m.count > 0 ? 4 : 0)}px`,
+                        backgroundColor: m.count > 0 ? '#22c55e' : '#374151',
+                      }}
+                    />
+                    <span className="text-[9px] text-light-muted">{m.mes}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Notes Timeline */}
+      {reservasConNotas.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium text-light-text mb-3">Notas de clases</p>
+            <div className="relative pl-4 space-y-3">
+              {/* Vertical line */}
+              <div className="absolute left-1.5 top-1 bottom-1 w-px bg-dark-border" />
+              {reservasConNotas.slice(0, 10).map((r) => (
+                <div key={r.id} className="relative">
+                  {/* Dot */}
+                  <div className="absolute -left-4 top-1.5 w-2 h-2 rounded-full bg-primary-500" />
+                  <p className="text-[10px] text-light-muted">
+                    {new Date(r.fecha).toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-light-secondary italic">{r.notas}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Reservas list */}
       {reservas.length === 0 ? (

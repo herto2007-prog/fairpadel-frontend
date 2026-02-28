@@ -268,4 +268,28 @@ input, select, textarea {
   .border-dark-border {
     border-color: #ccc !important;
   }
+
+  /* Recibo Instructor — print styles */
+  .recibo-print {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 0 auto !important;
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+    padding: 24px !important;
+    border-radius: 0 !important;
+  }
+
+  .recibo-print .text-green-400 {
+    color: #222 !important;
+  }
+
+  .recibo-print .text-primary-400 {
+    color: #333 !important;
+  }
+
+  .recibo-print .bg-dark-surface {
+    background: #f5f5f5 !important;
+  }
 }

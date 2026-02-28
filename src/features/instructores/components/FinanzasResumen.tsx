@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import { instructoresService } from '@/services/instructoresService';
-import { Loading, Card, CardContent } from '@/components/ui';
+import { Loading, Card, CardContent, Button } from '@/components/ui';
 import {
   DollarSign,
   TrendingUp,
   Clock,
   XCircle,
   Calendar,
+  Plus,
+  Receipt,
+  Loader2,
 } from 'lucide-react';
-import type { FinanzasResumen as FinanzasResumenType, FinanzasMensual } from '@/types';
+import type { FinanzasResumen as FinanzasResumenType, FinanzasMensual, PagoInstructor, ReciboData } from '@/types';
+import RegistrarPagoModal from './RegistrarPagoModal';
+import DeudasPanel from './DeudasPanel';
+import ComprobanteRecibo from './ComprobanteRecibo';
 
 type Periodo = 'este-mes' | 'mes-pasado' | '3-meses' | 'custom';
 
@@ -17,6 +23,14 @@ const FinanzasResumenComponent = () => {
   const [mensual, setMensual] = useState<FinanzasMensual[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>('este-mes');
+
+  // Pagos state
+  const [pagos, setPagos] = useState<PagoInstructor[]>([]);
+  const [loadingPagos, setLoadingPagos] = useState(false);
+  const [showRegistrarPago, setShowRegistrarPago] = useState(false);
+  const [selectedRecibo, setSelectedRecibo] = useState<ReciboData | null>(null);
+  const [loadingRecibo, setLoadingRecibo] = useState<string | null>(null);
+  const [deudasRefreshKey, setDeudasRefreshKey] = useState(0);
 
   // Custom range
   const [customDesde, setCustomDesde] = useState('');
@@ -58,11 +72,49 @@ const FinanzasResumenComponent = () => {
 
       setFinanzas(finanzasData);
       setMensual(Array.isArray(mensualData) ? mensualData : []);
+
+      // Also load recent pagos
+      loadPagos(desde, hasta);
     } catch (err) {
       console.error('Error loading finanzas:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPagos = async (desde?: string, hasta?: string) => {
+    setLoadingPagos(true);
+    try {
+      const data = await instructoresService.listarPagos({ desde, hasta });
+      setPagos(Array.isArray(data) ? data.slice(0, 10) : []);
+    } catch {
+      setPagos([]);
+    } finally {
+      setLoadingPagos(false);
+    }
+  };
+
+  const handleVerRecibo = async (pagoId: string) => {
+    setLoadingRecibo(pagoId);
+    try {
+      const data = await instructoresService.obtenerRecibo(pagoId);
+      setSelectedRecibo(data);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingRecibo(null);
+    }
+  };
+
+  const handlePagoCreated = () => {
+    setShowRegistrarPago(false);
+    loadFinanzas();
+    setDeudasRefreshKey((k) => k + 1);
+  };
+
+  const getPagoAlumnoName = (p: PagoInstructor) => {
+    if (p.alumno) return `${p.alumno.nombre} ${p.alumno.apellido || ''}`.trim();
+    return p.alumnoExternoNombre || 'Sin nombre';
   };
 
   if (loading && !finanzas) {
@@ -87,8 +139,8 @@ const FinanzasResumenComponent = () => {
 
   return (
     <div className="space-y-5">
-      {/* Period Filter */}
-      <div className="flex flex-wrap gap-2">
+      {/* Period Filter + Register Button */}
+      <div className="flex flex-wrap items-center gap-2">
         {periodos.map((p) => (
           <button
             key={p.key}
@@ -102,6 +154,12 @@ const FinanzasResumenComponent = () => {
             {p.label}
           </button>
         ))}
+        <div className="ml-auto">
+          <Button variant="primary" size="sm" onClick={() => setShowRegistrarPago(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Registrar Ingreso
+          </Button>
+        </div>
       </div>
 
       {/* Custom date range */}
@@ -224,6 +282,97 @@ const FinanzasResumenComponent = () => {
             <p className="text-sm text-light-secondary">Sin movimientos en este período</p>
           </div>
         )
+      )}
+      {/* Recent Pagos Table */}
+      {pagos.length > 0 && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="px-4 py-3 border-b border-dark-border flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary-400" />
+              <span className="text-sm font-semibold text-light-text">Últimos pagos registrados</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-dark-border">
+                    <th className="text-left px-4 py-2 text-xs text-light-muted font-medium">Fecha</th>
+                    <th className="text-left px-4 py-2 text-xs text-light-muted font-medium">Alumno</th>
+                    <th className="text-right px-4 py-2 text-xs text-light-muted font-medium">Monto</th>
+                    <th className="text-center px-4 py-2 text-xs text-light-muted font-medium">Método</th>
+                    <th className="text-center px-4 py-2 text-xs text-light-muted font-medium">Concepto</th>
+                    <th className="text-center px-4 py-2 text-xs text-light-muted font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagos.map((p) => (
+                    <tr key={p.id} className="border-b border-dark-border/50 hover:bg-dark-hover/30">
+                      <td className="px-4 py-2 text-light-text text-xs">
+                        {new Date(p.fecha + (p.fecha.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('es-PY', { day: 'numeric', month: 'short' })}
+                      </td>
+                      <td className="px-4 py-2 text-light-text text-xs truncate max-w-[120px]">
+                        {getPagoAlumnoName(p)}
+                      </td>
+                      <td className="text-right px-4 py-2 text-green-400 text-xs font-medium">
+                        Gs. {p.monto.toLocaleString()}
+                      </td>
+                      <td className="text-center px-4 py-2 text-light-secondary text-xs">
+                        {p.metodoPago === 'EFECTIVO' ? '💵' : p.metodoPago === 'TRANSFERENCIA' ? '🏦' : p.metodoPago === 'QR' ? '📱' : '—'}
+                      </td>
+                      <td className="text-center px-4 py-2 text-light-muted text-xs capitalize">
+                        {p.concepto.toLowerCase()}
+                      </td>
+                      <td className="text-center px-4 py-2">
+                        <button
+                          onClick={() => handleVerRecibo(p.id)}
+                          disabled={loadingRecibo === p.id}
+                          className="text-primary-400 hover:text-primary-300 transition-colors"
+                          title="Ver recibo"
+                        >
+                          {loadingRecibo === p.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Receipt className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {loadingPagos && pagos.length === 0 && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-4 w-4 animate-spin text-primary-400" />
+        </div>
+      )}
+
+      {/* Deudas Panel */}
+      <div>
+        <h3 className="text-sm font-semibold text-light-text mb-3 flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-yellow-400" />
+          Deudas pendientes
+        </h3>
+        <DeudasPanel refreshKey={deudasRefreshKey} />
+      </div>
+
+      {/* Modals */}
+      {showRegistrarPago && (
+        <RegistrarPagoModal
+          isOpen
+          onClose={() => setShowRegistrarPago(false)}
+          onCreated={handlePagoCreated}
+        />
+      )}
+
+      {selectedRecibo && (
+        <ComprobanteRecibo
+          recibo={selectedRecibo}
+          onClose={() => setSelectedRecibo(null)}
+        />
       )}
     </div>
   );

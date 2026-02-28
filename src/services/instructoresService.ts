@@ -9,6 +9,10 @@ import type {
   AlumnoResumen,
   FinanzasResumen,
   FinanzasMensual,
+  PagoInstructor,
+  DeudaAlumno,
+  ReciboData,
+  RetencionMetrics,
 } from '@/types';
 
 export const instructoresService = {
@@ -261,6 +265,54 @@ export const instructoresService = {
 
   probarModulo: async (): Promise<{ message: string }> => {
     const response = await api.post('/instructores/probar-modulo');
+    return response.data;
+  },
+
+  // ── Fase D: Pagos & Negocio ─────────────────────────
+
+  registrarPago: async (dto: {
+    monto: number;
+    metodoPago: string;
+    concepto?: string;
+    fecha: string;
+    alumnoId?: string;
+    alumnoExternoNombre?: string;
+    alumnoExternoTelefono?: string;
+    reservaId?: string;
+    descripcion?: string;
+  }): Promise<PagoInstructor> => {
+    const response = await api.post('/instructores/pagos', dto);
+    return response.data;
+  },
+
+  listarPagos: async (filters?: {
+    desde?: string;
+    hasta?: string;
+    alumnoId?: string;
+    metodoPago?: string;
+  }): Promise<PagoInstructor[]> => {
+    const params = new URLSearchParams();
+    if (filters?.desde) params.append('desde', filters.desde);
+    if (filters?.hasta) params.append('hasta', filters.hasta);
+    if (filters?.alumnoId) params.append('alumnoId', filters.alumnoId);
+    if (filters?.metodoPago) params.append('metodoPago', filters.metodoPago);
+    const query = params.toString();
+    const response = await api.get(`/instructores/pagos${query ? `?${query}` : ''}`);
+    return response.data;
+  },
+
+  obtenerDeudas: async (): Promise<DeudaAlumno[]> => {
+    const response = await api.get('/instructores/deudas');
+    return response.data;
+  },
+
+  obtenerRecibo: async (pagoId: string): Promise<ReciboData> => {
+    const response = await api.get(`/instructores/pagos/${pagoId}/recibo`);
+    return response.data;
+  },
+
+  obtenerRetencion: async (): Promise<RetencionMetrics> => {
+    const response = await api.get('/instructores/metricas/retencion');
     return response.data;
   },
 };

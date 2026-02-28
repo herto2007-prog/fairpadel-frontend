@@ -29,8 +29,9 @@ import ReservasSolicitudes from '../components/ReservasSolicitudes';
 import AlumnosList from '../components/AlumnosList';
 import FinanzasResumenComponent from '../components/FinanzasResumen';
 import CrearClaseModal from '../components/CrearClaseModal';
+import RetencionMetrics from '../components/RetencionMetrics';
 
-type Tab = 'agenda' | 'disponibilidad' | 'solicitudes' | 'alumnos' | 'finanzas' | 'perfil';
+type Tab = 'agenda' | 'disponibilidad' | 'solicitudes' | 'alumnos' | 'finanzas' | 'metricas' | 'perfil';
 
 const TABS: { key: Tab; label: string; icon: typeof Calendar }[] = [
   { key: 'agenda', label: 'Agenda', icon: Calendar },
@@ -38,6 +39,7 @@ const TABS: { key: Tab; label: string; icon: typeof Calendar }[] = [
   { key: 'solicitudes', label: 'Solicitudes', icon: ClipboardList },
   { key: 'alumnos', label: 'Alumnos', icon: Users },
   { key: 'finanzas', label: 'Finanzas', icon: DollarSign },
+  { key: 'metricas', label: 'Métricas', icon: BarChart2 },
   { key: 'perfil', label: 'Perfil', icon: BookOpen },
 ];
 
@@ -203,6 +205,7 @@ const InstructorDashboardPage = () => {
       {activeTab === 'solicitudes' && <ReservasSolicitudes />}
       {activeTab === 'alumnos' && <AlumnosList />}
       {activeTab === 'finanzas' && <FinanzasResumenComponent />}
+      {activeTab === 'metricas' && <RetencionMetrics />}
       {activeTab === 'perfil' && (
         <div className="space-y-6">
           {/* Quick Stats */}

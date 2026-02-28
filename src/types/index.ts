@@ -1148,3 +1148,69 @@ export interface FinanzasMensual {
   cobrado: number;
   pendiente: number;
 }
+
+// ==================== INSTRUCTOR PAGOS & NEGOCIO ====================
+
+export enum MetodoPagoInstructor {
+  EFECTIVO = 'EFECTIVO',
+  TRANSFERENCIA = 'TRANSFERENCIA',
+  QR = 'QR',
+  OTRO = 'OTRO',
+}
+
+export enum ConceptoPago {
+  CLASE = 'CLASE',
+  PAQUETE = 'PAQUETE',
+  DEUDA = 'DEUDA',
+  ADELANTO = 'ADELANTO',
+  OTRO = 'OTRO',
+}
+
+export interface PagoInstructor {
+  id: string;
+  instructorId: string;
+  alumnoId: string | null;
+  alumnoExternoNombre: string | null;
+  alumnoExternoTelefono: string | null;
+  reservaId: string | null;
+  monto: number;
+  metodoPago: MetodoPagoInstructor;
+  concepto: ConceptoPago;
+  descripcion: string | null;
+  fecha: string;
+  numeroRecibo: number | null;
+  createdAt: string;
+  alumno?: { id: string; nombre: string; apellido: string; fotoUrl: string | null };
+  reserva?: { id: string; fecha: string; horaInicio: string; horaFin: string };
+}
+
+export interface DeudaAlumno {
+  tipo: 'registrado' | 'externo';
+  id?: string;
+  nombre: string;
+  apellido?: string;
+  telefono?: string;
+  fotoUrl?: string | null;
+  deudaPendiente: number;
+  reservasPendientes: { id: string; fecha: string; precio: number }[];
+}
+
+export interface ReciboData {
+  pago: PagoInstructor;
+  instructor: {
+    id: string;
+    user: { nombre: string; apellido: string; telefono: string | null; email: string };
+  };
+  alumnoNombre: string;
+  alumnoTelefono: string | null;
+}
+
+export interface RetencionMetrics {
+  activos: number;
+  enRiesgo: number;
+  perdidos: number;
+  totalAlumnos: number;
+  tasaRetencion: number;
+  alumnosEnRiesgo: AlumnoResumen[];
+  clasesUltimos6Meses: { mes: string; clases: number }[];
+}
