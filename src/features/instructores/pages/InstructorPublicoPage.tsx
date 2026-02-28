@@ -14,7 +14,7 @@ import {
   Home,
 } from 'lucide-react';
 import type { Instructor } from '@/types';
-import ReservarClaseForm from '../components/ReservarClaseForm';
+import CalendarioReserva from '../components/CalendarioReserva';
 
 const InstructorPublicoPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -237,8 +237,8 @@ const InstructorPublicoPage = () => {
         </Card>
       )}
 
-      {/* Reservar Clase */}
-      <ReservarClaseForm instructor={instructor} />
+      {/* Reservar Clase — Calendario Semanal */}
+      <CalendarioReserva instructor={instructor} />
     </div>
   );
 };

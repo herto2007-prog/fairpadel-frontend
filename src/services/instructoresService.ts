@@ -171,6 +171,15 @@ export const instructoresService = {
     return response.data;
   },
 
+  getHorariosSemana: async (instructorId: string, fechaInicio: string): Promise<{
+    instructorId: string;
+    fechaInicio: string;
+    semana: Array<{ fecha: string; slots: HorarioSlot[] }>;
+  }> => {
+    const response = await api.get(`/instructores/${instructorId}/horarios-semana?fechaInicio=${fechaInicio}`);
+    return response.data;
+  },
+
   getHorariosDisponibles: async (instructorId: string, fecha: string): Promise<HorarioSlot[]> => {
     const response = await api.get(`/instructores/${instructorId}/horarios-disponibles?fecha=${fecha}`);
     // Backend returns { fecha, slots: [...] } — extract the array
