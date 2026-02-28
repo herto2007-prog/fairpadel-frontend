@@ -57,7 +57,7 @@ const FinanzasResumenComponent = () => {
       ]);
 
       setFinanzas(finanzasData);
-      setMensual(mensualData);
+      setMensual(Array.isArray(mensualData) ? mensualData : []);
     } catch (err) {
       console.error('Error loading finanzas:', err);
     } finally {

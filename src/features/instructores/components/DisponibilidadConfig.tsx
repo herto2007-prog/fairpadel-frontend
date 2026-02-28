@@ -43,10 +43,12 @@ const DisponibilidadConfig = () => {
 
   const loadData = async () => {
     try {
-      const [disps, bloqs] = await Promise.all([
+      const [dispsRaw, bloqsRaw] = await Promise.all([
         instructoresService.obtenerDisponibilidad(),
         instructoresService.obtenerBloqueos(),
       ]);
+      const disps = Array.isArray(dispsRaw) ? dispsRaw : [];
+      const bloqs = Array.isArray(bloqsRaw) ? bloqsRaw : [];
       // Convert disponibilidades to cell keys
       const cells = new Set<CellKey>();
       disps.forEach((d: InstructorDisponibilidad) => {

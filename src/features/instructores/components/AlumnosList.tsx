@@ -32,7 +32,7 @@ const AlumnosList = () => {
     setLoading(true);
     try {
       const data = await instructoresService.obtenerAlumnos();
-      setAlumnos(data);
+      setAlumnos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading alumnos:', err);
     } finally {

@@ -93,7 +93,7 @@ const InstructorDashboardPage = () => {
         instructoresService.obtenerAlumnos(),
       ]);
       setStats(finanzas);
-      setAlumnosCount(alumnos.length);
+      setAlumnosCount(Array.isArray(alumnos) ? alumnos.length : 0);
     } catch (err) {
       // Stats are non-critical, silently fail
     }

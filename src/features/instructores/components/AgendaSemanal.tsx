@@ -80,9 +80,9 @@ const AgendaSemanal = () => {
     setLoading(true);
     try {
       const data = await instructoresService.obtenerAgenda(formatDateISO(weekStart));
-      setReservas(data.reservas);
-      setBloqueos(data.bloqueos);
-      setDisponibilidades(data.disponibilidades);
+      setReservas(Array.isArray(data?.reservas) ? data.reservas : []);
+      setBloqueos(Array.isArray(data?.bloqueos) ? data.bloqueos : []);
+      setDisponibilidades(Array.isArray(data?.disponibilidades) ? data.disponibilidades : []);
     } catch (err) {
       console.error('Error loading agenda:', err);
     } finally {

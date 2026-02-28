@@ -41,7 +41,7 @@ const ReservasSolicitudes = () => {
       const data = await instructoresService.obtenerReservasInstructor(
         filtro || undefined
       );
-      setReservas(data);
+      setReservas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading reservas:', err);
     } finally {

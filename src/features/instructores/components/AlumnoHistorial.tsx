@@ -42,10 +42,10 @@ const AlumnoHistorial = ({ alumno }: Props) => {
     try {
       if (alumno.tipo === 'registrado' && alumno.id) {
         const data = await instructoresService.obtenerHistorialAlumno(alumno.id);
-        setReservas(data);
+        setReservas(Array.isArray(data) ? data : []);
       } else {
         const data = await instructoresService.obtenerHistorialAlumno('externo', alumno.nombre);
-        setReservas(data);
+        setReservas(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error loading historial:', err);

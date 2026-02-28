@@ -173,7 +173,8 @@ export const instructoresService = {
 
   getHorariosDisponibles: async (instructorId: string, fecha: string): Promise<HorarioSlot[]> => {
     const response = await api.get(`/instructores/${instructorId}/horarios-disponibles?fecha=${fecha}`);
-    return response.data;
+    // Backend returns { fecha, slots: [...] } — extract the array
+    return response.data?.slots || [];
   },
 
   crearReserva: async (instructorId: string, dto: {
