@@ -412,6 +412,7 @@ function SistemaTab() {
   const [configs, setConfigs] = useState<{ clave: string; valor: string; descripcion: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadConfigs();
@@ -444,6 +445,26 @@ function SistemaTab() {
     }
   };
 
+  const handleSaveValue = async (clave: string) => {
+    const newValue = editValues[clave];
+    if (newValue === undefined) return;
+    const current = configs.find((c) => c.clave === clave);
+    if (current && current.valor === newValue) return;
+    setSaving(clave);
+    try {
+      await adminService.actualizarConfiguracionSistema(clave, newValue);
+      setConfigs((prev) =>
+        prev.map((c) => (c.clave === clave ? { ...c, valor: newValue } : c)),
+      );
+      setEditValues((prev) => { const copy = { ...prev }; delete copy[clave]; return copy; });
+      toast.success('Configuración actualizada');
+    } catch {
+      toast.error('Error al actualizar');
+    } finally {
+      setSaving(null);
+    }
+  };
+
   if (loading) return <Loading size="lg" text="Cargando configuración..." />;
 
   // Find boolean configs (value is "true" or "false")
@@ -456,6 +477,9 @@ function SistemaTab() {
 
   const labelMap: Record<string, string> = {
     ASCENSOS_REQUIEREN_APROBACION: 'Ascensos requieren aprobación',
+    COMISION_INSCRIPCION: 'Comisión por inscripción (%)',
+    COMISION_FIJA_POR_JUGADOR: 'Comisión fija por jugador (Gs.)',
+    SMS_COSTO_UNITARIO: 'Costo por SMS (Gs.)',
   };
 
   return (
@@ -510,22 +534,42 @@ function SistemaTab() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {otherConfigs.map((config) => (
-                <div
-                  key={config.clave}
-                  className="flex items-center justify-between p-3 bg-dark-surface rounded-lg border border-dark-border"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-light-text">{config.clave}</p>
-                    {config.descripcion && (
-                      <p className="text-xs text-light-secondary">{config.descripcion}</p>
-                    )}
+              {otherConfigs.map((config) => {
+                const editVal = editValues[config.clave];
+                const isDirty = editVal !== undefined && editVal !== config.valor;
+                return (
+                  <div
+                    key={config.clave}
+                    className="flex items-center justify-between gap-3 p-3 bg-dark-surface rounded-lg border border-dark-border"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-light-text">
+                        {labelMap[config.clave] || config.clave}
+                      </p>
+                      {config.descripcion && (
+                        <p className="text-xs text-light-secondary">{config.descripcion}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <input
+                        type="text"
+                        value={editVal !== undefined ? editVal : config.valor}
+                        onChange={(e) => setEditValues((prev) => ({ ...prev, [config.clave]: e.target.value }))}
+                        className="w-24 px-2 py-1 text-sm font-mono text-right bg-dark-bg border border-dark-border rounded text-light-text focus:outline-none focus:border-primary-500"
+                      />
+                      {isDirty && (
+                        <button
+                          onClick={() => handleSaveValue(config.clave)}
+                          disabled={saving === config.clave}
+                          className="p-1 rounded bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 transition-colors"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm font-mono text-primary-400 bg-dark-bg px-3 py-1 rounded">
-                    {config.valor}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
