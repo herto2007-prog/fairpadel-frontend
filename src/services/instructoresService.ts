@@ -247,4 +247,11 @@ export const instructoresService = {
     const response = await api.get(`/instructores/finanzas/mensual?anio=${anio}&mes=${mes}`);
     return response.data;
   },
+
+  // ── Probar Módulo ─────────────────────────────────────
+
+  probarModulo: async (): Promise<{ message: string }> => {
+    const response = await api.post('/instructores/probar-modulo');
+    return response.data;
+  },
 };
