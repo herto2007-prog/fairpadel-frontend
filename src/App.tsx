@@ -15,7 +15,7 @@ import EditProfilePage from '@/features/profile/pages/EditProfilePage';
 import TournamentDetailPage from '@/features/tournaments/pages/TournamentDetailPage';
 import AdminPage from '@/features/admin/pages/AdminPage';
 import AdminSedesPage from '@/features/admin/pages/AdminSedesPage';
-import AdminOrganizadoresPage from '@/features/admin/pages/AdminOrganizadoresPage';
+// AdminOrganizadoresPage merged into AdminRolesPage
 import AdminModeracionPage from '@/features/admin/pages/AdminModeracionPage';
 import AdminFinanzasPage from '@/features/admin/pages/AdminSuscripcionesPage';
 import AdminConfiguracionPage from '@/features/admin/pages/AdminConfiguracionPage';
@@ -42,8 +42,9 @@ import SolicitarInstructorPage from '@/features/instructores/pages/SolicitarInst
 import InstructorDashboardPage from '@/features/instructores/pages/InstructorDashboardPage';
 import InstructorPublicoPage from '@/features/instructores/pages/InstructorPublicoPage';
 import BuscarInstructoresPage from '@/features/instructores/pages/BuscarInstructoresPage';
-import MisReservasPage from '@/features/instructores/pages/MisReservasPage';
-import AdminInstructoresPage from '@/features/admin/pages/AdminInstructoresPage';
+// MisReservasPage: /mis-clases now redirects to /instructores
+// AdminInstructoresPage merged into AdminRolesPage
+import AdminRolesPage from '@/features/admin/pages/AdminRolesPage';
 
 function App() {
   return (
@@ -102,13 +103,14 @@ function App() {
               }
             />
             <Route
-              path="/admin/organizadores"
+              path="/admin/roles"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminOrganizadoresPage />
+                  <AdminRolesPage />
                 </ProtectedRoute>
               }
             />
+            <Route path="/admin/organizadores" element={<Navigate to="/admin/roles" replace />} />
             <Route
               path="/admin/moderacion"
               element={
@@ -157,14 +159,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin/instructores"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminInstructoresPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/admin/instructores" element={<Navigate to="/admin/roles" replace />} />
 
             {/* Protected - Instructores */}
             <Route
@@ -183,14 +178,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/mis-clases"
-              element={
-                <ProtectedRoute>
-                  <MisReservasPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/mis-clases" element={<Navigate to="/instructores" replace />} />
 
             {/* Protected - Novedades */}
             <Route

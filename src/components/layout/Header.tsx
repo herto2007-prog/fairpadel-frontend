@@ -34,7 +34,6 @@ import {
   Gamepad2,
   MessageCircle,
   GraduationCap,
-  BookOpen,
 } from 'lucide-react';
 import logoIcon from '@/assets/Asset 4fair padel.png';
 
@@ -180,6 +179,7 @@ const Header = () => {
     { to: '/jugadores', label: 'Jugadores', icon: Users },
     { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
+    { to: '/instructores', label: 'Instructores', icon: GraduationCap },
     ...(isAuthenticated ? [{ to: '/novedades', label: 'Novedades', icon: Newspaper }] : []),
   ];
 
@@ -376,14 +376,6 @@ const Header = () => {
                         Solicitudes de Juego
                       </Link>
                       <Link
-                        to="/mis-clases"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
-                      >
-                        <GraduationCap className="h-4 w-4" />
-                        Mis Clases
-                      </Link>
-                      <Link
                         to="/premium"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover"
@@ -430,12 +422,12 @@ const Header = () => {
                             Gestionar Sedes
                           </Link>
                           <Link
-                            to="/admin/organizadores"
+                            to="/admin/roles"
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
                           >
                             <UserPlus className="h-4 w-4" />
-                            Organizadores
+                            Roles
                           </Link>
                           <Link
                             to="/admin/moderacion"
@@ -476,14 +468,6 @@ const Header = () => {
                           >
                             <Megaphone className="h-4 w-4" />
                             Publicidad
-                          </Link>
-                          <Link
-                            to="/admin/instructores"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
-                          >
-                            <BookOpen className="h-4 w-4" />
-                            Instructores
                           </Link>
                           <Link
                             to="/admin/configuracion"
@@ -672,14 +656,6 @@ const Header = () => {
                     Solicitudes de Juego
                   </Link>
                   <Link
-                    to="/mis-clases"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
-                  >
-                    <GraduationCap className="h-5 w-5" />
-                    Mis Clases
-                  </Link>
-                  <Link
                     to="/premium"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-yellow-400 hover:bg-dark-hover rounded-lg"
@@ -727,12 +703,12 @@ const Header = () => {
                         Gestionar Sedes
                       </Link>
                       <Link
-                        to="/admin/organizadores"
+                        to="/admin/roles"
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
                       >
                         <UserPlus className="h-5 w-5" />
-                        Organizadores
+                        Roles
                       </Link>
                       <Link
                         to="/admin/moderacion"
@@ -773,14 +749,6 @@ const Header = () => {
                       >
                         <Megaphone className="h-5 w-5" />
                         Publicidad
-                      </Link>
-                      <Link
-                        to="/admin/instructores"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
-                      >
-                        <BookOpen className="h-5 w-5" />
-                        Instructores
                       </Link>
                       <Link
                         to="/admin/configuracion"
