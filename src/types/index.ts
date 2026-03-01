@@ -1368,3 +1368,37 @@ export interface AlquileresDashboard {
   reservasConfirmadas: number;
   revenueMes: number;
 }
+
+// Wizard de reserva — búsqueda cross-sede
+export interface CanchaDisponibleResult {
+  canchaId: string;
+  canchaNombre: string;
+  canchaTipo: TipoCancha;
+  precio: number;
+  horaFin: string;
+}
+
+export interface SedeDisponibilidadResult {
+  id: string;
+  nombre: string;
+  ciudad: string;
+  direccion: string | null;
+  telefono: string | null;
+  logoUrl: string | null;
+  imagenFondo: string | null;
+  mapsUrl: string | null;
+  config: {
+    duracionSlotMinutos: number;
+    requiereAprobacion: boolean;
+    mensajeBienvenida: string | null;
+  };
+  canchasDisponibles: CanchaDisponibleResult[];
+  canchasOcupadas: number;
+}
+
+export interface BuscarDisponibilidadResponse {
+  ciudad: string;
+  fecha: string;
+  horaInicio: string;
+  sedes: SedeDisponibilidadResult[];
+}

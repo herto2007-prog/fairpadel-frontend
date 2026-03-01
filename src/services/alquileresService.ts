@@ -8,10 +8,22 @@ import type {
   ReservaCancha,
   DisponibilidadDia,
   AlquileresDashboard,
+  BuscarDisponibilidadResponse,
 } from '@/types';
 
 export const alquileresService = {
   // ── Público ──
+  getCiudadesConAlquiler: async (): Promise<string[]> => {
+    const { data } = await api.get('/alquileres/ciudades');
+    return data;
+  },
+
+  buscarDisponibilidad: async (ciudad: string, fecha: string, horaInicio: string): Promise<BuscarDisponibilidadResponse> => {
+    const params = new URLSearchParams({ ciudad, fecha, horaInicio });
+    const { data } = await api.get(`/alquileres/buscar-disponibilidad?${params.toString()}`);
+    return data;
+  },
+
   getSedesConAlquiler: async (filters?: { ciudad?: string; nombre?: string }): Promise<SedeAlquilerResumen[]> => {
     const params = new URLSearchParams();
     if (filters?.ciudad) params.append('ciudad', filters.ciudad);
