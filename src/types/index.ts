@@ -1214,3 +1214,155 @@ export interface RetencionMetrics {
   alumnosEnRiesgo: AlumnoResumen[];
   clasesUltimos6Meses: { mes: string; clases: number }[];
 }
+
+// ════════════════════════════════════════════════════════
+// ALQUILERES Y RESERVAS DE CANCHAS
+// ════════════════════════════════════════════════════════
+
+export enum ReservaCanchaEstado {
+  PENDIENTE = 'PENDIENTE',
+  CONFIRMADA = 'CONFIRMADA',
+  RECHAZADA = 'RECHAZADA',
+  CANCELADA = 'CANCELADA',
+  COMPLETADA = 'COMPLETADA',
+  NO_SHOW = 'NO_SHOW',
+}
+
+export enum FranjaHoraria {
+  MANANA = 'MANANA',
+  TARDE = 'TARDE',
+  NOCHE = 'NOCHE',
+}
+
+export enum TipoDiaEnum {
+  SEMANA = 'SEMANA',
+  FIN_DE_SEMANA = 'FIN_DE_SEMANA',
+}
+
+export enum MetodoPagoAlquiler {
+  EFECTIVO = 'EFECTIVO',
+  TRANSFERENCIA = 'TRANSFERENCIA',
+  QR = 'QR',
+  OTRO = 'OTRO',
+}
+
+export interface AlquilerConfig {
+  id: string;
+  sedeId: string;
+  encargadoId: string | null;
+  habilitado: boolean;
+  requiereAprobacion: boolean;
+  duracionSlotMinutos: number;
+  anticipacionMaxDias: number;
+  cancelacionMinHoras: number;
+  mensajeBienvenida: string | null;
+  sede?: { id: string; nombre: string; ciudad: string };
+  encargado?: { id: string; nombre: string; apellido: string; documento?: string; telefono?: string };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AlquilerPrecio {
+  id: string;
+  sedeId: string;
+  tipoCancha: TipoCancha;
+  tipoDia: string;
+  franja: string;
+  precio: number;
+  createdAt?: string;
+}
+
+export interface AlquilerDisponibilidad {
+  id: string;
+  sedeCanchaId: string;
+  diaSemana: number;
+  horaInicio: string;
+  horaFin: string;
+  activo: boolean;
+  sedeCancha?: { id: string; nombre: string; tipo: TipoCancha };
+  createdAt?: string;
+}
+
+export interface AlquilerBloqueo {
+  id: string;
+  sedeId: string;
+  sedeCanchaId: string | null;
+  fechaInicio: string;
+  fechaFin: string;
+  motivo: string | null;
+  sedeCancha?: { id: string; nombre: string } | null;
+  createdAt?: string;
+}
+
+export interface ReservaCancha {
+  id: string;
+  sedeCanchaId: string;
+  userId: string | null;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  duracionMinutos: number;
+  precio: number;
+  estado: ReservaCanchaEstado;
+  pagado: boolean;
+  metodoPago: MetodoPagoAlquiler | null;
+  nombreExterno: string | null;
+  telefonoExterno: string | null;
+  creadoPorEncargado: boolean;
+  compromisoPago: boolean;
+  notas: string | null;
+  motivoRechazo: string | null;
+  sedeCancha?: SedeCancha & { sede?: { id: string; nombre: string; ciudad?: string; logoUrl?: string } };
+  user?: { id: string; nombre: string; apellido: string; telefono?: string; fotoUrl?: string | null };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SlotAlquiler {
+  horaInicio: string;
+  horaFin: string;
+  disponible: boolean;
+  precio: number;
+  motivo: string | null;
+}
+
+export interface CanchaDisponibilidad {
+  canchaId: string;
+  canchaNombre: string;
+  canchaTipo: TipoCancha;
+  slots: SlotAlquiler[];
+}
+
+export interface DisponibilidadDia {
+  sedeId: string;
+  fecha: string;
+  diaSemana: number;
+  duracionSlotMinutos: number;
+  canchas: CanchaDisponibilidad[];
+}
+
+export interface SedeAlquilerResumen {
+  id: string;
+  nombre: string;
+  ciudad: string;
+  direccion: string | null;
+  telefono: string | null;
+  logoUrl: string | null;
+  imagenFondo: string | null;
+  canchasCount: number;
+  precioMin: number;
+  precioMax: number;
+  tiposCanchas: TipoCancha[];
+  config: {
+    duracionSlotMinutos: number;
+    requiereAprobacion: boolean;
+    mensajeBienvenida: string | null;
+  } | null;
+}
+
+export interface AlquileresDashboard {
+  sedesHabilitadas: number;
+  reservasMes: number;
+  reservasConfirmadas: number;
+  revenueMes: number;
+}

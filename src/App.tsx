@@ -42,6 +42,13 @@ import SolicitarInstructorPage from '@/features/instructores/pages/SolicitarInst
 import InstructorDashboardPage from '@/features/instructores/pages/InstructorDashboardPage';
 import InstructorPublicoPage from '@/features/instructores/pages/InstructorPublicoPage';
 import BuscarInstructoresPage from '@/features/instructores/pages/BuscarInstructoresPage';
+
+// Alquileres
+import CanchasListPage from '@/features/alquileres/pages/CanchasListPage';
+import SedeAlquilerPage from '@/features/alquileres/pages/SedeAlquilerPage';
+import MisReservasCanchaPage from '@/features/alquileres/pages/MisReservasCanchaPage';
+import GestionAlquileresPage from '@/features/alquileres/pages/GestionAlquileresPage';
+import AdminAlquileresPage from '@/features/admin/pages/AdminAlquileresPage';
 // MisReservasPage: /mis-clases now redirects to /instructores
 // AdminInstructoresPage merged into AdminRolesPage
 import AdminRolesPage from '@/features/admin/pages/AdminRolesPage';
@@ -84,6 +91,8 @@ function App() {
             <Route path="/jugadores/:id" element={<ProfilePage />} />
             <Route path="/instructores" element={<BuscarInstructoresPage />} />
             <Route path="/instructores/:id" element={<InstructorPublicoPage />} />
+            <Route path="/canchas" element={<CanchasListPage />} />
+            <Route path="/canchas/:sedeId" element={<SedeAlquilerPage />} />
 
             {/* Protected - Admin */}
             <Route
@@ -159,6 +168,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/alquileres"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminAlquileresPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/admin/instructores" element={<Navigate to="/admin/roles" replace />} />
 
             {/* Protected - Instructores */}
@@ -179,6 +196,24 @@ function App() {
               }
             />
             <Route path="/mis-clases" element={<Navigate to="/instructores" replace />} />
+
+            {/* Protected - Alquileres */}
+            <Route
+              path="/mis-reservas-cancha"
+              element={
+                <ProtectedRoute>
+                  <MisReservasCanchaPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/gestion-alquileres"
+              element={
+                <ProtectedRoute requiredRole="encargado">
+                  <GestionAlquileresPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected - Novedades */}
             <Route

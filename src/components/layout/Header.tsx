@@ -91,6 +91,7 @@ const Header = () => {
   const isAdmin = hasRole('admin');
   const isOrganizador = hasRole('organizador') || isAdmin;
   const isInstructor = hasRole('instructor');
+  const isEncargado = hasRole('encargado');
 
   // Fetch unread counts on demand
   const fetchUnreadCount = useCallback(async () => {
@@ -180,6 +181,7 @@ const Header = () => {
     { to: '/circuitos', label: 'Circuitos', icon: Trophy },
     { to: '/rankings', label: 'Rankings', icon: BarChart2 },
     { to: '/instructores', label: 'Instructores', icon: GraduationCap },
+    { to: '/canchas', label: 'Canchas', icon: MapPin },
     ...(isAuthenticated ? [{ to: '/novedades', label: 'Novedades', icon: Newspaper }] : []),
   ];
 
@@ -368,6 +370,14 @@ const Header = () => {
                         )}
                       </Link>
                       <Link
+                        to="/mis-reservas-cancha"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Mis Reservas Cancha
+                      </Link>
+                      <Link
                         to="/solicitudes"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
@@ -401,6 +411,16 @@ const Header = () => {
                         >
                           <GraduationCap className="h-4 w-4" />
                           Mi Panel Instructor
+                        </Link>
+                      )}
+                      {(isEncargado || isAdmin) && (
+                        <Link
+                          to="/gestion-alquileres"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                        >
+                          <MapPin className="h-4 w-4" />
+                          Gestión Alquileres
                         </Link>
                       )}
                       {isAdmin && (
@@ -468,6 +488,14 @@ const Header = () => {
                           >
                             <Megaphone className="h-4 w-4" />
                             Publicidad
+                          </Link>
+                          <Link
+                            to="/admin/alquileres"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover hover:text-light-text"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Alquileres
                           </Link>
                           <Link
                             to="/admin/configuracion"
@@ -648,6 +676,14 @@ const Header = () => {
                     )}
                   </Link>
                   <Link
+                    to="/mis-reservas-cancha"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                  >
+                    <MapPin className="h-5 w-5" />
+                    Mis Reservas Cancha
+                  </Link>
+                  <Link
                     to="/solicitudes"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
@@ -681,6 +717,16 @@ const Header = () => {
                     >
                       <GraduationCap className="h-5 w-5" />
                       Mi Panel Instructor
+                    </Link>
+                  )}
+                  {(isEncargado || isAdmin) && (
+                    <Link
+                      to="/gestion-alquileres"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                    >
+                      <MapPin className="h-5 w-5" />
+                      Gestión Alquileres
                     </Link>
                   )}
                   {isAdmin && (
@@ -749,6 +795,14 @@ const Header = () => {
                       >
                         <Megaphone className="h-5 w-5" />
                         Publicidad
+                      </Link>
+                      <Link
+                        to="/admin/alquileres"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-light-secondary hover:bg-dark-hover rounded-lg"
+                      >
+                        <MapPin className="h-5 w-5" />
+                        Alquileres
                       </Link>
                       <Link
                         to="/admin/configuracion"
