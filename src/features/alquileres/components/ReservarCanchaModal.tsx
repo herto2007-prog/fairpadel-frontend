@@ -16,7 +16,8 @@ function formatPrecio(precio: number): string {
 }
 
 function formatFecha(fechaStr: string): string {
-  const fecha = new Date(fechaStr + 'T12:00:00');
+  const dateStr = fechaStr.includes('T') ? fechaStr.split('T')[0] : fechaStr;
+  const fecha = new Date(dateStr + 'T12:00:00');
   return fecha.toLocaleDateString('es-PY', {
     weekday: 'long',
     day: 'numeric',

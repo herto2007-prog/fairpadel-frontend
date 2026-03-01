@@ -10,7 +10,8 @@ interface Props {
 }
 
 function formatFecha(f: string) {
-  const d = new Date(f + 'T12:00:00');
+  const dateStr = f.includes('T') ? f.split('T')[0] : f;
+  const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 

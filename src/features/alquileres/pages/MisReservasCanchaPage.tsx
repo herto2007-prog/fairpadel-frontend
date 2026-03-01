@@ -16,7 +16,8 @@ const estadoBadgeVariant: Record<ReservaCanchaEstado, { label: string; variant: 
 };
 
 function formatFecha(fechaStr: string): string {
-  const d = new Date(fechaStr + 'T12:00:00');
+  const dateStr = fechaStr.includes('T') ? fechaStr.split('T')[0] : fechaStr;
+  const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('es-PY', { weekday: 'short', day: '2-digit', month: 'short' });
 }
 
