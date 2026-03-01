@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
-import { Loader2, Save, Info } from 'lucide-react';
+import { Button, Loading } from '@/components/ui';
+import { Save, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -11,7 +12,6 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Config fields
   const [requiereAprobacion, setRequiereAprobacion] = useState(true);
   const [duracionSlotMinutos, setDuracionSlotMinutos] = useState(90);
   const [anticipacionMaxDias, setAnticipacionMaxDias] = useState(14);
@@ -33,8 +33,8 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
         setCancelacionMinHoras(data.cancelacionMinHoras ?? 4);
         setMensajeBienvenida(data.mensajeBienvenida || '');
       }
-    } catch (err: any) {
-      toast.error('Error cargando configuraci\u00f3n');
+    } catch {
+      toast.error('Error cargando configuración');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
         cancelacionMinHoras,
         mensajeBienvenida: mensajeBienvenida || undefined,
       });
-      toast.success('Configuraci\u00f3n guardada');
+      toast.success('Configuración guardada');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error guardando');
     } finally {
@@ -59,29 +59,25 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <Loading size="lg" text="Cargando configuración..." />;
   }
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl mx-auto sm:mx-0">
       <div className="space-y-5">
-        {/* Requiere aprobaci\u00f3n */}
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <div className="flex items-center justify-between">
+        {/* Requiere aprobación */}
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-dark-text">Requiere Aprobaci\u00f3n</p>
-              <p className="text-xs text-dark-muted mt-0.5">
-                Si est\u00e1 activado, las reservas quedan pendientes hasta que las confirmes manualmente.
+              <p className="text-sm font-medium text-light-text">Requiere aprobación</p>
+              <p className="text-xs text-light-muted mt-0.5">
+                Si está activado, las reservas quedan pendientes hasta que las confirmes manualmente.
               </p>
             </div>
             <button
               onClick={() => setRequiereAprobacion(!requiereAprobacion)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                requiereAprobacion ? 'bg-primary' : 'bg-dark-border'
+              className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-colors ${
+                requiereAprobacion ? 'bg-primary-500' : 'bg-dark-border'
               }`}
             >
               <span
@@ -93,10 +89,10 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
           </div>
         </div>
 
-        {/* Duraci\u00f3n del turno */}
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <label className="text-sm font-medium text-dark-text block mb-1">Duraci\u00f3n del Turno (minutos)</label>
-          <p className="text-xs text-dark-muted mb-2">Cu\u00e1nto dura cada turno de alquiler.</p>
+        {/* Duración del turno */}
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
+          <label className="text-sm font-medium text-light-text block mb-1">Duración del turno (minutos)</label>
+          <p className="text-xs text-light-muted mb-2">Cuánto dura cada turno de alquiler.</p>
           <input
             type="number"
             value={duracionSlotMinutos}
@@ -104,31 +100,32 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
             min="30"
             max="180"
             step="15"
-            className="w-32 px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text font-mono"
+            className="w-32 px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
-        {/* Anticipaci\u00f3n m\u00e1xima */}
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <label className="text-sm font-medium text-dark-text block mb-1">Anticipaci\u00f3n M\u00e1xima (d\u00edas)</label>
-          <p className="text-xs text-dark-muted mb-2">Con cu\u00e1ntos d\u00edas de anticipaci\u00f3n se puede reservar.</p>
+        {/* Anticipación máxima */}
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
+          <label className="text-sm font-medium text-light-text block mb-1">Anticipación máxima (días)</label>
+          <p className="text-xs text-light-muted mb-2">Con cuántos días de anticipación se puede reservar.</p>
           <input
             type="number"
             value={anticipacionMaxDias}
             onChange={(e) => setAnticipacionMaxDias(parseInt(e.target.value) || 14)}
             min="1"
             max="90"
-            className="w-32 px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text font-mono"
+            className="w-32 px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
-        {/* Cancelaci\u00f3n m\u00ednima */}
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <label className="text-sm font-medium text-dark-text block mb-1">Cancelaci\u00f3n M\u00ednima (horas)</label>
+        {/* Cancelación mínima */}
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
+          <label className="text-sm font-medium text-light-text block mb-1">Cancelación mínima (horas)</label>
           <div className="flex items-start gap-2 mb-2">
             <Info className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-dark-muted">
-              Si el usuario cancela con menos de estas horas de anticipaci\u00f3n, queda con <span className="text-red-400 font-medium">compromiso de pago</span> — debe abonar el turno igualmente.
+            <p className="text-xs text-light-muted">
+              Si el usuario cancela con menos de estas horas de anticipación, queda con{' '}
+              <span className="text-red-400 font-medium">compromiso de pago</span> — debe abonar el turno igualmente.
             </p>
           </div>
           <input
@@ -137,32 +134,28 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
             onChange={(e) => setCancelacionMinHoras(parseInt(e.target.value) || 4)}
             min="1"
             max="72"
-            className="w-32 px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text font-mono"
+            className="w-32 px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         {/* Mensaje de bienvenida */}
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <label className="text-sm font-medium text-dark-text block mb-1">Mensaje de Bienvenida</label>
-          <p className="text-xs text-dark-muted mb-2">Se muestra a los usuarios en la p\u00e1gina de tu sede.</p>
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
+          <label className="text-sm font-medium text-light-text block mb-1">Mensaje de bienvenida</label>
+          <p className="text-xs text-light-muted mb-2">Se muestra a los usuarios en la página de tu sede.</p>
           <textarea
             value={mensajeBienvenida}
             onChange={(e) => setMensajeBienvenida(e.target.value)}
             rows={3}
             placeholder="Ej: Bienvenidos a nuestro club..."
-            className="w-full px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text placeholder-dark-muted resize-none"
+            className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text placeholder:text-light-muted resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         {/* Save button */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Guardar Configuraci\u00f3n
-        </button>
+        <Button variant="primary" loading={saving} onClick={handleSave} className="w-full sm:w-auto">
+          <Save className="w-4 h-4 mr-1.5" />
+          Guardar configuración
+        </Button>
       </div>
     </div>
   );

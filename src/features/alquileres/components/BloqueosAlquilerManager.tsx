@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
-import { Loader2, Plus, Trash2, Ban } from 'lucide-react';
+import { Button, Loading } from '@/components/ui';
+import { Plus, Trash2, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { AlquilerBloqueo } from '@/types';
 
@@ -20,13 +21,10 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Form state
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [sedeCanchaId, setSedeCanchaId] = useState('');
   const [motivo, setMotivo] = useState('');
-
-  // Canchas for optional filter
   const [canchas, setCanchas] = useState<{ id: string; nombre: string }[]>([]);
 
   const fetchData = async () => {
@@ -49,7 +47,7 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
 
   const handleCrear = async () => {
     if (!fechaInicio || !fechaFin) {
-      toast.error('Ingres\u00e1 fecha inicio y fin');
+      toast.error('Ingresá fecha inicio y fin');
       return;
     }
     setSaving(true);
@@ -75,7 +73,7 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
   };
 
   const handleEliminar = async (bloqueoId: string) => {
-    if (!confirm('\u00bfEliminar este bloqueo?')) return;
+    if (!confirm('¿Eliminar este bloqueo?')) return;
     setDeleting(bloqueoId);
     try {
       await alquileresService.eliminarBloqueo(sedeId, bloqueoId);
@@ -89,54 +87,46 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <Loading size="lg" text="Cargando bloqueos..." />;
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-dark-text">Bloqueos de Canchas</h3>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" /> Nuevo Bloqueo
-        </button>
+        <h3 className="text-sm font-semibold text-light-text">Bloqueos de canchas</h3>
+        <Button variant="primary" size="sm" onClick={() => setShowForm(!showForm)}>
+          <Plus className="w-3.5 h-3.5 mr-1" /> Nuevo bloqueo
+        </Button>
       </div>
 
-      {/* Create form */}
       {showForm && (
-        <div className="bg-dark-card rounded-xl border border-dark-border p-4 mb-4 space-y-3">
+        <div className="bg-dark-card rounded-lg border border-dark-border p-4 mb-4 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-dark-muted block mb-1">Fecha Inicio *</label>
+              <label className="text-xs text-light-muted block mb-1">Fecha inicio *</label>
               <input
                 type="date"
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
-                className="w-full px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text"
+                className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
-              <label className="text-xs text-dark-muted block mb-1">Fecha Fin *</label>
+              <label className="text-xs text-light-muted block mb-1">Fecha fin *</label>
               <input
                 type="date"
                 value={fechaFin}
                 onChange={(e) => setFechaFin(e.target.value)}
-                className="w-full px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text"
+                className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
           <div>
-            <label className="text-xs text-dark-muted block mb-1">Cancha (opcional — dejar vac\u00edo para todas)</label>
+            <label className="text-xs text-light-muted block mb-1">Cancha (opcional — dejar vacío para todas)</label>
             <select
               value={sedeCanchaId}
               onChange={(e) => setSedeCanchaId(e.target.value)}
-              className="w-full px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text"
+              className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Todas las canchas</option>
               {canchas.map((c) => (
@@ -145,37 +135,28 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
             </select>
           </div>
           <div>
-            <label className="text-xs text-dark-muted block mb-1">Motivo (opcional)</label>
+            <label className="text-xs text-light-muted block mb-1">Motivo (opcional)</label>
             <input
               type="text"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
               placeholder="Ej: Mantenimiento, evento privado..."
-              className="w-full px-3 py-2 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text placeholder-dark-muted"
+              className="w-full px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text placeholder:text-light-muted focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleCrear}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Crear Bloqueo
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 rounded-lg text-sm text-dark-muted hover:text-dark-text transition-colors"
-            >
+            <Button variant="primary" size="sm" loading={saving} onClick={handleCrear}>
+              <Plus className="w-4 h-4 mr-1" /> Crear bloqueo
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      {/* List */}
       {bloqueos.length === 0 ? (
-        <div className="text-center py-12 text-dark-muted text-sm">
+        <div className="text-center py-12 text-light-muted text-sm">
           <Ban className="w-8 h-8 mx-auto mb-2 opacity-50" />
           No hay bloqueos activos.
         </div>
@@ -185,21 +166,22 @@ export default function BloqueosAlquilerManager({ sedeId }: Props) {
             <div key={b.id} className="bg-dark-card rounded-lg border border-dark-border p-3 flex items-center gap-3">
               <Ban className="w-4 h-4 text-red-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-dark-text">
+                <div className="text-sm text-light-text">
                   {formatFecha(b.fechaInicio)} — {formatFecha(b.fechaFin)}
                 </div>
-                <div className="text-xs text-dark-muted">
+                <div className="text-xs text-light-muted">
                   {b.sedeCancha?.nombre || 'Todas las canchas'}
                   {b.motivo && ` — ${b.motivo}`}
                 </div>
               </div>
-              <button
+              <Button
+                variant="danger"
+                size="sm"
+                loading={deleting === b.id}
                 onClick={() => handleEliminar(b.id)}
-                disabled={deleting === b.id}
-                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
               >
-                {deleting === b.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              </button>
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           ))}
         </div>

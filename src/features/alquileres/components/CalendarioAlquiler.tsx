@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { alquileresService } from '@/services/alquileresService';
+import { Loading, Button } from '@/components/ui';
 import type { DisponibilidadDia, CanchaDisponibilidad, SlotAlquiler, TipoCancha } from '@/types';
 
 const tipoCanchaColors: Record<TipoCancha, string> = {
@@ -29,7 +30,7 @@ function formatDateISO(date: Date): string {
 }
 
 function formatDayLabel(date: Date): string {
-  const dias = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+  const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   return `${dias[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}`;
 }
 
@@ -100,7 +101,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loading />
       </div>
     );
   }
@@ -111,7 +112,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
 
   if (allTimeSlots.length === 0) {
     return (
-      <div className="text-center py-8 text-dark-muted">
+      <div className="text-center py-8 text-light-muted">
         No hay horarios disponibles para esta semana.
       </div>
     );
@@ -121,37 +122,39 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
     <div className="space-y-4">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setWeekStart(addDays(weekStart, -7))}
           disabled={!canGoPrev}
-          className="p-2 rounded-lg hover:bg-dark-hover disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="font-medium text-dark-text">
+        </Button>
+        <span className="font-medium text-light-text text-sm sm:text-base">
           {formatDayLabel(weekStart)} — {formatDayLabel(addDays(weekStart, 6))}
         </span>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setWeekStart(addDays(weekStart, 7))}
-          className="p-2 rounded-lg hover:bg-dark-hover"
         >
           <ChevronRight className="w-5 h-5" />
-        </button>
+        </Button>
       </div>
 
       {/* Calendar grid */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <table className="w-full text-xs border-collapse min-w-[600px]">
           <thead>
             <tr>
-              <th className="p-2 text-left text-dark-muted font-normal border-b border-dark-border w-16">Hora</th>
+              <th className="p-2 text-left text-light-muted font-normal border-b border-dark-border w-16">Hora</th>
               {Array.from({ length: 7 }).map((_, i) => {
                 const day = addDays(weekStart, i);
                 const isToday = formatDateISO(day) === formatDateISO(new Date());
                 return (
                   <th
                     key={i}
-                    className={`p-2 text-center font-medium border-b border-dark-border ${isToday ? 'text-primary' : 'text-dark-text'}`}
+                    className={`p-2 text-center font-medium border-b border-dark-border ${isToday ? 'text-primary-400' : 'text-light-text'}`}
                   >
                     {formatDayLabel(day)}
                   </th>
@@ -162,7 +165,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
           <tbody>
             {allTimeSlots.map((time) => (
               <tr key={time} className="border-b border-dark-border/50">
-                <td className="p-1.5 text-dark-muted font-mono">{time}</td>
+                <td className="p-1.5 text-light-muted font-mono">{time}</td>
                 {Array.from({ length: 7 }).map((_, dayIdx) => {
                   const dia = data[dayIdx];
                   const fechaStr = dia?.fecha || formatDateISO(addDays(weekStart, dayIdx));
@@ -174,7 +177,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
                   }).filter((cs) => cs.slot);
 
                   if (canchaSlots.length === 0) {
-                    return <td key={dayIdx} className="p-1.5 text-center text-dark-muted">-</td>;
+                    return <td key={dayIdx} className="p-1.5 text-center text-light-muted">-</td>;
                   }
 
                   return (
@@ -186,7 +189,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
                             return (
                               <span
                                 key={cancha.canchaId}
-                                className="px-1.5 py-0.5 rounded text-[10px] bg-dark-hover text-dark-muted cursor-not-allowed"
+                                className="px-1.5 py-0.5 rounded text-[10px] bg-dark-hover text-light-muted cursor-not-allowed"
                                 title={`${cancha.canchaNombre} - ${slot.motivo || 'Ocupado'}`}
                               >
                                 {cancha.canchaNombre.substring(0, 6)}
@@ -215,7 +218,7 @@ export default function CalendarioAlquiler({ sedeId, onSelectSlot }: Props) {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-dark-muted">
+      <div className="flex flex-wrap gap-4 text-xs text-light-muted">
         {canchasList.map((c) => (
           <span key={c.id} className="flex items-center gap-1.5">
             <span className={`w-3 h-3 rounded ${tipoCanchaColors[c.tipo]}`} />

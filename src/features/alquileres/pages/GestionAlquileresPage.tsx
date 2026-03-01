@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
-import { Loader2, Calendar, Clock, Ban, DollarSign, Settings, MapPin } from 'lucide-react';
+import { Calendar, Clock, Ban, DollarSign, Settings, MapPin } from 'lucide-react';
+import { Loading } from '@/components/ui';
 import ReservasAlquilerList from '../components/ReservasAlquilerList';
 import DisponibilidadAlquilerConfig from '../components/DisponibilidadAlquilerConfig';
 import BloqueosAlquilerManager from '../components/BloqueosAlquilerManager';
@@ -48,7 +49,7 @@ export default function GestionAlquileresPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loading />
       </div>
     );
   }
@@ -57,8 +58,8 @@ export default function GestionAlquileresPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center py-16">
-          <MapPin className="w-12 h-12 text-dark-muted mx-auto mb-3" />
-          <p className="text-dark-muted">{error || 'No tenés una sede asignada.'}</p>
+          <MapPin className="w-12 h-12 text-light-muted mx-auto mb-3" />
+          <p className="text-light-muted">{error || 'No tenés una sede asignada.'}</p>
         </div>
       </div>
     );
@@ -68,8 +69,8 @@ export default function GestionAlquileresPage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-dark-text">Gestión de Alquileres</h1>
-        <p className="text-dark-muted mt-1 flex items-center gap-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Gestión de Alquileres</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1 flex items-center gap-1">
           <MapPin className="w-4 h-4" /> {sedeName}
         </p>
       </div>
@@ -84,8 +85,8 @@ export default function GestionAlquileresPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-primary text-white'
-                  : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text hover:bg-dark-hover'
+                  ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                  : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text hover:bg-dark-hover'
               }`}
             >
               <Icon className="w-4 h-4" />

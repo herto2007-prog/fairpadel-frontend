@@ -3,9 +3,10 @@ import { alquileresService } from '@/services/alquileresService';
 import { sedesService } from '@/services/sedesService';
 import { usersService } from '@/services/usersService';
 import {
-  Loader2, MapPin, ToggleLeft, ToggleRight, Users, Calendar,
+  MapPin, ToggleLeft, ToggleRight, Users, Calendar,
   DollarSign, BarChart2, Search, CheckCircle2,
 } from 'lucide-react';
+import { Loading, Badge, Button } from '@/components/ui';
 import toast from 'react-hot-toast';
 import type { AlquileresDashboard } from '@/types';
 
@@ -149,8 +150,8 @@ export default function AdminAlquileresPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-dark-text">Admin — Alquileres</h1>
-        <p className="text-dark-muted mt-1">Gestionar sedes con alquiler de canchas</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Admin — Alquileres</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1">Gestionar sedes con alquiler de canchas</p>
       </div>
 
       {/* Tabs */}
@@ -158,7 +159,9 @@ export default function AdminAlquileresPage() {
         <button
           onClick={() => setActiveTab('sedes')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'sedes' ? 'bg-primary text-white' : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text'
+            activeTab === 'sedes'
+              ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+              : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text hover:bg-dark-hover'
           }`}
         >
           <MapPin className="w-4 h-4" /> Sedes
@@ -166,7 +169,9 @@ export default function AdminAlquileresPage() {
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'dashboard' ? 'bg-primary text-white' : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text'
+            activeTab === 'dashboard'
+              ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+              : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text hover:bg-dark-hover'
           }`}
         >
           <BarChart2 className="w-4 h-4" /> Dashboard
@@ -178,7 +183,7 @@ export default function AdminAlquileresPage() {
         <>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loading />
             </div>
           ) : (
             <div className="space-y-3">
@@ -187,18 +192,16 @@ export default function AdminAlquileresPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-dark-text text-sm">{s.nombre}</h3>
+                        <h3 className="font-semibold text-light-text text-sm">{s.nombre}</h3>
                         {s.habilitado ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 flex items-center gap-1">
+                          <Badge variant="success" className="flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Habilitado
-                          </span>
+                          </Badge>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-400">
-                            Deshabilitado
-                          </span>
+                          <Badge variant="outline">Deshabilitado</Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-dark-muted">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-light-muted">
                         {s.ciudad && (
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3.5 h-3.5" /> {s.ciudad}
@@ -215,21 +218,26 @@ export default function AdminAlquileresPage() {
 
                     <div className="flex gap-2">
                       {s.habilitado ? (
-                        <button
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleDeshabilitar(s.id)}
-                          disabled={actionLoading === s.id}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                          loading={actionLoading === s.id}
+                          className="text-xs"
                         >
-                          {actionLoading === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                          <ToggleLeft className="w-3.5 h-3.5 mr-1" />
                           Deshabilitar
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
+                          variant="success"
+                          size="sm"
                           onClick={() => { setShowHabilitar(s.id); setFoundUser(null); setEncargadoDoc(''); }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
+                          className="text-xs"
                         >
-                          <ToggleRight className="w-3.5 h-3.5" /> Habilitar
-                        </button>
+                          <ToggleRight className="w-3.5 h-3.5 mr-1" />
+                          Habilitar
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -237,41 +245,44 @@ export default function AdminAlquileresPage() {
                   {/* Habilitar form inline */}
                   {showHabilitar === s.id && (
                     <div className="mt-3 pt-3 border-t border-dark-border">
-                      <p className="text-xs text-dark-muted mb-2">Asignar encargado (buscar por documento):</p>
+                      <p className="text-xs text-light-muted mb-2">Asignar encargado (buscar por documento):</p>
                       <div className="flex gap-2 items-center">
                         <input
                           type="text"
                           value={encargadoDoc}
                           onChange={(e) => setEncargadoDoc(e.target.value)}
                           placeholder="Documento del encargado"
-                          className="flex-1 px-3 py-1.5 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text placeholder-dark-muted"
+                          className="flex-1 px-3 py-1.5 bg-dark-input border border-dark-border rounded-lg text-sm text-light-text placeholder-light-muted"
                           onKeyDown={(e) => e.key === 'Enter' && handleBuscarEncargado()}
                         />
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={handleBuscarEncargado}
-                          disabled={searchingUser}
-                          className="px-3 py-1.5 rounded-lg text-xs bg-dark-hover border border-dark-border text-dark-muted hover:text-dark-text disabled:opacity-50"
+                          loading={searchingUser}
                         >
-                          {searchingUser ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                        </button>
+                          <Search className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                       {foundUser && (
                         <div className="mt-2 flex items-center gap-2">
                           <span className="text-xs text-green-400">
-                            ✓ {foundUser.nombre} {foundUser.apellido} ({foundUser.documento})
+                            {foundUser.nombre} {foundUser.apellido} ({foundUser.documento})
                           </span>
-                          <button
+                          <Button
+                            variant="primary"
+                            size="sm"
                             onClick={() => handleHabilitar(s.id)}
-                            disabled={actionLoading === s.id}
-                            className="px-3 py-1 rounded-lg text-xs bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                            loading={actionLoading === s.id}
+                            className="text-xs"
                           >
-                            {actionLoading === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Confirmar'}
-                          </button>
+                            Confirmar
+                          </Button>
                         </div>
                       )}
                       <button
                         onClick={() => setShowHabilitar(null)}
-                        className="mt-2 text-xs text-dark-muted hover:text-dark-text"
+                        className="mt-2 text-xs text-light-muted hover:text-light-text"
                       >
                         Cancelar
                       </button>
@@ -280,7 +291,7 @@ export default function AdminAlquileresPage() {
                 </div>
               ))}
               {sedes.length === 0 && (
-                <div className="text-center py-12 text-dark-muted text-sm">No hay sedes registradas.</div>
+                <div className="text-center py-12 text-light-muted text-sm">No hay sedes registradas.</div>
               )}
             </div>
           )}
@@ -292,35 +303,35 @@ export default function AdminAlquileresPage() {
         <>
           {dashLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <Loading />
             </div>
           ) : dashboard ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-dark-card rounded-xl border border-dark-border p-4 text-center">
-                <MapPin className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-2xl font-bold text-dark-text">{dashboard.sedesHabilitadas ?? 0}</p>
-                <p className="text-xs text-dark-muted mt-1">Sedes Habilitadas</p>
+                <MapPin className="w-6 h-6 text-primary-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-light-text">{dashboard.sedesHabilitadas ?? 0}</p>
+                <p className="text-xs text-light-muted mt-1">Sedes Habilitadas</p>
               </div>
               <div className="bg-dark-card rounded-xl border border-dark-border p-4 text-center">
                 <Calendar className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-dark-text">{dashboard.reservasMes ?? 0}</p>
-                <p className="text-xs text-dark-muted mt-1">Reservas del Mes</p>
+                <p className="text-2xl font-bold text-light-text">{dashboard.reservasMes ?? 0}</p>
+                <p className="text-xs text-light-muted mt-1">Reservas del Mes</p>
               </div>
               <div className="bg-dark-card rounded-xl border border-dark-border p-4 text-center">
                 <DollarSign className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-dark-text">
+                <p className="text-2xl font-bold text-light-text">
                   {(dashboard.revenueMes ?? 0).toLocaleString('es-PY')}
                 </p>
-                <p className="text-xs text-dark-muted mt-1">Revenue Mes (Gs)</p>
+                <p className="text-xs text-light-muted mt-1">Revenue Mes (Gs)</p>
               </div>
               <div className="bg-dark-card rounded-xl border border-dark-border p-4 text-center">
                 <BarChart2 className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-dark-text">{dashboard.reservasConfirmadas ?? 0}</p>
-                <p className="text-xs text-dark-muted mt-1">Confirmadas</p>
+                <p className="text-2xl font-bold text-light-text">{dashboard.reservasConfirmadas ?? 0}</p>
+                <p className="text-xs text-light-muted mt-1">Confirmadas</p>
               </div>
             </div>
           ) : (
-            <div className="text-center py-12 text-dark-muted text-sm">No hay datos disponibles.</div>
+            <div className="text-center py-12 text-light-muted text-sm">No hay datos disponibles.</div>
           )}
         </>
       )}

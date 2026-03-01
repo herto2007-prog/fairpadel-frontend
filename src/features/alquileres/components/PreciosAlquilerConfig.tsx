@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
-import { Loader2, Save } from 'lucide-react';
+import { Button, Loading } from '@/components/ui';
+import { Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TipoCancha } from '@/types';
 import type { AlquilerPrecio } from '@/types';
@@ -9,8 +10,8 @@ interface Props {
   sedeId: string;
 }
 
-const TIPOS_CANCHA: TipoCancha[] = [TipoCancha.INDOOR, TipoCancha.OUTDOOR, TipoCancha.SEMI_TECHADA];
-const tipoCanchaLabel: Record<TipoCancha, string> = {
+const TIPOS_CANCHA = [TipoCancha.INDOOR, TipoCancha.OUTDOOR, TipoCancha.SEMI_TECHADA];
+const tipoCanchaLabel: Record<string, string> = {
   INDOOR: 'Indoor',
   OUTDOOR: 'Outdoor',
   SEMI_TECHADA: 'Semi-techada',
@@ -18,25 +19,25 @@ const tipoCanchaLabel: Record<TipoCancha, string> = {
 
 const FRANJAS = ['MANANA', 'TARDE', 'NOCHE'] as const;
 const franjaLabel: Record<string, string> = {
-  MANANA: 'Ma\u00f1ana (06-12)',
+  MANANA: 'Mañana (06-12)',
   TARDE: 'Tarde (12-18)',
   NOCHE: 'Noche (18-23)',
 };
 
-const TIPOS_DIA = ['SEMANA', 'FIN_DE_SEMANA'] as const;
+const TIPOS_DIA = ['SEMANA', 'SABADO', 'DOMINGO'] as const;
 const tipoDiaLabel: Record<string, string> = {
   SEMANA: 'Lun-Vie',
-  FIN_DE_SEMANA: 'S\u00e1b-Dom',
+  SABADO: 'Sábado',
+  DOMINGO: 'Domingo',
 };
 
-type PrecioKey = string; // "TIPO_FRANJA_DIA"
-const precioKey = (tipo: string, franja: string, dia: string) => `${tipo}_${franja}_${dia}`;
+type PrecioKey = string;
+const precioKey = (tipo: string, franja: string, dia: string) => `${tipo}|${franja}|${dia}`;
 
 export default function PreciosAlquilerConfig({ sedeId }: Props) {
   const [precios, setPrecios] = useState<Record<PrecioKey, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  // Track which tipos actually have canchas
   const [tiposEnSede, setTiposEnSede] = useState<TipoCancha[]>([]);
 
   useEffect(() => {
@@ -51,12 +52,10 @@ export default function PreciosAlquilerConfig({ sedeId }: Props) {
         alquileresService.getSedeDetalle(sedeId),
       ]);
 
-      // Get tipos from sede canchas
       const canchas = Array.isArray(sedeData.canchas) ? sedeData.canchas : [];
       const tipos = [...new Set(canchas.map((c: any) => c.tipo))] as TipoCancha[];
       setTiposEnSede(tipos.length > 0 ? tipos : TIPOS_CANCHA);
 
-      // Build precios map
       const map: Record<PrecioKey, string> = {};
       const preciosList = Array.isArray(preciosData) ? preciosData : [];
       preciosList.forEach((p: AlquilerPrecio) => {
@@ -81,7 +80,7 @@ export default function PreciosAlquilerConfig({ sedeId }: Props) {
       Object.entries(precios).forEach(([key, val]) => {
         const num = parseInt(val);
         if (!isNaN(num) && num > 0) {
-          const [tipo, franja, dia] = key.split('_');
+          const [tipo, franja, dia] = key.split('|');
           preciosList.push({ tipoCancha: tipo, tipoDia: dia, franja, precio: num });
         }
       });
@@ -95,35 +94,29 @@ export default function PreciosAlquilerConfig({ sedeId }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <Loading size="lg" text="Cargando precios..." />;
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-dark-text">Precios por Turno (Guaran\u00edes)</h3>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        <h3 className="text-sm font-semibold text-light-text">Precios por Turno (Guaraníes)</h3>
+        <Button variant="primary" size="sm" loading={saving} onClick={handleSave}>
+          <Save className="w-4 h-4 mr-1.5" />
           Guardar
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-6">
         {tiposEnSede.map((tipo) => (
-          <div key={tipo} className="bg-dark-card rounded-xl border border-dark-border p-4">
-            <h4 className="text-xs font-medium text-dark-muted mb-3">{tipoCanchaLabel[tipo]}</h4>
+          <div key={tipo} className="bg-dark-card rounded-lg border border-dark-border p-4">
+            <h4 className="text-xs font-medium text-light-muted mb-3 uppercase tracking-wide">
+              {tipoCanchaLabel[tipo] || tipo}
+            </h4>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[400px]">
                 <thead>
-                  <tr className="text-dark-muted text-xs">
+                  <tr className="text-light-muted text-xs">
                     <th className="text-left py-2 pr-3"></th>
                     {TIPOS_DIA.map((td) => (
                       <th key={td} className="text-center py-2 px-2">{tipoDiaLabel[td]}</th>
@@ -133,22 +126,20 @@ export default function PreciosAlquilerConfig({ sedeId }: Props) {
                 <tbody>
                   {FRANJAS.map((franja) => (
                     <tr key={franja} className="border-t border-dark-border/50">
-                      <td className="py-2 pr-3 text-xs text-dark-muted whitespace-nowrap">{franjaLabel[franja]}</td>
+                      <td className="py-2.5 pr-3 text-xs text-light-secondary whitespace-nowrap">{franjaLabel[franja]}</td>
                       {TIPOS_DIA.map((td) => {
                         const key = precioKey(tipo, franja, td);
                         return (
-                          <td key={td} className="py-2 px-2">
-                            <div className="relative">
-                              <input
-                                type="number"
-                                value={precios[key] || ''}
-                                onChange={(e) => handleChange(key, e.target.value)}
-                                placeholder="0"
-                                min="0"
-                                step="5000"
-                                className="w-full px-3 py-1.5 bg-dark-hover border border-dark-border rounded-lg text-sm text-dark-text text-center font-mono placeholder-dark-muted"
-                              />
-                            </div>
+                          <td key={td} className="py-2.5 px-2">
+                            <input
+                              type="number"
+                              value={precios[key] || ''}
+                              onChange={(e) => handleChange(key, e.target.value)}
+                              placeholder="0"
+                              min="0"
+                              step="5000"
+                              className="w-full px-3 py-1.5 bg-dark-input border border-dark-border rounded-md text-sm text-light-text text-center font-mono placeholder:text-light-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-bg"
+                            />
                           </td>
                         );
                       })}

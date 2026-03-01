@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
 import {
-  Loader2, CheckCircle2, XCircle, Clock, Ban, AlertTriangle,
+  CheckCircle2, XCircle, Clock, Ban, AlertTriangle,
   UserCheck, DollarSign, Calendar, Phone, User
 } from 'lucide-react';
+import { Loading, Badge, Button } from '@/components/ui';
 import toast from 'react-hot-toast';
 import type { ReservaCancha, ReservaCanchaEstado, MetodoPagoAlquiler } from '@/types';
 
@@ -11,13 +12,13 @@ interface Props {
   sedeId: string;
 }
 
-const estadoBadge: Record<ReservaCanchaEstado, { label: string; className: string }> = {
-  PENDIENTE: { label: 'Pendiente', className: 'bg-yellow-500/20 text-yellow-400' },
-  CONFIRMADA: { label: 'Confirmada', className: 'bg-green-500/20 text-green-400' },
-  RECHAZADA: { label: 'Rechazada', className: 'bg-red-500/20 text-red-400' },
-  CANCELADA: { label: 'Cancelada', className: 'bg-gray-500/20 text-gray-400' },
-  COMPLETADA: { label: 'Completada', className: 'bg-blue-500/20 text-blue-400' },
-  NO_SHOW: { label: 'No Show', className: 'bg-red-500/20 text-red-400' },
+const estadoBadgeVariant: Record<ReservaCanchaEstado, { label: string; variant: 'warning' | 'success' | 'danger' | 'info' | 'outline' }> = {
+  PENDIENTE: { label: 'Pendiente', variant: 'warning' },
+  CONFIRMADA: { label: 'Confirmada', variant: 'success' },
+  RECHAZADA: { label: 'Rechazada', variant: 'danger' },
+  CANCELADA: { label: 'Cancelada', variant: 'outline' },
+  COMPLETADA: { label: 'Completada', variant: 'info' },
+  NO_SHOW: { label: 'No Show', variant: 'danger' },
 };
 
 function formatFecha(f: string) {
@@ -94,7 +95,7 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
   };
 
   const handleMarcarPago = async (id: string) => {
-    const metodo = prompt('Metodo de pago: EFECTIVO, TRANSFERENCIA, QR, OTRO');
+    const metodo = prompt('Método de pago: EFECTIVO, TRANSFERENCIA, QR, OTRO');
     if (!metodo) return;
     setActionLoading(id);
     try {
@@ -135,8 +136,8 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
               onClick={() => setFiltroEstado(f.value)}
               className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
                 filtroEstado === f.value
-                  ? 'bg-primary text-white'
-                  : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text'
+                  ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                  : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text hover:bg-dark-hover'
               }`}
             >
               {f.label}
@@ -147,23 +148,23 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
           type="date"
           value={filtroFecha}
           onChange={(e) => setFiltroFecha(e.target.value)}
-          className="px-3 py-1.5 bg-dark-card border border-dark-border rounded-lg text-sm text-dark-text"
+          className="px-3 py-1.5 bg-dark-card border border-dark-border rounded-lg text-sm text-light-text"
         />
       </div>
 
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loading />
         </div>
       ) : reservas.length === 0 ? (
-        <div className="text-center py-12 text-dark-muted text-sm">
+        <div className="text-center py-12 text-light-muted text-sm">
           No hay reservas{filtroEstado ? ` con estado ${filtroEstado.toLowerCase()}` : ''}.
         </div>
       ) : (
         <div className="space-y-3">
           {reservas.map((r: any) => {
-            const badge = estadoBadge[r.estado as ReservaCanchaEstado];
+            const badgeInfo = estadoBadgeVariant[r.estado as ReservaCanchaEstado];
             const isLoading = actionLoading === r.id;
             return (
               <div key={r.id} className="bg-dark-card rounded-xl border border-dark-border p-4">
@@ -171,23 +172,23 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="font-semibold text-dark-text text-sm">{r.sedeCancha?.nombre || 'Cancha'}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${badge.className}`}>{badge.label}</span>
+                      <span className="font-semibold text-light-text text-sm">{r.sedeCancha?.nombre || 'Cancha'}</span>
+                      <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                       {r.pagado && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 flex items-center gap-1">
+                        <Badge variant="success" className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" /> Pagado{r.metodoPago ? ` (${r.metodoPago})` : ''}
-                        </span>
+                        </Badge>
                       )}
                       {r.compromisoPago && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 flex items-center gap-1">
+                        <Badge variant="danger" className="flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Compromiso pago
-                        </span>
+                        </Badge>
                       )}
                       {r.creadoPorEncargado && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">Manual</span>
+                        <Badge variant="default" className="bg-purple-500/20 text-purple-400 border-purple-500/30">Manual</Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-muted">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-light-muted">
                       <span className="flex items-center gap-1">
                         <User className="w-3.5 h-3.5" /> {getUserName(r)}
                       </span>
@@ -204,7 +205,7 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
                       </span>
                       <span className="font-mono">{formatPrecio(r.precio)}</span>
                     </div>
-                    {r.notas && <p className="text-xs text-dark-muted mt-1 italic">"{r.notas}"</p>}
+                    {r.notas && <p className="text-xs text-light-muted mt-1 italic">"{r.notas}"</p>}
                     {r.motivoRechazo && <p className="text-xs text-red-400 mt-1">Motivo: {r.motivoRechazo}</p>}
                   </div>
 
@@ -212,48 +213,61 @@ export default function ReservasAlquilerList({ sedeId }: Props) {
                   <div className="flex gap-2 flex-wrap">
                     {r.estado === 'PENDIENTE' && (
                       <>
-                        <button
+                        <Button
+                          variant="success"
+                          size="sm"
                           onClick={() => handleConfirmar(r.id)}
-                          disabled={isLoading}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                          loading={isLoading}
+                          className="text-xs"
                         >
-                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                           Confirmar
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => handleRechazar(r.id)}
                           disabled={isLoading}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                          className="text-xs"
                         >
-                          <XCircle className="w-3.5 h-3.5" /> Rechazar
-                        </button>
+                          <XCircle className="w-3.5 h-3.5 mr-1" />
+                          Rechazar
+                        </Button>
                       </>
                     )}
                     {r.estado === 'CONFIRMADA' && (
                       <>
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleCompletar(r.id)}
-                          disabled={isLoading}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                          loading={isLoading}
+                          className="text-xs text-blue-400 hover:text-blue-300"
                         >
-                          {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          <UserCheck className="w-3.5 h-3.5 mr-1" />
                           Completar
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleNoShow(r.id)}
                           disabled={isLoading}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                          className="text-xs text-orange-400 hover:text-orange-300"
                         >
-                          <Ban className="w-3.5 h-3.5" /> No Show
-                        </button>
+                          <Ban className="w-3.5 h-3.5 mr-1" />
+                          No Show
+                        </Button>
                         {!r.pagado && (
-                          <button
+                          <Button
+                            variant="success"
+                            size="sm"
                             onClick={() => handleMarcarPago(r.id)}
                             disabled={isLoading}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                            className="text-xs"
                           >
-                            <DollarSign className="w-3.5 h-3.5" /> Pago
-                          </button>
+                            <DollarSign className="w-3.5 h-3.5 mr-1" />
+                            Pago
+                          </Button>
                         )}
                       </>
                     )}

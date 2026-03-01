@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { MapPin, Phone, Clock, ExternalLink, Loader2 } from 'lucide-react';
+import { MapPin, Phone, Clock, ExternalLink } from 'lucide-react';
 import { alquileresService } from '@/services/alquileresService';
+import { Loading, Badge } from '@/components/ui';
 import CalendarioAlquiler from '../components/CalendarioAlquiler';
 import ReservarCanchaModal from '../components/ReservarCanchaModal';
 import { useAuthStore } from '@/store/authStore';
@@ -15,12 +16,23 @@ const tipoCanchaLabel: Record<TipoCancha, string> = {
   SEMI_TECHADA: 'Semi-techada',
 };
 
+const tipoCanchaBadge: Record<TipoCancha, 'info' | 'success' | 'warning'> = {
+  INDOOR: 'info',
+  OUTDOOR: 'success',
+  SEMI_TECHADA: 'warning',
+};
+
 const franjaLabel: Record<string, string> = {
-  MANANA: 'Manana (06-12)',
+  MANANA: 'Mañana (06-12)',
   TARDE: 'Tarde (12-18)',
   NOCHE: 'Noche (18-23)',
 };
 
+const tipoDiaLabel: Record<string, string> = {
+  SEMANA: 'Lun-Vie',
+  SABADO: 'Sábado',
+  DOMINGO: 'Domingo',
+};
 
 function formatPrecio(precio: number): string {
   return precio.toLocaleString('es-PY') + ' Gs';
@@ -61,7 +73,7 @@ export default function SedeAlquilerPage() {
 
   const handleSelectSlot = (canchaId: string, canchaNombre: string, canchaTipo: TipoCancha, fecha: string, slot: SlotAlquiler) => {
     if (!isAuthenticated) {
-      toast.error('Inicia sesion para reservar');
+      toast.error('Iniciá sesión para reservar');
       return;
     }
     setSelectedCanchaId(canchaId);
@@ -75,7 +87,7 @@ export default function SedeAlquilerPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loading size="lg" text="Cargando sede..." />
       </div>
     );
   }
@@ -95,37 +107,40 @@ export default function SedeAlquilerPage() {
     return acc;
   }, {} as Record<string, AlquilerPrecio[]>);
 
+  // Determine which day types have prices
+  const TIPOS_DIA = ['SEMANA', 'SABADO', 'DOMINGO'] as const;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="bg-dark-card rounded-xl border border-dark-border overflow-hidden mb-6">
         {sede.imagenFondo && (
-          <div className="h-48 overflow-hidden">
+          <div className="h-36 sm:h-48 overflow-hidden">
             <img src={sede.imagenFondo} alt={sede.nombre} className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex items-start gap-4">
             {sede.logoUrl && (
-              <img src={sede.logoUrl} alt="" className="w-16 h-16 rounded-lg object-contain bg-dark-hover" />
+              <img src={sede.logoUrl} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-contain bg-dark-surface flex-shrink-0" />
             )}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-dark-text">{sede.nombre}</h1>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-dark-muted">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-light-text">{sede.nombre}</h1>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-light-muted">
                 {sede.ciudad && (
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> {sede.ciudad}
+                    <MapPin className="w-4 h-4 flex-shrink-0" /> {sede.ciudad}
                     {sede.direccion && ` — ${sede.direccion}`}
                   </span>
                 )}
                 {sede.telefono && (
                   <span className="flex items-center gap-1">
-                    <Phone className="w-4 h-4" /> {sede.telefono}
+                    <Phone className="w-4 h-4 flex-shrink-0" /> {sede.telefono}
                   </span>
                 )}
                 {sede.horarioAtencion && (
                   <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> {sede.horarioAtencion}
+                    <Clock className="w-4 h-4 flex-shrink-0" /> {sede.horarioAtencion}
                   </span>
                 )}
               </div>
@@ -134,7 +149,7 @@ export default function SedeAlquilerPage() {
                   href={sede.mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-2 text-sm text-primary hover:underline"
+                  className="inline-flex items-center gap-1 mt-2 text-sm text-primary-400 hover:underline"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Ver en Google Maps
                 </a>
@@ -144,7 +159,7 @@ export default function SedeAlquilerPage() {
 
           {/* Welcome message */}
           {config?.mensajeBienvenida && (
-            <div className="mt-4 p-3 bg-dark-hover rounded-lg text-sm text-dark-muted">
+            <div className="mt-4 p-3 bg-dark-surface rounded-lg text-sm text-light-secondary">
               {config.mensajeBienvenida}
             </div>
           )}
@@ -152,66 +167,63 @@ export default function SedeAlquilerPage() {
       </div>
 
       {/* Canchas + Prices */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* Courts */}
         <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <h2 className="font-semibold text-dark-text mb-3">Canchas Disponibles</h2>
+          <h2 className="font-semibold text-light-text mb-3">Canchas Disponibles</h2>
           <div className="space-y-2">
             {canchas.map((cancha: any) => (
-              <div key={cancha.id} className="flex items-center justify-between py-2 px-3 bg-dark-hover rounded-lg">
-                <span className="text-sm text-dark-text">{cancha.nombre}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  cancha.tipo === 'INDOOR' ? 'bg-blue-500/20 text-blue-400' :
-                  cancha.tipo === 'OUTDOOR' ? 'bg-green-500/20 text-green-400' :
-                  'bg-yellow-500/20 text-yellow-400'
-                }`}>
+              <div key={cancha.id} className="flex items-center justify-between py-2 px-3 bg-dark-surface rounded-lg">
+                <span className="text-sm text-light-text">{cancha.nombre}</span>
+                <Badge variant={tipoCanchaBadge[cancha.tipo as TipoCancha]}>
                   {tipoCanchaLabel[cancha.tipo as TipoCancha]}
-                </span>
+                </Badge>
               </div>
             ))}
             {canchas.length === 0 && (
-              <p className="text-sm text-dark-muted text-center py-4">Sin canchas disponibles</p>
+              <p className="text-sm text-light-muted text-center py-4">Sin canchas disponibles</p>
             )}
           </div>
           {config && (
-            <p className="text-xs text-dark-muted mt-3">
+            <p className="text-xs text-light-muted mt-3">
               Turnos de {config.duracionSlotMinutos} minutos
-              {config.requiereAprobacion ? ' — Requiere aprobacion' : ' — Confirmacion inmediata'}
+              {config.requiereAprobacion ? ' — Requiere aprobación' : ' — Confirmación inmediata'}
             </p>
           )}
         </div>
 
         {/* Price table */}
         <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-          <h2 className="font-semibold text-dark-text mb-3">Precios por Turno</h2>
+          <h2 className="font-semibold text-light-text mb-3">Precios por Turno</h2>
           {Object.keys(preciosByTipo).length === 0 ? (
-            <p className="text-sm text-dark-muted text-center py-4">Precios no configurados</p>
+            <p className="text-sm text-light-muted text-center py-4">Precios no configurados</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(preciosByTipo).map(([tipo, items]) => (
                 <div key={tipo}>
-                  <h3 className="text-xs text-dark-muted mb-1.5 font-medium">
+                  <h3 className="text-xs text-light-muted mb-1.5 font-medium uppercase tracking-wide">
                     {tipoCanchaLabel[tipo as TipoCancha]}
                   </h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
+                    <table className="w-full text-xs min-w-[350px]">
                       <thead>
-                        <tr className="text-dark-muted">
+                        <tr className="text-light-muted">
                           <th className="text-left py-1 pr-2"></th>
-                          <th className="text-center py-1 px-2">Lun-Vie</th>
-                          <th className="text-center py-1 px-2">Sab-Dom</th>
+                          {TIPOS_DIA.map((td) => (
+                            <th key={td} className="text-center py-1 px-2">{tipoDiaLabel[td]}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {(['MANANA', 'TARDE', 'NOCHE'] as const).map((franja) => (
                           <tr key={franja} className="border-t border-dark-border/50">
-                            <td className="py-1.5 pr-2 text-dark-muted">{franjaLabel[franja]}</td>
-                            {(['SEMANA', 'FIN_DE_SEMANA'] as const).map((tipoDia) => {
+                            <td className="py-1.5 pr-2 text-light-muted whitespace-nowrap">{franjaLabel[franja]}</td>
+                            {TIPOS_DIA.map((td) => {
                               const p = (items as AlquilerPrecio[]).find(
-                                (i) => i.franja === franja && i.tipoDia === tipoDia,
+                                (i) => i.franja === franja && i.tipoDia === td,
                               );
                               return (
-                                <td key={tipoDia} className="py-1.5 px-2 text-center font-mono text-dark-text">
+                                <td key={td} className="py-1.5 px-2 text-center font-mono text-light-text">
                                   {p ? formatPrecio(p.precio) : '-'}
                                 </td>
                               );
@@ -230,7 +242,7 @@ export default function SedeAlquilerPage() {
 
       {/* Calendar */}
       <div className="bg-dark-card rounded-xl border border-dark-border p-4">
-        <h2 className="font-semibold text-dark-text mb-4">Disponibilidad y Reservas</h2>
+        <h2 className="font-semibold text-light-text mb-4">Disponibilidad y Reservas</h2>
         {sedeId && (
           <CalendarioAlquiler
             key={refreshKey}
@@ -239,8 +251,8 @@ export default function SedeAlquilerPage() {
           />
         )}
         {!isAuthenticated && (
-          <p className="text-sm text-dark-muted text-center mt-4">
-            Inicia sesion para poder reservar una cancha.
+          <p className="text-sm text-light-muted text-center mt-4">
+            Iniciá sesión para poder reservar una cancha.
           </p>
         )}
       </div>

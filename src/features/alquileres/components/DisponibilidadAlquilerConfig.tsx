@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { alquileresService } from '@/services/alquileresService';
-import { Loader2, Save } from 'lucide-react';
+import { Button, Loading } from '@/components/ui';
+import { Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -49,30 +50,23 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
         setSelectedCancha(canchasList[0].id);
       }
 
-      // Build cell maps per cancha
       const cellMaps: Record<string, Set<CellKey>> = {};
       const disps = Array.isArray(dispData) ? dispData : [];
       disps.forEach((d: any) => {
         const cid = d.sedeCanchaId;
         if (!cellMaps[cid]) cellMaps[cid] = new Set();
-        const startMin = parseHora(d.horaInicio);
-        const endMin = parseHora(d.horaFin);
-        for (let m = startMin; m < endMin; m += 60) {
-          const h = String(Math.floor(m / 60)).padStart(2, '0');
-          cellMaps[cid].add(cellKey(d.diaSemana, `${h}:00`));
+        const startH = parseInt(d.horaInicio.split(':')[0]);
+        const endH = parseInt(d.horaFin.split(':')[0]);
+        for (let h = startH; h < endH; h++) {
+          cellMaps[cid].add(cellKey(d.diaSemana, `${String(h).padStart(2, '0')}:00`));
         }
       });
       setActiveCells(cellMaps);
-    } catch (err: any) {
+    } catch {
       toast.error('Error cargando disponibilidad');
     } finally {
       setLoading(false);
     }
-  };
-
-  const parseHora = (h: string): number => {
-    const [hh, mm] = h.split(':').map(Number);
-    return hh * 60 + (mm || 0);
   };
 
   const toggleCell = useCallback((key: CellKey, mode: 'add' | 'remove') => {
@@ -108,10 +102,8 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Convert all cell maps to API format
       const slots: { sedeCanchaId: string; diaSemana: number; horaInicio: string; horaFin: string }[] = [];
       Object.entries(activeCells).forEach(([canchaId, cells]) => {
-        // Group consecutive hours per day
         const daysMap: Record<number, number[]> = {};
         cells.forEach((key) => {
           const [d, h] = key.split('-');
@@ -123,7 +115,6 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
 
         Object.entries(daysMap).forEach(([dia, horas]) => {
           horas.sort((a, b) => a - b);
-          // Merge consecutive hours into ranges
           let start = horas[0];
           let end = horas[0] + 1;
           for (let i = 1; i < horas.length; i++) {
@@ -159,23 +150,18 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <Loading size="lg" text="Cargando disponibilidad..." />;
   }
 
   if (canchas.length === 0) {
-    return <div className="text-center py-12 text-dark-muted text-sm">No hay canchas configuradas en esta sede.</div>;
+    return <div className="text-center py-12 text-light-muted text-sm">No hay canchas configuradas en esta sede.</div>;
   }
 
   const currentCells = activeCells[selectedCancha] || new Set<CellKey>();
 
   return (
     <div>
-      {/* Cancha selector */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <div className="flex gap-1 flex-wrap flex-1">
           {canchas.map((c) => (
             <button
@@ -183,41 +169,33 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
               onClick={() => setSelectedCancha(c.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 selectedCancha === c.id
-                  ? 'bg-primary text-white'
-                  : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text'
+                  ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                  : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text'
               }`}
             >
               {c.nombre}
             </button>
           ))}
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Guardar
-        </button>
+        <Button variant="primary" size="sm" loading={saving} onClick={handleSave}>
+          <Save className="w-4 h-4 mr-1.5" /> Guardar
+        </Button>
       </div>
 
-      <p className="text-xs text-dark-muted mb-3">Hacé click y arrastrá para pintar/borrar horas disponibles</p>
+      <p className="text-xs text-light-muted mb-3">Hacé click y arrastrá para pintar/borrar horas disponibles</p>
 
-      {/* Grid */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-2">
         <div className="inline-grid select-none" style={{ gridTemplateColumns: `60px repeat(7, 1fr)` }}>
-          {/* Header */}
           <div className="h-8" />
           {DIAS.map((d, i) => (
-            <div key={i} className="h-8 flex items-center justify-center text-xs font-medium text-dark-muted min-w-[80px]">
+            <div key={i} className="h-8 flex items-center justify-center text-xs font-medium text-light-muted min-w-[70px] sm:min-w-[80px]">
               {d}
             </div>
           ))}
 
-          {/* Grid rows */}
           {HORAS.map((hora) => (
-            <>
-              <div key={`label-${hora}`} className="h-8 flex items-center justify-end pr-2 text-xs text-dark-muted">
+            <div key={hora} className="contents">
+              <div className="h-8 flex items-center justify-end pr-2 text-xs text-light-muted">
                 {hora}
               </div>
               {DIAS.map((_, dia) => {
@@ -234,7 +212,7 @@ export default function DisponibilidadAlquilerConfig({ sedeId }: Props) {
                   />
                 );
               })}
-            </>
+            </div>
           ))}
         </div>
       </div>

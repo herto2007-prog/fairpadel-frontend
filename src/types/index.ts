@@ -1237,6 +1237,8 @@ export enum FranjaHoraria {
 export enum TipoDiaEnum {
   SEMANA = 'SEMANA',
   FIN_DE_SEMANA = 'FIN_DE_SEMANA',
+  SABADO = 'SABADO',
+  DOMINGO = 'DOMINGO',
 }
 
 export enum MetodoPagoAlquiler {

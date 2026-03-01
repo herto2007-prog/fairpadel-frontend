@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, MapPin, Loader2, AlertTriangle, XCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertTriangle, XCircle } from 'lucide-react';
+import { Loading, Badge, Button } from '@/components/ui';
 import { alquileresService } from '@/services/alquileresService';
 import toast from 'react-hot-toast';
 import type { ReservaCancha, ReservaCanchaEstado } from '@/types';
 
-const estadoBadge: Record<ReservaCanchaEstado, { label: string; className: string }> = {
-  PENDIENTE: { label: 'Pendiente', className: 'bg-yellow-500/20 text-yellow-400' },
-  CONFIRMADA: { label: 'Confirmada', className: 'bg-green-500/20 text-green-400' },
-  RECHAZADA: { label: 'Rechazada', className: 'bg-red-500/20 text-red-400' },
-  CANCELADA: { label: 'Cancelada', className: 'bg-gray-500/20 text-gray-400' },
-  COMPLETADA: { label: 'Completada', className: 'bg-blue-500/20 text-blue-400' },
-  NO_SHOW: { label: 'No Show', className: 'bg-red-500/20 text-red-400' },
+const estadoBadgeVariant: Record<ReservaCanchaEstado, { label: string; variant: 'warning' | 'success' | 'danger' | 'info' | 'outline' }> = {
+  PENDIENTE: { label: 'Pendiente', variant: 'warning' },
+  CONFIRMADA: { label: 'Confirmada', variant: 'success' },
+  RECHAZADA: { label: 'Rechazada', variant: 'danger' },
+  CANCELADA: { label: 'Cancelada', variant: 'outline' },
+  COMPLETADA: { label: 'Completada', variant: 'info' },
+  NO_SHOW: { label: 'No Show', variant: 'danger' },
 };
 
 function formatFecha(fechaStr: string): string {
@@ -72,8 +73,8 @@ export default function MisReservasCanchaPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-dark-text">Mis Reservas de Cancha</h1>
-        <p className="text-dark-muted mt-1">Gestiona tus reservas de alquiler de canchas</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-light-text">Mis Reservas de Cancha</h1>
+        <p className="text-sm sm:text-base text-light-secondary mt-1">Gestioná tus reservas de alquiler de canchas</p>
       </div>
 
       {/* Filtro */}
@@ -90,8 +91,8 @@ export default function MisReservasCanchaPage() {
             onClick={() => setFiltroEstado(f.value)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               filtroEstado === f.value
-                ? 'bg-primary text-white'
-                : 'bg-dark-card border border-dark-border text-dark-muted hover:text-dark-text'
+                ? 'bg-primary-500/20 text-primary-400 border border-primary-500/50'
+                : 'bg-dark-card border border-dark-border text-light-muted hover:text-light-text hover:bg-dark-hover'
             }`}
           >
             {f.label}
@@ -102,22 +103,22 @@ export default function MisReservasCanchaPage() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loading />
         </div>
       ) : error ? (
         <div className="text-center py-16 text-red-400">{error}</div>
       ) : reservas.length === 0 ? (
         <div className="text-center py-16">
-          <Calendar className="w-12 h-12 text-dark-muted mx-auto mb-3" />
-          <p className="text-dark-muted">No tenés reservas{filtroEstado ? ` con estado ${filtroEstado.toLowerCase()}` : ''}.</p>
-          <Link to="/canchas" className="text-primary text-sm hover:underline mt-2 inline-block">
+          <Calendar className="w-12 h-12 text-light-muted mx-auto mb-3" />
+          <p className="text-light-muted">No tenés reservas{filtroEstado ? ` con estado ${filtroEstado.toLowerCase()}` : ''}.</p>
+          <Link to="/canchas" className="text-primary-500 text-sm hover:underline mt-2 inline-block">
             Buscar canchas disponibles
           </Link>
         </div>
       ) : (
         <div className="space-y-3">
           {reservas.map((r) => {
-            const badge = estadoBadge[r.estado];
+            const badgeInfo = estadoBadgeVariant[r.estado];
             return (
               <div
                 key={r.id}
@@ -127,26 +128,22 @@ export default function MisReservasCanchaPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-dark-text text-sm">
+                      <h3 className="font-semibold text-light-text text-sm">
                         {(r as any).sedeCancha?.nombre || 'Cancha'}
                       </h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${badge.className}`}>
-                        {badge.label}
-                      </span>
+                      <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
                       {r.pagado && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                          Pagado
-                        </span>
+                        <Badge variant="success">Pagado</Badge>
                       )}
                       {r.compromisoPago && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 flex items-center gap-1">
+                        <Badge variant="danger" className="flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           Compromiso de pago
-                        </span>
+                        </Badge>
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-dark-muted">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-light-muted">
                       {(r as any).sedeCancha?.sede?.nombre && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5" />
@@ -171,23 +168,20 @@ export default function MisReservasCanchaPage() {
                     )}
                   </div>
 
-                  {/* Precio + Accion */}
+                  {/* Precio + Acción */}
                   <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                    <span className="font-mono font-semibold text-dark-text text-sm">
+                    <span className="font-mono font-semibold text-light-text text-sm">
                       {formatPrecio(r.precio)}
                     </span>
                     {canCancel(r) && (
-                      <button
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={() => handleCancelar(r.id)}
-                        disabled={cancelando === r.id}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        loading={cancelando === r.id}
                       >
-                        {cancelando === r.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          'Cancelar'
-                        )}
-                      </button>
+                        Cancelar
+                      </Button>
                     )}
                   </div>
                 </div>
