@@ -14,7 +14,6 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
 
   const [requiereAprobacion, setRequiereAprobacion] = useState(true);
   const [duracionSlotMinutos, setDuracionSlotMinutos] = useState(90);
-  const [anticipacionMaxDias, setAnticipacionMaxDias] = useState(14);
   const [cancelacionMinHoras, setCancelacionMinHoras] = useState(4);
   const [mensajeBienvenida, setMensajeBienvenida] = useState('');
 
@@ -29,7 +28,6 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
       if (data) {
         setRequiereAprobacion(data.requiereAprobacion ?? true);
         setDuracionSlotMinutos(data.duracionSlotMinutos ?? 90);
-        setAnticipacionMaxDias(data.anticipacionMaxDias ?? 14);
         setCancelacionMinHoras(data.cancelacionMinHoras ?? 4);
         setMensajeBienvenida(data.mensajeBienvenida || '');
       }
@@ -46,7 +44,6 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
       await alquileresService.actualizarConfig(sedeId, {
         requiereAprobacion,
         duracionSlotMinutos,
-        anticipacionMaxDias,
         cancelacionMinHoras,
         mensajeBienvenida: mensajeBienvenida || undefined,
       });
@@ -100,20 +97,6 @@ export default function ConfigAlquilerPanel({ sedeId }: Props) {
             min="30"
             max="180"
             step="15"
-            className="w-32 px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-
-        {/* Anticipación máxima */}
-        <div className="bg-dark-card rounded-lg border border-dark-border p-4">
-          <label className="text-sm font-medium text-light-text block mb-1">Anticipación máxima (días)</label>
-          <p className="text-xs text-light-muted mb-2">Con cuántos días de anticipación se puede reservar.</p>
-          <input
-            type="number"
-            value={anticipacionMaxDias}
-            onChange={(e) => setAnticipacionMaxDias(parseInt(e.target.value) || 14)}
-            min="1"
-            max="90"
             className="w-32 px-3 py-2 bg-dark-input border border-dark-border rounded-md text-sm text-light-text font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
