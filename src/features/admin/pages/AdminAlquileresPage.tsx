@@ -25,7 +25,7 @@ interface SedeAlquilerAdmin {
 export default function AdminAlquileresPage() {
   const [activeTab, setActiveTab] = useState<Tab>('sedes');
   const [sedes, setSedes] = useState<SedeAlquilerAdmin[]>([]);
-  const [_allSedes, setAllSedes] = useState<any[]>([]);
+  const [, setAllSedes] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState<AlquileresDashboard | null>(null);
   const [dashLoading, setDashLoading] = useState(false);
@@ -35,7 +35,7 @@ export default function AdminAlquileresPage() {
   const [showHabilitar, setShowHabilitar] = useState<string | null>(null);
   const [encargadoDoc, setEncargadoDoc] = useState('');
   const [searchingUser, setSearchingUser] = useState(false);
-  const [foundUser, setFoundUser] = useState<any>(null);
+  const [foundUser, setFoundUser] = useState<{ id: string; nombre: string; apellido: string; documento: string } | null>(null);
 
   useEffect(() => {
     loadSedes();
@@ -52,12 +52,12 @@ export default function AdminAlquileresPage() {
       // Get alquiler-enabled sedes
       const alqData = await alquileresService.getSedesConAlquiler();
       const alqSedes = Array.isArray(alqData) ? alqData : [];
-      const alqMap = new Map(alqSedes.map((s: any) => [s.id, s]));
+      const alqMap = new Map<string, { id: string; encargadoId?: string; encargadoNombre?: string }>(alqSedes.map((s: { id: string; encargadoId?: string; encargadoNombre?: string }) => [s.id, s]));
 
       // Merge
       const merged: SedeAlquilerAdmin[] = sedesList
-        .filter((s: any) => s.activa !== false)
-        .map((s: any) => {
+        .filter((s: { activa?: boolean }) => s.activa !== false)
+        .map((s: { id: string; nombre: string; ciudad?: string; _count?: { canchas?: number }; canchas?: unknown[] }) => {
           const alq = alqMap.get(s.id);
           return {
             id: s.id,

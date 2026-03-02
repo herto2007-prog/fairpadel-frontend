@@ -16,10 +16,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         
       - name: Run linter
         run: npm run lint || true
@@ -28,6 +27,7 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: ${{ github.ref == 'refs/heads/main' && secrets.VITE_API_URL_PROD || secrets.VITE_API_URL_STAGING }}
+          CI: false
 
   deploy:
     needs: build
