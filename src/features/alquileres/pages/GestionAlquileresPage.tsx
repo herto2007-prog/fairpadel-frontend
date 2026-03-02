@@ -3,7 +3,7 @@ import { alquileresService } from '@/services/alquileresService';
 import { Calendar, Clock, Ban, DollarSign, Settings, MapPin } from 'lucide-react';
 import { Loading } from '@/components/ui';
 import ReservasAlquilerList from '../components/ReservasAlquilerList';
-import DisponibilidadAlquilerConfig from '../components/DisponibilidadAlquilerConfig';
+import DisponibilidadHorariosConfig from '../components/DisponibilidadHorariosConfig';
 import BloqueosAlquilerManager from '../components/BloqueosAlquilerManager';
 import PreciosAlquilerConfig from '../components/PreciosAlquilerConfig';
 import ConfigAlquilerPanel from '../components/ConfigAlquilerPanel';
@@ -98,7 +98,7 @@ export default function GestionAlquileresPage() {
 
       {/* Tab content */}
       {activeTab === 'reservas' && <ReservasAlquilerList sedeId={sedeId} />}
-      {activeTab === 'disponibilidad' && <DisponibilidadAlquilerConfig sedeId={sedeId} />}
+      {activeTab === 'disponibilidad' && <DisponibilidadHorariosConfig sedeId={sedeId} />}
       {activeTab === 'bloqueos' && <BloqueosAlquilerManager sedeId={sedeId} />}
       {activeTab === 'precios' && <PreciosAlquilerConfig sedeId={sedeId} />}
       {activeTab === 'config' && <ConfigAlquilerPanel sedeId={sedeId} />}

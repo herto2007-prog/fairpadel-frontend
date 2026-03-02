@@ -59,6 +59,12 @@ export const alquileresService = {
     return data;
   },
 
+  getProximasReservas: async (limite?: number): Promise<ReservaCancha[]> => {
+    const params = limite ? `?limite=${limite}` : '';
+    const { data } = await api.get(`/alquileres/proximas-reservas${params}`);
+    return data;
+  },
+
   cancelarReserva: async (reservaId: string): Promise<ReservaCancha> => {
     const { data } = await api.put(`/alquileres/mis-reservas/${reservaId}/cancelar`);
     return data;

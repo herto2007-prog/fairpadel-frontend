@@ -45,6 +45,7 @@ import BuscarInstructoresPage from '@/features/instructores/pages/BuscarInstruct
 
 // Alquileres
 import CanchasListPage from '@/features/alquileres/pages/CanchasListPage';
+import NuevaReservaWizard from '@/features/alquileres/pages/NuevaReservaWizard';
 import SedeAlquilerPage from '@/features/alquileres/pages/SedeAlquilerPage';
 import MisReservasCanchaPage from '@/features/alquileres/pages/MisReservasCanchaPage';
 import GestionAlquileresPage from '@/features/alquileres/pages/GestionAlquileresPage';
@@ -93,6 +94,7 @@ function App() {
             <Route path="/instructores/:id" element={<InstructorPublicoPage />} />
             <Route path="/canchas" element={<CanchasListPage />} />
             <Route path="/canchas/:sedeId" element={<SedeAlquilerPage />} />
+            <Route path="/reservar" element={<NuevaReservaWizard />} />
 
             {/* Protected - Admin */}
             <Route
