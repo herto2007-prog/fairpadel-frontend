@@ -22,6 +22,15 @@ interface SedeAlquilerAdmin {
   canchasCount: number;
 }
 
+interface SedeAlquilerAdminRaw {
+  id: string;
+  nombre: string;
+  ciudad?: string;
+  activa?: boolean;
+  _count?: { canchas?: number };
+  canchas?: unknown[];
+}
+
 export default function AdminAlquileresPage() {
   const [activeTab, setActiveTab] = useState<Tab>('sedes');
   const [sedes, setSedes] = useState<SedeAlquilerAdmin[]>([]);
@@ -55,9 +64,9 @@ export default function AdminAlquileresPage() {
       const alqMap = new Map<string, { id: string; encargadoId?: string; encargadoNombre?: string }>(alqSedes.map((s: { id: string; encargadoId?: string; encargadoNombre?: string }) => [s.id, s]));
 
       // Merge
-      const merged: SedeAlquilerAdmin[] = sedesList
-        .filter((s: { activa?: boolean }) => s.activa !== false)
-        .map((s: { id: string; nombre: string; ciudad?: string; _count?: { canchas?: number }; canchas?: unknown[] }) => {
+      const merged: SedeAlquilerAdmin[] = (sedesList as SedeAlquilerAdminRaw[])
+        .filter((s) => s.activa !== false)
+        .map((s) => {
           const alq = alqMap.get(s.id);
           return {
             id: s.id,
