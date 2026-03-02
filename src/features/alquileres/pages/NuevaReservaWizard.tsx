@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, Search, Filter, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronLeft, Filter, Info, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Loading, Button, Badge } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
@@ -114,14 +114,6 @@ export default function NuevaReservaWizard() {
     });
   }, [sedes, tipoCanchaFiltro, precioMax]);
 
-  // Get available time slots for selected court
-  const getSlotsDisponibles = (canchaId: string) => {
-    if (!disponibilidadDia) return [];
-    const cancha = disponibilidadDia.canchas.find(c => c.canchaId === canchaId);
-    if (!cancha) return [];
-    return cancha.slots.filter(s => s.disponible);
-  };
-
   // Handle reservation
   const handleReservar = async () => {
     if (!isAuthenticated) {
@@ -146,16 +138,6 @@ export default function NuevaReservaWizard() {
       setReservando(false);
     }
   };
-
-  // Generar slots de hora para el selector
-  const timeSlots = useMemo(() => {
-    const slots = [];
-    for (let h = 6; h < 23; h++) {
-      slots.push(`${String(h).padStart(2, '0')}:00`);
-      slots.push(`${String(h).padStart(2, '0')}:30`);
-    }
-    return slots;
-  }, []);
 
   const renderStep1 = () => (
     <div className="space-y-6">

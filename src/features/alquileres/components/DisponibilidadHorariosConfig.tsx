@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { alquileresService } from '@/services/alquileresService';
 import { Button, Loading } from '@/components/ui';
-import { Save, Clock, Copy, Trash2, Plus, Check } from 'lucide-react';
+import { Save, Clock, Copy, Trash2, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {

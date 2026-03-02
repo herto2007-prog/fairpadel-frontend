@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, MapPin, ChevronRight, Share2, QrCode, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, ChevronRight, Share2, QrCode } from 'lucide-react';
 import { alquileresService } from '@/services/alquileresService';
 import { Button, Badge, Loading } from '@/components/ui';
 import type { ReservaCancha } from '@/types';
@@ -191,7 +191,6 @@ export default function ProximaReservaWidget({ maxReservas = 2, showVerTodas = t
       {/* Reservas adicionales */}
       {reservas.slice(1).map((reserva) => {
         const s = (reserva as any).sedeCancha?.sede;
-        const c = (reserva as any).sedeCancha;
         return (
           <div 
             key={reserva.id} 
