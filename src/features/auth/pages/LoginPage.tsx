@@ -13,7 +13,7 @@ export function LoginPage() {
   const { setAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    documento: '',
     password: '',
   });
 
@@ -44,19 +44,19 @@ export function LoginPage() {
             FairPadel
           </CardTitle>
           <CardDescription className="text-dark-500">
-            Ingresa tus credenciales para continuar
+            Ingresa con tu Cédula de Identidad
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-dark-700">Email</Label>
+              <Label htmlFor="documento" className="text-dark-700">Cédula de Identidad</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                id="documento"
+                type="text"
+                placeholder="1234567"
+                value={formData.documento}
+                onChange={(e) => setFormData({ ...formData, documento: e.target.value.replace(/\D/g, '') })}
                 required
                 className="border-dark-200 focus:border-primary-600 focus:ring-primary-45"
               />

@@ -14,7 +14,7 @@ export interface AuthResponse {
 }
 
 export interface LoginCredentials {
-  email: string;
+  documento: string;
   password: string;
 }
 
