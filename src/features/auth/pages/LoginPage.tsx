@@ -34,23 +34,30 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-950 via-dark-900 to-primary-900 p-4">
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-dark-950 p-4">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-primary-600/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-primary-600/5 rounded-full blur-3xl" />
+      </div>
+      
+      <Card className="w-full max-w-md relative z-10 bg-dark-900/95 backdrop-blur-xl border-dark-800">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold font-display">F</span>
+          {/* Logo placeholder - replace with actual logo */}
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-primary-600/20">
+            <span className="text-white text-3xl font-bold font-display">F</span>
           </div>
-          <CardTitle className="text-3xl font-display font-bold text-dark-900">
+          <CardTitle className="text-3xl font-display">
             FairPadel
           </CardTitle>
-          <CardDescription className="text-dark-500">
+          <CardDescription className="text-dark-400">
             Ingresa con tu Cédula de Identidad
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="documento" className="text-dark-700">Cédula de Identidad</Label>
+              <Label htmlFor="documento" className="text-dark-300">Cédula de Identidad</Label>
               <Input
                 id="documento"
                 type="text"
@@ -58,11 +65,10 @@ export function LoginPage() {
                 value={formData.documento}
                 onChange={(e) => setFormData({ ...formData, documento: e.target.value.replace(/\D/g, '') })}
                 required
-                className="border-dark-200 focus:border-primary-600 focus:ring-primary-45"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-dark-700">Contraseña</Label>
+              <Label htmlFor="password" className="text-dark-300">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
@@ -70,12 +76,11 @@ export function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                className="border-dark-200 focus:border-primary-600 focus:ring-primary-45"
               />
             </div>
             <Button
               type="submit"
-              className="w-full h-11 text-base"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? 'Ingresando...' : 'Ingresar'}
@@ -83,7 +88,7 @@ export function LoginPage() {
           </form>
           <div className="mt-6 text-center text-sm">
             <span className="text-dark-500">¿No tienes cuenta? </span>
-            <Link to="/register" className="text-primary-600 font-semibold hover:text-primary-700 hover:underline">
+            <Link to="/register" className="text-primary-400 font-semibold hover:text-primary-300 transition-colors">
               Regístrate
             </Link>
           </div>

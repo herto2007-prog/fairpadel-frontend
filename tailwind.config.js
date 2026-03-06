@@ -14,36 +14,41 @@ export default {
           300: '#fca5a5',
           400: '#f87171',
           500: '#ef4444',
-          600: '#df2531', // Brand color
+          600: '#df2531',
           700: '#b91c1c',
           800: '#991b1b',
           900: '#7f1d1d',
           950: '#450a0a',
         },
-        // Transparencias del primary
-        'primary-45': 'rgba(223, 37, 49, 0.45)',
-        'primary-65': 'rgba(223, 37, 49, 0.65)',
-        // Background colors
+        // Dark theme colors
         dark: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          900: '#18181b',
-          950: '#09090b', // Almost black
+          950: '#0B0E14', // Main background
+          900: '#151921', // Card background
+          850: '#1C2130', // Elevated cards
+          800: '#232838', // Borders
+          700: '#2A3142', // Hover states
+          600: '#3D4659', // Disabled
+          500: '#6B7280', // Muted text
+          400: '#9CA3AF', // Secondary text
+          300: '#D1D5DB', // Primary text
+          200: '#E5E7EB',
+          100: '#F3F4F6',
+          50: '#F9FAFB',
         },
-        // Utilities
-        black: '#000000',
-        white: '#ffffff',
+        // Surface colors
+        surface: {
+          DEFAULT: '#151921',
+          elevated: '#1C2130',
+          overlay: 'rgba(11, 14, 20, 0.8)',
+        },
       },
       fontFamily: {
         sans: ['Open Sans', 'system-ui', 'sans-serif'],
         display: ['Mokoto', 'Open Sans', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-dark': 'linear-gradient(180deg, #0B0E14 0%, #151921 100%)',
       },
     },
   },
