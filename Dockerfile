@@ -15,22 +15,24 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
+# Production stage with nginx
+FROM nginx:alpine
 
-WORKDIR /app
+# Install envsubst for variable substitution
+RUN apk add --no-cache gettext
 
-# Install serve
-RUN npm install -g serve
+# Copy nginx config template
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Copy built files from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Railway assigns PORT dynamically, we'll use it via environment variable
-ENV PORT=3000
-
-# Expose port (Railway will override this)
+# Expose port (Railway will set PORT env var)
 EXPOSE 3000
 
-# Start the application using shell to access PORT env var
-CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:${PORT}"]
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
