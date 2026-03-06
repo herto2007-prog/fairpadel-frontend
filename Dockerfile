@@ -23,5 +23,5 @@ RUN npm run build
 # Expose port
 EXPOSE 3000
 
-# Use db push instead of migrate deploy - NO migration files needed
-CMD npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:prod
+# Delete any cached migrations and run deploy
+CMD rm -rf prisma/migrations 2>/dev/null || true && npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:prod
