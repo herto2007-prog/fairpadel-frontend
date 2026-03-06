@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '../types';
+import type { User, UserRole } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -12,11 +12,15 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
+  
+  // Helpers
+  hasRole: (role: UserRole) => boolean;
+  hasAnyRole: (roles: UserRole[]) => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -33,6 +37,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
+      
+      hasRole: (role: UserRole) => {
+        const { user } = get();
+        return user?.roles.includes(role) || false;
+      },
+      
+      hasAnyRole: (roles: UserRole[]) => {
+        const { user } = get();
+        if (!user) return false;
+        return roles.some(role => user.roles.includes(role));
+      },
     }),
     {
       name: 'auth-storage',
