@@ -27,18 +27,18 @@ async function main() {
 
   console.log(`✅ Created ${roles.length} roles`);
 
-  // Create admin user with documento ADMIN001
+  // Create admin user with numeric documento
   const adminPassword = await bcrypt.hash('Admin123!', 10);
   
   const admin = await prisma.user.upsert({
-    where: { documento: 'ADMIN001' },
+    where: { documento: '999999' },
     update: {},
     create: {
       email: 'admin@fairpadel.com',
       passwordHash: adminPassword,
       nombre: 'Admin',
       apellido: 'FairPadel',
-      documento: 'ADMIN001',
+      documento: '999999', // Documento numérico válido
       telefono: '0981000000',
       status: UserStatus.ACTIVO,
       roles: {
@@ -90,7 +90,7 @@ async function main() {
   console.log(`✅ Created ${categories.length} categories`);
 
   console.log('\n🔑 Admin credentials:');
-  console.log('   Documento: ADMIN001');
+  console.log('   Documento: 999999');
   console.log('   Password: Admin123!');
 
   console.log('\n🎉 Seed completed successfully!');
