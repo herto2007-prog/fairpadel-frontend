@@ -23,8 +23,11 @@ COPY tsconfig.json nest-cli.json ./
 # Build application
 RUN npm run build
 
+# Verify build
+RUN ls -la dist/
+
 # Expose port
 EXPOSE 3000
 
 # Run db push (not migrate deploy) and seed
-CMD npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:prod
+CMD npx prisma db push --accept-data-loss && npx prisma db seed && node dist/main.js
