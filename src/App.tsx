@@ -8,6 +8,9 @@ import { UserRole } from './types';
 import { TournamentsListPage } from './features/tournaments/pages/TournamentsListPage';
 import { TournamentDetailPage } from './features/tournaments/pages/TournamentDetailPage';
 import { CreateTournamentPage } from './features/tournaments/pages/CreateTournamentPage';
+import { MisInscripcionesPage } from './features/inscripciones/pages/MisInscripcionesPage';
+import { InscripcionPage } from './features/inscripciones/pages/InscripcionPage';
+import { GestionInscripcionesPage } from './features/inscripciones/pages/GestionInscripcionesPage';
 
 function App() {
   return (
@@ -37,6 +40,32 @@ function App() {
           element={
             <ProtectedRoute requiredRoles={[UserRole.ORGANIZADOR, UserRole.ADMIN]}>
               <CreateTournamentPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Inscripciones Routes - Protected */}
+        <Route
+          path="/inscripciones/my"
+          element={
+            <ProtectedRoute>
+              <MisInscripcionesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inscripciones/tournament/:id"
+          element={
+            <ProtectedRoute>
+              <InscripcionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inscripciones/gestion/:tournamentId"
+          element={
+            <ProtectedRoute requiredRoles={[UserRole.ORGANIZADOR, UserRole.ADMIN]}>
+              <GestionInscripcionesPage />
             </ProtectedRoute>
           }
         />

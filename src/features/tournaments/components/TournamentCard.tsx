@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Trophy } from 'lucide-react';
+import { Calendar, Users, Trophy } from 'lucide-react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Tournament } from '../../../services/tournamentService';
 import { format } from 'date-fns';
@@ -87,22 +87,16 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
             </div>
 
             <div className="flex items-center gap-2 text-dark-400">
-              <MapPin className="w-4 h-4 text-primary-500" />
-              <span>{tournament.ciudad}, {tournament.pais}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-dark-400">
               <Users className="w-4 h-4 text-primary-500" />
-              <span>{tournament.categories.length} categorías</span>
+              <span>{tournament.categories?.length || 0} categorías</span>
             </div>
           </div>
 
-          {tournament.costoInscripcion > 0 && (
+          {tournament.premio && (
             <div className="mt-4 pt-4 border-t border-dark-800">
               <span className="text-primary-400 font-semibold">
-                Gs. {tournament.costoInscripcion.toLocaleString('es-PY')}
+                Premio: {tournament.premio}
               </span>
-              <span className="text-dark-500 text-sm ml-2">/ inscripción</span>
             </div>
           )}
         </CardContent>

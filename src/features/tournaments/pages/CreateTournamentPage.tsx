@@ -19,11 +19,13 @@ export function CreateTournamentPage() {
     descripcion: '',
     fechaInicio: '',
     fechaFin: '',
-    fechaLimiteInscr: '',
-    ciudad: '',
-    pais: 'Paraguay',
-    costoInscripcion: '',
-    minutosPorPartido: 90,
+    fechaInicioInscripcion: '',
+    fechaFinInscripcion: '',
+    maxParejas: undefined,
+    minParejas: undefined,
+    puntosRanking: undefined,
+    premio: '',
+    flyerUrl: '',
   });
 
   useEffect(() => {
@@ -59,14 +61,14 @@ export function CreateTournamentPage() {
       toast.success('Torneo creado exitosamente');
       navigate(`/tournaments/${tournament.id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Error al crear torneo');
+      toast.error(error.response?.data?.message || 'Error al crear torneo');
     } finally {
       setIsLoading(false);
     }
   };
 
   const toggleCategory = (categoryId: string) => {
-    setSelectedCategories(prev =>
+    setSelectedCategories(prev => 
       prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)
         : [...prev, categoryId]
@@ -74,35 +76,31 @@ export function CreateTournamentPage() {
   };
 
   // Group categories by tipo
-  const categoriesByTipo = categories.reduce((acc, cat) => {
-    if (!acc[cat.tipo]) acc[cat.tipo] = [];
-    acc[cat.tipo].push(cat);
+  const categoriesByTipo = categories.reduce((acc, category) => {
+    if (!acc[category.tipo]) {
+      acc[category.tipo] = [];
+    }
+    acc[category.tipo].push(category);
     return acc;
   }, {} as Record<string, Category[]>);
 
   return (
-    <div className="min-h-screen bg-dark-950">
-      {/* Header */}
-      <div className="border-b border-dark-800 bg-dark-900/50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <Link to="/tournaments">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-display font-bold text-white">Crear Torneo</h1>
-              <p className="text-dark-400 text-sm">Completa los datos de tu torneo</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-dark-950 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link to="/tournaments">
+            <Button variant="ghost" className="mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver a Torneos
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-display font-bold text-white">Crear Nuevo Torneo</h1>
+          <p className="text-dark-400 mt-2">Completa los datos para crear tu torneo</p>
         </div>
-      </div>
 
-      {/* Form */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información básica */}
+          {/* Información Básica */}
           <Card>
             <CardHeader>
               <CardTitle>Información Básica</CardTitle>
@@ -112,7 +110,7 @@ export function CreateTournamentPage() {
                 <Label htmlFor="nombre">Nombre del Torneo *</Label>
                 <Input
                   id="nombre"
-                  placeholder="Ej: Torneo Apertura 2026"
+                  placeholder="Ej: Torneo de Verano 2024"
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                   required
@@ -123,11 +121,21 @@ export function CreateTournamentPage() {
                 <Label htmlFor="descripcion">Descripción</Label>
                 <textarea
                   id="descripcion"
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl bg-dark-900 border border-dark-800 text-dark-100 placeholder:text-dark-500 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all duration-200 resize-none"
-                  placeholder="Describe tu torneo..."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-dark-900 border border-dark-700 rounded-xl text-white placeholder-dark-500 focus:outline-none focus:border-primary-500 transition-colors resize-none"
+                  placeholder="Describe tu torneo, premios, reglas, etc."
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="flyerUrl">URL del Flyer (opcional)</Label>
+                <Input
+                  id="flyerUrl"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  value={formData.flyerUrl}
+                  onChange={(e) => setFormData({ ...formData, flyerUrl: e.target.value })}
                 />
               </div>
             </CardContent>
@@ -163,74 +171,79 @@ export function CreateTournamentPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fechaLimiteInscr">Fecha Límite de Inscripción *</Label>
-                <Input
-                  id="fechaLimiteInscr"
-                  type="datetime-local"
-                  value={formData.fechaLimiteInscr}
-                  onChange={(e) => setFormData({ ...formData, fechaLimiteInscr: e.target.value })}
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ubicación */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ubicación</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ciudad">Ciudad *</Label>
+                  <Label htmlFor="fechaInicioInscripcion">Inicio de Inscripciones</Label>
                   <Input
-                    id="ciudad"
-                    placeholder="Ej: Asunción"
-                    value={formData.ciudad}
-                    onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-                    required
+                    id="fechaInicioInscripcion"
+                    type="datetime-local"
+                    value={formData.fechaInicioInscripcion}
+                    onChange={(e) => setFormData({ ...formData, fechaInicioInscripcion: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pais">País</Label>
+                  <Label htmlFor="fechaFinInscripcion">Fin de Inscripciones</Label>
                   <Input
-                    id="pais"
-                    value={formData.pais}
-                    onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                    id="fechaFinInscripcion"
+                    type="datetime-local"
+                    value={formData.fechaFinInscripcion}
+                    onChange={(e) => setFormData({ ...formData, fechaFinInscripcion: e.target.value })}
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Costos */}
+          {/* Configuración */}
           <Card>
             <CardHeader>
-              <CardTitle>Costos</CardTitle>
+              <CardTitle>Configuración</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="costoInscripcion">Costo de Inscripción (Gs)</Label>
+                  <Label htmlFor="maxParejas">Cupo Máximo de Parejas</Label>
                   <Input
-                    id="costoInscripcion"
+                    id="maxParejas"
+                    type="number"
+                    placeholder="Sin límite"
+                    value={formData.maxParejas || ''}
+                    onChange={(e) => setFormData({ ...formData, maxParejas: e.target.value ? parseInt(e.target.value) : undefined })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="minParejas">Mínimo de Parejas</Label>
+                  <Input
+                    id="minParejas"
                     type="number"
                     placeholder="0"
-                    value={formData.costoInscripcion}
-                    onChange={(e) => setFormData({ ...formData, costoInscripcion: e.target.value })}
+                    value={formData.minParejas || ''}
+                    onChange={(e) => setFormData({ ...formData, minParejas: e.target.value ? parseInt(e.target.value) : undefined })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="puntosRanking">Puntos de Ranking</Label>
+                  <Input
+                    id="puntosRanking"
+                    type="number"
+                    placeholder="0"
+                    value={formData.puntosRanking || ''}
+                    onChange={(e) => setFormData({ ...formData, puntosRanking: e.target.value ? parseInt(e.target.value) : undefined })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="minutosPorPartido">Minutos por Partido</Label>
+                  <Label htmlFor="premio">Premio</Label>
                   <Input
-                    id="minutosPorPartido"
-                    type="number"
-                    value={formData.minutosPorPartido}
-                    onChange={(e) => setFormData({ ...formData, minutosPorPartido: parseInt(e.target.value) })}
+                    id="premio"
+                    placeholder="Ej: Trofeo + Gs. 1.000.000"
+                    value={formData.premio}
+                    onChange={(e) => setFormData({ ...formData, premio: e.target.value })}
                   />
                 </div>
               </div>
@@ -268,17 +281,29 @@ export function CreateTournamentPage() {
                   </div>
                 ))}
               </div>
+              
+              {selectedCategories.length > 0 && (
+                <div className="mt-4 p-3 bg-primary-600/10 border border-primary-600/20 rounded-lg">
+                  <p className="text-sm text-primary-400">
+                    {selectedCategories.length} categoría(s) seleccionada(s)
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Submit */}
+          {/* Actions */}
           <div className="flex gap-4">
             <Link to="/tournaments" className="flex-1">
-              <Button type="button" variant="secondary" className="w-full">
+              <Button type="button" variant="outline" className="w-full">
                 Cancelar
               </Button>
             </Link>
-            <Button type="submit" className="flex-1" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="flex-1"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

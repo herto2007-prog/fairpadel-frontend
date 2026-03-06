@@ -7,14 +7,14 @@ export interface Tournament {
   slug: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscr: string;
-  pais: string;
-  ciudad: string;
-  estado: string;
-  costoInscripcion: number;
-  precioPelota: number | null;
+  fechaInicioInscripcion: string | null;
+  fechaFinInscripcion: string | null;
+  maxParejas: number | null;
+  minParejas: number | null;
+  puntosRanking: number | null;
+  premio: string | null;
   flyerUrl: string | null;
-  minutosPorPartido: number;
+  estado: string;
   organizador: {
     id: string;
     nombre: string;
@@ -32,6 +32,23 @@ export interface Tournament {
       orden: number;
     };
   }[];
+  inscripciones?: {
+    id: string;
+    estado: string;
+    jugador1: {
+      id: string;
+      nombre: string;
+      apellido: string;
+    };
+    jugador2: {
+      id: string;
+      nombre: string;
+      apellido: string;
+    } | null;
+  }[];
+  _count?: {
+    inscripciones: number;
+  };
   createdAt: string;
 }
 
@@ -47,11 +64,13 @@ export interface CreateTournamentData {
   descripcion?: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscr: string;
-  ciudad: string;
-  pais?: string;
-  costoInscripcion?: string;
-  minutosPorPartido?: number;
+  fechaInicioInscripcion?: string;
+  fechaFinInscripcion?: string;
+  maxParejas?: number;
+  minParejas?: number;
+  puntosRanking?: number;
+  premio?: string;
+  flyerUrl?: string;
   categoryIds?: string[];
 }
 
