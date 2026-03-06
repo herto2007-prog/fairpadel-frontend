@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# Install OpenSSL and other dependencies
+RUN apk add --no-cache openssl libssl3
+
 WORKDIR /app
 
 # Copy package files
