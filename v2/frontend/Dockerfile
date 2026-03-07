@@ -14,21 +14,14 @@ FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
+# Configurar nginx para Railway
 RUN echo 'server { \
     listen $PORT; \
+    root /usr/share/nginx/html; \
+    index index.html; \
     location / { \
-        root /usr/share/nginx/html; \
-        index index.html; \
         try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf.template
+}' > /etc/nginx/conf.d/default.conf
 
-# Entrypoint script to replace PORT
-RUN echo '#!/bin/sh \
-export PORT=${PORT:-80} \
-envsubst "\$PORT" < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf \
-nginx -g "daemon off;" \
-' > /entrypoint.sh && chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+CMD sh -c 'sed -i "s/\$PORT/$PORT/g" /etc/nginx/conf.d/default.conf && nginx -g "daemon off;"'

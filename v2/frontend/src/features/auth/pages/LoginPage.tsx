@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 
 export default function LoginPage() {
+  // Si ya está logueado, redirigir al dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      window.location.href = '/dashboard';
+    }
+  }, []);
   const [documento, setDocumento] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +22,7 @@ export default function LoginPage() {
     try {
       const response = await api.post('/auth/login', { documento, password });
       localStorage.setItem('token', response.data.access_token);
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {
