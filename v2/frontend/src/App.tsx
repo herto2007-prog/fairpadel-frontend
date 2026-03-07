@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
+// Landing
+import LandingPage from './pages/LandingPage';
+
 // Auth
 import LoginPage from './features/auth/pages/LoginPage';
 
@@ -19,6 +22,9 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Landing */}
+        <Route path="/" element={<LandingPage />} />
+        
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         
@@ -33,9 +39,6 @@ function App() {
         {/* Instructores */}
         <Route path="/instructores" element={<InstructoresListPage />} />
         <Route path="/instructores/:id" element={<InstructorDetailPage />} />
-        
-        {/* Home */}
-        <Route path="/" element={<SedesListPage />} />
       </Routes>
     </Router>
   );
