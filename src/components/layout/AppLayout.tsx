@@ -86,7 +86,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <div className="hidden sm:flex items-center gap-3">
                   <span className="text-sm text-gray-400">
                     {user.nombre} {user.apellido}
-                    {user.roles.includes('admin') && (
+                    {user.roles?.includes('admin') && (
                       <span className="ml-2 text-xs bg-[#df2531] px-2 py-0.5 rounded">Admin</span>
                     )}
                   </span>
