@@ -11,6 +11,8 @@ import { CreateTournamentPage } from './features/tournaments/pages/CreateTournam
 import { MisInscripcionesPage } from './features/inscripciones/pages/MisInscripcionesPage';
 import { InscripcionPage } from './features/inscripciones/pages/InscripcionPage';
 import { GestionInscripcionesPage } from './features/inscripciones/pages/GestionInscripcionesPage';
+import { BracketPage } from './features/fixture/pages/BracketPage';
+import { CargarResultadoPage } from './features/fixture/pages/CargarResultadoPage';
 
 function App() {
   return (
@@ -66,6 +68,24 @@ function App() {
           element={
             <ProtectedRoute requiredRoles={[UserRole.ORGANIZADOR, UserRole.ADMIN]}>
               <GestionInscripcionesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fixture Routes */}
+        <Route
+          path="/fixture/:tournamentId/:categoryId"
+          element={
+            <ProtectedRoute>
+              <BracketPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/matches/:matchId/resultado"
+          element={
+            <ProtectedRoute requiredRoles={[UserRole.ORGANIZADOR, UserRole.ADMIN]}>
+              <CargarResultadoPage />
             </ProtectedRoute>
           }
         />
