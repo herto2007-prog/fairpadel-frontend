@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateTournamentDto } from './dto/create-tournament.dto';
+import { UpdateTournamentDto } from './dto/update-tournament.dto';
 
 @Injectable()
 export class TournamentsService {
@@ -9,7 +11,6 @@ export class TournamentsService {
     return this.prisma.tournament.findMany({
       where: { estado: 'PUBLICADO' },
       include: {
-        sede: true,
         organizador: {
           select: { id: true, nombre: true, apellido: true },
         },
@@ -21,24 +22,118 @@ export class TournamentsService {
     });
   }
 
-  async findById(id: string) {
-    return this.prisma.tournament.findUnique({
+  async findOne(id: string) {
+    const tournament = await this.prisma.tournament.findUnique({
       where: { id },
       include: {
-        sede: true,
         organizador: {
           select: { id: true, nombre: true, apellido: true },
         },
         categorias: {
           include: { category: true },
         },
-        sedes: {
+        sedePrincipal: true,
+        torneoSedes: {
           include: { sede: true },
         },
-        canchas: {
+        torneoCanchas: {
           include: { sedeCancha: true },
         },
       },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Torneo no encontrado');
+    }
+
+    return tournament;
+  }
+
+  async findById(id: string) {
+    return this.findOne(id);
+  }
+
+  async getCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { orden: 'asc' },
+    });
+  }
+
+  async findByOrganizador(organizadorId: string) {
+    return this.prisma.tournament.findMany({
+      where: { organizadorId },
+      include: {
+        categorias: {
+          include: { category: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async create(organizadorId: string, dto: CreateTournamentDto) {
+    return this.prisma.tournament.create({
+      data: {
+        ...dto,
+        organizadorId,
+        estado: 'BORRADOR',
+      },
+    });
+  }
+
+  async update(id: string, userId: string, dto: UpdateTournamentDto) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Torneo no encontrado');
+    }
+
+    if (tournament.organizadorId !== userId) {
+      throw new ForbiddenException('No tienes permiso para editar este torneo');
+    }
+
+    return this.prisma.tournament.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  async publish(id: string, userId: string) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Torneo no encontrado');
+    }
+
+    if (tournament.organizadorId !== userId) {
+      throw new ForbiddenException('No tienes permiso para publicar este torneo');
+    }
+
+    return this.prisma.tournament.update({
+      where: { id },
+      data: { estado: 'PUBLICADO' },
+    });
+  }
+
+  async remove(id: string, userId: string) {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Torneo no encontrado');
+    }
+
+    if (tournament.organizadorId !== userId) {
+      throw new ForbiddenException('No tienes permiso para eliminar este torneo');
+    }
+
+    return this.prisma.tournament.delete({
+      where: { id },
     });
   }
 }
