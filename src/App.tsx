@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom
 // Layout
 import AppLayout from './components/layout/AppLayout';
 
-// Landing
+// Pages
 import LandingPage from './pages/LandingPage';
+import DashboardPage from './pages/DashboardPage';
 
 // Auth
 import LoginPage from './features/auth/pages/LoginPage';
@@ -52,6 +53,9 @@ function App() {
         
         {/* Rutas Protegidas con Layout */}
         <Route element={<ProtectedLayout />}>
+          {/* Dashboard */}
+          <Route path="/dashboard" element={<DashboardPage />} />
+          
           {/* Torneos (V1) */}
           <Route path="/tournaments" element={<TournamentsListPage />} />
           <Route path="/tournaments/:id" element={<TournamentDetailPage />} />

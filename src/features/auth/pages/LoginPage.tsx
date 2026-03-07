@@ -15,7 +15,7 @@ export default function LoginPage() {
     try {
       const response = await api.post('/auth/login', { documento, password });
       localStorage.setItem('token', response.data.access_token);
-      window.location.href = '/tournaments';
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {
