@@ -1,58 +1,34 @@
-import {
-  IsString,
-  IsOptional,
-  IsDateString,
-  IsInt,
-  Min,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNumber, IsEnum } from 'class-validator';
+import { TournamentStatus } from '@prisma/client';
 
 export class CreateTournamentDto {
-  @IsString({ message: 'El nombre debe ser texto' })
-  @IsNotEmpty({ message: 'El nombre es requerido' })
+  @IsString()
   nombre: string;
 
-  @IsString({ message: 'La descripción debe ser texto' })
+  @IsString()
   @IsOptional()
   descripcion?: string;
 
-  @IsDateString({}, { message: 'La fecha de inicio no es válida' })
+  @IsDateString()
   fechaInicio: string;
 
-  @IsDateString({}, { message: 'La fecha de fin no es válida' })
+  @IsDateString()
   fechaFin: string;
 
-  @IsDateString({}, { message: 'La fecha de inicio de inscripción no es válida' })
-  @IsOptional()
-  fechaInicioInscripcion?: string;
+  @IsDateString()
+  fechaLimiteInscripcion: string;
 
-  @IsDateString({}, { message: 'La fecha de fin de inscripción no es válida' })
-  @IsOptional()
-  fechaFinInscripcion?: string;
+  @IsString()
+  ciudad: string;
 
-  @IsInt({ message: 'El máximo de parejas debe ser un número entero' })
-  @Min(1, { message: 'Mínimo 1 pareja' })
-  @IsOptional()
-  maxParejas?: number;
+  @IsNumber()
+  costoInscripcion: number;
 
-  @IsInt({ message: 'El mínimo de parejas debe ser un número entero' })
-  @Min(1, { message: 'Mínimo 1 pareja' })
+  @IsEnum(TournamentStatus)
   @IsOptional()
-  minParejas?: number;
+  estado?: TournamentStatus;
 
-  @IsInt({ message: 'Los puntos de ranking deben ser un número entero' })
+  @IsString()
   @IsOptional()
-  puntosRanking?: number;
-
-  @IsString({ message: 'El premio debe ser texto' })
-  @IsOptional()
-  premio?: string;
-
-  @IsString({ message: 'La URL del flyer debe ser texto' })
-  @IsOptional()
-  flyerUrl?: string;
-
-  @IsString({ message: 'Las categorías deben ser un array de IDs' })
-  @IsOptional()
-  categoryIds?: string[];
+  sedeId?: string;
 }

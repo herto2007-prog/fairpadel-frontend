@@ -17,9 +17,7 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  },
-  "exclude": ["node_modules", "dist", "archive", "frontend", "frontend-v2-deploy", "deploy-frontend", "temp-frontend", "temp-v1-frontend", "v2", "**/*.tsx", "test", "backend/prisma/seed.ts"]
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  }
 }

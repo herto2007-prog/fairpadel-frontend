@@ -1,63 +1,25 @@
 FROM node:20-alpine
 
-# Install OpenSSL and set timezone to Paraguay
-RUN apk add --no-cache openssl libssl3 tzdata
-ENV TZ=America/Asuncion
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY prisma/schema.prisma ./prisma/
-COPY prisma/seed.ts ./prisma/
-COPY scripts/reset-admin.js ./scripts/
-
 # Install dependencies
-RUN npm install
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
+
+# Copy prisma schema
+COPY prisma ./prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Copy source
-COPY src ./src/
-COPY tsconfig.json nest-cli.json ./
+# Copy source code
+COPY . .
 
 # Build application
 RUN npm run build
 
-# Check what was built
-RUN ls -la dist/
-RUN ls -la dist/src/ || echo "No dist/src folder"
-
 # Expose port
 EXPOSE 3000
 
-# Run with Paraguay timezone
-ENV TZ=America/Asuncion
-ENV NODE_ENV=production
-
-# Find the correct path and run
-CMD if [ -f "dist/main.js" ]; then \
-      echo "🌍 Timezone: $TZ"; \
-      echo "🕐 Server time: $(date)"; \
-      echo "🔄 Running DB push..."; \
-      npx prisma db push --accept-data-loss; \
-      echo "🔧 Resetting admin..."; \
-      node scripts/reset-admin.js; \
-      echo "🚀 Starting server..."; \
-      node dist/main.js; \
-    elif [ -f "dist/src/main.js" ]; then \
-      echo "🌍 Timezone: $TZ"; \
-      echo "🕐 Server time: $(date)"; \
-      echo "🔄 Running DB push..."; \
-      npx prisma db push --accept-data-loss; \
-      echo "🔧 Resetting admin..."; \
-      node scripts/reset-admin.js; \
-      echo "🚀 Starting server..."; \
-      node dist/src/main.js; \
-    else \
-      echo "Error: main.js not found"; \
-      ls -la dist/; \
-      exit 1; \
-    fi
+# Start application with migrations
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
