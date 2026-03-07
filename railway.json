@@ -5,6 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "sh /entrypoint.sh"
+    "startCommand": "nginx -g 'daemon off;'"
   }
 }
