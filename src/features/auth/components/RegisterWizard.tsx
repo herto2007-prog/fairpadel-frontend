@@ -6,6 +6,8 @@ import {
   Trophy, Sparkles, Heart, Shield
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { ImageUpload } from '../../../components/upload/ImageUpload';
 
 interface FormData {
   nombre: string;
@@ -27,6 +29,15 @@ const steps = [
   { id: 3, title: 'Perfil', subtitle: 'Personaliza tu cuenta', icon: Camera },
   { id: 4, title: '¡Listo!', subtitle: 'Bienvenido a FairPadel', icon: Trophy },
 ];
+
+const uploadImage = async (file: File): Promise<string> => {
+  // Simular subida - reemplazar con llamada real al backend
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(URL.createObjectURL(file));
+    }, 2000);
+  });
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -324,24 +335,18 @@ export const RegisterWizard = () => {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <label className="block text-sm font-medium text-gray-400 mb-3">
-                Foto de Perfil (Opcional)
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-dark-100 border-2 border-dashed border-gray-600 flex items-center justify-center overflow-hidden">
-                  {formData.fotoUrl ? (
-                    <img src={formData.fotoUrl} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <Camera className="w-8 h-8 text-gray-500" />
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:border-primary hover:text-primary transition-colors text-sm"
-                >
-                  Subir foto
-                </button>
-              </div>
+              <ImageUpload
+                onUpload={async (file) => {
+                  const url = await uploadImage(file);
+                  updateField('fotoUrl', url);
+                  return url;
+                }}
+                onRemove={() => updateField('fotoUrl', '')}
+                defaultImage={formData.fotoUrl}
+                aspectRatio="square"
+                label="Foto de Perfil (Opcional)"
+                description="Arrastra o haz clic para subir tu foto"
+              />
             </motion.div>
           </motion.div>
         );
@@ -410,26 +415,8 @@ export const RegisterWizard = () => {
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1],
-            rotate: [0, 180, 360]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-primary/20 rounded-full blur-[100px]"
-        />
-        <motion.div
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.15, 0.1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-primary/10 rounded-full blur-[120px]"
-        />
-      </div>
+      {/* Background Effects - Reutilizable */}
+      <BackgroundEffects variant="subtle" showGrid={true} />
 
       <motion.div
         initial={{ opacity: 0, y: 40 }}

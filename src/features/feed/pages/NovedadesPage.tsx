@@ -6,6 +6,7 @@ import {
   Bell, Search, Plus, Sparkles
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 const navItems = [
   { id: 'torneos', label: 'Torneos', icon: Trophy, href: '/torneos' },
@@ -28,6 +29,9 @@ export const NovedadesPage = () => {
 
   return (
     <div className="min-h-screen bg-dark flex">
+      {/* Background Effects */}
+      <BackgroundEffects variant="subtle" showGrid={false} />
+      
       {/* Sidebar - Desktop */}
       <motion.aside
         initial={{ x: -100, opacity: 0 }}

@@ -5,6 +5,7 @@ import {
   CheckCircle, Sparkles, ArrowLeft
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -37,24 +38,7 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center p-4">
       {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-primary/20 rounded-full blur-[100px]"
-        />
-        <motion.div
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.15, 0.1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-primary/10 rounded-full blur-[120px]"
-        />
-      </div>
+      <BackgroundEffects variant="subtle" showGrid={true} />
 
       <motion.div
         initial={{ opacity: 0, y: 40 }}
