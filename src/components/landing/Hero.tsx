@@ -148,6 +148,16 @@ export const Hero = () => {
                 <Play className="w-5 h-5" />
                 Ver Cómo Funciona
               </motion.button>
+              <Link to="/login">
+                <motion.button
+                  className="btn-outline inline-flex items-center justify-center gap-2 text-lg group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <User className="w-5 h-5" />
+                  Iniciar Sesión
+                </motion.button>
+              </Link>
             </motion.div>
 
             {/* Trust Indicators */}
