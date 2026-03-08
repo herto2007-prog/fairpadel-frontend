@@ -196,7 +196,7 @@ export const NovedadesPage = () => {
               <input
                 type="text"
                 placeholder="Buscar jugadores, torneos..."
-                className="w-full bg-[#1a1f2a] border border-gray-700 rounded-full py-2.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-all"
+                className="w-full bg-dark-100 border border-gray-700 rounded-full py-2.5 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-all"
               />
             </div>
           </div>
