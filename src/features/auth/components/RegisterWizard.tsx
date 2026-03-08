@@ -139,7 +139,7 @@ export const RegisterWizard = () => {
                   type="text"
                   value={formData.nombre}
                   onChange={(e) => updateField('nombre', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Tu nombre"
                 />
               </div>
@@ -155,7 +155,7 @@ export const RegisterWizard = () => {
                   type="text"
                   value={formData.apellido}
                   onChange={(e) => updateField('apellido', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Tu apellido"
                 />
               </div>
@@ -171,7 +171,7 @@ export const RegisterWizard = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => updateField('email', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="tu@email.com"
                 />
               </div>
@@ -192,7 +192,7 @@ export const RegisterWizard = () => {
                   type="text"
                   value={formData.documento}
                   onChange={(e) => updateField('documento', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="1234567"
                 />
               </div>
@@ -208,7 +208,7 @@ export const RegisterWizard = () => {
                   type="tel"
                   value={formData.telefono}
                   onChange={(e) => updateField('telefono', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="+595 981 123456"
                 />
               </div>
@@ -224,7 +224,7 @@ export const RegisterWizard = () => {
                   type="date"
                   value={formData.fechaNacimiento}
                   onChange={(e) => updateField('fechaNacimiento', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
             </motion.div>
@@ -276,7 +276,7 @@ export const RegisterWizard = () => {
                   type="text"
                   value={formData.ciudad}
                   onChange={(e) => updateField('ciudad', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="Asunción"
                 />
               </div>
@@ -292,7 +292,7 @@ export const RegisterWizard = () => {
                   type="password"
                   value={formData.password}
                   onChange={(e) => updateField('password', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-full bg-[#1a1f2a] border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -308,7 +308,7 @@ export const RegisterWizard = () => {
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => updateField('confirmPassword', e.target.value)}
-                  className={`w-full bg-dark-100 border rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
+                  className={`w-full bg-[#1a1f2a] border rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                     formData.confirmPassword && formData.password !== formData.confirmPassword
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-700 focus:border-primary focus:ring-primary/20'
