@@ -535,20 +535,35 @@ export const RegisterWizard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-3"
+              className="space-y-3 mb-6"
             >
               <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                 <Check className="w-4 h-4 text-green-500" />
-                <span>Email verificado</span>
+                <span>Cuenta creada</span>
               </div>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                 <Check className="w-4 h-4 text-green-500" />
-                <span>Perfil creado</span>
+                <span>Perfil configurado</span>
               </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                <Check className="w-4 h-4 text-green-500" />
-                <span>Listo para jugar</span>
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span className="text-yellow-500">Email pendiente de verificación</span>
               </div>
+            </motion.div>
+
+            {/* Alerta importante */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="glass bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-left"
+            >
+              <p className="text-yellow-400 text-sm">
+                <strong>Importante:</strong> Te enviamos un email de verificación a <span className="text-white">{formData.email}</span>. 
+                Debes verificar tu cuenta antes de inscribirte en torneos.
+              </p>
             </motion.div>
           </motion.div>
         );
