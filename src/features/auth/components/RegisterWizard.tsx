@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, Calendar, MapPin, Lock, 
   Camera, ChevronRight, ChevronLeft, Check, 
-  Trophy, Sparkles, Heart, Shield
+  Trophy, Sparkles, Heart, Shield, ChevronDown
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
@@ -14,6 +14,7 @@ interface FormData {
   apellido: string;
   email: string;
   documento: string;
+  paisTelefono: string;
   telefono: string;
   fechaNacimiento: string;
   genero: 'MASCULINO' | 'FEMENINO' | '';
@@ -28,6 +29,22 @@ const steps = [
   { id: 2, title: 'Tus datos', subtitle: 'Para mantenernos en contacto', icon: Phone },
   { id: 3, title: 'Perfil', subtitle: 'Personaliza tu cuenta', icon: Camera },
   { id: 4, title: '¡Listo!', subtitle: 'Bienvenido a FairPadel', icon: Trophy },
+];
+
+// Países con códigos de teléfono
+const countries = [
+  { code: 'PY', name: 'Paraguay', dialCode: '+595', flag: '🇵🇾' },
+  { code: 'AR', name: 'Argentina', dialCode: '+54', flag: '🇦🇷' },
+  { code: 'BR', name: 'Brasil', dialCode: '+55', flag: '🇧🇷' },
+  { code: 'UY', name: 'Uruguay', dialCode: '+598', flag: '🇺🇾' },
+  { code: 'CL', name: 'Chile', dialCode: '+56', flag: '🇨🇱' },
+  { code: 'BO', name: 'Bolivia', dialCode: '+591', flag: '🇧🇴' },
+  { code: 'PE', name: 'Perú', dialCode: '+51', flag: '🇵🇪' },
+  { code: 'CO', name: 'Colombia', dialCode: '+57', flag: '🇨🇴' },
+  { code: 'EC', name: 'Ecuador', dialCode: '+593', flag: '🇪🇨' },
+  { code: 'ES', name: 'España', dialCode: '+34', flag: '🇪🇸' },
+  { code: 'US', name: 'Estados Unidos', dialCode: '+1', flag: '🇺🇸' },
+  { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
 ];
 
 const uploadImage = async (file: File): Promise<string> => {
@@ -88,6 +105,7 @@ export const RegisterWizard = () => {
     apellido: '',
     email: '',
     documento: '',
+    paisTelefono: 'PY',
     telefono: '',
     fechaNacimiento: '',
     genero: '',
@@ -96,6 +114,19 @@ export const RegisterWizard = () => {
     confirmPassword: '',
     fotoUrl: '',
   });
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setShowCountryDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -213,16 +244,70 @@ export const RegisterWizard = () => {
               <label className="block text-sm font-medium text-gray-400 mb-2 group-focus-within:text-primary transition-colors">
                 Teléfono
               </label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="tel"
-                  value={formData.telefono}
-                  onChange={(e) => updateField('telefono', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="+595 981 123456"
-                />
+              <div className="relative flex" ref={countryDropdownRef}>
+                {/* Country Selector */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                    className="h-full px-4 bg-dark-100 border border-r-0 border-gray-700 rounded-l-xl flex items-center gap-2 hover:border-primary transition-colors min-w-[110px]"
+                  >
+                    <span className="text-xl">{countries.find(c => c.code === formData.paisTelefono)?.flag}</span>
+                    <span className="text-gray-300 text-sm">{countries.find(c => c.code === formData.paisTelefono)?.dialCode}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  </button>
+                  
+                  {/* Dropdown */}
+                  <AnimatePresence>
+                    {showCountryDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute top-full left-0 mt-2 w-64 max-h-60 overflow-y-auto glass rounded-xl border border-gray-700 z-50"
+                      >
+                        {countries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              updateField('paisTelefono', country.code);
+                              setShowCountryDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-dark-100 transition-colors text-left ${
+                              formData.paisTelefono === country.code ? 'bg-dark-100' : ''
+                            }`}
+                          >
+                            <span className="text-2xl">{country.flag}</span>
+                            <div className="flex-1">
+                              <p className="text-white text-sm font-medium">{country.name}</p>
+                              <p className="text-gray-500 text-xs">{country.dialCode}</p>
+                            </div>
+                            {formData.paisTelefono === country.code && (
+                              <Check className="w-4 h-4 text-primary" />
+                            )}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Phone Input */}
+                <div className="relative flex-1">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
+                  <input
+                    type="tel"
+                    value={formData.telefono}
+                    onChange={(e) => updateField('telefono', e.target.value.replace(/\D/g, ''))}
+                    className="w-full bg-dark-100 border border-gray-700 rounded-r-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-l-none"
+                    placeholder="981 123456"
+                  />
+                </div>
               </div>
+              <p className="text-gray-500 text-xs mt-2">
+                Código país: {countries.find(c => c.code === formData.paisTelefono)?.dialCode} • Sin 0 inicial
+              </p>
             </motion.div>
 
             <motion.div variants={itemVariants} className="group">
