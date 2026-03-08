@@ -8,7 +8,7 @@ WORKDIR /app
 # Instalar OpenSSL (necesario para algunas dependencias)
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-# Copiar package.json primero (mejor caché)
+# Copiar package.json primero (mejor cache)
 COPY package*.json ./
 RUN npm ci
 
@@ -24,8 +24,9 @@ FROM nginx:1.25-alpine-slim
 # Copiar build output
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Configuración de nginx
-RUN printf 'server {\n    listen ${PORT};\n    root /usr/share/nginx/html;\n    index index.html;\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}' > /etc/nginx/templates/default.conf.template
+# Crear directorio templates (NO existe en nginx:alpine) y escribir configuración
+RUN mkdir -p /etc/nginx/templates && \
+    printf 'server {\n    listen ${PORT};\n    root /usr/share/nginx/html;\n    index index.html;\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}' > /etc/nginx/templates/default.conf.template
 
 # Puerto por defecto (Railway sobrescribe con $PORT)
 ENV PORT=80
