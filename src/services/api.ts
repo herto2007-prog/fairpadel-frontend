@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://confident-ambition-production.up.railway.app/api';
+// Orden de prioridad:
+// 1. Variable de entorno (VITE_API_URL)
+// 2. Dominio custom de producción
+// 3. Fallback a Railway
+const API_URL = import.meta.env.VITE_API_URL || 
+                'https://api.fairpadel.com/api' || 
+                'https://confident-ambition-production.up.railway.app/api';
 
 export const api = axios.create({
   baseURL: API_URL,
