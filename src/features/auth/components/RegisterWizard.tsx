@@ -157,11 +157,32 @@ export const RegisterWizard = () => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simular llamada API
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    // Redirigir a login
-    setTimeout(() => navigate('/login'), 1000);
+    
+    // Guardar email para reenvío de verificación
+    localStorage.setItem('pendingVerificationEmail', formData.email);
+    
+    try {
+      // Aquí iría la llamada real a la API
+      // const response = await authService.register({
+      //   email: formData.email,
+      //   password: formData.password,
+      //   nombre: formData.nombre,
+      //   apellido: formData.apellido,
+      //   documento: formData.documento,
+      //   telefono: `${countries.find(c => c.code === formData.paisTelefono)?.dialCode}${formData.telefono}`,
+      //   fechaNacimiento: formData.fechaNacimiento,
+      //   genero: formData.genero as 'MASCULINO' | 'FEMENINO',
+      //   ciudad: formData.ciudad,
+      //   fotoUrl: formData.fotoUrl,
+      // });
+      
+      // Simular éxito
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      console.error('Error en registro:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStepContent = () => {

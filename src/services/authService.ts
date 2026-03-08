@@ -11,8 +11,11 @@ export interface RegisterData {
   nombre: string;
   apellido: string;
   documento: string;
-  telefono?: string;
+  telefono: string;
+  fechaNacimiento: string;
   genero: 'MASCULINO' | 'FEMENINO';
+  ciudad: string;
+  fotoUrl?: string;
 }
 
 export const authService = {

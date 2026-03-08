@@ -10,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 // Auth
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { RegisterWizard } from './features/auth/components/RegisterWizard';
+import { VerifyEmailPage } from './features/auth/pages/VerifyEmailPage';
 
 // Torneos (V1)
 import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
@@ -55,6 +56,7 @@ function App() {
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterWizard />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         
         {/* Rutas Protegidas con Layout */}
         <Route element={<ProtectedLayout />}>
