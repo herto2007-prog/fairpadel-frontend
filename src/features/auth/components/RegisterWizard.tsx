@@ -51,44 +51,63 @@ const countries = [
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
 ];
 
-// Categorías de pádel para auto-declaración
-// Con descripciones para ayudar al usuario a elegir correctamente
+// Categorías de pádel en Paraguay (sistema oficial)
+// El sistema va de Principiante → 8va (más baja) → ... → 1ra (profesional)
+// Los ascensos son automáticos según campeonatos ganados
 const categoriasPadel = [
   { 
-    id: 'novatos', 
-    nombre: 'Novatos / Iniciación', 
-    descripcion: 'Primeros meses jugando. Aún aprendiendo golpes básicos.',
+    id: 'Principiante', 
+    nombre: 'Principiante', 
+    descripcion: 'Estás comenzando. Aún no tienes categoría oficial.',
+    nivel: 0 
+  },
+  { 
+    id: '8ª Categoría', 
+    nombre: '8ª Categoría', 
+    descripcion: 'Primera categoría oficial. Nivel básico de competencia.',
     nivel: 1 
   },
   { 
-    id: 'cuarta', 
-    nombre: '4ª Categoría', 
-    descripcion: 'Juega regularmente. Dominio básico pero aún en desarrollo.',
+    id: '7ª Categoría', 
+    nombre: '7ª Categoría', 
+    descripcion: 'Primeros pasos en competencia amateur.',
     nivel: 2 
   },
   { 
-    id: 'tercera', 
-    nombre: '3ª Categoría', 
-    descripcion: 'Buen dominio técnico. Juega torneos locales frecuentemente.',
+    id: '6ª Categoría', 
+    nombre: '6ª Categoría', 
+    descripcion: 'Nivel intermedio bajo. Participación regular en torneos.',
     nivel: 3 
   },
   { 
-    id: 'segunda', 
-    nombre: '2ª Categoría', 
-    descripcion: 'Jugador avanzado. Participa en torneos con regularidad.',
+    id: '5ª Categoría', 
+    nombre: '5ª Categoría', 
+    descripcion: 'Intermedio. Buenos resultados en torneos locales.',
     nivel: 4 
   },
   { 
-    id: 'primera', 
-    nombre: '1ª Categoría', 
-    descripcion: 'Alta competencia. Ha ganado torneos importantes.',
+    id: '4ª Categoría', 
+    nombre: '4ª Categoría', 
+    descripcion: 'Intermedio alto. Competencia constante.',
     nivel: 5 
   },
   { 
-    id: 'premier', 
-    nombre: 'Premier / Profesional', 
-    descripcion: 'Nivel profesional. Entrena de forma intensiva.',
+    id: '3ª Categoría', 
+    nombre: '3ª Categoría', 
+    descripcion: 'Nivel avanzado. Destaca en torneos departamentales.',
     nivel: 6 
+  },
+  { 
+    id: '2ª Categoría', 
+    nombre: '2ª Categoría', 
+    descripcion: 'Muy avanzado. Gana torneos importantes.',
+    nivel: 7 
+  },
+  { 
+    id: '1ª Categoría', 
+    nombre: '1ª Categoría', 
+    descripcion: 'Elite. Nivel profesional. Alto rendimiento.',
+    nivel: 8 
   },
 ];
 
@@ -217,7 +236,7 @@ export const RegisterWizard = () => {
         fechaNacimiento: formData.fechaNacimiento,
         genero: formData.genero as 'MASCULINO' | 'FEMENINO',
         ciudad: formData.ciudad,
-        categoria: categoriasPadel.find(c => c.id === formData.categoria)?.nombre || formData.categoria,
+        categoria: formData.categoria,
         fotoUrl: formData.fotoUrl,
       });
       
