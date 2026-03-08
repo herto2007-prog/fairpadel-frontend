@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, Mail, Phone, Calendar, MapPin, Lock, 
+  User, Mail, Phone, Calendar, Lock, 
   Camera, ChevronRight, ChevronLeft, Check, 
   Trophy, Sparkles, Heart, Shield, ChevronDown
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
-import { ImageUpload } from '../../../components/upload/ImageUpload';
+import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 
 interface FormData {
   nombre: string;
@@ -47,14 +48,7 @@ const countries = [
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
 ];
 
-const uploadImage = async (file: File): Promise<string> => {
-  // Simular subida - reemplazar con llamada real al backend
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(URL.createObjectURL(file));
-    }, 2000);
-  });
-};
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -116,6 +110,8 @@ export const RegisterWizard = () => {
   });
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -362,20 +358,13 @@ export const RegisterWizard = () => {
       case 3:
         return (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
-            <motion.div variants={itemVariants} className="group">
-              <label className="block text-sm font-medium text-gray-400 mb-2 group-focus-within:text-primary transition-colors">
-                Ciudad
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="text"
-                  value={formData.ciudad}
-                  onChange={(e) => updateField('ciudad', e.target.value)}
-                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="Asunción"
-                />
-              </div>
+            <motion.div variants={itemVariants}>
+              <CityAutocomplete
+                value={formData.ciudad}
+                onChange={(value) => updateField('ciudad', value)}
+                label="Ciudad"
+                placeholder="Busca tu ciudad..."
+              />
             </motion.div>
 
             <motion.div variants={itemVariants} className="group">
@@ -420,18 +409,56 @@ export const RegisterWizard = () => {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <ImageUpload
-                onUpload={async (file) => {
-                  const url = await uploadImage(file);
-                  updateField('fotoUrl', url);
-                  return url;
-                }}
-                onRemove={() => updateField('fotoUrl', '')}
-                defaultImage={formData.fotoUrl}
-                aspectRatio="square"
-                label="Foto de Perfil (Opcional)"
-                description="Arrastra o haz clic para subir tu foto"
-              />
+              {!formData.fotoUrl ? (
+                <div 
+                  onClick={() => document.getElementById('avatar-input')?.click()}
+                  className="cursor-pointer group"
+                >
+                  <label className="block text-sm font-medium text-gray-400 mb-3">
+                    Foto de Perfil (Opcional)
+                  </label>
+                  <div className="aspect-square max-w-[200px] mx-auto rounded-2xl border-2 border-dashed border-gray-700 group-hover:border-primary transition-all bg-dark-100/50 flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl bg-dark-100 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
+                      <Camera className="w-8 h-8 text-gray-500 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-gray-400 text-sm text-center">Haz clic para personalizar</p>
+                    <p className="text-gray-500 text-xs text-center mt-1">Máx 5MB</p>
+                  </div>
+                  <input
+                    id="avatar-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAvatarFile(file);
+                        setShowAvatarEditor(true);
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="text-center">
+                  <label className="block text-sm font-medium text-gray-400 mb-3">
+                    Foto de Perfil
+                  </label>
+                  <div className="relative inline-block">
+                    <img
+                      src={formData.fotoUrl}
+                      alt="Avatar"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-primary/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => updateField('fotoUrl', '')}
+                      className="absolute -bottom-2 -right-2 w-10 h-10 bg-dark-100 border border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         );
@@ -662,6 +689,25 @@ export const RegisterWizard = () => {
             Inicia sesión aquí
           </Link>
         </motion.p>
+
+        {/* Avatar Editor Modal */}
+        <AnimatePresence>
+          {showAvatarEditor && avatarFile && (
+            <AvatarEditorModal
+              image={avatarFile}
+              onSave={async (dataUrl) => {
+                setFormData(prev => ({ ...prev, fotoUrl: dataUrl }));
+                setShowAvatarEditor(false);
+                setAvatarFile(null);
+                // Aquí podrías subir el dataUrl a Cloudinary
+              }}
+              onCancel={() => {
+                setShowAvatarEditor(false);
+                setAvatarFile(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
