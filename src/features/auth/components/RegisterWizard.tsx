@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+import { ProfilePhotoGuidelines } from '../../../components/upload/ProfilePhotoGuidelines';
 
 interface FormData {
   nombre: string;
@@ -112,6 +113,7 @@ export const RegisterWizard = () => {
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showPhotoGuidelines, setShowPhotoGuidelines] = useState(true);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -410,53 +412,84 @@ export const RegisterWizard = () => {
 
             <motion.div variants={itemVariants}>
               {!formData.fotoUrl ? (
-                <div 
-                  onClick={() => document.getElementById('avatar-input')?.click()}
-                  className="cursor-pointer group"
-                >
-                  <label className="block text-sm font-medium text-gray-400 mb-3">
-                    Foto de Perfil (Opcional)
-                  </label>
-                  <div className="aspect-square max-w-[200px] mx-auto rounded-2xl border-2 border-dashed border-gray-700 group-hover:border-primary transition-all bg-dark-100/50 flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 rounded-2xl bg-dark-100 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                      <Camera className="w-8 h-8 text-gray-500 group-hover:text-primary transition-colors" />
-                    </div>
-                    <p className="text-gray-400 text-sm text-center">Haz clic para personalizar</p>
-                    <p className="text-gray-500 text-xs text-center mt-1">Máx 5MB</p>
+                <div>
+                  {/* Label persuasivo */}
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-medium text-gray-300">
+                      Foto de Competidor
+                    </label>
+                    <span className="text-xs text-primary/80 bg-primary/10 px-2 py-1 rounded-full">
+                      Recomendado
+                    </span>
                   </div>
-                  <input
-                    id="avatar-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setAvatarFile(file);
-                        setShowAvatarEditor(true);
-                      }
-                    }}
-                  />
+                  
+                  {/* Upload area */}
+                  <div 
+                    onClick={() => document.getElementById('avatar-input')?.click()}
+                    className="cursor-pointer group"
+                  >
+                    <div className="aspect-square max-w-[200px] mx-auto rounded-2xl border-2 border-dashed border-gray-700 group-hover:border-primary transition-all bg-dark-100/50 flex flex-col items-center justify-center relative overflow-hidden">
+                      {/* Silueta de persona */}
+                      <div className="w-20 h-20 rounded-full bg-dark-200 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors border-2 border-dashed border-gray-600 group-hover:border-primary/50">
+                        <User className="w-10 h-10 text-gray-500 group-hover:text-primary transition-colors" />
+                      </div>
+                      <p className="text-white text-sm text-center font-medium">Tu cara, tu identidad</p>
+                      <p className="text-gray-500 text-xs text-center mt-1">Haz clic para subir</p>
+                      
+                      {/* Efecto hover */}
+                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <input
+                      id="avatar-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAvatarFile(file);
+                          setShowAvatarEditor(true);
+                          setShowPhotoGuidelines(false);
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Guías de foto */}
+                  <ProfilePhotoGuidelines isVisible={showPhotoGuidelines} />
                 </div>
               ) : (
                 <div className="text-center">
-                  <label className="block text-sm font-medium text-gray-400 mb-3">
-                    Foto de Perfil
-                  </label>
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <label className="text-sm font-medium text-green-400 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      Foto de Competidor
+                    </label>
+                  </div>
                   <div className="relative inline-block">
                     <img
                       src={formData.fotoUrl}
                       alt="Avatar"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-primary/20"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-green-500/30"
                     />
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="w-5 h-5 text-white" />
+                    </div>
                     <button
                       type="button"
-                      onClick={() => updateField('fotoUrl', '')}
-                      className="absolute -bottom-2 -right-2 w-10 h-10 bg-dark-100 border border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 transition-colors"
+                      onClick={() => {
+                        updateField('fotoUrl', '');
+                        setShowPhotoGuidelines(true);
+                      }}
+                      className="absolute -bottom-2 -right-8 w-8 h-8 bg-dark-100 border border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 transition-colors text-lg"
+                      title="Eliminar foto"
                     >
                       ×
                     </button>
                   </div>
+                  <p className="text-gray-400 text-xs mt-3">
+                    Tu foto será visible en brackets y rankings
+                  </p>
                 </div>
               )}
             </motion.div>
