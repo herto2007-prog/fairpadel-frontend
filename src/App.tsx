@@ -8,7 +8,8 @@ import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
 
 // Auth
-import LoginPage from './features/auth/pages/LoginPage';
+import { LoginPage } from './features/auth/pages/LoginPage';
+import { RegisterWizard } from './features/auth/components/RegisterWizard';
 
 // Torneos (V1)
 import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
@@ -32,6 +33,9 @@ import MisReservasPage from './features/alquileres/pages/MisReservasPage';
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
 import InstructorDetailPage from './features/instructores/pages/InstructorDetailPage';
 
+// Feed (Novedades)
+import { NovedadesPage } from './features/feed/pages/NovedadesPage';
+
 // Layout wrapper para rutas protegidas
 function ProtectedLayout() {
   return (
@@ -50,6 +54,7 @@ function App() {
         
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterWizard />} />
         
         {/* Rutas Protegidas con Layout */}
         <Route element={<ProtectedLayout />}>
@@ -77,6 +82,13 @@ function App() {
           {/* Instructores (V2) */}
           <Route path="/instructores" element={<InstructoresListPage />} />
           <Route path="/instructores/:id" element={<InstructorDetailPage />} />
+          
+          {/* Feed / Novedades */}
+          <Route path="/novedades" element={<NovedadesPage />} />
+          
+          {/* Alias de rutas para navegación */}
+          <Route path="/torneos" element={<TournamentsListPage />} />
+          <Route path="/jugadores" element={<NovedadesPage />} /> {/* Temporal hasta tener página de jugadores */}
         </Route>
       </Routes>
     </Router>
