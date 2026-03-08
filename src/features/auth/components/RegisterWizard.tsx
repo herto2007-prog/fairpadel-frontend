@@ -10,6 +10,7 @@ import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { ProfilePhotoGuidelines } from '../../../components/upload/ProfilePhotoGuidelines';
+import { authService } from '../../../services/authService';
 
 interface FormData {
   nombre: string;
@@ -21,6 +22,7 @@ interface FormData {
   fechaNacimiento: string;
   genero: 'MASCULINO' | 'FEMENINO' | '';
   ciudad: string;
+  categoria: string;
   password: string;
   confirmPassword: string;
   fotoUrl: string;
@@ -47,6 +49,47 @@ const countries = [
   { code: 'ES', name: 'España', dialCode: '+34', flag: '🇪🇸' },
   { code: 'US', name: 'Estados Unidos', dialCode: '+1', flag: '🇺🇸' },
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
+];
+
+// Categorías de pádel para auto-declaración
+// Con descripciones para ayudar al usuario a elegir correctamente
+const categoriasPadel = [
+  { 
+    id: 'novatos', 
+    nombre: 'Novatos / Iniciación', 
+    descripcion: 'Primeros meses jugando. Aún aprendiendo golpes básicos.',
+    nivel: 1 
+  },
+  { 
+    id: 'cuarta', 
+    nombre: '4ª Categoría', 
+    descripcion: 'Juega regularmente. Dominio básico pero aún en desarrollo.',
+    nivel: 2 
+  },
+  { 
+    id: 'tercera', 
+    nombre: '3ª Categoría', 
+    descripcion: 'Buen dominio técnico. Juega torneos locales frecuentemente.',
+    nivel: 3 
+  },
+  { 
+    id: 'segunda', 
+    nombre: '2ª Categoría', 
+    descripcion: 'Jugador avanzado. Participa en torneos con regularidad.',
+    nivel: 4 
+  },
+  { 
+    id: 'primera', 
+    nombre: '1ª Categoría', 
+    descripcion: 'Alta competencia. Ha ganado torneos importantes.',
+    nivel: 5 
+  },
+  { 
+    id: 'premier', 
+    nombre: 'Premier / Profesional', 
+    descripcion: 'Nivel profesional. Entrena de forma intensiva.',
+    nivel: 6 
+  },
 ];
 
 
@@ -105,6 +148,7 @@ export const RegisterWizard = () => {
     fechaNacimiento: '',
     genero: '',
     ciudad: '',
+    categoria: '',
     password: '',
     confirmPassword: '',
     fotoUrl: '',
@@ -149,7 +193,7 @@ export const RegisterWizard = () => {
       case 2:
         return formData.documento && formData.telefono && formData.fechaNacimiento && formData.genero;
       case 3:
-        return formData.ciudad && formData.password && formData.password === formData.confirmPassword;
+        return formData.ciudad && formData.categoria && formData.password && formData.password === formData.confirmPassword;
       default:
         return true;
     }
@@ -162,24 +206,26 @@ export const RegisterWizard = () => {
     localStorage.setItem('pendingVerificationEmail', formData.email);
     
     try {
-      // Aquí iría la llamada real a la API
-      // const response = await authService.register({
-      //   email: formData.email,
-      //   password: formData.password,
-      //   nombre: formData.nombre,
-      //   apellido: formData.apellido,
-      //   documento: formData.documento,
-      //   telefono: `${countries.find(c => c.code === formData.paisTelefono)?.dialCode}${formData.telefono}`,
-      //   fechaNacimiento: formData.fechaNacimiento,
-      //   genero: formData.genero as 'MASCULINO' | 'FEMENINO',
-      //   ciudad: formData.ciudad,
-      //   fotoUrl: formData.fotoUrl,
-      // });
+      // Llamada real a la API
+      await authService.register({
+        email: formData.email,
+        password: formData.password,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        documento: formData.documento,
+        telefono: `${countries.find(c => c.code === formData.paisTelefono)?.dialCode}${formData.telefono}`,
+        fechaNacimiento: formData.fechaNacimiento,
+        genero: formData.genero as 'MASCULINO' | 'FEMENINO',
+        ciudad: formData.ciudad,
+        categoria: categoriasPadel.find(c => c.id === formData.categoria)?.nombre || formData.categoria,
+        fotoUrl: formData.fotoUrl,
+      });
       
-      // Simular éxito
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    } catch (error) {
+      // Redirigir al login después de 2 segundos
+      setTimeout(() => navigate('/login'), 2000);
+    } catch (error: any) {
       console.error('Error en registro:', error);
+      alert(error.response?.data?.message || 'Error al crear cuenta. Intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -388,6 +434,58 @@ export const RegisterWizard = () => {
                 label="Ciudad"
                 placeholder="Busca tu ciudad..."
               />
+            </motion.div>
+
+            {/* Selector de Categoría */}
+            <motion.div variants={itemVariants}>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Tu Categoría de Juego <span className="text-primary">*</span>
+              </label>
+              <p className="text-gray-500 text-xs mb-3">
+                Selecciona honestamente tu nivel actual. Esto evitará suspensiones por sandbagging.
+              </p>
+              
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {categoriasPadel.map((cat) => (
+                  <motion.button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => updateField('categoria', cat.id)}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                      formData.categoria === cat.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-gray-700 hover:border-gray-600 bg-dark-100/50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        formData.categoria === cat.id ? 'bg-primary text-white' : 'bg-dark-200 text-gray-400'
+                      }`}>
+                        {cat.nivel}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-semibold ${formData.categoria === cat.id ? 'text-white' : 'text-gray-300'}`}>
+                          {cat.nombre}
+                        </p>
+                        <p className="text-gray-500 text-sm mt-0.5">{cat.descripcion}</p>
+                      </div>
+                      {formData.categoria === cat.id && (
+                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+              
+              {/* Advertencia de sandbagging */}
+              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-xs">
+                  <strong>⚠️ Importante:</strong> Jugadores que se inscriban en categorías inferiores a su nivel real (sandbagging) 
+                  podrán ser suspendidos y descalificados de torneos.
+                </p>
+              </div>
             </motion.div>
 
             <motion.div variants={itemVariants} className="group">

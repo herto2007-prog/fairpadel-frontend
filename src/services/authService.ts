@@ -15,6 +15,7 @@ export interface RegisterData {
   fechaNacimiento: string;
   genero: 'MASCULINO' | 'FEMENINO';
   ciudad: string;
+  categoria: string;
   fotoUrl?: string;
 }
 
