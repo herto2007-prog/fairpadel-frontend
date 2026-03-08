@@ -52,50 +52,14 @@ const countries = [
 ];
 
 // Categorías de pádel en Paraguay (sistema oficial)
-// El sistema va de Principiante → 8va (más baja) → ... → 1ra (profesional)
+// Ordenado de más alta (1ra) a más baja (Principiante) para el dropdown
 // Los ascensos son automáticos según campeonatos ganados
 const categoriasPadel = [
   { 
-    id: 'Principiante', 
-    nombre: 'Principiante', 
-    descripcion: 'Estás comenzando. Aún no tienes categoría oficial.',
-    nivel: 0 
-  },
-  { 
-    id: '8ª Categoría', 
-    nombre: '8ª Categoría', 
-    descripcion: 'Primera categoría oficial. Nivel básico de competencia.',
-    nivel: 1 
-  },
-  { 
-    id: '7ª Categoría', 
-    nombre: '7ª Categoría', 
-    descripcion: 'Primeros pasos en competencia amateur.',
-    nivel: 2 
-  },
-  { 
-    id: '6ª Categoría', 
-    nombre: '6ª Categoría', 
-    descripcion: 'Nivel intermedio bajo. Participación regular en torneos.',
-    nivel: 3 
-  },
-  { 
-    id: '5ª Categoría', 
-    nombre: '5ª Categoría', 
-    descripcion: 'Intermedio. Buenos resultados en torneos locales.',
-    nivel: 4 
-  },
-  { 
-    id: '4ª Categoría', 
-    nombre: '4ª Categoría', 
-    descripcion: 'Intermedio alto. Competencia constante.',
-    nivel: 5 
-  },
-  { 
-    id: '3ª Categoría', 
-    nombre: '3ª Categoría', 
-    descripcion: 'Nivel avanzado. Destaca en torneos departamentales.',
-    nivel: 6 
+    id: '1ª Categoría', 
+    nombre: '1ª Categoría', 
+    descripcion: 'Elite. Nivel profesional. Alto rendimiento.',
+    nivel: 8 
   },
   { 
     id: '2ª Categoría', 
@@ -104,10 +68,46 @@ const categoriasPadel = [
     nivel: 7 
   },
   { 
-    id: '1ª Categoría', 
-    nombre: '1ª Categoría', 
-    descripcion: 'Elite. Nivel profesional. Alto rendimiento.',
-    nivel: 8 
+    id: '3ª Categoría', 
+    nombre: '3ª Categoría', 
+    descripcion: 'Nivel avanzado. Destaca en torneos departamentales.',
+    nivel: 6 
+  },
+  { 
+    id: '4ª Categoría', 
+    nombre: '4ª Categoría', 
+    descripcion: 'Intermedio alto. Competencia constante.',
+    nivel: 5 
+  },
+  { 
+    id: '5ª Categoría', 
+    nombre: '5ª Categoría', 
+    descripcion: 'Intermedio. Buenos resultados en torneos locales.',
+    nivel: 4 
+  },
+  { 
+    id: '6ª Categoría', 
+    nombre: '6ª Categoría', 
+    descripcion: 'Nivel intermedio bajo. Participación regular en torneos.',
+    nivel: 3 
+  },
+  { 
+    id: '7ª Categoría', 
+    nombre: '7ª Categoría', 
+    descripcion: 'Primeros pasos en competencia amateur.',
+    nivel: 2 
+  },
+  { 
+    id: '8ª Categoría', 
+    nombre: '8ª Categoría', 
+    descripcion: 'Primera categoría oficial. Nivel básico de competencia.',
+    nivel: 1 
+  },
+  { 
+    id: 'Principiante', 
+    nombre: 'Principiante', 
+    descripcion: 'Estás comenzando. Aún no tienes categoría oficial.',
+    nivel: 0 
   },
 ];
 
@@ -460,49 +460,41 @@ export const RegisterWizard = () => {
               <label className="block text-sm font-medium text-gray-400 mb-2">
                 Tu Categoría de Juego <span className="text-primary">*</span>
               </label>
-              <p className="text-gray-500 text-xs mb-3">
-                Selecciona honestamente tu nivel actual. Esto evitará suspensiones por sandbagging.
-              </p>
               
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {categoriasPadel.map((cat) => (
-                  <motion.button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => updateField('categoria', cat.id)}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      formData.categoria === cat.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-gray-700 hover:border-gray-600 bg-dark-100/50'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        formData.categoria === cat.id ? 'bg-primary text-white' : 'bg-dark-200 text-gray-400'
-                      }`}>
-                        {cat.nivel}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-semibold ${formData.categoria === cat.id ? 'text-white' : 'text-gray-300'}`}>
-                          {cat.nombre}
-                        </p>
-                        <p className="text-gray-500 text-sm mt-0.5">{cat.descripcion}</p>
-                      </div>
-                      {formData.categoria === cat.id && (
-                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
-                      )}
-                    </div>
-                  </motion.button>
-                ))}
+              <div className="relative">
+                <select
+                  value={formData.categoria}
+                  onChange={(e) => updateField('categoria', e.target.value)}
+                  className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-4 pr-12 text-white appearance-none focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                >
+                  <option value="" disabled className="bg-dark-100 text-gray-500">
+                    Selecciona tu categoría
+                  </option>
+                  {categoriasPadel.map((cat) => (
+                    <option key={cat.id} value={cat.id} className="bg-dark-100 text-white py-2">
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
               </div>
+              
+              {formData.categoria && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-gray-500 text-xs mt-2"
+                >
+                  {categoriasPadel.find(c => c.id === formData.categoria)?.descripcion}
+                </motion.p>
+              )}
               
               {/* Advertencia de sandbagging */}
               <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <p className="text-yellow-400 text-xs">
                   <strong>⚠️ Importante:</strong> Jugadores que se inscriban en categorías inferiores a su nivel real (sandbagging) 
-                  podrán ser suspendidos y descalificados de torneos.
+                  podrán ser suspendidos y descalificados de torneos. Se honesto, aquí tu historial queda registrado y es visible para todos, 
+                  una buena conducta deportiva marcará tu ascensión en FairPadel.
                 </p>
               </div>
             </motion.div>
