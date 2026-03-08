@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, Trophy, Users, Calendar } from 'lucide-react';
+import { ArrowRight, Play, Trophy, Users, Calendar, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   const stats = [

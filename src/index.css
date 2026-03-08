@@ -132,6 +132,28 @@ body {
     transform: scale(0.95);
   }
   
+  .btn-outline {
+    font-weight: 600;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    border: 2px solid #df2531;
+    color: #df2531;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-outline:hover {
+    background-color: #df2531;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(223, 37, 49, 0.25);
+  }
+  .btn-outline:active {
+    transform: scale(0.95);
+  }
+  
   .section-padding {
     padding-left: 1rem;
     padding-right: 1rem;
