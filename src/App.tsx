@@ -42,6 +42,9 @@ import InstructorDetailPage from './features/instructores/pages/InstructorDetail
 // Feed (Novedades)
 import { NovedadesPage } from './features/feed/pages/NovedadesPage';
 
+// Admin
+import { AdminPage } from './features/admin/pages/AdminPage';
+
 // Layout wrapper para rutas protegidas con autenticación
 function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -113,6 +116,9 @@ function App() {
           
           {/* Feed / Novedades */}
           <Route path="/novedades" element={<NovedadesPage />} />
+          
+          {/* Admin */}
+          <Route path="/admin" element={<AdminPage />} />
           
           {/* Alias de rutas para navegación */}
           <Route path="/torneos" element={<TournamentsListPage />} />
