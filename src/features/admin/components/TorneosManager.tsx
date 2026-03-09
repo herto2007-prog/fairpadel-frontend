@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Calendar, MapPin, DollarSign, 
   Check, ChevronRight, ChevronLeft, Sparkles,
-  Clock, Building2,
+  Clock, Building2, Search, X,
   Settings2, Medal, Swords, Crown
 } from 'lucide-react';
-
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+import { api } from '../../../services/api';
 
-// Tipos
+// ═══════════════════════════════════════════════════════════
+// TIPOS
+// ═══════════════════════════════════════════════════════════
 interface TorneoFormData {
   nombre: string;
   descripcion: string;
@@ -19,6 +21,7 @@ interface TorneoFormData {
   ciudad: string;
   costoInscripcion: number;
   sedeId: string;
+  sedeNombre: string;
   flyerUrl: string;
   modalidadIds: string[];
   categoriaIds: string[];
@@ -30,6 +33,7 @@ interface Sede {
   id: string;
   nombre: string;
   ciudad: string;
+  direccion?: string;
 }
 
 interface Modalidad {
@@ -49,13 +53,16 @@ interface Categoria {
 }
 
 const steps = [
-  { id: 1, title: 'Datos Básicos', subtitle: 'Información general del torneo', icon: Trophy },
-  { id: 2, title: 'Modalidad', subtitle: 'Tipo de competición', icon: Swords },
-  { id: 3, title: 'Categorías', subtitle: 'Niveles de juego', icon: Medal },
-  { id: 4, title: 'Configuración', subtitle: 'Reglas del torneo', icon: Settings2 },
-  { id: 5, title: 'Preview', subtitle: 'Revisa y publica', icon: Sparkles },
+  { id: 1, title: 'Datos Básicos', subtitle: 'Información general', icon: Trophy },
+  { id: 2, title: 'Modalidad', subtitle: 'Formato de juego', icon: Swords },
+  { id: 3, title: 'Categorías', subtitle: 'Niveles del torneo', icon: Medal },
+  { id: 4, title: 'Reglas', subtitle: 'Configuración', icon: Settings2 },
+  { id: 5, title: 'Publicar', subtitle: 'Revisa y crea', icon: Sparkles },
 ];
 
+// ═══════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════════════════════
 export function TorneosManager() {
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(0);
@@ -63,7 +70,6 @@ export function TorneosManager() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [torneoCreado, setTorneoCreado] = useState<any>(null);
   
-  // Datos del wizard
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [modalidades, setModalidades] = useState<Modalidad[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -78,6 +84,7 @@ export function TorneosManager() {
     ciudad: '',
     costoInscripcion: 0,
     sedeId: '',
+    sedeNombre: '',
     flyerUrl: '',
     modalidadIds: [],
     categoriaIds: [],
@@ -85,14 +92,14 @@ export function TorneosManager() {
     minutosPorPartido: 60,
   });
 
+  // Cargar datos iniciales
   useEffect(() => {
     loadDatosWizard();
   }, []);
 
   const loadDatosWizard = async () => {
     try {
-      const response = await fetch('/api/admin/torneos/datos/wizard');
-      const data = await response.json();
+      const { data } = await api.get('/admin/torneos/datos/wizard');
       if (data.success) {
         setSedes(data.sedes);
         setModalidades(data.modalidades);
@@ -100,6 +107,7 @@ export function TorneosManager() {
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
+      setMessage({ type: 'error', text: 'Error cargando datos del wizard' });
     } finally {
       setLoadingDatos(false);
     }
@@ -128,27 +136,32 @@ export function TorneosManager() {
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setDirection(1);
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+    if (!validateStep(currentStep)) {
+      const errorMsg = getValidationError(currentStep);
+      setMessage({ type: 'error', text: errorMsg });
+      setTimeout(() => setMessage(null), 3000);
+      return;
     }
+    setDirection(1);
+    setCurrentStep(prev => Math.min(prev + 1, 5));
+    setMessage(null);
   };
 
   const handleBack = () => {
     setDirection(-1);
     setCurrentStep(prev => Math.max(prev - 1, 1));
+    setMessage(null);
   };
 
-  const validateStep = () => {
-    switch (currentStep) {
+  const validateStep = (step: number): boolean => {
+    switch (step) {
       case 1:
-        return formData.nombre && formData.ciudad && formData.fechaInicio && formData.fechaFin;
+        return !!(formData.nombre.trim() && formData.ciudad && formData.fechaInicio && formData.fechaFin);
       case 2:
         return formData.modalidadIds.length > 0;
       case 3:
         return formData.categoriaIds.length > 0;
       case 4:
-        return true;
       case 5:
         return true;
       default:
@@ -156,67 +169,74 @@ export function TorneosManager() {
     }
   };
 
+  const getValidationError = (step: number): string => {
+    switch (step) {
+      case 1:
+        if (!formData.nombre.trim()) return 'El nombre del torneo es obligatorio';
+        if (!formData.ciudad) return 'Debes seleccionar una ciudad';
+        if (!formData.fechaInicio) return 'Selecciona la fecha de inicio';
+        if (!formData.fechaFin) return 'Selecciona la fecha de fin';
+        return '';
+      case 2:
+        return 'Debes seleccionar al menos una modalidad';
+      case 3:
+        return 'Debes seleccionar al menos una categoría';
+      default:
+        return '';
+    }
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
+    setMessage(null);
+    
     try {
       // Paso 1: Crear torneo básico
-      const response = await fetch('/api/admin/torneos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: formData.nombre,
-          descripcion: formData.descripcion,
-          fechaInicio: formData.fechaInicio,
-          fechaFin: formData.fechaFin,
-          fechaLimiteInscripcion: formData.fechaLimiteInscripcion || formData.fechaInicio,
-          ciudad: formData.ciudad,
-          costoInscripcion: formData.costoInscripcion,
-          sedeId: formData.sedeId || undefined,
-        }),
+      const { data: createData } = await api.post('/admin/torneos', {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        fechaInicio: formData.fechaInicio,
+        fechaFin: formData.fechaFin,
+        fechaLimiteInscripcion: formData.fechaLimiteInscripcion || formData.fechaInicio,
+        ciudad: formData.ciudad,
+        costoInscripcion: formData.costoInscripcion,
+        sedeId: formData.sedeId || undefined,
       });
       
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message);
+      if (!createData.success) throw new Error(createData.message);
       
-      const torneoId = data.torneo.id;
+      const torneoId = createData.torneo.id;
 
       // Paso 2: Asignar modalidades
       if (formData.modalidadIds.length > 0) {
-        await fetch(`/api/admin/torneos/${torneoId}/modalidades`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ modalidadIds: formData.modalidadIds }),
+        await api.post(`/admin/torneos/${torneoId}/modalidades`, {
+          modalidadIds: formData.modalidadIds,
         });
       }
 
       // Paso 3: Asignar categorías
       if (formData.categoriaIds.length > 0) {
-        await fetch(`/api/admin/torneos/${torneoId}/categorias`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoriaIds: formData.categoriaIds }),
+        await api.post(`/admin/torneos/${torneoId}/categorias`, {
+          categoriaIds: formData.categoriaIds,
         });
       }
 
       // Paso 4: Configurar reglas
-      await fetch(`/api/admin/torneos/${torneoId}/configuracion`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          setsPorPartido: formData.setsPorPartido,
-          minutosPorPartido: formData.minutosPorPartido,
-        }),
+      await api.put(`/admin/torneos/${torneoId}/configuracion`, {
+        setsPorPartido: formData.setsPorPartido,
+        minutosPorPartido: formData.minutosPorPartido,
       });
 
       // Publicar
-      await fetch(`/api/admin/torneos/${torneoId}/publicar`, {
-        method: 'PUT',
-      });
+      await api.put(`/admin/torneos/${torneoId}/publicar`);
 
-      setTorneoCreado(data.torneo);
+      setTorneoCreado(createData.torneo);
       setMessage({ type: 'success', text: '¡Torneo creado y publicado exitosamente!' });
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Error creando torneo' });
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || error.message || 'Error creando torneo' 
+      });
     } finally {
       setSaving(false);
     }
@@ -233,6 +253,7 @@ export function TorneosManager() {
       ciudad: '',
       costoInscripcion: 0,
       sedeId: '',
+      sedeNombre: '',
       flyerUrl: '',
       modalidadIds: [],
       categoriaIds: [],
@@ -290,7 +311,7 @@ export function TorneosManager() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Progress Steps */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center justify-between">
           {steps.map((step, index) => {
             const Icon = step.icon;
@@ -299,9 +320,8 @@ export function TorneosManager() {
             
             return (
               <div key={step.id} className="flex flex-col items-center flex-1 relative">
-                {/* Línea conectora */}
                 {index < steps.length - 1 && (
-                  <div className="absolute top-5 left-1/2 w-full h-0.5 bg-gray-800 -z-10">
+                  <div className="absolute top-4 left-1/2 w-full h-0.5 bg-gray-800 -z-10">
                     <motion.div 
                       className="h-full bg-primary"
                       initial={{ width: 0 }}
@@ -312,7 +332,7 @@ export function TorneosManager() {
                 )}
                 
                 <motion.div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${
                     isActive 
                       ? 'bg-primary text-white shadow-lg shadow-primary/30' 
                       : isCompleted
@@ -321,7 +341,7 @@ export function TorneosManager() {
                   }`}
                   animate={{ scale: isActive ? 1.1 : 1 }}
                 >
-                  {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                  {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                 </motion.div>
                 <span className={`text-xs font-medium ${isActive ? 'text-primary' : 'text-gray-500'}`}>
                   {step.title}
@@ -333,19 +353,24 @@ export function TorneosManager() {
       </div>
 
       {/* Mensaje */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-xl mb-6 ${
-            message.type === 'success' ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
-          }`}
-        >
-          <span className={message.type === 'success' ? 'text-green-400' : 'text-red-400'}>
-            {message.text}
-          </span>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className={`p-4 rounded-xl mb-4 ${
+              message.type === 'success' 
+                ? 'bg-green-500/10 border border-green-500/30' 
+                : 'bg-red-500/10 border border-red-500/30'
+            }`}
+          >
+            <span className={message.type === 'success' ? 'text-green-400' : 'text-red-400'}>
+              {message.text}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Content */}
       <AnimatePresence mode="wait" custom={direction}>
@@ -356,7 +381,7 @@ export function TorneosManager() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
           transition={{ duration: 0.3 }}
-          className="glass rounded-3xl p-8"
+          className="glass rounded-2xl p-6"
         >
           {currentStep === 1 && (
             <Step1Basico 
@@ -397,11 +422,11 @@ export function TorneosManager() {
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-8">
+      <div className="flex items-center justify-between mt-6">
         <button
           onClick={handleBack}
           disabled={currentStep === 1}
-          className="flex items-center gap-2 px-6 py-3 text-gray-400 hover:text-white disabled:opacity-30 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white disabled:opacity-30 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
           Atrás
@@ -410,8 +435,7 @@ export function TorneosManager() {
         {currentStep < 5 ? (
           <button
             onClick={handleNext}
-            disabled={!validateStep()}
-            className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
           >
             Siguiente
             <ChevronRight className="w-5 h-5" />
@@ -420,7 +444,7 @@ export function TorneosManager() {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 disabled:opacity-50 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 disabled:opacity-50 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
           >
             {saving ? (
               <>
@@ -445,6 +469,168 @@ export function TorneosManager() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// INPUT DE GUARANÍES
+// ═══════════════════════════════════════════════════════════
+function GuaraniesInput({ 
+  value, 
+  onChange, 
+  label 
+}: { 
+  value: number; 
+  onChange: (value: number) => void;
+  label: string;
+}) {
+  const [displayValue, setDisplayValue] = useState('');
+  
+  useEffect(() => {
+    if (value > 0) {
+      setDisplayValue(value.toLocaleString('es-PY'));
+    } else {
+      setDisplayValue('');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    const numValue = parseInt(rawValue) || 0;
+    onChange(numValue);
+    setDisplayValue(rawValue ? parseInt(rawValue).toLocaleString('es-PY') : '');
+  };
+
+  return (
+    <div>
+      <label className="block text-sm text-gray-400 mb-2">{label}</label>
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+          Gs.
+        </span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={displayValue}
+          onChange={handleChange}
+          className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary font-mono text-lg"
+          placeholder="0"
+        />
+      </div>
+      {value > 0 && (
+        <p className="text-xs text-gray-500 mt-1">
+          {value.toLocaleString('es-PY')} guaraníes
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUSCADOR DE SEDES
+// ═══════════════════════════════════════════════════════════
+function SedeAutocomplete({ 
+  value, 
+  displayValue,
+  onChange, 
+  sedes,
+  label 
+}: { 
+  value: string;
+  displayValue: string;
+  onChange: (id: string, nombre: string) => void;
+  sedes: Sede[];
+  label: string;
+}) {
+  const [inputValue, setInputValue] = useState(displayValue);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredSedes = useMemo(() => {
+    if (!inputValue.trim()) return sedes.slice(0, 5);
+    const search = inputValue.toLowerCase();
+    return sedes.filter(s => 
+      s.nombre.toLowerCase().includes(search) || 
+      s.ciudad.toLowerCase().includes(search)
+    ).slice(0, 8);
+  }, [inputValue, sedes]);
+
+  const handleSelect = (sede: Sede) => {
+    onChange(sede.id, sede.nombre);
+    setInputValue(`${sede.nombre} - ${sede.ciudad}`);
+    setIsOpen(false);
+  };
+
+  const clearSelection = () => {
+    onChange('', '');
+    setInputValue('');
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <label className="block text-sm text-gray-400 mb-2">{label}</label>
+      <div className="relative">
+        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setIsOpen(true);
+            if (!e.target.value) clearSelection();
+          }}
+          onFocus={() => setIsOpen(true)}
+          className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-12 pr-10 text-white focus:outline-none focus:border-primary"
+          placeholder="Buscar sede..."
+        />
+        {inputValue && (
+          <button
+            onClick={clearSelection}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-800 rounded"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        )}
+        {!inputValue && (
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600" />
+        )}
+      </div>
+
+      <AnimatePresence>
+        {isOpen && filteredSedes.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-[#232838] overflow-hidden z-50 max-h-60 overflow-y-auto"
+          >
+            {filteredSedes.map((sede) => (
+              <button
+                key={sede.id}
+                onClick={() => handleSelect(sede)}
+                className={`w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-[#151921] transition-colors ${
+                  value === sede.id ? 'bg-primary/10 border-l-2 border-primary' : ''
+                }`}
+              >
+                <Building2 className="w-4 h-4 text-gray-500" />
+                <div className="flex-1">
+                  <p className="text-white text-sm font-medium">{sede.nombre}</p>
+                  <p className="text-gray-500 text-xs">{sede.ciudad}</p>
+                </div>
+                {value === sede.id && <Check className="w-4 h-4 text-primary" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isOpen && inputValue && filteredSedes.length === 0 && (
+        <div className="absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-[#232838] p-4 text-center z-50">
+          <p className="text-gray-400 text-sm">No se encontró "{inputValue}"</p>
+          <p className="text-gray-600 text-xs mt-1">Crea la sede primero en el panel de Sedes</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // PASO 1: DATOS BÁSICOS
 // ═══════════════════════════════════════════════════════════
 function Step1Basico({ formData, updateField, sedes }: { 
@@ -453,21 +639,23 @@ function Step1Basico({ formData, updateField, sedes }: {
   sedes: Sede[];
 }) {
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">Datos Básicos</h3>
-        <p className="text-gray-400">Comencemos con la información general de tu torneo</p>
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Datos Básicos</h3>
+        <p className="text-gray-400 text-sm">Información general del torneo</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Nombre del Torneo *</label>
+          <label className="block text-sm text-gray-400 mb-2">
+            Nombre del Torneo <span className="text-primary">*</span>
+          </label>
           <input
             type="text"
             value={formData.nombre}
             onChange={(e) => updateField('nombre', e.target.value)}
-            className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-            placeholder="Ej: Torneo de Verano 2026"
+            className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+            placeholder="Ej: Torneo Apertura 2026"
           />
         </div>
 
@@ -476,15 +664,17 @@ function Step1Basico({ formData, updateField, sedes }: {
           <textarea
             value={formData.descripcion}
             onChange={(e) => updateField('descripcion', e.target.value)}
-            rows={3}
+            rows={2}
             className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary resize-none"
-            placeholder="Describe tu torneo..."
+            placeholder="Breve descripción del torneo..."
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Fecha de Inicio *</label>
+            <label className="block text-sm text-gray-400 mb-2">
+              Fecha Inicio <span className="text-primary">*</span>
+            </label>
             <input
               type="date"
               value={formData.fechaInicio}
@@ -493,7 +683,9 @@ function Step1Basico({ formData, updateField, sedes }: {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Fecha de Fin *</label>
+            <label className="block text-sm text-gray-400 mb-2">
+              Fecha Fin <span className="text-primary">*</span>
+            </label>
             <input
               type="date"
               value={formData.fechaFin}
@@ -504,7 +696,9 @@ function Step1Basico({ formData, updateField, sedes }: {
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Ciudad *</label>
+          <label className="block text-sm text-gray-400 mb-2">
+            Ciudad <span className="text-primary">*</span>
+          </label>
           <CityAutocomplete
             value={formData.ciudad}
             onChange={(value) => updateField('ciudad', value)}
@@ -513,29 +707,21 @@ function Step1Basico({ formData, updateField, sedes }: {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Sede (opcional)</label>
-            <select
-              value={formData.sedeId}
-              onChange={(e) => updateField('sedeId', e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-            >
-              <option value="">Seleccionar sede...</option>
-              {sedes.map(sede => (
-                <option key={sede.id} value={sede.id}>{sede.nombre} - {sede.ciudad}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Costo de Inscripción (Gs.)</label>
-            <input
-              type="number"
-              value={formData.costoInscripcion}
-              onChange={(e) => updateField('costoInscripcion', parseInt(e.target.value) || 0)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-              placeholder="0"
-            />
-          </div>
+          <SedeAutocomplete
+            value={formData.sedeId}
+            displayValue={formData.sedeNombre}
+            onChange={(id, nombre) => {
+              updateField('sedeId', id);
+              updateField('sedeNombre', nombre);
+            }}
+            sedes={sedes}
+            label="Sede (opcional)"
+          />
+          <GuaraniesInput
+            value={formData.costoInscripcion}
+            onChange={(value) => updateField('costoInscripcion', value)}
+            label="Costo Inscripción"
+          />
         </div>
       </div>
     </div>
@@ -550,84 +736,105 @@ function Step2Modalidad({ formData, toggleModalidad, modalidades }: {
   toggleModalidad: (id: string) => void;
   modalidades: Modalidad[];
 }) {
+  // Según regla de negocio: máximo 1 modalidad por torneo
+  // O si son compatibles, pueden ser más
   const modalidadesPY = modalidades.filter(m => m.reglas?.variante === 'PY');
   const modalidadesMundo = modalidades.filter(m => m.reglas?.variante === 'MUNDIAL');
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">Selecciona la Modalidad</h3>
-        <p className="text-gray-400">¿Qué formato tendrá tu torneo?</p>
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Selecciona Modalidad</h3>
+        <p className="text-gray-400 text-sm">¿Qué formato tendrá tu torneo?</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Modalidades Paraguay */}
-        <div>
-          <h4 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
-            <span className="text-lg">🇵🇾</span> Modalidades Paraguay
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {modalidadesPY.map(modalidad => (
-              <motion.button
-                key={modalidad.id}
-                onClick={() => toggleModalidad(modalidad.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  formData.modalidadIds.includes(modalidad.id)
-                    ? 'border-primary bg-primary/10'
-                    : 'border-[#232838] hover:border-gray-600'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h5 className="font-semibold text-white">{modalidad.nombre}</h5>
-                    <p className="text-xs text-gray-400 mt-1">{modalidad.descripcion}</p>
-                  </div>
-                  {formData.modalidadIds.includes(modalidad.id) && (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
+        {modalidadesPY.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
+              <span className="text-base">🇵🇾</span> Modalidades Paraguay
+              <span className="text-xs text-gray-500 font-normal">(Recomendado)</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {modalidadesPY.map(modalidad => {
+                const isSelected = formData.modalidadIds.includes(modalidad.id);
+                return (
+                  <motion.button
+                    key={modalidad.id}
+                    onClick={() => toggleModalidad(modalidad.id)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : 'border-[#232838] hover:border-gray-600'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h5 className="font-semibold text-white text-sm">{modalidad.nombre}</h5>
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{modalidad.descripcion}</p>
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </motion.button>
-            ))}
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Modalidades Mundo */}
-        <div>
-          <h4 className="text-sm font-medium text-blue-400 mb-3 flex items-center gap-2">
-            <span className="text-lg">🌍</span> Modalidades Internacionales
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {modalidadesMundo.map(modalidad => (
-              <motion.button
-                key={modalidad.id}
-                onClick={() => toggleModalidad(modalidad.id)}
-                className={`p-4 rounded-xl border-2 text-left transition-all ${
-                  formData.modalidadIds.includes(modalidad.id)
-                    ? 'border-primary bg-primary/10'
-                    : 'border-[#232838] hover:border-gray-600'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h5 className="font-semibold text-white">{modalidad.nombre}</h5>
-                    <p className="text-xs text-gray-400 mt-1">{modalidad.descripcion}</p>
-                  </div>
-                  {formData.modalidadIds.includes(modalidad.id) && (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
+        {modalidadesMundo.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-blue-400 mb-3 flex items-center gap-2">
+              <span className="text-base">🌍</span> Modalidades Internacionales
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {modalidadesMundo.map(modalidad => {
+                const isSelected = formData.modalidadIds.includes(modalidad.id);
+                return (
+                  <motion.button
+                    key={modalidad.id}
+                    onClick={() => toggleModalidad(modalidad.id)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : 'border-[#232838] hover:border-gray-600'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h5 className="font-semibold text-white text-sm">{modalidad.nombre}</h5>
+                        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{modalidad.descripcion}</p>
+                      </div>
+                      {isSelected && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </motion.button>
-            ))}
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {formData.modalidadIds.length === 0 && (
+          <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+            <p className="text-yellow-400 text-sm text-center">
+              <strong>⚠️ Importante:</strong> Debes seleccionar al menos una modalidad para continuar.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -642,51 +849,60 @@ function Step3Categorias({ formData, toggleCategoria, categorias }: {
   categorias: Categoria[];
 }) {
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">Selecciona Categorías</h3>
-        <p className="text-gray-400">¿Qué niveles de juego tendrá tu torneo?</p>
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Selecciona Categorías</h3>
+        <p className="text-gray-400 text-sm">¿Qué niveles de juego tendrá tu torneo?</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {categorias.map((categoria, index) => (
-          <motion.button
-            key={categoria.id}
-            onClick={() => toggleCategoria(categoria.id)}
-            className={`p-4 rounded-xl border-2 text-center transition-all ${
-              formData.categoriaIds.includes(categoria.id)
-                ? 'border-primary bg-primary/10'
-                : 'border-[#232838] hover:border-gray-600'
-            }`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Medal className={`w-6 h-6 mx-auto mb-2 ${
-              formData.categoriaIds.includes(categoria.id) ? 'text-primary' : 'text-gray-500'
-            }`} />
-            <h5 className="font-semibold text-white text-sm">{categoria.nombre}</h5>
-            {formData.categoriaIds.includes(categoria.id) && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="mt-2"
-              >
-                <Check className="w-4 h-4 text-primary mx-auto" />
-              </motion.div>
-            )}
-          </motion.button>
-        ))}
+      <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+        {categorias.map((categoria, index) => {
+          const isSelected = formData.categoriaIds.includes(categoria.id);
+          return (
+            <motion.button
+              key={categoria.id}
+              onClick={() => toggleCategoria(categoria.id)}
+              className={`p-4 rounded-xl border-2 text-center transition-all ${
+                isSelected
+                  ? 'border-primary bg-primary/10'
+                  : 'border-[#232838] hover:border-gray-600'
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Medal className={`w-5 h-5 mx-auto mb-2 ${isSelected ? 'text-primary' : 'text-gray-500'}`} />
+              <h5 className="font-semibold text-white text-xs">{categoria.nombre}</h5>
+              {isSelected && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="mt-2"
+                >
+                  <Check className="w-3 h-3 text-primary mx-auto" />
+                </motion.div>
+              )}
+            </motion.button>
+          );
+        })}
       </div>
 
-      <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-        <p className="text-yellow-400 text-sm">
+      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+        <p className="text-blue-400 text-sm text-center">
           <strong>💡 Tip:</strong> Puedes seleccionar múltiples categorías. 
-          Cada categoría creará una competición separada dentro del torneo.
+          Cada una creará una competición separada dentro del torneo.
         </p>
       </div>
+
+      {formData.categoriaIds.length === 0 && (
+        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+          <p className="text-yellow-400 text-sm text-center">
+            <strong>⚠️ Importante:</strong> Debes seleccionar al menos una categoría para continuar.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -699,68 +915,72 @@ function Step4Configuracion({ formData, updateField }: {
   updateField: (field: keyof TorneoFormData, value: any) => void;
 }) {
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">Configuración del Torneo</h3>
-        <p className="text-gray-400">Ajusta las reglas y parámetros</p>
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Configuración</h3>
+        <p className="text-gray-400 text-sm">Ajusta las reglas del torneo</p>
       </div>
 
-      <div className="space-y-6">
-        <div className="glass rounded-2xl p-6">
-          <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Swords className="w-5 h-5 text-primary" />
+      <div className="space-y-4">
+        <div className="glass rounded-xl p-4">
+          <h4 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+            <Swords className="w-4 h-4 text-primary" />
             Formato de Partidos
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Sets por Partido</label>
-              <div className="flex items-center gap-4">
-                {[1, 3, 5].map(sets => (
-                  <button
-                    key={sets}
-                    onClick={() => updateField('setsPorPartido', sets)}
-                    className={`flex-1 py-3 rounded-xl border-2 transition-all ${
-                      formData.setsPorPartido === sets
-                        ? 'border-primary bg-primary/10 text-white'
-                        : 'border-[#232838] text-gray-400 hover:border-gray-600'
-                    }`}
-                  >
-                    {sets} {sets === 1 ? 'Set' : 'Sets'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Duración Estimada (min)</label>
-              <input
-                type="number"
-                value={formData.minutosPorPartido}
-                onChange={(e) => updateField('minutosPorPartido', parseInt(e.target.value) || 60)}
-                className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-              />
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 3, 5].map(sets => (
+              <button
+                key={sets}
+                onClick={() => updateField('setsPorPartido', sets)}
+                className={`py-3 rounded-xl border-2 transition-all ${
+                  formData.setsPorPartido === sets
+                    ? 'border-primary bg-primary/10 text-white'
+                    : 'border-[#232838] text-gray-400 hover:border-gray-600'
+                }`}
+              >
+                {sets} {sets === 1 ? 'Set' : 'Sets'}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-6">
-          <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Fechas Importantes
+        <div className="glass rounded-xl p-4">
+          <h4 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" />
+            Duración y Fechas
           </h4>
           
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Límite de Inscripción</label>
-            <input
-              type="date"
-              value={formData.fechaLimiteInscripcion}
-              onChange={(e) => updateField('fechaLimiteInscripcion', e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Fecha límite para que los jugadores se inscriban al torneo
-            </p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-2">Minutos por partido</label>
+                <input
+                  type="number"
+                  value={formData.minutosPorPartido}
+                  onChange={(e) => updateField('minutosPorPartido', parseInt(e.target.value) || 60)}
+                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
+                  min={30}
+                  max={180}
+                  step={15}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-2">Límite de Inscripción</label>
+                <input
+                  type="date"
+                  value={formData.fechaLimiteInscripcion}
+                  onChange={(e) => updateField('fechaLimiteInscripcion', e.target.value)}
+                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            
+            {!formData.fechaLimiteInscripcion && (
+              <p className="text-xs text-gray-500">
+                Si no especificas, se usará la fecha de inicio del torneo.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -782,73 +1002,80 @@ function Step5Preview({ formData, modalidades, categorias, sedes }: {
   const selectedSede = sedes.find(s => s.id === formData.sedeId);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">Revisa tu Torneo</h3>
-        <p className="text-gray-400">Todo listo para crear tu torneo</p>
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">Revisa tu Torneo</h3>
+        <p className="text-gray-400 text-sm">Verifica que todo esté correcto</p>
       </div>
 
-      <div className="glass rounded-2xl p-6 space-y-6">
-        {/* Header */}
-        <div className="text-center pb-6 border-b border-[#232838]">
-          <h2 className="text-3xl font-bold text-white">{formData.nombre}</h2>
+      <div className="glass rounded-xl p-5 space-y-4">
+        <div className="text-center pb-4 border-b border-[#232838]">
+          <h2 className="text-2xl font-bold text-white">{formData.nombre}</h2>
           {formData.descripcion && (
-            <p className="text-gray-400 mt-2">{formData.descripcion}</p>
+            <p className="text-gray-400 text-sm mt-1">{formData.descripcion}</p>
           )}
         </div>
 
-        {/* Grid de info */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <Calendar className="w-5 h-5 text-primary mb-2" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <Calendar className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Inicio</p>
-            <p className="text-white font-medium">{formData.fechaInicio}</p>
+            <p className="text-white text-sm font-medium">
+              {formData.fechaInicio ? new Date(formData.fechaInicio).toLocaleDateString('es-PY') : '-'}
+            </p>
           </div>
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <Calendar className="w-5 h-5 text-primary mb-2" />
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <Calendar className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Fin</p>
-            <p className="text-white font-medium">{formData.fechaFin}</p>
+            <p className="text-white text-sm font-medium">
+              {formData.fechaFin ? new Date(formData.fechaFin).toLocaleDateString('es-PY') : '-'}
+            </p>
           </div>
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <MapPin className="w-5 h-5 text-primary mb-2" />
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <MapPin className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Ciudad</p>
-            <p className="text-white font-medium">{formData.ciudad}</p>
+            <p className="text-white text-sm font-medium">{formData.ciudad || '-'}</p>
           </div>
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <DollarSign className="w-5 h-5 text-primary mb-2" />
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <DollarSign className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Inscripción</p>
-            <p className="text-white font-medium">Gs. {formData.costoInscripcion.toLocaleString()}</p>
+            <p className="text-white text-sm font-medium">
+              {formData.costoInscripcion > 0 
+                ? `Gs. ${formData.costoInscripcion.toLocaleString('es-PY')}`
+                : 'Gratis'
+              }
+            </p>
           </div>
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <Swords className="w-5 h-5 text-primary mb-2" />
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <Swords className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Sets</p>
-            <p className="text-white font-medium">{formData.setsPorPartido} sets</p>
+            <p className="text-white text-sm font-medium">{formData.setsPorPartido} sets</p>
           </div>
-          <div className="p-4 bg-[#0B0E14] rounded-xl">
-            <Building2 className="w-5 h-5 text-primary mb-2" />
+          <div className="p-3 bg-[#0B0E14] rounded-lg">
+            <Building2 className="w-4 h-4 text-primary mb-1" />
             <p className="text-xs text-gray-500">Sede</p>
-            <p className="text-white font-medium">{selectedSede?.nombre || 'No especificada'}</p>
+            <p className="text-white text-sm font-medium truncate">
+              {selectedSede?.nombre || 'No especificada'}
+            </p>
           </div>
         </div>
 
-        {/* Modalidades */}
         <div>
-          <h4 className="text-sm font-medium text-gray-400 mb-3">Modalidades</h4>
+          <h4 className="text-xs font-medium text-gray-400 mb-2">Modalidades ({selectedModalidades.length})</h4>
           <div className="flex flex-wrap gap-2">
             {selectedModalidades.map(m => (
-              <span key={m.id} className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm">
+              <span key={m.id} className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs">
                 {m.nombre}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Categorías */}
         <div>
-          <h4 className="text-sm font-medium text-gray-400 mb-3">Categorías</h4>
+          <h4 className="text-xs font-medium text-gray-400 mb-2">Categorías ({selectedCategorias.length})</h4>
           <div className="flex flex-wrap gap-2">
             {selectedCategorias.map(c => (
-              <span key={c.id} className="px-3 py-1 bg-[#232838] text-gray-300 rounded-full text-sm">
+              <span key={c.id} className="px-3 py-1 bg-[#232838] text-gray-300 rounded-full text-xs">
                 {c.nombre}
               </span>
             ))}
@@ -858,7 +1085,7 @@ function Step5Preview({ formData, modalidades, categorias, sedes }: {
 
       <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
         <p className="text-green-400 text-sm text-center">
-          <strong>🎉 Todo listo!</strong> Al hacer clic en "Crear Torneo", tu competición quedará publicada 
+          <strong>🎉 Todo listo!</strong> Al crear el torneo quedará publicado 
           y los jugadores podrán inscribirse.
         </p>
       </div>
