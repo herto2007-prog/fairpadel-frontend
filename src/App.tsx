@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useAuth } from './features/auth/context/AuthContext';
 
 // Layout
 import AppLayout from './components/layout/AppLayout';
@@ -13,6 +15,7 @@ import { RegisterWizard } from './features/auth/components/RegisterWizard';
 import { VerifyEmailPage } from './features/auth/pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
+import { PublicRoute } from './features/auth/components/ProtectedRoute';
 
 // Torneos (V1)
 import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
@@ -39,8 +42,27 @@ import InstructorDetailPage from './features/instructores/pages/InstructorDetail
 // Feed (Novedades)
 import { NovedadesPage } from './features/feed/pages/NovedadesPage';
 
-// Layout wrapper para rutas protegidas
+// Layout wrapper para rutas protegidas con autenticación
 function ProtectedLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
+        />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   return (
     <AppLayout>
       <Outlet />
@@ -55,9 +77,9 @@ function App() {
         {/* Landing - Pública */}
         <Route path="/" element={<LandingPage />} />
         
-        {/* Auth */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterWizard />} />
+        {/* Auth - Rutas públicas restringidas (redirigen si está autenticado) */}
+        <Route path="/login" element={<PublicRoute restricted><LoginPage /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute restricted><RegisterWizard /></PublicRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
