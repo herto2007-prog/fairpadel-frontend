@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Award, Trophy, DollarSign, Settings, Building2 } from 'lucide-react';
+import { Shield, Award, Trophy, DollarSign, Settings, Building2, Target } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
+import { TorneosManager } from '../components/TorneosManager';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'ascensos' | 'premium' | 'puntos';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'torneos' | 'ascensos' | 'premium' | 'puntos';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('roles');
@@ -15,6 +16,7 @@ export function AdminPage() {
     { id: 'roles' as AdminTab, label: 'Roles', icon: Shield, color: 'bg-blue-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Trophy, color: 'bg-pink-500' },
+    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Target, color: 'bg-cyan-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: Award, color: 'bg-green-500' },
     { id: 'premium' as AdminTab, label: 'Premium', icon: DollarSign, color: 'bg-yellow-500' },
     { id: 'puntos' as AdminTab, label: 'Puntos', icon: Trophy, color: 'bg-purple-500' },
@@ -73,6 +75,7 @@ export function AdminPage() {
           {activeTab === 'roles' && <UserRoleManager />}
           {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'modalidades' && <ModalidadesManager />}
+          {activeTab === 'torneos' && <TorneosManager />}
           {activeTab === 'ascensos' && (
             <div className="glass rounded-3xl p-12 text-center">
               <Award className="w-16 h-16 text-gray-600 mx-auto mb-4" />
