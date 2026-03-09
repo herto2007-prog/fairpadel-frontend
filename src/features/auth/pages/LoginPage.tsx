@@ -6,33 +6,49 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { authService } from '../../../services/authService';
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState('');
+  const [documento, setDocumento] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
+
+  const [loginError, setLoginError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError('');
     setIsLoading(true);
-    // Simular login
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    navigate('/novedades');
+    
+    try {
+      await authService.login({ documento, password });
+      navigate('/novedades');
+    } catch (err: any) {
+      setLoginError(err.response?.data?.message || 'Error al iniciar sesión');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simular envío de email con Resend
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setResetSent(true);
+    
+    try {
+      await authService.forgotPassword({ email: forgotEmail });
+      setResetSent(true);
+    } catch (err: any) {
+      // Por seguridad, no mostramos error
+      setResetSent(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,7 +82,7 @@ export const LoginPage = () => {
             className="inline-block mb-4"
           >
             <img 
-              src="/logos/Asset 2fair padel.png" 
+              src="https://res.cloudinary.com/dncjaaybv/image/upload/v1773057029/logo_h4y1tl.png" 
               alt="FairPadel" 
               className="h-20 w-auto mx-auto"
             />
@@ -87,23 +103,30 @@ export const LoginPage = () => {
                 onSubmit={handleLogin}
                 className="space-y-6"
               >
-                {/* Email */}
+                {/* Documento */}
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-400 mb-2 group-focus-within:text-primary transition-colors">
-                    Email
+                    Cédula de Identidad
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      type="text"
+                      value={documento}
+                      onChange={(e) => setDocumento(e.target.value)}
                       className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      placeholder="tu@email.com"
+                      placeholder="1234567"
                       required
                     />
                   </div>
                 </div>
+
+                {/* Error */}
+                {loginError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                    {loginError}
+                  </div>
+                )}
 
                 {/* Password */}
                 <div className="group">
