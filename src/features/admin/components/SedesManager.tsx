@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Plus, Edit2, Trash2, Power, PowerOff, 
-  Search, Map, Phone, Save, X, Building2, ChevronDown, Check
+  Search, Map, Phone, Save, X, Building2, ChevronDown, Check,
+  Sun, ChevronUp
 } from 'lucide-react';
-import { adminService, Sede, CreateSedeData } from '../../../services/adminService';
+import { adminService, Sede, CreateSedeData, Cancha, CreateCanchaData } from '../../../services/adminService';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 
-// Países con códigos de teléfono (igual que en registro)
+// Países con códigos de teléfono
 const countries = [
   { code: 'PY', name: 'Paraguay', dialCode: '+595', flag: '🇵🇾' },
   { code: 'AR', name: 'Argentina', dialCode: '+54', flag: '🇦🇷' },
@@ -21,6 +22,15 @@ const countries = [
   { code: 'ES', name: 'España', dialCode: '+34', flag: '🇪🇸' },
   { code: 'US', name: 'Estados Unidos', dialCode: '+1', flag: '🇺🇸' },
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
+];
+
+// Tipos de cancha
+const tiposCancha = [
+  { value: 'CEMENTO', label: 'Cemento', icon: '🏗️' },
+  { value: 'CRISTAL', label: 'Cristal', icon: '💎' },
+  { value: 'CESPED', label: 'Césped sintético', icon: '🌱' },
+  { value: 'ARCILLA', label: 'Arcilla', icon: '🟤' },
+  { value: 'MADERA', label: 'Madera', icon: '🪵' },
 ];
 
 export function SedesManager() {
@@ -47,7 +57,18 @@ export function SedesManager() {
     telefono: '',
   });
 
-  // Cerrar dropdown al hacer clic fuera
+  // Canchas state
+  const [expandedSede, setExpandedSede] = useState<string | null>(null);
+  const [canchas, setCanchas] = useState<Record<string, Cancha[]>>({});
+  const [loadingCanchas, setLoadingCanchas] = useState<Record<string, boolean>>({});
+  const [showCanchaForm, setShowCanchaForm] = useState<string | null>(null);
+  const [editingCancha, setEditingCancha] = useState<Cancha | null>(null);
+  const [canchaFormData, setCanchaFormData] = useState<CreateCanchaData>({
+    nombre: '',
+    tipo: 'CEMENTO',
+    tieneLuz: false,
+  });
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
@@ -70,6 +91,29 @@ export function SedesManager() {
       setMessage({ type: 'error', text: 'Error cargando sedes' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCanchas = async (sedeId: string) => {
+    if (canchas[sedeId]) return; // Ya cargadas
+    
+    setLoadingCanchas(prev => ({ ...prev, [sedeId]: true }));
+    try {
+      const data = await adminService.getCanchas(sedeId);
+      setCanchas(prev => ({ ...prev, [sedeId]: data }));
+    } catch (error) {
+      console.error('Error cargando canchas:', error);
+    } finally {
+      setLoadingCanchas(prev => ({ ...prev, [sedeId]: false }));
+    }
+  };
+
+  const toggleExpandSede = (sedeId: string) => {
+    if (expandedSede === sedeId) {
+      setExpandedSede(null);
+    } else {
+      setExpandedSede(sedeId);
+      loadCanchas(sedeId);
     }
   };
 
@@ -105,15 +149,36 @@ export function SedesManager() {
     }
   };
 
+  const handleCanchaSubmit = async (sedeId: string) => {
+    setSaving(true);
+    try {
+      if (editingCancha) {
+        await adminService.updateCancha(editingCancha.id, canchaFormData);
+        setMessage({ type: 'success', text: 'Cancha actualizada' });
+      } else {
+        await adminService.createCancha(sedeId, canchaFormData);
+        setMessage({ type: 'success', text: 'Cancha creada' });
+      }
+      
+      // Recargar canchas
+      const data = await adminService.getCanchas(sedeId);
+      setCanchas(prev => ({ ...prev, [sedeId]: data }));
+      resetCanchaForm();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Error guardando cancha' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
   const handleEdit = (sede: Sede) => {
     setEditingSede(sede);
     
-    // Parsear teléfono existente
     let paisCode = 'PY';
     let numero = sede.telefono || '';
     
     if (sede.telefono) {
-      // Buscar si el teléfono empieza con algún código de país
       for (const country of countries) {
         if (sede.telefono.startsWith(country.dialCode)) {
           paisCode = country.code;
@@ -136,6 +201,16 @@ export function SedesManager() {
     setShowForm(true);
   };
 
+  const handleEditCancha = (cancha: Cancha) => {
+    setEditingCancha(cancha);
+    setCanchaFormData({
+      nombre: cancha.nombre,
+      tipo: cancha.tipo,
+      tieneLuz: cancha.tieneLuz,
+    });
+    setShowCanchaForm(cancha.sedeId);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de desactivar esta sede?')) return;
     
@@ -145,6 +220,20 @@ export function SedesManager() {
       await loadSedes();
     } catch (error) {
       setMessage({ type: 'error', text: 'Error desactivando sede' });
+    }
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleDeleteCancha = async (canchaId: string, sedeId: string) => {
+    if (!confirm('¿Estás seguro de desactivar esta cancha?')) return;
+    
+    try {
+      await adminService.deleteCancha(canchaId);
+      setMessage({ type: 'success', text: 'Cancha desactivada' });
+      const data = await adminService.getCanchas(sedeId);
+      setCanchas(prev => ({ ...prev, [sedeId]: data }));
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error desactivando cancha' });
     }
     setTimeout(() => setMessage(null), 3000);
   };
@@ -160,12 +249,30 @@ export function SedesManager() {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const handleActivateCancha = async (canchaId: string, sedeId: string) => {
+    try {
+      await adminService.activateCancha(canchaId);
+      setMessage({ type: 'success', text: 'Cancha reactivada' });
+      const data = await adminService.getCanchas(sedeId);
+      setCanchas(prev => ({ ...prev, [sedeId]: data }));
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error reactivando cancha' });
+    }
+    setTimeout(() => setMessage(null), 3000);
+  };
+
   const resetForm = () => {
     setFormData({ nombre: '', ciudad: '', direccion: '', mapsUrl: '', telefono: '' });
     setPaisTelefono('PY');
     setTelefonoNumero('');
     setEditingSede(null);
     setShowForm(false);
+  };
+
+  const resetCanchaForm = () => {
+    setCanchaFormData({ nombre: '', tipo: 'CEMENTO', tieneLuz: false });
+    setEditingCancha(null);
+    setShowCanchaForm(null);
   };
 
   const filteredSedes = sedes.filter(sede =>
@@ -192,7 +299,7 @@ export function SedesManager() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white">Gestión de Sedes</h2>
-          <p className="text-gray-400 text-sm">Administra las sedes y canchas del sistema</p>
+          <p className="text-gray-400 text-sm">Administra sedes y sus canchas</p>
         </div>
         
         <button
@@ -237,7 +344,7 @@ export function SedesManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="glass rounded-2xl p-4">
           <p className="text-gray-400 text-sm">Total Sedes</p>
           <p className="text-2xl font-bold text-white">{sedes.length}</p>
@@ -249,14 +356,20 @@ export function SedesManager() {
           </p>
         </div>
         <div className="glass rounded-2xl p-4">
-          <p className="text-gray-400 text-sm">Inactivas</p>
-          <p className="text-2xl font-bold text-gray-400">
-            {sedes.filter(s => !s.activa).length}
+          <p className="text-gray-400 text-sm">Total Canchas</p>
+          <p className="text-2xl font-bold text-primary">
+            {sedes.reduce((acc, s) => acc + (s._count?.canchas || 0), 0)}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-4">
+          <p className="text-gray-400 text-sm">Con Luz</p>
+          <p className="text-2xl font-bold text-yellow-400">
+            {Object.values(canchas).flat().filter(c => c.tieneLuz).length}
           </p>
         </div>
       </div>
 
-      {/* Formulario */}
+      {/* Formulario Sede */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -287,7 +400,6 @@ export function SedesManager() {
                 />
               </div>
 
-              {/* Ciudad con autocompletado */}
               <div>
                 <CityAutocomplete
                   value={formData.ciudad}
@@ -308,11 +420,9 @@ export function SedesManager() {
                 />
               </div>
 
-              {/* Teléfono con selector de país */}
               <div className="md:col-span-2">
                 <label className="block text-sm text-gray-400 mb-2">Teléfono</label>
                 <div className="relative flex" ref={countryDropdownRef}>
-                  {/* Country Selector */}
                   <div className="relative">
                     <button
                       type="button"
@@ -324,7 +434,6 @@ export function SedesManager() {
                       <ChevronDown className="w-4 h-4 text-gray-500" />
                     </button>
                     
-                    {/* Dropdown */}
                     <AnimatePresence>
                       {showCountryDropdown && (
                         <motion.div
@@ -360,7 +469,6 @@ export function SedesManager() {
                     </AnimatePresence>
                   </div>
                   
-                  {/* Phone Input */}
                   <div className="relative flex-1">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                     <input
@@ -419,80 +527,301 @@ export function SedesManager() {
       </AnimatePresence>
 
       {/* Lista de Sedes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-4">
         {filteredSedes.map((sede) => (
           <motion.div
             key={sede.id}
             layout
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className={`glass rounded-2xl p-5 ${!sede.activa ? 'opacity-60' : ''}`}
+            className="glass rounded-2xl overflow-hidden"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  sede.activa ? 'bg-primary/20' : 'bg-gray-700'
-                }`}>
-                  <Building2 className={`w-6 h-6 ${sede.activa ? 'text-primary' : 'text-gray-400'}`} />
+            {/* Header de Sede */}
+            <div 
+              className={`p-5 ${!sede.activa ? 'opacity-60' : ''} ${expandedSede === sede.id ? 'bg-[#151921]' : ''}`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    sede.activa ? 'bg-primary/20' : 'bg-gray-700'
+                  }`}>
+                    <Building2 className={`w-6 h-6 ${sede.activa ? 'text-primary' : 'text-gray-400'}`} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">{sede.nombre}</h4>
+                    <p className="text-sm text-gray-400">{sede.ciudad}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-white">{sede.nombre}</h4>
-                  <p className="text-sm text-gray-400">{sede.ciudad}</p>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    sede.activa ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
+                  }`}>
+                    {sede.activa ? 'Activa' : 'Inactiva'}
+                  </span>
+                  <button
+                    onClick={() => toggleExpandSede(sede.id)}
+                    className="p-2 hover:bg-[#232838] rounded-lg transition-colors"
+                  >
+                    {expandedSede === sede.id ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
                 </div>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                sede.activa ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'
-              }`}>
-                {sede.activa ? 'Activa' : 'Inactiva'}
-              </span>
-            </div>
 
-            <div className="space-y-2 text-sm text-gray-400 mb-4">
-              {sede.direccion && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span className="truncate">{sede.direccion}</span>
-                </div>
-              )}
-              {sede.telefono && (
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>{sede.telefono}</span>
-                </div>
-              )}
-              {sede.canchas && (
+              <div className="grid grid-cols-3 gap-4 mt-4 text-sm text-gray-400">
+                {sede.direccion && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <span className="truncate">{sede.direccion}</span>
+                  </div>
+                )}
+                {sede.telefono && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    <span>{sede.telefono}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Map className="w-4 h-4" />
-                  <span>{sede.canchas.length} canchas</span>
+                  <span>{sede._count?.canchas || 0} canchas</span>
                 </div>
-              )}
+              </div>
+
+              {/* Acciones de Sede */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => handleEdit(sede)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#232838] hover:bg-[#2a3042] text-white rounded-lg transition-colors text-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Editar
+                </button>
+                
+                {sede.activa ? (
+                  <button
+                    onClick={() => handleDelete(sede.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Desactivar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleActivate(sede.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors text-sm"
+                  >
+                    <Power className="w-4 h-4" />
+                    Activar
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setShowCanchaForm(sede.id);
+                    resetCanchaForm();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition-colors text-sm ml-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar Cancha
+                </button>
+              </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(sede)}
-                className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#232838] hover:bg-[#2a3042] text-white rounded-lg transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Editar
-              </button>
-              
-              {sede.activa ? (
-                <button
-                  onClick={() => handleDelete(sede.id)}
-                  className="flex items-center justify-center p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+            {/* Canchas expandibles */}
+            <AnimatePresence>
+              {expandedSede === sede.id && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-[#232838] bg-[#0B0E14]/50"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleActivate(sede.id)}
-                  className="flex items-center justify-center p-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors"
-                >
-                  <Power className="w-4 h-4" />
-                </button>
+                  <div className="p-5">
+                    <h5 className="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
+                      <Map className="w-4 h-4" />
+                      Canchas de {sede.nombre}
+                    </h5>
+
+                    {/* Formulario de Cancha */}
+                    <AnimatePresence>
+                      {showCanchaForm === sede.id && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="glass rounded-xl p-4 mb-4"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <h6 className="text-white font-medium">
+                              {editingCancha ? 'Editar Cancha' : 'Nueva Cancha'}
+                            </h6>
+                            <button onClick={resetCanchaForm} className="text-gray-400 hover:text-white">
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-2">Nombre *</label>
+                              <input
+                                type="text"
+                                value={canchaFormData.nombre}
+                                onChange={(e) => setCanchaFormData({ ...canchaFormData, nombre: e.target.value })}
+                                className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
+                                placeholder="Ej: Cancha 1"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs text-gray-400 mb-2">Tipo de superficie</label>
+                              <select
+                                value={canchaFormData.tipo}
+                                onChange={(e) => setCanchaFormData({ ...canchaFormData, tipo: e.target.value })}
+                                className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
+                              >
+                                {tiposCancha.map(t => (
+                                  <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="flex items-end">
+                              <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={canchaFormData.tieneLuz}
+                                  onChange={(e) => setCanchaFormData({ ...canchaFormData, tieneLuz: e.target.checked })}
+                                  className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary"
+                                />
+                                <Sun className="w-4 h-4 text-yellow-500" />
+                                <span className="text-sm">Tiene iluminación</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 mt-4">
+                            <button
+                              onClick={resetCanchaForm}
+                              className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => handleCanchaSubmit(sede.id)}
+                              disabled={saving || !canchaFormData.nombre.trim()}
+                              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg text-sm transition-all"
+                            >
+                              {saving ? (
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                                />
+                              ) : (
+                                <Save className="w-4 h-4" />
+                              )}
+                              {editingCancha ? 'Guardar' : 'Crear'}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Lista de Canchas */}
+                    {loadingCanchas[sede.id] ? (
+                      <div className="flex items-center justify-center py-8">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full"
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(canchas[sede.id] || []).map((cancha) => (
+                          <motion.div
+                            key={cancha.id}
+                            layout
+                            className={`p-4 rounded-xl border ${
+                              cancha.activa 
+                                ? 'bg-[#151921] border-[#232838]' 
+                                : 'bg-[#0B0E14] border-[#1a1d24] opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                  cancha.activa ? 'bg-primary/20' : 'bg-gray-800'
+                                }`}>
+                                  <Map className={`w-5 h-5 ${cancha.activa ? 'text-primary' : 'text-gray-500'}`} />
+                                </div>
+                                <div>
+                                  <p className="text-white font-medium">{cancha.nombre}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {tiposCancha.find(t => t.value === cancha.tipo)?.label || cancha.tipo}
+                                  </p>
+                                </div>
+                              </div>
+                              {cancha.tieneLuz && (
+                                <div className="flex items-center gap-1 text-yellow-500" title="Con iluminación">
+                                  <Sun className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={() => handleEditCancha(cancha)}
+                                className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-[#232838] hover:bg-[#2a3042] text-white rounded text-xs transition-colors"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                Editar
+                              </button>
+                              
+                              {cancha.activa ? (
+                                <button
+                                  onClick={() => handleDeleteCancha(cancha.id, sede.id)}
+                                  className="flex items-center justify-center p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded text-xs transition-colors"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleActivateCancha(cancha.id, sede.id)}
+                                  className="flex items-center justify-center p-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded text-xs transition-colors"
+                                >
+                                  <Power className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+
+                        {(!canchas[sede.id] || canchas[sede.id].length === 0) && (
+                          <div className="col-span-full py-8 text-center">
+                            <Map className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                            <p className="text-gray-400 text-sm">No hay canchas registradas</p>
+                            <button
+                              onClick={() => {
+                                setShowCanchaForm(sede.id);
+                                resetCanchaForm();
+                              }}
+                              className="mt-2 text-primary text-sm hover:underline"
+                            >
+                              Agregar la primera cancha
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </motion.div>
         ))}
       </div>

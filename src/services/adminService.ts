@@ -51,6 +51,29 @@ export interface UpdateSedeData extends Partial<CreateSedeData> {
   activa?: boolean;
 }
 
+// CANCHAS
+export interface Cancha {
+  id: string;
+  nombre: string;
+  tipo: string;
+  tieneLuz: boolean;
+  activa: boolean;
+  sedeId: string;
+}
+
+export interface CreateCanchaData {
+  nombre: string;
+  tipo?: string;
+  tieneLuz?: boolean;
+}
+
+export interface UpdateCanchaData {
+  nombre?: string;
+  tipo?: string;
+  tieneLuz?: boolean;
+  activa?: boolean;
+}
+
 // MODALIDADES
 export interface Modalidad {
   id: string;
@@ -103,6 +126,13 @@ export const adminService = {
   updateSede: (id: string, data: UpdateSedeData) => api.put(`/admin/sedes/${id}`, data).then(r => r.data),
   deleteSede: (id: string) => api.delete(`/admin/sedes/${id}`).then(r => r.data),
   activateSede: (id: string) => api.put(`/admin/sedes/${id}/activate`, {}).then(r => r.data),
+  
+  // CANCHAS
+  getCanchas: (sedeId: string) => api.get(`/admin/sedes/${sedeId}/canchas`).then(r => r.data),
+  createCancha: (sedeId: string, data: CreateCanchaData) => api.post(`/admin/sedes/${sedeId}/canchas`, data).then(r => r.data),
+  updateCancha: (canchaId: string, data: UpdateCanchaData) => api.put(`/admin/sedes/canchas/${canchaId}`, data).then(r => r.data),
+  deleteCancha: (canchaId: string) => api.delete(`/admin/sedes/canchas/${canchaId}`).then(r => r.data),
+  activateCancha: (canchaId: string) => api.put(`/admin/sedes/canchas/${canchaId}/activate`, {}).then(r => r.data),
   
   // MODALIDADES
   getModalidades: () => api.get('/admin/modalidades').then(r => r.data),
