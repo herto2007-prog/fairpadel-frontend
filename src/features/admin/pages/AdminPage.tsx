@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Award, Trophy, DollarSign, Settings } from 'lucide-react';
+import { Shield, Award, Trophy, DollarSign, Settings, Building2 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
+import { SedesManager } from '../components/SedesManager';
 
-type AdminTab = 'roles' | 'ascensos' | 'premium' | 'puntos' | 'torneos';
+type AdminTab = 'roles' | 'sedes' | 'ascensos' | 'premium' | 'puntos' | 'torneos';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('roles');
 
   const tabs = [
     { id: 'roles' as AdminTab, label: 'Roles', icon: Shield, color: 'bg-blue-500' },
+    { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: Award, color: 'bg-green-500' },
     { id: 'premium' as AdminTab, label: 'Premium', icon: DollarSign, color: 'bg-yellow-500' },
     { id: 'puntos' as AdminTab, label: 'Puntos', icon: Trophy, color: 'bg-purple-500' },
@@ -67,6 +69,7 @@ export function AdminPage() {
           transition={{ duration: 0.3 }}
         >
           {activeTab === 'roles' && <UserRoleManager />}
+          {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'ascensos' && (
             <div className="glass rounded-3xl p-12 text-center">
               <Award className="w-16 h-16 text-gray-600 mx-auto mb-4" />
