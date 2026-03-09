@@ -24,12 +24,7 @@ const countries = [
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
 ];
 
-// Tipos de cancha (deben coincidir con el enum TipoCancha de Prisma)
-const tiposCancha = [
-  { value: 'CEMENTO', label: 'Cemento', icon: '🏗️' },
-  { value: 'CRISTAL', label: 'Cristal', icon: '💎' },
-  { value: 'SINTETICO', label: 'Césped sintético', icon: '🌱' },
-];
+// En 2026 todas las canchas son césped sintético, no necesitamos seleccionar tipo
 
 export function SedesManager() {
   const [sedes, setSedes] = useState<Sede[]>([]);
@@ -63,8 +58,9 @@ export function SedesManager() {
   const [editingCancha, setEditingCancha] = useState<Cancha | null>(null);
   const [canchaFormData, setCanchaFormData] = useState<CreateCanchaData>({
     nombre: '',
-    tipo: 'CEMENTO',
+    tipo: 'SINTETICO', // En 2026 todas son sintéticas
     tieneLuz: false,
+    notas: '',
   });
 
   useEffect(() => {
@@ -205,6 +201,7 @@ export function SedesManager() {
       nombre: cancha.nombre,
       tipo: cancha.tipo,
       tieneLuz: cancha.tieneLuz,
+      notas: cancha.notas || '',
     });
     setShowCanchaForm(cancha.sedeId);
   };
@@ -268,7 +265,7 @@ export function SedesManager() {
   };
 
   const resetCanchaForm = () => {
-    setCanchaFormData({ nombre: '', tipo: 'CEMENTO', tieneLuz: false });
+    setCanchaFormData({ nombre: '', tipo: 'SINTETICO', tieneLuz: false, notas: '' });
     setEditingCancha(null);
     setShowCanchaForm(null);
   };
@@ -622,7 +619,7 @@ export function SedesManager() {
                     loadCanchas(sede.id);
                     setShowCanchaForm(sede.id);
                     // Limpiar formulario SIN cerrarlo (resetCanchaForm cierra el form)
-                    setCanchaFormData({ nombre: '', tipo: 'CEMENTO', tieneLuz: false });
+                    setCanchaFormData({ nombre: '', tipo: 'SINTETICO', tieneLuz: false, notas: '' });
                     setEditingCancha(null);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition-colors text-sm ml-auto"
@@ -666,42 +663,42 @@ export function SedesManager() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-2">Nombre *</label>
+                                <input
+                                  type="text"
+                                  value={canchaFormData.nombre}
+                                  onChange={(e) => setCanchaFormData({ ...canchaFormData, nombre: e.target.value })}
+                                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
+                                  placeholder="Ej: Cancha 1"
+                                />
+                              </div>
+
+                              <div className="flex items-end pb-2">
+                                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={canchaFormData.tieneLuz}
+                                    onChange={(e) => setCanchaFormData({ ...canchaFormData, tieneLuz: e.target.checked })}
+                                    className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary"
+                                  />
+                                  <Sun className="w-4 h-4 text-yellow-500" />
+                                  <span className="text-sm">Tiene iluminación LED</span>
+                                </label>
+                              </div>
+                            </div>
+
                             <div>
-                              <label className="block text-xs text-gray-400 mb-2">Nombre *</label>
+                              <label className="block text-xs text-gray-400 mb-2">Notas / Características</label>
                               <input
                                 type="text"
-                                value={canchaFormData.nombre}
-                                onChange={(e) => setCanchaFormData({ ...canchaFormData, nombre: e.target.value })}
+                                value={canchaFormData.notas || ''}
+                                onChange={(e) => setCanchaFormData({ ...canchaFormData, notas: e.target.value })}
                                 className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
-                                placeholder="Ej: Cancha 1"
+                                placeholder="Ej: Techada, con gradas, acceso directo..."
                               />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-2">Tipo de superficie</label>
-                              <select
-                                value={canchaFormData.tipo}
-                                onChange={(e) => setCanchaFormData({ ...canchaFormData, tipo: e.target.value })}
-                                className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary"
-                              >
-                                {tiposCancha.map(t => (
-                                  <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div className="flex items-end">
-                              <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={canchaFormData.tieneLuz}
-                                  onChange={(e) => setCanchaFormData({ ...canchaFormData, tieneLuz: e.target.checked })}
-                                  className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary"
-                                />
-                                <Sun className="w-4 h-4 text-yellow-500" />
-                                <span className="text-sm">Tiene iluminación</span>
-                              </label>
                             </div>
                           </div>
 
@@ -764,7 +761,7 @@ export function SedesManager() {
                                 <div>
                                   <p className="text-white font-medium">{cancha.nombre}</p>
                                   <p className="text-xs text-gray-500">
-                                    {tiposCancha.find(t => t.value === cancha.tipo)?.label || cancha.tipo}
+                                    {(cancha as any).notas || 'Césped sintético'}
                                   </p>
                                 </div>
                               </div>

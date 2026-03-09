@@ -59,12 +59,14 @@ export interface Cancha {
   tieneLuz: boolean;
   activa: boolean;
   sedeId: string;
+  notas?: string;
 }
 
 export interface CreateCanchaData {
   nombre: string;
-  tipo?: string;
+  tipo?: string; // Siempre SINTETICO en 2026
   tieneLuz?: boolean;
+  notas?: string; // Opcional: techada, gradas, etc.
 }
 
 export interface UpdateCanchaData {
@@ -72,6 +74,7 @@ export interface UpdateCanchaData {
   tipo?: string;
   tieneLuz?: boolean;
   activa?: boolean;
+  notas?: string;
 }
 
 // MODALIDADES
