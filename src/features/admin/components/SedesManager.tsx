@@ -1,10 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Plus, Edit2, Trash2, Power, PowerOff, 
-  Search, Map, Phone, Save, X, Building2 
+  Search, Map, Phone, Save, X, Building2, ChevronDown, Check
 } from 'lucide-react';
 import { adminService, Sede, CreateSedeData } from '../../../services/adminService';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+
+// Países con códigos de teléfono (igual que en registro)
+const countries = [
+  { code: 'PY', name: 'Paraguay', dialCode: '+595', flag: '🇵🇾' },
+  { code: 'AR', name: 'Argentina', dialCode: '+54', flag: '🇦🇷' },
+  { code: 'BR', name: 'Brasil', dialCode: '+55', flag: '🇧🇷' },
+  { code: 'UY', name: 'Uruguay', dialCode: '+598', flag: '🇺🇾' },
+  { code: 'CL', name: 'Chile', dialCode: '+56', flag: '🇨🇱' },
+  { code: 'BO', name: 'Bolivia', dialCode: '+591', flag: '🇧🇴' },
+  { code: 'PE', name: 'Perú', dialCode: '+51', flag: '🇵🇪' },
+  { code: 'CO', name: 'Colombia', dialCode: '+57', flag: '🇨🇴' },
+  { code: 'EC', name: 'Ecuador', dialCode: '+593', flag: '🇪🇨' },
+  { code: 'ES', name: 'España', dialCode: '+34', flag: '🇪🇸' },
+  { code: 'US', name: 'Estados Unidos', dialCode: '+1', flag: '🇺🇸' },
+  { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
+];
 
 export function SedesManager() {
   const [sedes, setSedes] = useState<Sede[]>([]);
@@ -15,6 +32,12 @@ export function SedesManager() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Phone selector state
+  const [paisTelefono, setPaisTelefono] = useState('PY');
+  const [telefonoNumero, setTelefonoNumero] = useState('');
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+
   // Form state
   const [formData, setFormData] = useState<CreateSedeData>({
     nombre: '',
@@ -23,6 +46,17 @@ export function SedesManager() {
     mapsUrl: '',
     telefono: '',
   });
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
+        setShowCountryDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     loadSedes();
@@ -44,12 +78,15 @@ export function SedesManager() {
     setSaving(true);
     setMessage(null);
 
+    const fullTelefono = telefonoNumero ? `${countries.find(c => c.code === paisTelefono)?.dialCode}${telefonoNumero}` : '';
+    const dataToSend = { ...formData, telefono: fullTelefono };
+
     try {
       if (editingSede) {
-        await adminService.updateSede(editingSede.id, formData);
+        await adminService.updateSede(editingSede.id, dataToSend);
         setMessage({ type: 'success', text: 'Sede actualizada correctamente' });
       } else {
-        await adminService.createSede(formData);
+        await adminService.createSede(dataToSend);
         setMessage({ type: 'success', text: 'Sede creada correctamente' });
       }
       
@@ -65,6 +102,25 @@ export function SedesManager() {
 
   const handleEdit = (sede: Sede) => {
     setEditingSede(sede);
+    
+    // Parsear teléfono existente
+    let paisCode = 'PY';
+    let numero = sede.telefono || '';
+    
+    if (sede.telefono) {
+      // Buscar si el teléfono empieza con algún código de país
+      for (const country of countries) {
+        if (sede.telefono.startsWith(country.dialCode)) {
+          paisCode = country.code;
+          numero = sede.telefono.substring(country.dialCode.length);
+          break;
+        }
+      }
+    }
+    
+    setPaisTelefono(paisCode);
+    setTelefonoNumero(numero);
+    
     setFormData({
       nombre: sede.nombre,
       ciudad: sede.ciudad,
@@ -101,6 +157,8 @@ export function SedesManager() {
 
   const resetForm = () => {
     setFormData({ nombre: '', ciudad: '', direccion: '', mapsUrl: '', telefono: '' });
+    setPaisTelefono('PY');
+    setTelefonoNumero('');
     setEditingSede(null);
     setShowForm(false);
   };
@@ -224,19 +282,17 @@ export function SedesManager() {
                 />
               </div>
 
+              {/* Ciudad con autocompletado */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Ciudad *</label>
-                <input
-                  type="text"
+                <CityAutocomplete
                   value={formData.ciudad}
-                  onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-                  required
-                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-                  placeholder="Ej: Asunción"
+                  onChange={(value) => setFormData({ ...formData, ciudad: value })}
+                  label="Ciudad *"
+                  placeholder="Busca tu ciudad..."
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm text-gray-400 mb-2">Dirección</label>
                 <input
                   type="text"
@@ -247,15 +303,73 @@ export function SedesManager() {
                 />
               </div>
 
-              <div>
+              {/* Teléfono con selector de país */}
+              <div className="md:col-span-2">
                 <label className="block text-sm text-gray-400 mb-2">Teléfono</label>
-                <input
-                  type="text"
-                  value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary"
-                  placeholder="Ej: +595 981 123456"
-                />
+                <div className="relative flex" ref={countryDropdownRef}>
+                  {/* Country Selector */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                      className="h-full px-4 bg-[#0B0E14] border border-r-0 border-[#232838] rounded-l-xl flex items-center gap-2 hover:border-primary transition-colors min-w-[110px]"
+                    >
+                      <span className="text-xl">{countries.find(c => c.code === paisTelefono)?.flag}</span>
+                      <span className="text-gray-300 text-sm">{countries.find(c => c.code === paisTelefono)?.dialCode}</span>
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    </button>
+                    
+                    {/* Dropdown */}
+                    <AnimatePresence>
+                      {showCountryDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute top-full left-0 mt-2 w-64 max-h-60 overflow-y-auto glass rounded-xl border border-[#232838] z-50"
+                        >
+                          {countries.map((country) => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              onClick={() => {
+                                setPaisTelefono(country.code);
+                                setShowCountryDropdown(false);
+                              }}
+                              className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-[#151921] transition-colors text-left ${
+                                paisTelefono === country.code ? 'bg-[#151921]' : ''
+                              }`}
+                            >
+                              <span className="text-2xl">{country.flag}</span>
+                              <div className="flex-1">
+                                <p className="text-white text-sm font-medium">{country.name}</p>
+                                <p className="text-gray-500 text-xs">{country.dialCode}</p>
+                              </div>
+                              {paisTelefono === country.code && (
+                                <Check className="w-4 h-4 text-primary" />
+                              )}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Phone Input */}
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <input
+                      type="tel"
+                      value={telefonoNumero}
+                      onChange={(e) => setTelefonoNumero(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-[#0B0E14] border border-[#232838] rounded-r-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary rounded-l-none"
+                      placeholder="981 123456"
+                    />
+                  </div>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">
+                  Código país: {countries.find(c => c.code === paisTelefono)?.dialCode} • Sin 0 inicial
+                </p>
               </div>
 
               <div className="md:col-span-2">
