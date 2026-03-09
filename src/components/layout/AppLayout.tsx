@@ -1,41 +1,15 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ReactNode, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X } from 'lucide-react';
-
-interface User {
-  id: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  roles: string[];
-}
+import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    
-    // Decodificar token básico
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser(payload);
-    } catch {
-      localStorage.removeItem('token');
-      navigate('/login');
-    }
-  }, [navigate]);
-
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+    logout();
   };
 
   const navItems = [
