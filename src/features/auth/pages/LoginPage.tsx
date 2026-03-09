@@ -19,8 +19,6 @@ export const LoginPage = () => {
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
 
-  const [loginError, setLoginError] = useState('');
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
