@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/authService';
 
 export const LoginPage = () => {
@@ -18,6 +19,7 @@ export const LoginPage = () => {
   const [resetSent, setResetSent] = useState(false);
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,7 @@ export const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      await authService.login({ documento, password });
+      await login(documento, password);
       navigate('/novedades');
     } catch (err: any) {
       setLoginError(err.response?.data?.message || 'Error al iniciar sesión');
