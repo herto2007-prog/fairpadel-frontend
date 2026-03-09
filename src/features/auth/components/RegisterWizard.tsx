@@ -5,12 +5,13 @@ import {
   Camera, ChevronRight, ChevronLeft, Check, 
   Trophy, Sparkles, Heart, Shield, ChevronDown
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { ProfilePhotoGuidelines } from '../../../components/upload/ProfilePhotoGuidelines';
 import { authService } from '../../../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 interface FormData {
   nombre: string;
@@ -156,6 +157,24 @@ export const RegisterWizard = () => {
   const [direction, setDirection] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirigir si ya está autenticado
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
+        />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/novedades" replace />;
+  }
   
   const [formData, setFormData] = useState<FormData>({
     nombre: '',

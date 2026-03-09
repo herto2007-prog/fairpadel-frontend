@@ -4,7 +4,7 @@ import {
   Mail, Lock, Eye, EyeOff, ArrowRight, 
   CheckCircle, Sparkles, ArrowLeft
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/authService';
@@ -19,7 +19,24 @@ export const LoginPage = () => {
   const [resetSent, setResetSent] = useState(false);
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirigir si ya está autenticado
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
+        />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/novedades" replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

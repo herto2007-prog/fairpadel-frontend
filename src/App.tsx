@@ -15,7 +15,7 @@ import { RegisterWizard } from './features/auth/components/RegisterWizard';
 import { VerifyEmailPage } from './features/auth/pages/VerifyEmailPage';
 import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
-import { PublicRoute } from './features/auth/components/ProtectedRoute';
+
 
 // Torneos (V1)
 import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
@@ -77,9 +77,9 @@ function App() {
         {/* Landing - Pública */}
         <Route path="/" element={<LandingPage />} />
         
-        {/* Auth - Rutas públicas restringidas (redirigen si está autenticado) */}
-        <Route path="/login" element={<PublicRoute restricted><LoginPage /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute restricted><RegisterWizard /></PublicRoute>} />
+        {/* Auth */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterWizard />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
