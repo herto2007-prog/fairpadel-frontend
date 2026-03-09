@@ -24,13 +24,11 @@ const countries = [
   { code: 'MX', name: 'México', dialCode: '+52', flag: '🇲🇽' },
 ];
 
-// Tipos de cancha
+// Tipos de cancha (deben coincidir con el enum TipoCancha de Prisma)
 const tiposCancha = [
   { value: 'CEMENTO', label: 'Cemento', icon: '🏗️' },
   { value: 'CRISTAL', label: 'Cristal', icon: '💎' },
-  { value: 'CESPED', label: 'Césped sintético', icon: '🌱' },
-  { value: 'ARCILLA', label: 'Arcilla', icon: '🟤' },
-  { value: 'MADERA', label: 'Madera', icon: '🪵' },
+  { value: 'SINTETICO', label: 'Césped sintético', icon: '🌱' },
 ];
 
 export function SedesManager() {
