@@ -60,9 +60,10 @@ export const authService = {
     const response = await api.post('/auth/register', data);
     const result = response.data as LoginResponse;
     
-    // Guardar token y usuario en localStorage
-    localStorage.setItem(TOKEN_KEY, result.access_token);
-    localStorage.setItem(USER_KEY, JSON.stringify(result.user));
+    // NOTA: NO guardamos el token en el registro
+    // El usuario debe verificar su email y luego hacer login manual
+    // Solo guardamos el email para poder reenviar verificación si es necesario
+    localStorage.setItem('pendingVerificationEmail', data.email);
     
     return result;
   },
