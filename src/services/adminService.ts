@@ -51,6 +51,44 @@ export interface UpdateSedeData extends Partial<CreateSedeData> {
   activa?: boolean;
 }
 
+// MODALIDADES
+export interface Modalidad {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  activa: boolean;
+  reglas: {
+    variante: 'PY' | 'MUNDIAL';
+    tipoEmparejamiento: string;
+    generoRequerido: string;
+    sistemaPuntos: string;
+    formatoBracket: string;
+    setsPorPartido: number;
+    puntosPorVictoria: number;
+    puntosPorDerrota: number;
+    requierePareja: boolean;
+    permiteIndividual: boolean;
+    minimoPartidosGarantizados: number;
+    descripcionLarga: string;
+  };
+  _count?: {
+    torneos: number;
+  };
+}
+
+export interface CreateModalidadData {
+  nombre: string;
+  descripcion: string;
+  reglas?: any;
+}
+
+export interface UpdateModalidadData {
+  nombre?: string;
+  descripcion?: string;
+  activa?: boolean;
+  reglas?: any;
+}
+
 export const adminService = {
   // USUARIOS
   getUsers: () => api.get('/admin/users').then(r => r.data),
@@ -65,4 +103,12 @@ export const adminService = {
   updateSede: (id: string, data: UpdateSedeData) => api.put(`/admin/sedes/${id}`, data).then(r => r.data),
   deleteSede: (id: string) => api.delete(`/admin/sedes/${id}`).then(r => r.data),
   activateSede: (id: string) => api.put(`/admin/sedes/${id}/activate`, {}).then(r => r.data),
+  
+  // MODALIDADES
+  getModalidades: () => api.get('/admin/modalidades').then(r => r.data),
+  getModalidad: (id: string) => api.get(`/admin/modalidades/${id}`).then(r => r.data),
+  createModalidad: (data: CreateModalidadData) => api.post('/admin/modalidades', data).then(r => r.data),
+  updateModalidad: (id: string, data: UpdateModalidadData) => api.put(`/admin/modalidades/${id}`, data).then(r => r.data),
+  deleteModalidad: (id: string) => api.delete(`/admin/modalidades/${id}`).then(r => r.data),
+  seedModalidades: () => api.post('/admin/modalidades/seed-defaults', {}).then(r => r.data),
 };

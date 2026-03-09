@@ -4,8 +4,9 @@ import { Shield, Award, Trophy, DollarSign, Settings, Building2 } from 'lucide-r
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
+import { ModalidadesManager } from '../components/ModalidadesManager';
 
-type AdminTab = 'roles' | 'sedes' | 'ascensos' | 'premium' | 'puntos' | 'torneos';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'ascensos' | 'premium' | 'puntos';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('roles');
@@ -13,6 +14,7 @@ export function AdminPage() {
   const tabs = [
     { id: 'roles' as AdminTab, label: 'Roles', icon: Shield, color: 'bg-blue-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
+    { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Trophy, color: 'bg-pink-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: Award, color: 'bg-green-500' },
     { id: 'premium' as AdminTab, label: 'Premium', icon: DollarSign, color: 'bg-yellow-500' },
     { id: 'puntos' as AdminTab, label: 'Puntos', icon: Trophy, color: 'bg-purple-500' },
@@ -70,6 +72,7 @@ export function AdminPage() {
         >
           {activeTab === 'roles' && <UserRoleManager />}
           {activeTab === 'sedes' && <SedesManager />}
+          {activeTab === 'modalidades' && <ModalidadesManager />}
           {activeTab === 'ascensos' && (
             <div className="glass rounded-3xl p-12 text-center">
               <Award className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -91,13 +94,7 @@ export function AdminPage() {
               <p className="text-gray-400">Próximamente...</p>
             </div>
           )}
-          {activeTab === 'torneos' && (
-            <div className="glass rounded-3xl p-12 text-center">
-              <Settings className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Gestión de Torneos</h3>
-              <p className="text-gray-400">Próximamente...</p>
-            </div>
-          )}
+
         </motion.div>
       </div>
     </div>
