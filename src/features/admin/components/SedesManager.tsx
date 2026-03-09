@@ -618,6 +618,8 @@ export function SedesManager() {
 
                 <button
                   onClick={() => {
+                    setExpandedSede(sede.id);
+                    loadCanchas(sede.id);
                     setShowCanchaForm(sede.id);
                     resetCanchaForm();
                   }}
