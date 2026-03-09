@@ -78,8 +78,13 @@ export function SedesManager() {
     setSaving(true);
     setMessage(null);
 
-    const fullTelefono = telefonoNumero ? `${countries.find(c => c.code === paisTelefono)?.dialCode}${telefonoNumero}` : '';
-    const dataToSend = { ...formData, telefono: fullTelefono };
+    const fullTelefono = telefonoNumero ? `${countries.find(c => c.code === paisTelefono)?.dialCode}${telefonoNumero}` : undefined;
+    const dataToSend = {
+      ...formData,
+      telefono: fullTelefono,
+      direccion: formData.direccion?.trim() || undefined,
+      mapsUrl: formData.mapsUrl?.trim() || undefined,
+    };
 
     try {
       if (editingSede) {
