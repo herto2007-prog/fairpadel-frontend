@@ -621,7 +621,9 @@ export function SedesManager() {
                     setExpandedSede(sede.id);
                     loadCanchas(sede.id);
                     setShowCanchaForm(sede.id);
-                    resetCanchaForm();
+                    // Limpiar formulario SIN cerrarlo (resetCanchaForm cierra el form)
+                    setCanchaFormData({ nombre: '', tipo: 'CEMENTO', tieneLuz: false });
+                    setEditingCancha(null);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg transition-colors text-sm ml-auto"
                 >
