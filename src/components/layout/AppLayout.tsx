@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white">
+    <div className="min-h-screen bg-[#0B0E14] text-white compact-ui">
       {/* Header */}
       <header className="bg-[#151921] border-b border-[#232838] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -154,4 +154,32 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  
+  /* UI Compacta - Reduce tamaños ~15% para páginas internas */
+  .compact-ui {
+    font-size: 14px;
+  }
+  
+  .compact-ui h1 {
+    font-size: 1.75rem;
+  }
+  
+  .compact-ui h2 {
+    font-size: 1.5rem;
+  }
+  
+  .compact-ui h3 {
+    font-size: 1.25rem;
+  }
+  
+  .compact-ui .glass {
+    border-radius: 1rem;
+  }
+  
+  .compact-ui .btn-primary,
+  .compact-ui .btn-secondary,
+  .compact-ui .btn-outline {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
 }
