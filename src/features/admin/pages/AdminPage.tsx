@@ -1,24 +1,22 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Trophy, Building2, Target, LayoutDashboard } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
-import { TorneosManager } from '../components/TorneosManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'torneos' | 'fairpadel';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel';
 
 export function AdminPage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('torneos');
+  const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
 
   const tabs = [
-    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Target, color: 'bg-cyan-500' },
-    { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
-    { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Trophy, color: 'bg-pink-500' },
-    { id: 'roles' as AdminTab, label: 'Usuarios', icon: Shield, color: 'bg-blue-500' },
     { id: 'fairpadel' as AdminTab, label: 'FairPadel', icon: LayoutDashboard, color: 'bg-emerald-500' },
+    { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
+    { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Settings, color: 'bg-pink-500' },
+    { id: 'roles' as AdminTab, label: 'Usuarios', icon: Shield, color: 'bg-blue-500' },
   ];
 
   return (
@@ -73,7 +71,6 @@ export function AdminPage() {
           {activeTab === 'roles' && <UserRoleManager />}
           {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'modalidades' && <ModalidadesManager />}
-          {activeTab === 'torneos' && <TorneosManager />}
           {activeTab === 'fairpadel' && <FairpadelPanel />}
         </motion.div>
       </div>

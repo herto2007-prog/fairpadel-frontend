@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -12,13 +12,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     logout();
   };
 
-  const navItems = [
+  // Items base para todos los usuarios
+  const baseNavItems = [
     { path: '/tournaments', label: 'Torneos', icon: Trophy },
     { path: '/sedes', label: 'Sedes', icon: MapPin },
     { path: '/instructores', label: 'Instructores', icon: Users },
     { path: '/rankings', label: 'Rankings', icon: Award },
     { path: '/alquileres', label: 'Alquileres', icon: Calendar },
   ];
+
+  // Items solo para organizadores y admin
+  const isOrganizador = user?.roles?.includes('organizador') || user?.roles?.includes('admin');
+  
+  const navItems = isOrganizador
+    ? [
+        ...baseNavItems.slice(0, 1), // Torneos
+        { path: '/mis-torneos', label: 'Mis Torneos', icon: Target },
+        ...baseNavItems.slice(1), // Resto
+      ]
+    : baseNavItems;
 
   return (
     <div className="min-h-screen bg-[#0B0E14] text-white compact-ui">

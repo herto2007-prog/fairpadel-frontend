@@ -45,6 +45,10 @@ import { NovedadesPage } from './features/feed/pages/NovedadesPage';
 // Admin
 import { AdminPage } from './features/admin/pages/AdminPage';
 
+// Organizador
+import { MisTorneosPage } from './features/organizador/pages/MisTorneosPage';
+import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
+
 // Layout wrapper para rutas protegidas con autenticación
 function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -116,6 +120,11 @@ function App() {
           
           {/* Feed / Novedades */}
           <Route path="/novedades" element={<NovedadesPage />} />
+          
+          {/* Organizador - Gestión de Torneos */}
+          <Route element={<RoleProtectedRoute allowedRoles={['organizador']} />}>
+            <Route path="/mis-torneos" element={<MisTorneosPage />} />
+          </Route>
           
           {/* Admin */}
           <Route path="/admin" element={<AdminPage />} />
