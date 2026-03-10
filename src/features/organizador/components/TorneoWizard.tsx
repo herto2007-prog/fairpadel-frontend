@@ -82,11 +82,18 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     try {
       const { data } = await api.get('/admin/torneos/datos/wizard');
       if (data.success) {
-        setCategorias(data.categorias);
-        setSedes(data.sedes);
+        setCategorias(data.categorias || []);
+        setSedes(data.sedes || []);
+      } else {
+        console.error('Error del servidor:', data.message);
+        setCategorias([]);
+        setSedes([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cargando datos:', error);
+      if (error.response?.status === 401) {
+        setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
     }
   };
 
