@@ -1,26 +1,24 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Award, Trophy, DollarSign, Settings, Building2, Target } from 'lucide-react';
+import { Shield, Trophy, Building2, Target, LayoutDashboard } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { TorneosManager } from '../components/TorneosManager';
+import { FairpadelPanel } from '../components/FairpadelPanel';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'torneos' | 'ascensos' | 'premium' | 'puntos';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'torneos' | 'fairpadel';
 
 export function AdminPage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('roles');
+  const [activeTab, setActiveTab] = useState<AdminTab>('torneos');
 
   const tabs = [
-    { id: 'roles' as AdminTab, label: 'Roles', icon: Shield, color: 'bg-blue-500' },
+    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Target, color: 'bg-cyan-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Trophy, color: 'bg-pink-500' },
-    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Target, color: 'bg-cyan-500' },
-    { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: Award, color: 'bg-green-500' },
-    { id: 'premium' as AdminTab, label: 'Premium', icon: DollarSign, color: 'bg-yellow-500' },
-    { id: 'puntos' as AdminTab, label: 'Puntos', icon: Trophy, color: 'bg-purple-500' },
-    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Settings, color: 'bg-gray-500' },
+    { id: 'roles' as AdminTab, label: 'Usuarios', icon: Shield, color: 'bg-blue-500' },
+    { id: 'fairpadel' as AdminTab, label: 'FairPadel', icon: LayoutDashboard, color: 'bg-emerald-500' },
   ];
 
   return (
@@ -35,7 +33,7 @@ export function AdminPage() {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
-          <p className="text-gray-400">Gestiona usuarios, roles y configuraciones del sistema</p>
+          <p className="text-gray-400">Gestiona torneos, sedes y configuraciones del sistema</p>
         </motion.div>
 
         {/* Tabs */}
@@ -76,28 +74,7 @@ export function AdminPage() {
           {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'modalidades' && <ModalidadesManager />}
           {activeTab === 'torneos' && <TorneosManager />}
-          {activeTab === 'ascensos' && (
-            <div className="glass rounded-3xl p-12 text-center">
-              <Award className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Gestión de Ascensos</h3>
-              <p className="text-gray-400">Próximamente...</p>
-            </div>
-          )}
-          {activeTab === 'premium' && (
-            <div className="glass rounded-3xl p-12 text-center">
-              <DollarSign className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Configuración Premium</h3>
-              <p className="text-gray-400">Próximamente...</p>
-            </div>
-          )}
-          {activeTab === 'puntos' && (
-            <div className="glass rounded-3xl p-12 text-center">
-              <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Sistema de Puntos</h3>
-              <p className="text-gray-400">Próximamente...</p>
-            </div>
-          )}
-
+          {activeTab === 'fairpadel' && <FairpadelPanel />}
         </motion.div>
       </div>
     </div>
