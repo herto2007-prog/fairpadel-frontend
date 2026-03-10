@@ -188,9 +188,13 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
         updateField('flyerUrl', data.data.url);
         updateField('flyerPublicId', data.data.publicId);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subiendo imagen:', error);
-      setError('Error subiendo la imagen');
+      const errorMsg = error.response?.data?.message || 
+                       error.response?.data?.error || 
+                       error.message || 
+                       'Error subiendo la imagen';
+      setError(`Error: ${errorMsg}`);
     } finally {
       setUploadingImage(false);
     }
