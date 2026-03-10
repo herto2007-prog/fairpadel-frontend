@@ -138,10 +138,10 @@ export const torneoV2Service = {
   // ═══════════════════════════════════════════════════════
   
   create: (data: CreateTorneoV2Data) => 
-    api.post('/admin/torneos/v2', data).then(r => r.data),
+    api.post('/admin/torneos', data).then(r => r.data),
   
   getById: (id: string) => 
-    api.get<TorneoV2Response>(`/admin/torneos/v2/${id}`).then(r => r.data),
+    api.get<TorneoV2Response>(`/admin/torneos/${id}/detalle`).then(r => r.data),
   
   // ═══════════════════════════════════════════════════════
   // CHECKLIST
@@ -149,14 +149,14 @@ export const torneoV2Service = {
   
   getChecklist: (tournamentId: string) => 
     api.get<{ success: boolean; items: ChecklistItem[]; progreso: ChecklistProgress }>(
-      `/admin/torneos/v2/${tournamentId}/checklist`
+      `/admin/torneos/${tournamentId}/checklist`
     ).then(r => r.data),
   
   completarItem: (tournamentId: string, itemId: string, data: { notas?: string; valorReal?: number }) => 
-    api.put(`/admin/torneos/v2/${tournamentId}/checklist/${itemId}`, data).then(r => r.data),
+    api.put(`/admin/torneos/${tournamentId}/checklist/${itemId}`, data).then(r => r.data),
   
   configurarRecordatorio: (tournamentId: string, itemId: string, fechaRecordatorio: string) => 
-    api.put(`/admin/torneos/v2/${tournamentId}/checklist/${itemId}/recordatorio`, { 
+    api.put(`/admin/torneos/${tournamentId}/checklist/${itemId}/recordatorio`, { 
       fechaRecordatorio 
     }).then(r => r.data),
   
@@ -165,10 +165,10 @@ export const torneoV2Service = {
   // ═══════════════════════════════════════════════════════
   
   subirComprobante: (tournamentId: string, data: { comprobanteUrl: string; notas?: string }) => 
-    api.post(`/admin/torneos/v2/${tournamentId}/comision/comprobante`, data).then(r => r.data),
+    api.post(`/admin/torneos/${tournamentId}/comision/comprobante`, data).then(r => r.data),
   
   getEstado: (tournamentId: string) => 
-    api.get<TorneoEstado>(`/admin/torneos/v2/${tournamentId}/estado`).then(r => r.data),
+    api.get<TorneoEstado>(`/admin/torneos/${tournamentId}/estado`).then(r => r.data),
   
   getDatosBancarios: () => 
     api.get<{ datosBancarios: DatosBancarios }>('/fairpadel/admin/datos-bancarios').then(r => r.data),
