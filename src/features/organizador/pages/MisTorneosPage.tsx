@@ -16,8 +16,12 @@ interface Tournament {
   fechaInicio: string;
   fechaFin: string;
   costoInscripcion: number;
+  sedePrincipal?: {
+    nombre: string;
+    ciudad: string;
+  };
   _count?: {
-    parejas?: number;
+    inscripciones?: number;
   };
 }
 
@@ -238,7 +242,10 @@ export function MisTorneosPage() {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <MapPin className="w-4 h-4" />
-                        {torneo.ciudad}
+                        {torneo.sedePrincipal 
+                          ? `${torneo.sedePrincipal.nombre} - ${torneo.sedePrincipal.ciudad}`
+                          : torneo.ciudad
+                        }
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Calendar className="w-4 h-4" />
@@ -250,7 +257,7 @@ export function MisTorneosPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Users className="w-4 h-4" />
-                        {torneo._count?.parejas || 0} parejas
+                        {torneo._count?.inscripciones || 0} insc.
                       </div>
                     </div>
 
@@ -259,7 +266,7 @@ export function MisTorneosPage() {
                       <div className="flex items-center gap-1">
                         <TrendingUp className="w-4 h-4 text-emerald-400" />
                         <span className="text-emerald-400 font-bold">
-                          Gs. {(Number(torneo.costoInscripcion) * (torneo._count?.parejas || 0) * 2).toLocaleString('es-PY')}
+                          Gs. {Number(torneo.costoInscripcion).toLocaleString('es-PY')}
                         </span>
                       </div>
                       <a
