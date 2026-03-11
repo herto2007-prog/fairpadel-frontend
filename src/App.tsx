@@ -106,8 +106,8 @@ function App() {
           {/* Dashboard */}
           <Route path="/dashboard" element={<DashboardPage />} />
           
-          {/* Torneos (V1) */}
-          <Route path="/tournaments" element={<TournamentsListPage />} />
+          {/* Torneos - V2 Público */}
+          <Route path="/tournaments" element={<TorneosPublicListPage />} />
           <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
           
           {/* Inscripciones (V1) */}
