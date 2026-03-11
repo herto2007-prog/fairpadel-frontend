@@ -198,70 +198,62 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         </div>
       </div>
 
-      {/* Tabs de Categorías - Agrupadas por género */}
-      <div className="flex flex-wrap items-center gap-4">
+      {/* Tabs de Categorías - Pills Compactos */}
+      <div className="flex flex-wrap items-center gap-1">
         {/* Caballeros */}
         {data.porCategoria.some(c => c.categoriaTipo === 'MASCULINO') && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-blue-400 font-medium uppercase tracking-wider">Caballeros</span>
-            <div className="flex gap-1">
-              {data.porCategoria
-                .filter(c => c.categoriaTipo === 'MASCULINO')
-                .map((cat) => (
-                  <button
-                    key={cat.categoriaId}
-                    onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      categoriaActiva === cat.categoriaId
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        : 'bg-[#151921] text-gray-400 hover:text-white hover:bg-[#232838] border border-[#232838]'
-                    }`}
-                  >
-                    <span>{cat.categoriaNombre}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      categoriaActiva === cat.categoriaId ? 'bg-blue-500/30' : 'bg-[#0B0E14]'
-                    }`}>
-                      {cat.total}
-                    </span>
-                  </button>
-                ))}
-            </div>
-          </div>
+          <>
+            <span className="text-blue-400 mr-1">♂</span>
+            {data.porCategoria
+              .filter(c => c.categoriaTipo === 'MASCULINO')
+              .map((cat) => (
+                <button
+                  key={cat.categoriaId}
+                  onClick={() => setCategoriaActiva(cat.categoriaId)}
+                  className={`flex flex-col items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all min-w-[48px] ${
+                    categoriaActiva === cat.categoriaId
+                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-[#1a1f2e] text-gray-400 hover:bg-[#232838] hover:text-gray-300 border border-[#2a3040]'
+                  }`}
+                >
+                  <span>{cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.')}</span>
+                  <span className={`text-[10px] ${categoriaActiva === cat.categoriaId ? 'text-blue-100' : 'text-gray-500'}`}>
+                    {cat.total}
+                  </span>
+                </button>
+              ))}
+          </>
         )}
 
-        {/* Separador */}
+        {/* Separador vertical sutil */}
         {data.porCategoria.some(c => c.categoriaTipo === 'MASCULINO') && 
          data.porCategoria.some(c => c.categoriaTipo === 'FEMENINO') && (
-          <div className="w-px h-6 bg-[#232838]" />
+          <span className="text-gray-700 mx-2">|</span>
         )}
 
         {/* Damas */}
         {data.porCategoria.some(c => c.categoriaTipo === 'FEMENINO') && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-pink-400 font-medium uppercase tracking-wider">Damas</span>
-            <div className="flex gap-1">
-              {data.porCategoria
-                .filter(c => c.categoriaTipo === 'FEMENINO')
-                .map((cat) => (
-                  <button
-                    key={cat.categoriaId}
-                    onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      categoriaActiva === cat.categoriaId
-                        ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
-                        : 'bg-[#151921] text-gray-400 hover:text-white hover:bg-[#232838] border border-[#232838]'
-                    }`}
-                  >
-                    <span>{cat.categoriaNombre}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                      categoriaActiva === cat.categoriaId ? 'bg-pink-500/30' : 'bg-[#0B0E14]'
-                    }`}>
-                      {cat.total}
-                    </span>
-                  </button>
-                ))}
-            </div>
-          </div>
+          <>
+            <span className="text-pink-400 mr-1">♀</span>
+            {data.porCategoria
+              .filter(c => c.categoriaTipo === 'FEMENINO')
+              .map((cat) => (
+                <button
+                  key={cat.categoriaId}
+                  onClick={() => setCategoriaActiva(cat.categoriaId)}
+                  className={`flex flex-col items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all min-w-[48px] ${
+                    categoriaActiva === cat.categoriaId
+                      ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/25'
+                      : 'bg-[#1a1f2e] text-gray-400 hover:bg-[#232838] hover:text-gray-300 border border-[#2a3040]'
+                  }`}
+                >
+                  <span>{cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.')}</span>
+                  <span className={`text-[10px] ${categoriaActiva === cat.categoriaId ? 'text-pink-100' : 'text-gray-500'}`}>
+                    {cat.total}
+                  </span>
+                </button>
+              ))}
+          </>
         )}
       </div>
 
