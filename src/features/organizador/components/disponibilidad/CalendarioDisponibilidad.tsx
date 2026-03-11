@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, MapPin, Clock,
   Calendar, Grid3X3, List, Building2, CheckCircle2,
-  X, Sparkles
+  X, Sparkles, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
+import { sedesService } from '../../../../services/sedesService';
 
 interface Slot {
   id: string;
@@ -79,15 +80,18 @@ const HORAS = Array.from({ length: 24 }, (_, i) => {
 
 export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibilidadProps) {
   const [loading, setLoading] = useState(true);
+  const [torneo, setTorneo] = useState<{ fechaInicio?: string; fechaFin?: string } | null>(null);
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
+  const [todasSedes, setTodasSedes] = useState<Sede[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [dias, setDias] = useState<DiaConfig[]>([]);
   const [canchasFiltradas, setCanchasFiltradas] = useState<Set<string>>(new Set());
   const [vista, setVista] = useState<'semana' | 'lista'>('semana');
   const [slotSeleccionado, setSlotSeleccionado] = useState<Slot | null>(null);
   const [showConfigDia, setShowConfigDia] = useState(false);
+  const [showAgregarSede, setShowAgregarSede] = useState(false);
 
   // Calcular inicio y fin de semana
   const weekStart = useMemo(() => {
@@ -121,8 +125,14 @@ export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibili
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await disponibilidadService.getDisponibilidad(tournamentId);
+      const [data, sedesData] = await Promise.all([
+        disponibilidadService.getDisponibilidad(tournamentId),
+        sedesService.getAll(),
+      ]);
+      
+      setTorneo(data.torneo);
       setSedes(data.sedes);
+      setTodasSedes(sedesData || []);
       
       // Asignar colores a canchas
       const canchasConColor = data.canchas.map((c: any, i: number) => ({
@@ -144,6 +154,13 @@ export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibili
       setLoading(false);
     }
   };
+
+  // Inicializar currentWeek con la fecha de inicio del torneo
+  useEffect(() => {
+    if (torneo?.fechaInicio) {
+      setCurrentWeek(new Date(torneo.fechaInicio));
+    }
+  }, [torneo?.fechaInicio]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentWeek);
@@ -245,6 +262,15 @@ export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibili
               </div>
             </div>
           ))}
+          
+          {/* Botón Agregar Sede */}
+          <button
+            onClick={() => setShowAgregarSede(true)}
+            className="w-full mt-4 p-3 border border-dashed border-[#df2531]/40 rounded-xl text-[#df2531] text-sm font-medium flex items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar Sede
+          </button>
         </div>
 
         {/* Stats */}
@@ -577,7 +603,121 @@ export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibili
           />
         )}
       </AnimatePresence>
+
+      {/* Modal Agregar Sede */}
+      <AnimatePresence>
+        {showAgregarSede && (
+          <AgregarSedeModal
+            tournamentId={tournamentId}
+            sedesActuales={sedes}
+            todasSedes={todasSedes}
+            onClose={() => setShowAgregarSede(false)}
+            onSave={loadData}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+// Modal para agregar sede al torneo
+function AgregarSedeModal({
+  tournamentId,
+  sedesActuales,
+  todasSedes,
+  onClose,
+  onSave,
+}: {
+  tournamentId: string;
+  sedesActuales: Sede[];
+  todasSedes: Sede[];
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const sedesDisponibles = todasSedes.filter(
+    (s) => !sedesActuales.some((sa) => sa.id === s.id)
+  );
+
+  const handleAgregar = async (sedeId: string) => {
+    try {
+      setLoading(sedeId);
+      await disponibilidadService.agregarSede(tournamentId, sedeId);
+      onSave();
+      onClose();
+    } catch (error) {
+      console.error('Error agregando sede:', error);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#151921] rounded-2xl border border-white/10 w-full max-w-md p-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[#df2531]" />
+            Agregar Sede
+          </h3>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {sedesDisponibles.length === 0 ? (
+          <div className="text-center py-8">
+            <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400">No hay más sedes disponibles</p>
+            <p className="text-xs text-gray-600 mt-1">
+              Todas las sedes ya están agregadas al torneo
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {sedesDisponibles.map((sede) => (
+              <button
+                key={sede.id}
+                onClick={() => handleAgregar(sede.id)}
+                disabled={loading === sede.id}
+                className="w-full p-4 bg-white/[0.02] hover:bg-white/5 border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-white group-hover:text-[#df2531] transition-colors">
+                      {sede.nombre}
+                    </p>
+                    <p className="text-xs text-gray-500">{sede.ciudad}</p>
+                  </div>
+                  {loading === sede.id ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-5 h-5 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full"
+                    />
+                  ) : (
+                    <ChevronRightIcon className="w-5 h-5 text-gray-600 group-hover:text-[#df2531]" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -603,8 +743,12 @@ function ConfigurarDiaModal({
     if (!form.fecha) return;
     try {
       setLoading(true);
-      await disponibilidadService.configurarDia(tournamentId, form);
-      await disponibilidadService.generarSlots(tournamentId, form.fecha);
+      // 1. Crear/configurar el día
+      const diaResult = await disponibilidadService.configurarDia(tournamentId, form);
+      // 2. Generar slots usando el ID del día
+      if (diaResult?.dia?.id) {
+        await disponibilidadService.generarSlots(tournamentId, diaResult.dia.id);
+      }
       onSave();
       onClose();
     } catch (error) {
