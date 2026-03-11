@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 interface Torneo {
   id: string;
@@ -179,8 +180,9 @@ export function InscripcionWizardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0b0f] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <div className="min-h-screen bg-dark flex items-center justify-center relative overflow-hidden">
+        <BackgroundEffects variant="subtle" showGrid={false} />
+        <Loader2 className="w-8 h-8 text-primary animate-spin relative z-10" />
       </div>
     );
   }
@@ -197,8 +199,10 @@ export function InscripcionWizardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0b0f] text-white font-light">
-      <header className="border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen bg-dark text-white font-light relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      
+      <header className="border-b border-white/5 bg-dark/80 backdrop-blur-md sticky top-0 z-50 relative">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <Link to={`/t/${slug}`} className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" />
