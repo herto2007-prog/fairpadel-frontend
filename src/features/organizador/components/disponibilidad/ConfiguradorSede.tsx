@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Building2, Check, ChevronLeft, Clock,
-  Save, Plus
+  Building2, Check, ChevronLeft,
+  Save, Plus, MousePointer2
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
@@ -20,9 +20,8 @@ interface CanchaConfig {
   sedeNombre: string;
 }
 
-
-
-const HORAS = Array.from({ length: 16 }, (_, i) => i + 9); // 9 a 24
+// Horas de 9 a 24 (16 horas)
+const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
 export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: ConfiguradorSedeProps) {
   const [step, setStep] = useState<'sedes' | 'canchas' | 'grid'>('sedes');
@@ -34,6 +33,11 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   const [canchasSeleccionadas, setCanchasSeleccionadas] = useState<Set<string>>(new Set());
   const [slotsTemporales, setSlotsTemporales] = useState<Set<string>>(new Set());
   const [guardando, setGuardando] = useState(false);
+  
+  // Estado para arrastrar
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragValue, setDragValue] = useState<boolean | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Cargar datos
   useEffect(() => {
@@ -59,7 +63,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   };
 
   // Generar fechas del torneo
-  const getFechas = () => {
+  const getFechas = useCallback(() => {
     if (!fechaInicio || !fechaFin) return [];
     const fechas: string[] = [];
     const inicio = new Date(fechaInicio);
@@ -69,14 +73,12 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
       fechas.push(new Date(d).toISOString().split('T')[0]);
     }
     return fechas;
-  };
+  }, [fechaInicio, fechaFin]);
 
   const fechas = getFechas();
-
-  // Canchas de la sede seleccionada
   const canchasDeSede = canchas.filter(c => c.sedeId === sedeSeleccionada?.id);
 
-  // Seleccionar todas las canchas
+  // Toggle todas las canchas
   const toggleTodasCanchas = () => {
     if (canchasSeleccionadas.size === canchasDeSede.length) {
       setCanchasSeleccionadas(new Set());
@@ -85,7 +87,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     }
   };
 
-  // Toggle cancha individual
   const toggleCancha = (canchaId: string) => {
     const newSet = new Set(canchasSeleccionadas);
     if (newSet.has(canchaId)) newSet.delete(canchaId);
@@ -93,21 +94,40 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     setCanchasSeleccionadas(newSet);
   };
 
-  // Toggle slot en el grid
-  const toggleSlot = (fecha: string, hora: number) => {
-    const key = `${fecha}-${hora}`;
-    const newSet = new Set(slotsTemporales);
-    if (newSet.has(key)) newSet.delete(key);
-    else newSet.add(key);
-    setSlotsTemporales(newSet);
+  // Funciones para el grid
+  const startDrag = (fecha: string, hora: number, currentValue: boolean) => {
+    setIsDragging(true);
+    const newValue = !currentValue;
+    setDragValue(newValue);
+    updateSlot(fecha, hora, newValue);
   };
 
-  // Verificar si un slot está marcado
+  const enterCell = (fecha: string, hora: number) => {
+    if (isDragging && dragValue !== null) {
+      updateSlot(fecha, hora, dragValue);
+    }
+  };
+
+  const endDrag = () => {
+    setIsDragging(false);
+    setDragValue(null);
+  };
+
+  const updateSlot = (fecha: string, hora: number, value: boolean) => {
+    const key = `${fecha}-${hora}`;
+    setSlotsTemporales(prev => {
+      const newSet = new Set(prev);
+      if (value) newSet.add(key);
+      else newSet.delete(key);
+      return newSet;
+    });
+  };
+
   const isSlotMarcado = (fecha: string, hora: number) => {
     return slotsTemporales.has(`${fecha}-${hora}`);
   };
 
-  // Guardar configuración
+  // Guardar
   const guardar = async () => {
     if (canchasSeleccionadas.size === 0 || slotsTemporales.size === 0) {
       alert('Selecciona al menos una cancha y un horario');
@@ -117,7 +137,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     try {
       setGuardando(true);
       
-      // Agrupar slots por fecha
+      // Agrupar por fecha y encontrar bloques continuos
       const slotsPorFecha: Record<string, number[]> = {};
       slotsTemporales.forEach(key => {
         const [fecha, horaStr] = key.split('-');
@@ -125,7 +145,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
         slotsPorFecha[fecha].push(parseInt(horaStr));
       });
 
-      // Para cada fecha, encontrar bloques continuos
       for (const fecha of Object.keys(slotsPorFecha)) {
         const horas = slotsPorFecha[fecha].sort((a, b) => a - b);
         
@@ -137,19 +156,16 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
           if (horas[i] === bloqueFin + 1) {
             bloqueFin = horas[i];
           } else {
-            // Guardar bloque anterior y empezar nuevo
             await guardarBloque(fecha, bloqueInicio, bloqueFin + 1);
             bloqueInicio = horas[i];
             bloqueFin = horas[i];
           }
         }
-        // Guardar último bloque
         await guardarBloque(fecha, bloqueInicio, bloqueFin + 1);
       }
 
       alert(`¡Configuración guardada! ${slotsTemporales.size} horarios creados.`);
       
-      // Reset para siguiente configuración
       setSlotsTemporales(new Set());
       setCanchasSeleccionadas(new Set());
       setStep('sedes');
@@ -164,12 +180,11 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   };
 
   const guardarBloque = async (fecha: string, horaInicio: number, horaFin: number) => {
-    // Crear/configurar el día
     const diaResult = await disponibilidadService.configurarDia(tournamentId, {
       fecha,
       horaInicio: `${horaInicio.toString().padStart(2, '0')}:00`,
       horaFin: `${horaFin.toString().padStart(2, '0')}:00`,
-      minutosSlot: 60, // Cada slot es 1 hora
+      minutosSlot: 60,
     });
 
     if (diaResult?.dia?.id) {
@@ -177,7 +192,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     }
   };
 
-  // Agregar sede al torneo
   const agregarSede = async (sedeId: string) => {
     try {
       await disponibilidadService.agregarSede(tournamentId, sedeId);
@@ -191,42 +205,55 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     s => !sedes.some((st: any) => st.id === s.id)
   );
 
+  // Prevenir selección de texto mientras arrastra
+  useEffect(() => {
+    const preventSelection = (e: Event) => {
+      if (isDragging) e.preventDefault();
+    };
+    document.addEventListener('selectstart', preventSelection);
+    return () => document.removeEventListener('selectstart', preventSelection);
+  }, [isDragging]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-64">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-[#df2531]/20 border-t-[#df2531] rounded-full"
+          className="w-8 h-8 border-4 border-[#df2531]/20 border-t-[#df2531] rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0B0E14] rounded-2xl border border-white/5 overflow-hidden">
-      {/* Header */}
-      <div className="bg-[#151921] border-b border-white/5 px-6 py-4">
+    <div className="bg-[#0B0E14] rounded-2xl border border-white/5 overflow-hidden"
+      onMouseUp={endDrag}
+      onMouseLeave={endDrag}
+    >
+      {/* Header compacto */}
+      <div className="bg-[#151921] border-b border-white/5 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {step !== 'sedes' && (
               <button
                 onClick={() => step === 'grid' ? setStep('canchas') : setStep('sedes')}
-                className="p-2 hover:bg-white/5 rounded-xl text-gray-400 hover:text-white"
+                className="p-1.5 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
             )}
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-[#df2531]" />
-                {step === 'sedes' && 'Seleccionar Sede'}
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#df2531]" />
+                {step === 'sedes' && 'Sedes'}
                 {step === 'canchas' && sedeSeleccionada?.nombre}
-                {step === 'grid' && `Configurar Horarios`}
+                {step === 'grid' && 'Horarios'}
               </h2>
               {step === 'grid' && (
-                <p className="text-sm text-gray-400">
-                  {canchasSeleccionadas.size} cancha(s) seleccionada(s) · Click para pintar/despintar
+                <p className="text-xs text-gray-400 flex items-center gap-1">
+                  <MousePointer2 className="w-3 h-3" />
+                  Arrastra para pintar · {slotsTemporales.size} seleccionados
                 </p>
               )}
             </div>
@@ -236,17 +263,17 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
             <button
               onClick={guardar}
               disabled={guardando || slotsTemporales.size === 0}
-              className="px-4 py-2 bg-[#df2531] disabled:opacity-50 text-white rounded-xl text-sm font-medium flex items-center gap-2"
+              className="px-3 py-1.5 bg-[#df2531] disabled:opacity-50 text-white rounded-lg text-xs font-medium flex items-center gap-1.5"
             >
               {guardando ? (
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                  className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full"
                 />
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
+                  <Save className="w-3 h-3" />
                   Guardar ({slotsTemporales.size})
                 </>
               )}
@@ -255,11 +282,11 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
         </div>
       </div>
 
-      <div className="p-6">
-        {/* PASO 1: SELECCIONAR SEDE */}
+      <div className="p-4">
+        {/* PASO 1: SEDES - Cards compactas */}
         {step === 'sedes' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
               {sedes.map((sede: any) => {
                 const canchasCount = canchas.filter((c: any) => c.sedeId === sede.id).length;
                 return (
@@ -271,94 +298,80 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                       setSedeSeleccionada(sede);
                       setStep('canchas');
                     }}
-                    className="p-4 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
+                    className="p-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#df2531]/20 flex items-center justify-center group-hover:bg-[#df2531]/30">
-                        <Building2 className="w-5 h-5 text-[#df2531]" />
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#df2531]/20 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-4 h-4 text-[#df2531]" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">{sede.nombre}</p>
-                        <p className="text-xs text-gray-500">{canchasCount} canchas</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{sede.nombre}</p>
+                        <p className="text-[10px] text-gray-500">{canchasCount} canchas</p>
                       </div>
                     </div>
                   </motion.button>
                 );
               })}
               
-              {/* Agregar sede */}
               {sedesDisponibles.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      const sedeId = prompt('ID de la sede a agregar:');
-                      if (sedeId) agregarSede(sedeId);
-                    }}
-                    className="w-full h-full min-h-[88px] p-4 border-2 border-dashed border-[#df2531]/40 rounded-xl text-[#df2531] flex flex-col items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-all"
-                  >
-                    <Plus className="w-6 h-6" />
-                    <span className="text-sm font-medium">Agregar Sede</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    const sedeId = prompt('ID de la sede:');
+                    if (sedeId) agregarSede(sedeId);
+                  }}
+                  className="p-3 border-2 border-dashed border-[#df2531]/40 rounded-lg text-[#df2531] flex items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-xs font-medium">Agregar</span>
+                </button>
               )}
             </div>
 
             {sedes.length === 0 && (
-              <div className="text-center py-12">
-                <Building2 className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No hay sedes configuradas</p>
-                {sedesDisponibles.length > 0 && (
-                  <button
-                    onClick={() => {
-                      const sedeId = prompt('ID de la sede a agregar:');
-                      if (sedeId) agregarSede(sedeId);
-                    }}
-                    className="px-4 py-2 bg-[#df2531] text-white rounded-xl"
-                  >
-                    Agregar Primera Sede
-                  </button>
-                )}
+              <div className="text-center py-8">
+                <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm">No hay sedes</p>
               </div>
             )}
           </div>
         )}
 
-        {/* PASO 2: SELECCIONAR CANCHAS */}
+        {/* PASO 2: CANCHAS - Mini cards */}
         {step === 'canchas' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Selecciona las canchas a configurar</p>
+              <p className="text-xs text-gray-400">Selecciona canchas</p>
               <button
                 onClick={toggleTodasCanchas}
-                className="text-sm text-[#df2531] hover:underline"
+                className="text-xs text-[#df2531] hover:underline"
               >
-                {canchasSeleccionadas.size === canchasDeSede.length ? 'Desmarcar todas' : 'Marcar todas'}
+                {canchasSeleccionadas.size === canchasDeSede.length ? 'Ninguna' : 'Todas'}
               </button>
             </div>
 
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
               {canchasDeSede.map((cancha: any) => (
                 <motion.button
                   key={cancha.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => toggleCancha(cancha.id)}
-                  className={`p-3 rounded-xl border-2 text-center transition-all ${
+                  className={`p-2 rounded-lg border text-center transition-all ${
                     canchasSeleccionadas.has(cancha.id)
                       ? 'bg-[#df2531]/20 border-[#df2531]'
                       : 'bg-white/[0.02] border-white/5 hover:border-white/20'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center ${
+                  <div className={`w-6 h-6 rounded mx-auto mb-1 flex items-center justify-center ${
                     canchasSeleccionadas.has(cancha.id) ? 'bg-[#df2531]' : 'bg-white/5'
                   }`}>
                     {canchasSeleccionadas.has(cancha.id) ? (
-                      <Check className="w-4 h-4 text-white" />
+                      <Check className="w-3 h-3 text-white" />
                     ) : (
-                      <span className="text-xs text-gray-500">C</span>
+                      <span className="text-[10px] text-gray-500">C</span>
                     )}
                   </div>
-                  <p className={`text-xs font-medium truncate ${
+                  <p className={`text-[10px] font-medium truncate ${
                     canchasSeleccionadas.has(cancha.id) ? 'text-white' : 'text-gray-400'
                   }`}>
                     {cancha.nombre}
@@ -368,74 +381,77 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
             </div>
 
             {canchasSeleccionadas.size > 0 && (
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-2">
                 <button
                   onClick={() => setStep('grid')}
-                  className="px-6 py-3 bg-[#df2531] text-white rounded-xl font-medium flex items-center gap-2"
+                  className="px-4 py-2 bg-[#df2531] text-white rounded-lg text-sm font-medium"
                 >
-                  Configurar Horarios
-                  <ChevronLeft className="w-4 h-4 rotate-180" />
+                  Continuar →
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* PASO 3: GRID DE HORARIOS */}
+        {/* PASO 3: GRID COMPACTO */}
         {step === 'grid' && (
-          <div className="space-y-4">
-            {/* Mini resumen de canchas seleccionadas */}
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-3">
+            {/* Chips de canchas */}
+            <div className="flex flex-wrap gap-1">
               {canchasDeSede
                 .filter(c => canchasSeleccionadas.has(c.id))
                 .map(c => (
-                  <span key={c.id} className="px-2 py-1 bg-[#df2531]/20 text-[#df2531] text-xs rounded-lg">
+                  <span key={c.id} className="px-2 py-0.5 bg-[#df2531]/20 text-[#df2531] text-[10px] rounded">
                     {c.nombre}
                   </span>
                 ))}
             </div>
 
-            {/* Grid compacto */}
-            <div className="bg-[#151921] rounded-xl border border-white/5 overflow-hidden">
-              {/* Header con fechas */}
-              <div className="grid grid-cols-[50px_repeat(auto-fit,minmax(60px,1fr))] border-b border-white/5">
-                <div className="p-2 text-xs text-gray-500 font-medium flex items-center justify-center">
-                  <Clock className="w-3 h-3" />
-                </div>
-                {fechas.map(fecha => {
+            {/* Grid ultra-compacto */}
+            <div 
+              ref={gridRef}
+              className="bg-[#151921] rounded-lg border border-white/5 overflow-hidden select-none"
+            >
+              {/* Header */}
+              <div className="grid" style={{ gridTemplateColumns: `32px repeat(${fechas.length}, minmax(28px, 1fr))` }}>
+                <div className="p-1 bg-[#0B0E14] border-r border-b border-white/5" />
+                {fechas.map((fecha) => {
                   const d = new Date(fecha);
                   return (
-                    <div key={fecha} className="p-2 text-center border-l border-white/5">
-                      <div className="text-[10px] text-gray-500">
-                        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()]}
+                    <div key={fecha} className="p-1 text-center border-r border-b border-white/5 bg-[#0B0E14]">
+                      <div className="text-[8px] text-gray-500 leading-none">
+                        {['D', 'L', 'M', 'X', 'J', 'V', 'S'][d.getDay()]}
                       </div>
-                      <div className="text-sm font-bold text-white">{d.getDate()}</div>
-                      <div className="text-[9px] text-gray-600">
-                        {d.toLocaleDateString('es-PY', { month: 'short' })}
-                      </div>
+                      <div className="text-xs font-bold text-white leading-tight">{d.getDate()}</div>
                     </div>
                   );
                 })}
               </div>
 
               {/* Filas de horas */}
-              <div className="max-h-[400px] overflow-y-auto">
+              <div className="max-h-[280px] overflow-y-auto">
                 {HORAS.map(hora => (
-                  <div key={hora} className="grid grid-cols-[50px_repeat(auto-fit,minmax(60px,1fr))] border-b border-white/5 last:border-0">
-                    <div className="p-2 text-xs text-gray-500 font-medium flex items-center justify-center bg-[#0B0E14]">
-                      {hora}h
+                  <div 
+                    key={hora} 
+                    className="grid"
+                    style={{ gridTemplateColumns: `32px repeat(${fechas.length}, minmax(28px, 1fr))` }}
+                  >
+                    <div className="p-1 text-[9px] text-gray-500 font-medium flex items-center justify-center bg-[#0B0E14] border-r border-b border-white/5">
+                      {hora}
                     </div>
                     {fechas.map(fecha => {
                       const marcado = isSlotMarcado(fecha, hora);
                       return (
-                        <button
+                        <div
                           key={`${fecha}-${hora}`}
-                          onClick={() => toggleSlot(fecha, hora)}
-                          className={`h-10 border-l border-white/5 transition-all ${
+                          className={`h-6 border-r border-b border-white/5 cursor-pointer transition-all ${
                             marcado 
-                              ? 'bg-[#df2531] hover:bg-[#df2531]/80' 
-                              : 'bg-transparent hover:bg-white/[0.05]'
+                              ? 'bg-[#df2531]' 
+                              : 'bg-transparent hover:bg-white/[0.1]'
                           }`}
+                          onMouseDown={() => startDrag(fecha, hora, marcado)}
+                          onMouseEnter={() => enterCell(fecha, hora)}
+                          onMouseUp={endDrag}
                           title={`${fecha} ${hora}:00`}
                         />
                       );
@@ -445,17 +461,19 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
               </div>
             </div>
 
-            {/* Leyenda */}
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#df2531] rounded" />
-                <span>Disponible</span>
+            {/* Leyenda compacta */}
+            <div className="flex items-center justify-between text-[10px] text-gray-400">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-[#df2531] rounded-sm" />
+                  <span>Disponible</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-transparent border border-white/20 rounded-sm" />
+                  <span>Ocupado</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-transparent border border-white/10 rounded" />
-                <span>No disponible</span>
-              </div>
-              <span className="ml-auto">Click para alternar</span>
+              <span>Arrastra para marcar varios</span>
             </div>
           </div>
         )}
