@@ -45,12 +45,15 @@ const STEPS = [
   { id: 3, title: 'Confirmar', icon: CheckCircle, description: 'Revisar' },
 ];
 
+// Códigos de país para el selector
 const CODIGOS_PAIS = [
   { codigo: '+595', pais: 'Paraguay', bandera: '🇵🇾' },
   { codigo: '+54', pais: 'Argentina', bandera: '🇦🇷' },
   { codigo: '+55', pais: 'Brasil', bandera: '🇧🇷' },
   { codigo: '+598', pais: 'Uruguay', bandera: '🇺🇾' },
   { codigo: '+56', pais: 'Chile', bandera: '🇨🇱' },
+  { codigo: '+51', pais: 'Perú', bandera: '🇵🇪' },
+  { codigo: '+591', pais: 'Bolivia', bandera: '🇧🇴' },
 ];
 
 export function InscripcionWizardPage() {
@@ -73,7 +76,7 @@ export function InscripcionWizardPage() {
   const [consentimiento, setConsentimiento] = useState(false);
   
   const [busquedaQuery, setBusquedaQuery] = useState('');
-  const [busquedaResultados, setBusquedaResultados] = useState<any[]>([]);
+  const [busquedaResultados, setBusquedaResultados] = useState<Jugador[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [mostrarFormNuevo, setMostrarFormNuevo] = useState(false);
 
@@ -125,17 +128,26 @@ export function InscripcionWizardPage() {
     const generoJugador = userProfile.genero;
     
     return torneo.categorias
-      .filter((c: any) => c.inscripcionAbierta)
-      .filter((c: any) => {
+      .filter(c => c.inscripcionAbierta)
+      .filter(c => {
+        // Hombres no pueden en categorías Damas
         if (generoJugador === 'MASCULINO' && c.tipo === 'FEMENINO') return false;
+        
+        // Mujeres en Damas: solo pueden igual o superior (no inferiores)
         if (generoJugador === 'FEMENINO' && c.tipo === 'FEMENINO' && c.orden > ordenJugador) return false;
+        
+        // Mujeres en Caballeros: pueden inferior (max 1), igual o superior
+        // Hombres en Caballeros: solo igual o superior (no inferiores)
         if (c.tipo === 'MASCULINO') {
           if (generoJugador === 'MASCULINO' && c.orden > ordenJugador) return false;
+          // Para mujeres, permitimos hasta 1 categoría inferior
           if (generoJugador === 'FEMENINO' && c.orden > ordenJugador + 1) return false;
         }
+        
         return true;
       })
-      .sort((a: any, b: any) => {
+      .sort((a, b) => {
+        // Ordenar por tipo (Damas primero si es mujer, Caballeros primero si es hombre)
         if (generoJugador === 'FEMENINO') {
           if (a.tipo === 'FEMENINO' && b.tipo !== 'FEMENINO') return -1;
           if (a.tipo !== 'FEMENINO' && b.tipo === 'FEMENINO') return 1;
@@ -143,6 +155,7 @@ export function InscripcionWizardPage() {
           if (a.tipo === 'MASCULINO' && b.tipo !== 'MASCULINO') return -1;
           if (a.tipo !== 'MASCULINO' && b.tipo === 'MASCULINO') return 1;
         }
+        // Luego por orden (menor número = categoría superior)
         return a.orden - b.orden;
       });
   }, [torneo, userProfile]);
@@ -198,6 +211,7 @@ export function InscripcionWizardPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0b0f] text-white font-light">
+      {/* Header minimalista */}
       <header className="border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <Link to={`/t/${slug}`} className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm">
@@ -208,6 +222,7 @@ export function InscripcionWizardPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6">
+        {/* Steps minimalistas */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2">
             {STEPS.map((step, index) => (
@@ -216,7 +231,9 @@ export function InscripcionWizardPage() {
                   onClick={() => currentStep > step.id && setCurrentStep(step.id)}
                   disabled={currentStep <= step.id}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all ${
-                    currentStep >= step.id ? 'bg-white/10 text-white' : 'text-white/20'
+                    currentStep >= step.id 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-white/20'
                   } ${currentStep > step.id ? 'hover:bg-white/15 cursor-pointer' : ''}`}
                 >
                   <step.icon className="w-3.5 h-3.5" />
@@ -231,8 +248,11 @@ export function InscripcionWizardPage() {
         </div>
 
         <AnimatePresence mode="wait">
+          {/* PASO 1: EQUIPO (Jugador 1 + Jugador 2) */}
           {currentStep === 1 && (
             <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              
+              {/* Jugador 1 - Compacto */}
               <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/10 rounded-lg">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-sm font-medium">
                   {user?.nombre?.[0]}{user?.apellido?.[0]}
@@ -246,6 +266,7 @@ export function InscripcionWizardPage() {
 
               <div className="h-px bg-white/5" />
 
+              {/* Jugador 2 - Búsqueda */}
               {!jugador2 && !mostrarFormNuevo && (
                 <div className="space-y-3">
                   <p className="text-xs text-white/40 uppercase tracking-wider">Jugador 2</p>
@@ -272,29 +293,26 @@ export function InscripcionWizardPage() {
 
                   {busquedaResultados.length > 0 && (
                     <div className="space-y-1">
-                      {busquedaResultados.map((jugador: any, idx: number) => {
-                        const selected = jugador2 && (jugador2 as any).id === jugador.id;
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => { setJugador2(jugador); setMostrarFormNuevo(false); }}
-                            className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-white/5 hover:border-white/20 hover:bg-white/[0.02] transition-all text-left"
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${jugador.genero === 'FEMENINO' ? 'bg-pink-500/20 text-pink-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                              {jugador.nombre[0]}{jugador.apellido[0]}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{jugador.nombre} {jugador.apellido}</p>
-                              <p className="text-xs text-white/40">{jugador.documento} • {jugador.categoria?.nombre || 'Sin categoría'}</p>
-                            </div>
-                            {selected && <Check className="w-4 h-4 text-blue-500" />}
-                          </button>
-                        );
-                      })}
+                      {busquedaResultados.map((jugador: any, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => { setJugador2(jugador); setMostrarFormNuevo(false); }}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-white/5 hover:border-white/20 hover:bg-white/[0.02] transition-all text-left"
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${jugador.genero === 'FEMENINO' ? 'bg-pink-500/20 text-pink-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                            {jugador.nombre[0]}{jugador.apellido[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{jugador.nombre} {jugador.apellido}</p>
+                            <p className="text-xs text-white/40">{jugador.documento} • {jugador.categoria?.nombre || 'Sin categoría'}</p>
+                          </div>
+                          {jugador2?.id === (jugador as any).id && <Check className="w-4 h-4 text-blue-500" />}
+                        </button>
+                      ))}
                     </div>
                   )}
 
-                  {busquedaResultados.length === 0 && (
+                  {mostrarFormNuevo && busquedaResultados.length === 0 && (
                     <button
                       onClick={() => setMostrarFormNuevo(true)}
                       className="w-full p-3 border border-dashed border-white/20 rounded-lg text-sm text-white/60 hover:text-white hover:border-white/40 transition-colors"
@@ -305,6 +323,7 @@ export function InscripcionWizardPage() {
                 </div>
               )}
 
+              {/* Formulario jugador no registrado */}
               {mostrarFormNuevo && !jugador2 && (
                 <div className="space-y-3 p-3 border border-white/10 rounded-lg bg-white/[0.01]">
                   <p className="text-xs text-white/40 uppercase tracking-wider flex items-center gap-2">
@@ -316,18 +335,34 @@ export function InscripcionWizardPage() {
                     <input type="text" placeholder="Apellido" value={jugador2NoRegistrado.apellido} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, apellido: e.target.value }))} className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />
                   </div>
                   <input type="text" placeholder="Documento" value={jugador2NoRegistrado.documento} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, documento: e.target.value }))} className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />
+                  
+                  {/* Teléfono con selector de código */}
                   <div className="flex gap-2">
-                    <select value={codigoPais} onChange={(e) => setCodigoPais(e.target.value)} className="bg-white/[0.03] border border-white/10 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50">
+                    <select 
+                      value={codigoPais} 
+                      onChange={(e) => setCodigoPais(e.target.value)}
+                      className="bg-white/[0.03] border border-white/10 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                    >
                       {CODIGOS_PAIS.map(c => (
-                        <option key={c.codigo} value={c.codigo} className="bg-[#0a0b0f]">{c.bandera} {c.codigo}</option>
+                        <option key={c.codigo} value={c.codigo} className="bg-[#0a0b0f]">
+                          {c.bandera} {c.codigo}
+                        </option>
                       ))}
                     </select>
-                    <input type="tel" placeholder="Teléfono" value={jugador2NoRegistrado.telefono} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, telefono: e.target.value }))} className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />
+                    <input 
+                      type="tel" 
+                      placeholder="Teléfono" 
+                      value={jugador2NoRegistrado.telefono} 
+                      onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, telefono: e.target.value }))} 
+                      className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" 
+                    />
                   </div>
+                  
                   <input type="email" placeholder="Email" value={jugador2NoRegistrado.email} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, email: e.target.value }))} className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />
                 </div>
               )}
 
+              {/* Jugador 2 seleccionado */}
               {jugador2 && (
                 <div className="flex items-center gap-3 p-3 bg-white/[0.02] border border-green-500/30 rounded-lg">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${jugador2.genero === 'FEMENINO' ? 'bg-pink-500/20 text-pink-400' : 'bg-blue-500/20 text-blue-400'}`}>
@@ -345,24 +380,29 @@ export function InscripcionWizardPage() {
             </motion.div>
           )}
 
+          {/* PASO 2: CATEGORÍAS FILTRADAS */}
           {currentStep === 2 && (
             <motion.div key="step2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Categorías disponibles</p>
+                
                 {categoriasFiltradas.length === 0 && (
                   <div className="p-4 border border-white/10 rounded-lg text-center">
                     <AlertCircle className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
                     <p className="text-sm text-white/60">No hay categorías disponibles para tu perfil</p>
                   </div>
                 )}
+
                 <div className="space-y-1">
-                  {categoriasFiltradas.map((cat: any) => (
+                  {categoriasFiltradas.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setCategoriaSeleccionada(cat.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
                         categoriaSeleccionada === cat.id
-                          ? cat.tipo === 'FEMENINO' ? 'bg-pink-500/10 border-pink-500/50' : 'bg-blue-500/10 border-blue-500/50'
+                          ? cat.tipo === 'FEMENINO' 
+                            ? 'bg-pink-500/10 border-pink-500/50' 
+                            : 'bg-blue-500/10 border-blue-500/50'
                           : 'bg-white/[0.02] border-white/5 hover:border-white/20'
                       }`}
                     >
@@ -381,8 +421,10 @@ export function InscripcionWizardPage() {
             </motion.div>
           )}
 
+          {/* PASO 3: CONFIRMACIÓN */}
           {currentStep === 3 && (
             <motion.div key="step3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              {/* Resumen compacto */}
               <div className="p-3 bg-white/[0.02] border border-white/10 rounded-lg space-y-3">
                 <div className="flex items-center gap-3">
                   <img src={torneo.flyerUrl} alt="" className="w-14 h-14 rounded-lg object-cover bg-white/5" />
@@ -394,7 +436,10 @@ export function InscripcionWizardPage() {
                     <p className="text-lg font-medium">{formatPrecio(Number(torneo.costoInscripcion))}</p>
                   </div>
                 </div>
+
                 <div className="h-px bg-white/5" />
+
+                {/* Equipo */}
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p className="text-xs text-white/40 mb-1">Jugador 1</p>
@@ -405,11 +450,14 @@ export function InscripcionWizardPage() {
                     <p className="truncate">{jugador2 ? `${jugador2.nombre} ${jugador2.apellido}` : `${jugador2NoRegistrado.nombre} ${jugador2NoRegistrado.apellido}`}</p>
                   </div>
                 </div>
+
                 <div className="h-px bg-white/5" />
+
+                {/* Categoría y pago */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/40 mb-1">Categoría</p>
-                    <p className="text-sm">{torneo.categorias.find((c: any) => c.id === categoriaSeleccionada)?.nombre}</p>
+                    <p className="text-sm">{torneo.categorias.find(c => c.id === categoriaSeleccionada)?.nombre}</p>
                   </div>
                   <div className="flex gap-1">
                     <button onClick={() => setModoPago('COMPLETO')} className={`px-3 py-1.5 rounded text-xs transition-colors ${modoPago === 'COMPLETO' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}>Un pago</button>
@@ -417,10 +465,22 @@ export function InscripcionWizardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Consentimiento */}
               <label className="flex items-start gap-3 cursor-pointer p-3 border border-white/10 rounded-lg hover:border-white/20 transition-colors">
-                <input type="checkbox" checked={consentimiento} onChange={(e) => setConsentimiento(e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 mt-0.5" />
-                <p className="text-xs text-white/60 leading-relaxed">Confirmo que mi compañero/a me ha dado su consentimiento para inscribirlo/a. Ambos aceptamos las normativas de FairPadel.</p>
+                <input
+                  type="checkbox"
+                  checked={consentimiento}
+                  onChange={(e) => setConsentimiento(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 mt-0.5"
+                />
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Confirmo que mi compañero/a me ha dado su consentimiento para inscribirlo/a. 
+                  Ambos aceptamos las normativas de FairPadel.
+                </p>
               </label>
+
+              {/* Datos de pago */}
               <div className="p-3 border border-white/10 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="w-4 h-4 text-white/40" />
@@ -437,12 +497,34 @@ export function InscripcionWizardPage() {
           )}
         </AnimatePresence>
 
+        {/* Navegación */}
         <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/5">
-          <button onClick={() => setCurrentStep(p => p - 1)} disabled={currentStep === 1} className="text-sm text-white/40 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors">Anterior</button>
+          <button
+            onClick={() => setCurrentStep(p => p - 1)}
+            disabled={currentStep === 1}
+            className="text-sm text-white/40 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+          >
+            Anterior
+          </button>
+
           {currentStep < 3 ? (
-            <button onClick={() => setCurrentStep(p => p + 1)} disabled={!canProceed()} className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm">Siguiente<ArrowRight className="w-4 h-4" /></button>
+            <button
+              onClick={() => setCurrentStep(p => p + 1)}
+              disabled={!canProceed()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm"
+            >
+              Siguiente
+              <ArrowRight className="w-4 h-4" />
+            </button>
           ) : (
-            <button onClick={crearInscripcion} disabled={!canProceed() || submitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/80 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm">{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirmar</button>
+            <button
+              onClick={crearInscripcion}
+              disabled={!canProceed() || submitting}
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-500/80 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              Confirmar
+            </button>
           )}
         </div>
       </main>
