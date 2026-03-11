@@ -47,6 +47,7 @@ import { AdminPage } from './features/admin/pages/AdminPage';
 
 // Organizador
 import { MisTorneosPage } from './features/organizador/pages/MisTorneosPage';
+import { GestionarTorneoPage } from './features/organizador/pages/GestionarTorneoPage';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 
 // Layout wrapper para rutas protegidas con autenticación
@@ -124,6 +125,7 @@ function App() {
           {/* Organizador - Gestión de Torneos */}
           <Route element={<RoleProtectedRoute allowedRoles={['organizador']} />}>
             <Route path="/mis-torneos" element={<MisTorneosPage />} />
+            <Route path="/mis-torneos/:id/gestionar" element={<GestionarTorneoPage />} />
           </Route>
           
           {/* Admin */}

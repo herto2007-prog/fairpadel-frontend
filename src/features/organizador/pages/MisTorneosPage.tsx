@@ -102,7 +102,7 @@ export function MisTorneosPage() {
 
           <div className="space-y-3">
             <a
-              href={`/admin/torneos/${createdTorneo.id}/gestionar`}
+              href={`/mis-torneos/${createdTorneo.id}/gestionar`}
               className="flex items-center justify-center gap-2 w-full py-4 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all"
             >
               <Trophy className="w-5 h-5" />
@@ -270,7 +270,7 @@ export function MisTorneosPage() {
                         </span>
                       </div>
                       <a
-                        href={`/admin/torneos/${torneo.id}/gestionar`}
+                        href={`/mis-torneos/${torneo.id}/gestionar`}
                         className="flex items-center gap-1 text-[#df2531] hover:text-white text-sm font-medium transition-colors"
                       >
                         Gestionar
