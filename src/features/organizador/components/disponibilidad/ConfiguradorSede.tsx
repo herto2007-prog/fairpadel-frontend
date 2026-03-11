@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2, Check, ChevronLeft,
@@ -20,8 +20,8 @@ interface CanchaConfig {
   sedeNombre: string;
 }
 
-// Horas de 9 a 24 (16 horas)
-const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
+const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: ConfiguradorSedeProps) {
   const [step, setStep] = useState<'sedes' | 'canchas' | 'grid'>('sedes');
@@ -33,13 +33,9 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   const [canchasSeleccionadas, setCanchasSeleccionadas] = useState<Set<string>>(new Set());
   const [slotsTemporales, setSlotsTemporales] = useState<Set<string>>(new Set());
   const [guardando, setGuardando] = useState(false);
-  
-  // Estado para arrastrar
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState<boolean | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
 
-  // Cargar datos
   useEffect(() => {
     loadData();
   }, [tournamentId]);
@@ -62,15 +58,20 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     }
   };
 
-  // Generar fechas del torneo
   const getFechas = useCallback(() => {
     if (!fechaInicio || !fechaFin) return [];
-    const fechas: string[] = [];
+    const fechas: { fecha: string; dia: number; num: number; mes: string }[] = [];
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
     
     for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
-      fechas.push(new Date(d).toISOString().split('T')[0]);
+      const date = new Date(d);
+      fechas.push({
+        fecha: date.toISOString().split('T')[0],
+        dia: date.getDay(),
+        num: date.getDate(),
+        mes: MESES[date.getMonth()],
+      });
     }
     return fechas;
   }, [fechaInicio, fechaFin]);
@@ -78,7 +79,15 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   const fechas = getFechas();
   const canchasDeSede = canchas.filter(c => c.sedeId === sedeSeleccionada?.id);
 
-  // Toggle todas las canchas
+  // Horas según cantidad de fechas (más fechas = menos horas mostradas)
+  const getHoras = () => {
+    if (fechas.length <= 2) return Array.from({ length: 16 }, (_, i) => i + 9); // 9-24
+    if (fechas.length <= 4) return Array.from({ length: 12 }, (_, i) => i + 12); // 12-24
+    return Array.from({ length: 8 }, (_, i) => i + 14); // 14-22
+  };
+  
+  const HORAS = getHoras();
+
   const toggleTodasCanchas = () => {
     if (canchasSeleccionadas.size === canchasDeSede.length) {
       setCanchasSeleccionadas(new Set());
@@ -94,7 +103,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     setCanchasSeleccionadas(newSet);
   };
 
-  // Funciones para el grid
+  // Drag functions
   const startDrag = (fecha: string, hora: number, currentValue: boolean) => {
     setIsDragging(true);
     const newValue = !currentValue;
@@ -127,7 +136,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     return slotsTemporales.has(`${fecha}-${hora}`);
   };
 
-  // Guardar
   const guardar = async () => {
     if (canchasSeleccionadas.size === 0 || slotsTemporales.size === 0) {
       alert('Selecciona al menos una cancha y un horario');
@@ -137,7 +145,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     try {
       setGuardando(true);
       
-      // Agrupar por fecha y encontrar bloques continuos
       const slotsPorFecha: Record<string, number[]> = {};
       slotsTemporales.forEach(key => {
         const [fecha, horaStr] = key.split('-');
@@ -148,7 +155,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
       for (const fecha of Object.keys(slotsPorFecha)) {
         const horas = slotsPorFecha[fecha].sort((a, b) => a - b);
         
-        // Encontrar bloques continuos
         let bloqueInicio = horas[0];
         let bloqueFin = horas[0];
         
@@ -205,7 +211,6 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     s => !sedes.some((st: any) => st.id === s.id)
   );
 
-  // Prevenir selección de texto mientras arrastra
   useEffect(() => {
     const preventSelection = (e: Event) => {
       if (isDragging) e.preventDefault();
@@ -227,11 +232,12 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   }
 
   return (
-    <div className="bg-[#0B0E14] rounded-2xl border border-white/5 overflow-hidden"
+    <div 
+      className="bg-[#0B0E14] rounded-2xl border border-white/5 overflow-hidden"
       onMouseUp={endDrag}
       onMouseLeave={endDrag}
     >
-      {/* Header compacto */}
+      {/* Header */}
       <div className="bg-[#151921] border-b border-white/5 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -283,7 +289,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
       </div>
 
       <div className="p-4">
-        {/* PASO 1: SEDES - Cards compactas */}
+        {/* PASO 1: SEDES */}
         {step === 'sedes' && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
@@ -336,7 +342,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
           </div>
         )}
 
-        {/* PASO 2: CANCHAS - Mini cards */}
+        {/* PASO 2: CANCHAS */}
         {step === 'canchas' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -393,7 +399,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
           </div>
         )}
 
-        {/* PASO 3: GRID COMPACTO */}
+        {/* PASO 3: GRID SIN SCROLL HORIZONTAL */}
         {step === 'grid' && (
           <div className="space-y-3">
             {/* Chips de canchas */}
@@ -407,52 +413,45 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                 ))}
             </div>
 
-            {/* Grid ultra-compacto */}
+            {/* Grid completo sin scroll horizontal */}
             <div 
-              ref={gridRef}
               className="bg-[#151921] rounded-lg border border-white/5 overflow-hidden select-none"
             >
-              {/* Header */}
-              <div className="grid" style={{ gridTemplateColumns: `32px repeat(${fechas.length}, minmax(28px, 1fr))` }}>
-                <div className="p-1 bg-[#0B0E14] border-r border-b border-white/5" />
-                {fechas.map((fecha) => {
-                  const d = new Date(fecha);
-                  return (
-                    <div key={fecha} className="p-1 text-center border-r border-b border-white/5 bg-[#0B0E14]">
-                      <div className="text-[8px] text-gray-500 leading-none">
-                        {['D', 'L', 'M', 'X', 'J', 'V', 'S'][d.getDay()]}
-                      </div>
-                      <div className="text-xs font-bold text-white leading-tight">{d.getDate()}</div>
-                    </div>
-                  );
-                })}
+              {/* Header con días completos */}
+              <div className="flex border-b border-white/5">
+                <div className="w-12 p-2 bg-[#0B0E14] flex items-center justify-center border-r border-white/5">
+                  <span className="text-[10px] text-gray-500">Hora</span>
+                </div>
+                {fechas.map((f) => (
+                  <div key={f.fecha} className="flex-1 p-2 text-center bg-[#0B0E14] border-r border-white/5 min-w-0">
+                    <div className="text-[10px] text-gray-500">{DIAS_SEMANA[f.dia]}</div>
+                    <div className="text-sm font-bold text-white">{f.num}</div>
+                    <div className="text-[9px] text-gray-600">{f.mes}</div>
+                  </div>
+                ))}
               </div>
 
               {/* Filas de horas */}
-              <div className="max-h-[280px] overflow-y-auto">
+              <div className="max-h-[300px] overflow-y-auto">
                 {HORAS.map(hora => (
-                  <div 
-                    key={hora} 
-                    className="grid"
-                    style={{ gridTemplateColumns: `32px repeat(${fechas.length}, minmax(28px, 1fr))` }}
-                  >
-                    <div className="p-1 text-[9px] text-gray-500 font-medium flex items-center justify-center bg-[#0B0E14] border-r border-b border-white/5">
-                      {hora}
+                  <div key={hora} className="flex border-b border-white/5 last:border-0">
+                    <div className="w-12 p-2 text-xs text-gray-500 font-medium flex items-center justify-center bg-[#0B0E14] border-r border-white/5">
+                      {hora}h
                     </div>
-                    {fechas.map(fecha => {
-                      const marcado = isSlotMarcado(fecha, hora);
+                    {fechas.map((f) => {
+                      const marcado = isSlotMarcado(f.fecha, hora);
                       return (
                         <div
-                          key={`${fecha}-${hora}`}
-                          className={`h-6 border-r border-b border-white/5 cursor-pointer transition-all ${
+                          key={`${f.fecha}-${hora}`}
+                          className={`flex-1 h-10 border-r border-white/5 cursor-pointer transition-all min-w-0 ${
                             marcado 
                               ? 'bg-[#df2531]' 
                               : 'bg-transparent hover:bg-white/[0.1]'
                           }`}
-                          onMouseDown={() => startDrag(fecha, hora, marcado)}
-                          onMouseEnter={() => enterCell(fecha, hora)}
+                          onMouseDown={() => startDrag(f.fecha, hora, marcado)}
+                          onMouseEnter={() => enterCell(f.fecha, hora)}
                           onMouseUp={endDrag}
-                          title={`${fecha} ${hora}:00`}
+                          title={`${DIAS_SEMANA[f.dia]} ${f.num} ${hora}:00`}
                         />
                       );
                     })}
@@ -461,19 +460,23 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
               </div>
             </div>
 
-            {/* Leyenda compacta */}
+            {/* Info de horarios */}
             <div className="flex items-center justify-between text-[10px] text-gray-400">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-[#df2531] rounded-sm" />
+                  <div className="w-4 h-4 bg-[#df2531] rounded" />
                   <span>Disponible</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-transparent border border-white/20 rounded-sm" />
-                  <span>Ocupado</span>
+                  <div className="w-4 h-4 bg-transparent border border-white/20 rounded" />
+                  <span>No disponible</span>
                 </div>
               </div>
-              <span>Arrastra para marcar varios</span>
+              <span>
+                {fechas.length <= 2 ? 'Horario completo 9-24h' : 
+                 fechas.length <= 4 ? 'Horario tarde 12-24h' : 
+                 'Horario noche 14-22h'}
+              </span>
             </div>
           </div>
         )}
