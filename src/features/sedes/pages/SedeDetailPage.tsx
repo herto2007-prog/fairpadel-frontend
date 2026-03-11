@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sedesService, Sede } from '../../../services/sedesService';
 import { MapPin, Phone, Calendar } from 'lucide-react';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 export default function SedeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,8 +31,9 @@ export default function SedeDetailPage() {
   if (!sede) return <div className="p-8 text-center">Sede no encontrada</div>;
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="bg-[#151921] rounded-lg border border-[#232838] p-8 mb-8">
           <h1 className="text-3xl font-bold mb-4">{sede.nombre}</h1>
           

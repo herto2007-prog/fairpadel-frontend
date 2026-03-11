@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Calendar, Users, MapPin, ChevronRight, Bell } from 'lucide-react';
+import { BackgroundEffects } from '../components/ui/BackgroundEffects';
 
 interface User {
   nombre: string;
@@ -55,8 +56,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">

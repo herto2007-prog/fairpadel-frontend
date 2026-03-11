@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { rankingsService, Ranking } from '../../../services/rankingsService';
 import { Trophy, TrendingUp } from 'lucide-react';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 export default function RankingsPage() {
   const [rankings, setRankings] = useState<Ranking[]>([]);
@@ -25,8 +26,9 @@ export default function RankingsPage() {
   if (loading) return <div className="p-8 text-center">Cargando...</div>;
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-4xl mx-auto relative z-10">
         <h1 className="text-3xl font-bold mb-8">Rankings</h1>
 
         <div className="bg-[#151921] rounded-lg border border-[#232838] overflow-hidden">

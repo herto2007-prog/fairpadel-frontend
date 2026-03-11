@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { tournamentService, Tournament } from '../../../services/tournamentService';
 import { Calendar, MapPin, User, Trophy } from 'lucide-react';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +29,9 @@ export default function TournamentDetailPage() {
   if (!tournament) return <div className="p-8 text-center">Torneo no encontrado</div>;
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-4xl mx-auto relative z-10">
         <div className="bg-[#151921] rounded-lg border border-[#232838] p-8">
           <h1 className="text-3xl font-bold mb-4">{tournament.nombre}</h1>
           

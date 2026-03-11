@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
-import { ParticleBackground } from '../../../components/landing/ParticleBackground';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 interface TorneoDetail {
   id: string;
@@ -119,18 +119,18 @@ export function TorneoPublicDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark flex items-center justify-center">
-        <ParticleBackground />
-        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      <div className="min-h-screen bg-dark flex items-center justify-center relative overflow-hidden">
+        <BackgroundEffects variant="subtle" showGrid={false} />
+        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin relative z-10" />
       </div>
     );
   }
 
   if (error || !torneo) {
     return (
-      <div className="min-h-screen bg-dark">
-        <ParticleBackground />
-        <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="min-h-screen bg-dark relative overflow-hidden">
+        <BackgroundEffects variant="subtle" showGrid={false} />
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 relative z-10">
           <AlertCircle className="w-16 h-16 text-red-400 mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">{error || 'Torneo no encontrado'}</h1>
           <Link to="/torneos" className="flex items-center gap-2 text-primary hover:text-primary/80 mt-4">
@@ -147,8 +147,8 @@ export function TorneoPublicDetailPage() {
   );
 
   return (
-    <div className="min-h-screen bg-dark">
-      <ParticleBackground />
+    <div className="min-h-screen bg-dark relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
 
       {/* Hero con Flyer */}
       <section className="relative">

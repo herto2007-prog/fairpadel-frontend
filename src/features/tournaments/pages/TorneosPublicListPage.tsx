@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, X, ArrowRight, Sparkles 
 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { ParticleBackground } from '../../../components/landing/ParticleBackground';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 interface Torneo {
   id: string;
@@ -139,8 +139,8 @@ export function TorneosPublicListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark">
-      <ParticleBackground />
+    <div className="min-h-screen bg-dark relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
       
       {/* Hero Section */}
       <section className="relative py-16 px-4">

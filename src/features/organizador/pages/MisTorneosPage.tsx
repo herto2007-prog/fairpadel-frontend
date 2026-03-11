@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { TorneoWizard } from '../components/TorneoWizard';
 import { api } from '../../../services/api';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 interface Tournament {
   id: string;
   slug: string;
@@ -63,11 +64,12 @@ export function MisTorneosPage() {
   // Pantalla de éxito post-creación (tiene prioridad sobre el wizard)
   if (createdTorneo) {
     return (
-      <div className="min-h-screen bg-[#0B0E14] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-dark flex items-center justify-center p-4 relative overflow-hidden">
+        <BackgroundEffects variant="subtle" showGrid={false} />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full text-center"
+          className="max-w-md w-full text-center relative z-10"
         >
           <motion.div
             initial={{ scale: 0 }}
@@ -132,9 +134,10 @@ export function MisTorneosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E14]">
+    <div className="min-h-screen bg-dark relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
       {/* Header */}
-      <div className="bg-[#151921] border-b border-[#232838]">
+      <div className="bg-[#151921] border-b border-[#232838] relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -158,7 +161,7 @@ export function MisTorneosPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <motion.div

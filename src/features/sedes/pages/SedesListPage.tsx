@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sedesService, Sede } from '../../../services/sedesService';
 import { MapPin, Phone, ChevronRight } from 'lucide-react';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 export default function SedesListPage() {
   const [sedes, setSedes] = useState<Sede[]>([]);
@@ -27,8 +28,9 @@ export default function SedesListPage() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-6xl mx-auto relative z-10">
         <h1 className="text-3xl font-bold mb-8">Sedes</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
