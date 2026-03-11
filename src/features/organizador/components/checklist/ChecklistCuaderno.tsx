@@ -98,19 +98,27 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
   const loadTareas = async () => {
     try {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/checklist`);
-      if (data.success) {
-        setTareas(data.items.map((item: any) => ({
-          id: item.id,
-          titulo: item.titulo,
-          descripcion: item.descripcion,
-          completado: item.completado,
-          fechaRecordatorio: item.fechaRecordatorio,
+      console.log('[Checklist] Datos recibidos:', data);
+      
+      if (data.success && Array.isArray(data.items)) {
+        const mappedTareas = data.items.map((item: any, idx: number) => ({
+          id: item.id || `temp-${idx}`,
+          titulo: item.titulo || 'Sin título',
+          descripcion: item.descripcion || '',
+          completado: !!item.completado,
+          fechaRecordatorio: item.fechaRecordatorio || null,
           categoria: item.categoria || 'general',
-          orden: item.orden,
-        })));
+          orden: typeof item.orden === 'number' ? item.orden : idx,
+        }));
+        console.log('[Checklist] Tareas mapeadas:', mappedTareas);
+        setTareas(mappedTareas);
+      } else {
+        console.log('[Checklist] No hay items o success false');
+        setTareas([]);
       }
     } catch (error) {
-      console.error('Error cargando checklist:', error);
+      console.error('[Checklist] Error cargando:', error);
+      setTareas([]);
     } finally {
       setLoading(false);
     }
@@ -227,9 +235,15 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
   const tareasCompletadas = tareasActivas.filter(t => t.completado);
   const tareasPendientes = tareasActivas.filter(t => !t.completado);
 
-  // Color del tab activo
+  // Color del tab activo - función segura
+  const getColorScheme = (colorIndex: string | number) => {
+    const index = parseInt(colorIndex as string, 10);
+    if (isNaN(index)) return TAB_COLORS[0];
+    return TAB_COLORS[index % TAB_COLORS.length];
+  };
+  
   const tabActivo = tabs.find(t => t.id === activeTab);
-  const colorScheme = tabActivo ? TAB_COLORS[parseInt(tabActivo.color) % TAB_COLORS.length] : TAB_COLORS[0];
+  const colorScheme = tabActivo ? getColorScheme(tabActivo.color) : TAB_COLORS[0];
 
   if (loading) {
     return (
@@ -256,7 +270,7 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
           <div className="space-y-2">
             {tabs.map((tab) => {
               const isActive = tab.id === activeTab;
-              const colors = TAB_COLORS[parseInt(tab.color) % TAB_COLORS.length];
+              const colors = getColorScheme(tab.color);
               
               return (
                 <motion.div
