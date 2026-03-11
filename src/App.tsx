@@ -21,6 +21,11 @@ import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
 import TournamentDetailPage from './features/tournaments/pages/TournamentDetailPage';
 
+// Torneos Público V2 - Inscripciones
+import { TorneosPublicListPage } from './features/tournaments/pages/TorneosPublicListPage';
+import { TorneoPublicDetailPage } from './features/tournaments/pages/TorneoPublicDetailPage';
+import { InscripcionWizardPage } from './features/inscripciones/pages/InscripcionWizardPage';
+
 // Inscripciones (V1)
 import MisInscripcionesPage from './features/inscripciones/pages/MisInscripcionesPage';
 
@@ -85,6 +90,10 @@ function App() {
         {/* Landing - Pública */}
         <Route path="/" element={<LandingPage />} />
         
+        {/* Torneos Públicos - V2 */}
+        <Route path="/torneos" element={<TorneosPublicListPage />} />
+        <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
+        
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterWizard />} />
@@ -103,6 +112,9 @@ function App() {
           
           {/* Inscripciones (V1) */}
           <Route path="/inscripciones/my" element={<MisInscripcionesPage />} />
+          
+          {/* Inscripciones Públicas - V2 */}
+          <Route path="/t/:slug/inscribirse" element={<InscripcionWizardPage />} />
           
           {/* Rankings (V1) */}
           <Route path="/rankings" element={<RankingsPage />} />
