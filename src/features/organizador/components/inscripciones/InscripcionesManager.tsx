@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle2, Clock, AlertCircle, 
-  Search, Plus, UserPlus, FlaskConical, Trash2
+  Search, Plus, UserPlus
 } from 'lucide-react';
 import { api } from '../../../../services/api';
-import { demoService } from '../../../../services/demo.service';
 import { ResumenStats } from './ResumenStats';
 import { InscripcionCard } from './InscripcionCard';
 import { ModalConfirmar } from './ModalConfirmar';
@@ -68,8 +67,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<Inscripcion | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(false);
-  const [loadingDemo, setLoadingDemo] = useState(false);
-  const [demoResult, setDemoResult] = useState<any>(null);
 
   useEffect(() => {
     loadInscripciones();
@@ -132,46 +129,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     }
   };
 
-  const handleLlenarDemo = async () => {
-    if (!confirm('¿Estás seguro? Esto creará inscripciones de prueba con jugadores ficticios.')) return;
-    
-    setLoadingDemo(true);
-    setDemoResult(null);
-    try {
-      const result = await demoService.llenarTorneo(tournamentId, {
-        parejasPorCategoria: 16,
-        distribucion: 'REALISTA'
-      });
-      setDemoResult(result);
-      loadInscripciones();
-    } catch (error: any) {
-      setDemoResult({
-        success: false,
-        message: error.response?.data?.message || 'Error al llenar torneo'
-      });
-    } finally {
-      setLoadingDemo(false);
-    }
-  };
-
-  const handleLimpiarDemo = async () => {
-    if (!confirm('¿Eliminar todas las inscripciones de prueba?')) return;
-    
-    setLoadingDemo(true);
-    try {
-      const result = await demoService.limpiarTorneo(tournamentId);
-      setDemoResult(result);
-      loadInscripciones();
-    } catch (error: any) {
-      setDemoResult({
-        success: false,
-        message: error.response?.data?.message || 'Error al limpiar'
-      });
-    } finally {
-      setLoadingDemo(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -190,25 +147,10 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Sin inscripciones aún</h3>
         <p className="text-gray-400 mb-6">Las inscripciones aparecerán aquí cuando los jugadores se registren</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button className="px-6 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all">
-            <Plus className="w-5 h-5 inline mr-2" />
-            Inscribir pareja manualmente
-          </button>
-          <button 
-            onClick={handleLlenarDemo}
-            disabled={loadingDemo}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-all disabled:opacity-50"
-          >
-            <FlaskConical className="w-5 h-5 inline mr-2" />
-            {loadingDemo ? 'Llenando...' : 'Llenar con datos de prueba'}
-          </button>
-        </div>
-        {demoResult && (
-          <div className={`mt-4 p-3 rounded-xl text-sm ${demoResult.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-            {demoResult.message}
-          </div>
-        )}
+        <button className="px-6 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all">
+          <Plus className="w-5 h-5 inline mr-2" />
+          Inscribir pareja manualmente
+        </button>
       </div>
     );
   }
@@ -217,26 +159,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     <div className="space-y-6">
       {/* Stats */}
       <ResumenStats stats={data.stats} />
-
-      {/* Botón Demo */}
-      <div className="flex justify-end gap-2">
-        <button 
-          onClick={handleLlenarDemo}
-          disabled={loadingDemo}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl transition-colors text-sm disabled:opacity-50"
-        >
-          <FlaskConical className="w-4 h-4" />
-          {loadingDemo ? 'Procesando...' : 'Agregar datos de prueba'}
-        </button>
-        <button 
-          onClick={handleLimpiarDemo}
-          disabled={loadingDemo}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-colors text-sm disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-          Limpiar prueba
-        </button>
-      </div>
 
       {/* Filtros y Búsqueda */}
       <div className="glass rounded-2xl p-4 space-y-4">
@@ -369,20 +291,10 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button 
-              onClick={handleLimpiarDemo}
-              disabled={loadingDemo}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-colors text-sm disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-              Limpiar prueba
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] text-white rounded-xl transition-colors text-sm">
-              <UserPlus className="w-4 h-4" />
-              Inscribir manual
-            </button>
-          </div>
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] text-white rounded-xl transition-colors text-sm">
+            <UserPlus className="w-4 h-4" />
+            Inscribir manual
+          </button>
         </div>
       )}
 
