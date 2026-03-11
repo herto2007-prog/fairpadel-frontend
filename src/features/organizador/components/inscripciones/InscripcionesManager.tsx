@@ -198,15 +198,15 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         </div>
       </div>
 
-      {/* Tabs de Categorías - Diseño Elegante */}
-      <div className="space-y-4">
+      {/* Tabs de Categorías - Grupos con contorno */}
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Caballeros */}
         {data.porCategoria.some(c => c.categoriaTipo === 'MASCULINO') && (
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-blue-400 text-sm font-medium min-w-[90px]">
-              <span className="text-lg">♂</span>
-              <span>Caballeros</span>
-            </span>
+          <div className="flex-1 lg:flex-none bg-[#0d1117] rounded-2xl p-3 border border-blue-500/30">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-500/20">
+              <span className="text-blue-400 text-lg">♂</span>
+              <span className="text-blue-400 text-sm font-semibold uppercase tracking-wider">Caballeros</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {data.porCategoria
                 .filter(c => c.categoriaTipo === 'MASCULINO')
@@ -214,23 +214,18 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                   <button
                     key={cat.categoriaId}
                     onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`group relative px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all min-w-[60px] ${
                       categoriaActiva === cat.categoriaId
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25'
-                        : 'bg-[#1a1f2e] text-gray-300 hover:bg-[#232838] border border-[#2a3040] hover:border-blue-500/30'
+                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                        : 'bg-[#151921] text-gray-400 hover:bg-[#1a1f2e] hover:text-gray-300'
                     }`}
                   >
-                    <span className="block leading-tight">
+                    <span className="block">
                       {cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.')}
                     </span>
-                    <span className={`block text-xs mt-0.5 ${
-                      categoriaActiva === cat.categoriaId ? 'text-blue-100' : 'text-gray-500 group-hover:text-gray-400'
-                    }`}>
+                    <span className={`block text-xs ${categoriaActiva === cat.categoriaId ? 'text-blue-100' : 'text-gray-500'}`}>
                       {cat.total} insc.
                     </span>
-                    {categoriaActiva === cat.categoriaId && (
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                    )}
                   </button>
                 ))}
             </div>
@@ -239,11 +234,11 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
 
         {/* Damas */}
         {data.porCategoria.some(c => c.categoriaTipo === 'FEMENINO') && (
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-pink-400 text-sm font-medium min-w-[90px]">
-              <span className="text-lg">♀</span>
-              <span>Damas</span>
-            </span>
+          <div className="flex-1 lg:flex-none bg-[#0d1117] rounded-2xl p-3 border border-pink-500/30">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-pink-500/20">
+              <span className="text-pink-400 text-lg">♀</span>
+              <span className="text-pink-400 text-sm font-semibold uppercase tracking-wider">Damas</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {data.porCategoria
                 .filter(c => c.categoriaTipo === 'FEMENINO')
@@ -251,23 +246,18 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                   <button
                     key={cat.categoriaId}
                     onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`group relative px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all min-w-[60px] ${
                       categoriaActiva === cat.categoriaId
-                        ? 'bg-gradient-to-r from-pink-600 to-pink-500 text-white shadow-lg shadow-pink-500/25'
-                        : 'bg-[#1a1f2e] text-gray-300 hover:bg-[#232838] border border-[#2a3040] hover:border-pink-500/30'
+                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                        : 'bg-[#151921] text-gray-400 hover:bg-[#1a1f2e] hover:text-gray-300'
                     }`}
                   >
-                    <span className="block leading-tight">
+                    <span className="block">
                       {cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.')}
                     </span>
-                    <span className={`block text-xs mt-0.5 ${
-                      categoriaActiva === cat.categoriaId ? 'text-pink-100' : 'text-gray-500 group-hover:text-gray-400'
-                    }`}>
+                    <span className={`block text-xs ${categoriaActiva === cat.categoriaId ? 'text-pink-100' : 'text-gray-500'}`}>
                       {cat.total} insc.
                     </span>
-                    {categoriaActiva === cat.categoriaId && (
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-pink-400 rounded-full" />
-                    )}
                   </button>
                 ))}
             </div>
