@@ -79,4 +79,13 @@ export const disponibilidadService = {
     );
     return data;
   },
+
+  // Obtener slots por semana (rango de fechas)
+  getSlotsPorSemana: async (tournamentId: string, fechaInicio: string, fechaFin: string) => {
+    const { data } = await api.get(
+      `/admin/torneos/${tournamentId}/disponibilidad/slots`,
+      { params: { fechaInicio, fechaFin } }
+    );
+    return data;
+  },
 };
