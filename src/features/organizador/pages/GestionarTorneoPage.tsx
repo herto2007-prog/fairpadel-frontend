@@ -5,7 +5,7 @@ import { ChevronLeft, Trophy } from 'lucide-react';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
-import { DisponibilidadWizard, CalendarioDisponibilidad } from '../components/disponibilidad';
+import { ConfiguradorSede, CalendarioDisponibilidad } from '../components/disponibilidad';
 import { api } from '../../../services/api';
 
 interface Torneo {
@@ -164,7 +164,7 @@ export function GestionarTorneoPage() {
             </div>
             
             {dispVista === 'configurar' ? (
-              <DisponibilidadWizard 
+              <ConfiguradorSede 
                 tournamentId={id} 
                 fechaInicio={torneo?.fechaInicio}
                 fechaFin={torneo?.fechaFin}
