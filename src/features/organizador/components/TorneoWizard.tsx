@@ -8,6 +8,7 @@ import {
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { SedeAutocomplete } from './SedeAutocomplete';
 import { api } from '../../../services/api';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -219,8 +220,9 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const categoriasFemeninas = categorias.filter(c => c.tipo === 'FEMENINO').sort((a, b) => a.orden - b.orden);
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] py-8 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-dark py-8 px-4 relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+      <div className="max-w-3xl mx-auto relative z-10">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
