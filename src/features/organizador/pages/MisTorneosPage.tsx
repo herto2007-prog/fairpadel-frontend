@@ -45,6 +45,8 @@ export function MisTorneosPage() {
   };
 
   const handleSuccess = (torneo: Tournament) => {
+    console.log('[MisTorneosPage] Torneo creado:', torneo);
+    setShowWizard(false);
     setCreatedTorneo(torneo);
     loadTorneos();
   };
@@ -54,16 +56,7 @@ export function MisTorneosPage() {
     setCreatedTorneo(null);
   };
 
-  if (showWizard) {
-    return (
-      <TorneoWizard 
-        onSuccess={handleSuccess}
-        onCancel={handleCloseWizard}
-      />
-    );
-  }
-
-  // Pantalla de éxito post-creación
+  // Pantalla de éxito post-creación (tiene prioridad sobre el wizard)
   if (createdTorneo) {
     return (
       <div className="min-h-screen bg-[#0B0E14] flex items-center justify-center p-4">
@@ -121,6 +114,16 @@ export function MisTorneosPage() {
           </div>
         </motion.div>
       </div>
+    );
+  }
+
+  // Wizard de creación
+  if (showWizard) {
+    return (
+      <TorneoWizard 
+        onSuccess={handleSuccess}
+        onCancel={handleCloseWizard}
+      />
     );
   }
 
