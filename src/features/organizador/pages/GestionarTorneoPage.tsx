@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Trophy } from 'lucide-react';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
+import { BracketManager } from '../components/bracket';
 import { api } from '../../../services/api';
 
 interface Torneo {
@@ -18,7 +19,7 @@ export function GestionarTorneoPage() {
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'comision' | 'info'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'bracket' | 'comision' | 'info'>('checklist');
 
   useEffect(() => {
     if (id) {
@@ -102,6 +103,11 @@ export function GestionarTorneoPage() {
             onClick={() => setActiveTab('inscripciones')}
           />
           <TabButton
+            label="Fixture"
+            active={activeTab === 'bracket'}
+            onClick={() => setActiveTab('bracket')}
+          />
+          <TabButton
             label="Comisión"
             active={activeTab === 'comision'}
             onClick={() => setActiveTab('comision')}
@@ -120,6 +126,10 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'inscripciones' && id && (
           <InscripcionesManager tournamentId={id} />
+        )}
+
+        {activeTab === 'bracket' && id && (
+          <BracketManager tournamentId={id} />
         )}
 
         {activeTab === 'comision' && (
