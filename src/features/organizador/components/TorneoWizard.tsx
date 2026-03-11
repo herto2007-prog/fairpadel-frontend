@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trophy, Calendar, DollarSign, Image as ImageIcon, 
-  Award, ChevronRight, ChevronLeft, Check, Upload, X,
+  Trophy, DollarSign, Image as ImageIcon, 
+  Award, ChevronRight, ChevronLeft, Check, Upload,
   Sparkles, Users, Clock, Info
 } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
@@ -75,7 +75,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     categoriaIds: [],
   });
 
-  // Cargar datos auxiliares
   useEffect(() => {
     loadDatosAuxiliares();
   }, []);
@@ -86,13 +85,8 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
       if (data.success) {
         setCategorias(data.categorias || []);
         setSedes(data.sedes || []);
-      } else {
-        console.error('Error del servidor:', data.message);
-        setCategorias([]);
-        setSedes([]);
       }
     } catch (error: any) {
-      console.error('Error cargando datos:', error);
       if (error.response?.status === 401) {
         setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
       }
@@ -143,7 +137,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
         }
         return true;
       case 3:
-        // Flyer es opcional
         return true;
       case 4:
         if (formData.categoriaIds.length === 0) {
@@ -159,29 +152,15 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
-
-    console.log('[Submit] Enviando datos:', formData);
-
     try {
-      console.log('[Submit] Iniciando petición POST...');
       const { data } = await api.post('/admin/torneos', formData);
-      console.log('[Submit] Respuesta recibida:', data);
-      
       if (data.success) {
-        console.log('[Submit] Éxito, llamando onSuccess');
         onSuccess(data.torneo);
       } else {
-        console.log('[Submit] Error en respuesta:', data.message);
         setError(data.message || 'Error creando torneo');
       }
     } catch (err: any) {
-      console.error('[Submit] Error:', err);
-      console.error('[Submit] Error response:', err.response?.data);
-      const errorMsg = err.response?.data?.message || 
-                       err.response?.data?.error || 
-                       err.message ||
-                       'Error creando torneo';
-      setError(errorMsg);
+      setError(err.response?.data?.message || 'Error creando torneo');
     } finally {
       setLoading(false);
     }
@@ -189,7 +168,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
 
   const handleImageUpload = async (file: File) => {
     if (!file) return;
-
     setUploadingImage(true);
     const formDataUpload = new FormData();
     formDataUpload.append('image', file);
@@ -204,46 +182,40 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
         updateField('flyerPublicId', data.data.publicId);
       }
     } catch (error: any) {
-      console.error('Error subiendo imagen:', error);
-      const errorMsg = error.response?.data?.message || 
-                       error.response?.data?.error || 
-                       error.message || 
-                       'Error subiendo la imagen';
-      setError(`Error: ${errorMsg}`);
+      setError('Error subiendo la imagen');
     } finally {
       setUploadingImage(false);
     }
   };
 
-  // Categorías separadas por tipo
   const categoriasMasculinas = categorias.filter(c => c.tipo === 'MASCULINO').sort((a, b) => a.orden - b.orden);
   const categoriasFemeninas = categorias.filter(c => c.tipo === 'FEMENINO').sort((a, b) => a.orden - b.orden);
 
   return (
-    <div className="min-h-screen bg-dark py-8 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-dark py-4 px-4 relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
-      <div className="max-w-3xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+      <div className="max-w-2xl mx-auto relative z-10">
+        {/* Header Compacto */}
+        <div className="flex items-center gap-3 mb-4">
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-[#151921] rounded-xl transition-colors"
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
           >
-            <ChevronLeft className="w-6 h-6 text-gray-400" />
+            <ChevronLeft className="w-5 h-5 text-white/40" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-white">Crear Torneo</h1>
-            <p className="text-gray-400 text-sm">Paso {step} de 5</p>
+            <h1 className="text-lg font-medium text-white">Crear Torneo</h1>
+            <p className="text-white/40 text-xs">Paso {step} de 5</p>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-1.5 mb-4">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                s <= step ? 'bg-[#df2531]' : 'bg-[#232838]'
+              className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${
+                s <= step ? 'bg-primary' : 'bg-white/10'
               }`}
             />
           ))}
@@ -256,9 +228,9 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl"
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
             >
-              <p className="text-red-400 flex items-center gap-2">
+              <p className="text-red-400 text-sm flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 {error}
               </p>
@@ -271,11 +243,11 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
           <motion.div
             key={step}
             custom={direction}
-            initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
+            initial={{ opacity: 0, x: direction > 0 ? 30 : -30 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
-            transition={{ duration: 0.3 }}
-            className="glass rounded-2xl p-6 md:p-8"
+            exit={{ opacity: 0, x: direction > 0 ? -30 : 30 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white/[0.02] border border-white/5 rounded-xl p-4"
           >
             {step === 1 && (
               <Step1Identidad 
@@ -316,10 +288,10 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-8">
+        <div className="flex items-center justify-between mt-4">
           <button
             onClick={step === 1 ? onCancel : handleBack}
-            className="px-6 py-3 text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-white/40 hover:text-white text-sm transition-colors"
           >
             {step === 1 ? 'Cancelar' : 'Atrás'}
           </button>
@@ -327,29 +299,29 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
           {step < 5 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-8 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all shadow-lg shadow-[#df2531]/20"
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-all"
             >
               Siguiente
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="flex items-center gap-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-xl font-medium transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all"
             >
               {loading ? (
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                   />
                   Creando...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-4 h-4" />
                   Crear Torneo
                 </>
               )}
@@ -381,54 +353,36 @@ function Step1Identidad({
 
   const handleCiudadChange = (ciudad: string) => {
     updateField('ciudad', ciudad);
-    // Auto-completar región basado en ciudad
     const regiones: Record<string, string> = {
-      'Asunción': 'Central',
-      'San Lorenzo': 'Central',
-      'Fernando de la Mora': 'Central',
-      'Lambaré': 'Central',
-      'Villa Elisa': 'Central',
-      'Luque': 'Central',
-      'Capiatá': 'Central',
-      'Ñemby': 'Central',
-      'Limpio': 'Central',
-      'Mariano Roque Alonso': 'Central',
-      'Areguá': 'Central',
-      'Villeta': 'Central',
-      'Encarnación': 'Itapúa',
-      'Ciudad del Este': 'Alto Paraná',
-      'Pedro Juan Caballero': 'Amambay',
-      'Coronel Oviedo': 'Caaguazú',
-      'Caacupé': 'Cordillera',
-      'Villarrica': 'Guairá',
-      'Pilar': 'Ñeembucú',
-      'Concepción': 'Concepción',
-      'San Pedro': 'San Pedro',
-      'Caazapá': 'Caazapá',
-      'San Juan Bautista': 'Misiones',
-      'Paraguarí': 'Paraguarí',
-      'Tebicuary': 'Paraguarí',
-      'Quiindy': 'Paraguarí',
-      'Ypacaraí': 'Central',
-      'Ypané': 'Central',
+      'Asunción': 'Central', 'San Lorenzo': 'Central', 'Fernando de la Mora': 'Central',
+      'Lambaré': 'Central', 'Villa Elisa': 'Central', 'Luque': 'Central',
+      'Capiatá': 'Central', 'Ñemby': 'Central', 'Limpio': 'Central',
+      'Mariano Roque Alonso': 'Central', 'Areguá': 'Central', 'Villeta': 'Central',
+      'Encarnación': 'Itapúa', 'Ciudad del Este': 'Alto Paraná',
+      'Pedro Juan Caballero': 'Amambay', 'Coronel Oviedo': 'Caaguazú',
+      'Caacupé': 'Cordillera', 'Villarrica': 'Guairá', 'Pilar': 'Ñeembucú',
+      'Concepción': 'Concepción', 'San Pedro': 'San Pedro',
+      'Caazapá': 'Caazapá', 'San Juan Bautista': 'Misiones',
+      'Paraguarí': 'Paraguarí', 'Tebicuary': 'Paraguarí',
+      'Quiindy': 'Paraguarí', 'Ypacaraí': 'Central', 'Ypané': 'Central',
     };
     updateField('region', regiones[ciudad] || 'Central');
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[#df2531]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Trophy className="w-8 h-8 text-[#df2531]" />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <Trophy className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">La Identidad de tu Torneo</h2>
-        <p className="text-gray-400">Los grandes torneos comienzan con una identidad clara</p>
+        <h2 className="text-base font-medium text-white">Datos del Torneo</h2>
+        <p className="text-white/40 text-xs">Información básica para comenzar</p>
       </div>
 
       {/* Nombre */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Nombre del Torneo <span className="text-[#df2531]">*</span>
+        <label className="block text-xs text-white/60 mb-1.5">
+          Nombre <span className="text-primary">*</span>
         </label>
         <input
           ref={nombreRef}
@@ -436,38 +390,36 @@ function Step1Identidad({
           value={formData.nombre}
           onChange={(e) => updateField('nombre', e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-          className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors"
-          placeholder="Ej: Torneo Verano 2026 - Club Centro"
+          className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
+          placeholder="Ej: Torneo Verano 2026"
         />
       </div>
 
       {/* Descripción */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Descripción
-        </label>
+        <label className="block text-xs text-white/60 mb-1.5">Descripción</label>
         <textarea
           value={formData.descripcion}
           onChange={(e) => updateField('descripcion', e.target.value)}
-          rows={3}
-          className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors resize-none"
-          placeholder="Cuéntale a los jugadores qué hace especial este torneo. Premios, ambiente, nivel de juego..."
+          rows={2}
+          className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+          placeholder="Cuéntale a los jugadores qué hace especial este torneo..."
         />
       </div>
 
       {/* Ciudad */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Ciudad <span className="text-[#df2531]">*</span>
+        <label className="block text-xs text-white/60 mb-1.5">
+          Ciudad <span className="text-primary">*</span>
         </label>
         <CityAutocomplete
           value={formData.ciudad}
           onChange={handleCiudadChange}
-          placeholder="Busca tu ciudad..."
+          placeholder="Buscar ciudad..."
         />
         {formData.region && (
-          <p className="text-xs text-gray-500 mt-1">
-            Departamento: <span className="text-gray-400">{formData.region}</span>
+          <p className="text-[10px] text-white/30 mt-1">
+            Depto: {formData.region}
           </p>
         )}
       </div>
@@ -479,43 +431,34 @@ function Step1Identidad({
           value={formData.sedeId}
           onChange={(sedeId) => updateField('sedeId', sedeId)}
           placeholder="Buscar sede..."
-          label={`Sede ${sedes.length === 0 ? '(No hay sedes registradas)' : '(Opcional)'}`}
+          label={`Sede ${sedes.length === 0 ? '(No hay sedes)' : '(Opcional)'}`}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          ¿No encuentras tu sede? Podrás agregarla más tarde desde el panel de administración.
-        </p>
       </div>
 
       {/* Fechas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Fecha de Inicio <span className="text-[#df2531]">*</span>
+          <label className="block text-xs text-white/60 mb-1.5">
+            Inicio <span className="text-primary">*</span>
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="date"
-              value={formData.fechaInicio}
-              onChange={(e) => updateField('fechaInicio', e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#df2531] transition-colors"
-            />
-          </div>
+          <input
+            type="date"
+            value={formData.fechaInicio}
+            onChange={(e) => updateField('fechaInicio', e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Fecha de Fin <span className="text-[#df2531]">*</span>
+          <label className="block text-xs text-white/60 mb-1.5">
+            Fin <span className="text-primary">*</span>
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="date"
-              value={formData.fechaFin}
-              min={formData.fechaInicio}
-              onChange={(e) => updateField('fechaFin', e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-[#df2531] transition-colors"
-            />
-          </div>
+          <input
+            type="date"
+            value={formData.fechaFin}
+            min={formData.fechaInicio}
+            onChange={(e) => updateField('fechaFin', e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
+          />
         </div>
       </div>
     </div>
@@ -548,22 +491,22 @@ function Step2Inversion({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[#df2531]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <DollarSign className="w-8 h-8 text-[#df2531]" />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <DollarSign className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">La Inversión</h2>
-        <p className="text-gray-400">Un precio justo atrae más jugadores</p>
+        <h2 className="text-base font-medium text-white">Inversión</h2>
+        <p className="text-white/40 text-xs">Define el costo y duración</p>
       </div>
 
-      {/* Costo de inscripción */}
-      <div className="bg-[#151921] rounded-2xl p-6 border border-[#232838]">
-        <label className="block text-sm font-medium text-gray-300 mb-4">
-          Costo de Inscripción <span className="text-[#df2531]">*</span>
+      {/* Costo */}
+      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
+        <label className="block text-xs text-white/60 mb-2">
+          Costo de Inscripción <span className="text-primary">*</span>
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-medium text-white/40">
             Gs.
           </span>
           <input
@@ -571,25 +514,24 @@ function Step2Inversion({
             inputMode="numeric"
             value={displayValue}
             onChange={handleCostoChange}
-            className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-4 pl-16 pr-4 text-2xl font-bold text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-14 pr-3 text-xl font-medium text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
             placeholder="0"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-3 flex items-center gap-2">
-          <Info className="w-4 h-4" />
-          Este es el valor que los jugadores verán en la ficha del torneo
+        <p className="text-[10px] text-white/30 mt-2 flex items-center gap-1">
+          <Info className="w-3 h-3" />
+          Valor que los jugadores verán en la ficha
         </p>
       </div>
 
-      {/* Duración del partido */}
-      <div className="bg-[#151921] rounded-2xl p-6 border border-[#232838]">
-        <label className="block text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          Duración de cada partido
+      {/* Duración */}
+      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
+        <label className="block text-xs text-white/60 mb-3 flex items-center gap-2">
+          <Clock className="w-3 h-3" />
+          Duración por partido
         </label>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <span className="text-sm text-gray-500">60min</span>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-xs text-white/30">60min</span>
           <input
             type="range"
             min={60}
@@ -597,19 +539,14 @@ function Step2Inversion({
             step={15}
             value={formData.minutosPorPartido}
             onChange={(e) => updateField('minutosPorPartido', parseInt(e.target.value))}
-            className="flex-1 h-2 bg-[#232838] rounded-lg appearance-none cursor-pointer accent-[#df2531]"
+            className="flex-1 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
           />
-          <span className="text-sm text-gray-500">180min</span>
+          <span className="text-xs text-white/30">180min</span>
         </div>
-        
         <div className="text-center">
-          <span className="text-3xl font-bold text-[#df2531]">{formData.minutosPorPartido}</span>
-          <span className="text-gray-400 ml-2">minutos</span>
+          <span className="text-2xl font-medium text-primary">{formData.minutosPorPartido}</span>
+          <span className="text-white/40 text-sm ml-1">min</span>
         </div>
-        
-        <p className="text-xs text-gray-500 mt-3 text-center">
-          Podrás ajustar esto más tarde según la modalidad de tu torneo
-        </p>
       </div>
     </div>
   );
@@ -657,16 +594,16 @@ function Step3Flyer({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[#df2531]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <ImageIcon className="w-8 h-8 text-[#df2531]" />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <ImageIcon className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">El Flyer Oficial</h2>
-        <p className="text-gray-400">Una imagen atractiva = más inscripciones</p>
+        <h2 className="text-base font-medium text-white">Flyer</h2>
+        <p className="text-white/40 text-xs">Imagen atractiva = más inscripciones</p>
       </div>
 
-      {/* Upload Area */}
+      {/* Upload */}
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -674,13 +611,13 @@ function Step3Flyer({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
-          transition-all duration-300
+          relative border border-dashed rounded-xl p-6 text-center cursor-pointer
+          transition-all duration-200
           ${dragActive 
-            ? 'border-[#df2531] bg-[#df2531]/10' 
-            : 'border-[#232838] hover:border-gray-600 bg-[#151921]'
+            ? 'border-primary bg-primary/5' 
+            : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
           }
-          ${formData.flyerUrl ? 'border-emerald-500/50' : ''}
+          ${formData.flyerUrl ? 'border-emerald-500/30' : ''}
         `}
       >
         <input
@@ -696,69 +633,50 @@ function Step3Flyer({
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-12 h-12 border-4 border-[#df2531]/20 border-t-[#df2531] rounded-full mb-4"
+              className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full mb-2"
             />
-            <p className="text-gray-400">Subiendo imagen...</p>
+            <p className="text-white/40 text-sm">Subiendo...</p>
           </div>
         ) : formData.flyerUrl ? (
           <div className="relative">
             <img
               src={formData.flyerUrl}
-              alt="Flyer del torneo"
-              className="max-h-64 mx-auto rounded-xl"
+              alt="Flyer"
+              className="max-h-40 mx-auto rounded-lg"
             />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                // updateField('flyerUrl', '');
-                // updateField('flyerPublicId', '');
-              }}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-[#232838] rounded-full flex items-center justify-center mb-4">
-              <Upload className="w-8 h-8 text-gray-500" />
+            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center mb-2">
+              <Upload className="w-5 h-5 text-white/40" />
             </div>
-            <p className="text-white font-medium mb-2">
-              Suelta tu imagen aquí o haz clic para buscar
-            </p>
-            <p className="text-sm text-gray-500">
-              Tamaño recomendado: <span className="text-gray-400">1200x630px</span>
-            </p>
-            <p className="text-sm text-gray-500">
-              Formatos: <span className="text-gray-400">JPG, PNG, WEBP (máx. 5MB)</span>
+            <p className="text-white/60 text-sm font-medium">Suelta o haz clic</p>
+            <p className="text-[10px] text-white/30 mt-1">
+              1200x630px • JPG, PNG, WEBP
             </p>
           </div>
         )}
       </div>
 
-      {/* Preview Card */}
-      <div className="bg-[#151921] rounded-2xl p-6 border border-[#232838]">
-        <p className="text-sm font-medium text-gray-400 mb-4">Vista previa de la card</p>
-        <div className="max-w-xs mx-auto">
-          <div className="bg-[#0B0E14] rounded-xl overflow-hidden border border-[#232838]">
-            <div className="aspect-[16/9] bg-[#232838] relative">
+      {/* Preview */}
+      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
+        <p className="text-xs text-white/40 mb-3">Vista previa</p>
+        <div className="max-w-[200px] mx-auto">
+          <div className="bg-dark rounded-lg overflow-hidden border border-white/5">
+            <div className="aspect-[16/9] bg-white/5 relative">
               {formData.flyerUrl ? (
-                <img
-                  src={formData.flyerUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                <img src={formData.flyerUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="w-12 h-12 text-gray-600" />
+                  <ImageIcon className="w-8 h-8 text-white/20" />
                 </div>
               )}
             </div>
-            <div className="p-4">
-              <h3 className="font-bold text-white truncate">
-                {formData.nombre || 'Nombre del Torneo'}
+            <div className="p-2.5">
+              <h3 className="text-sm font-medium text-white truncate">
+                {formData.nombre || 'Torneo'}
               </h3>
-              <p className="text-sm text-gray-400">
+              <p className="text-[10px] text-white/40">
                 {formData.ciudad || 'Ciudad'} • Gs. {(formData.costoInscripcion || 0).toLocaleString('es-PY')}
               </p>
             </div>
@@ -791,98 +709,89 @@ function Step4Categorias({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-[#df2531]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Award className="w-8 h-8 text-[#df2531]" />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <Award className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">¿Qué Categorías?</h2>
-        <p className="text-gray-400">Más categorías = más jugadores = mejor torneo</p>
-      </div>
-
-      {/* Contador */}
-      <div className="bg-[#151921] rounded-xl p-4 text-center border border-[#232838]">
-        <p className="text-sm text-gray-400">
-          Categorías seleccionadas: <span className="text-[#df2531] font-bold">{formData.categoriaIds.length}</span>
+        <h2 className="text-base font-medium text-white">Categorías</h2>
+        <p className="text-white/40 text-xs">
+          Seleccionadas: <span className="text-primary font-medium">{formData.categoriaIds.length}</span>
         </p>
       </div>
 
       {/* Caballeros */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-400" />
-          Caballeros
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {categoriasMasculinas.map((cat) => {
-            const isSelected = formData.categoriaIds.includes(cat.id);
-            return (
-              <button
-                key={cat.id}
-                onClick={() => toggleCategoria(cat.id)}
-                className={`
-                  p-4 rounded-xl border-2 text-center transition-all
-                  ${isSelected 
-                    ? 'border-[#df2531] bg-[#df2531]/10 text-white' 
-                    : 'border-[#232838] hover:border-gray-600 text-gray-400'
-                  }
-                `}
-              >
-                <span className="font-medium">{cat.nombre}</span>
-                {isSelected && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="mt-2"
-                  >
-                    <Check className="w-4 h-4 text-[#df2531] mx-auto" />
-                  </motion.div>
-                )}
-              </button>
-            );
-          })}
+      {categoriasMasculinas.length > 0 && (
+        <div>
+          <h3 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
+            <Users className="w-3 h-3 text-blue-400" />
+            Caballeros
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {categoriasMasculinas.map((cat) => {
+              const isSelected = formData.categoriaIds.includes(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => toggleCategoria(cat.id)}
+                  className={`
+                    py-2 px-1 rounded-lg border text-center transition-all text-xs
+                    ${isSelected 
+                      ? 'border-primary bg-primary/10 text-white' 
+                      : 'border-white/10 hover:border-white/20 text-white/50'
+                    }
+                  `}
+                >
+                  {cat.nombre}
+                  {isSelected && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-0.5">
+                      <Check className="w-3 h-3 text-primary mx-auto" />
+                    </motion.div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Damas */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-pink-400" />
-          Damas
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {categoriasFemeninas.map((cat) => {
-            const isSelected = formData.categoriaIds.includes(cat.id);
-            return (
-              <button
-                key={cat.id}
-                onClick={() => toggleCategoria(cat.id)}
-                className={`
-                  p-4 rounded-xl border-2 text-center transition-all
-                  ${isSelected 
-                    ? 'border-[#df2531] bg-[#df2531]/10 text-white' 
-                    : 'border-[#232838] hover:border-gray-600 text-gray-400'
-                  }
-                `}
-              >
-                <span className="font-medium">{cat.nombre}</span>
-                {isSelected && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="mt-2"
-                  >
-                    <Check className="w-4 h-4 text-[#df2531] mx-auto" />
-                  </motion.div>
-                )}
-              </button>
-            );
-          })}
+      {categoriasFemeninas.length > 0 && (
+        <div>
+          <h3 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
+            <Users className="w-3 h-3 text-pink-400" />
+            Damas
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {categoriasFemeninas.map((cat) => {
+              const isSelected = formData.categoriaIds.includes(cat.id);
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => toggleCategoria(cat.id)}
+                  className={`
+                    py-2 px-1 rounded-lg border text-center transition-all text-xs
+                    ${isSelected 
+                      ? 'border-primary bg-primary/10 text-white' 
+                      : 'border-white/10 hover:border-white/20 text-white/50'
+                    }
+                  `}
+                >
+                  {cat.nombre}
+                  {isSelected && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-0.5">
+                      <Check className="w-3 h-3 text-primary mx-auto" />
+                    </motion.div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      <p className="text-sm text-gray-500 text-center">
-        💡 Puedes seleccionar varias. Cada categoría creará una competencia separada.
+      <p className="text-[10px] text-white/30 text-center">
+        Puedes seleccionar varias categorías
       </p>
     </div>
   );
@@ -906,60 +815,55 @@ function Step5Confirmar({
   const catFemeninas = categoriasSeleccionadas.filter(c => c.tipo === 'FEMENINO');
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Check className="w-8 h-8 text-emerald-500" />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-2">
+          <Check className="w-5 h-5 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Todo Listo</h2>
-        <p className="text-gray-400">Revisa los detalles y crea tu torneo</p>
+        <h2 className="text-base font-medium text-white">Confirmar</h2>
+        <p className="text-white/40 text-xs">Revisa antes de crear</p>
       </div>
 
       {/* Resumen */}
-      <div className="bg-[#151921] rounded-2xl p-6 border border-[#232838] space-y-4">
-        <h3 className="font-bold text-white mb-4">Resumen del Torneo</h3>
-
-        {/* Info básica */}
-        <div className="space-y-3">
-          <div className="flex justify-between py-2 border-b border-[#232838]">
-            <span className="text-gray-400">Nombre</span>
-            <span className="text-white font-medium text-right">{formData.nombre}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-[#232838]">
-            <span className="text-gray-400">Ubicación</span>
-            <span className="text-white font-medium text-right">
-              {formData.ciudad}{sede ? ` - ${sede.nombre}` : ''}
-            </span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-[#232838]">
-            <span className="text-gray-400">Fechas</span>
-            <span className="text-white font-medium text-right">
-              {new Date(formData.fechaInicio).toLocaleDateString('es-PY')} al {new Date(formData.fechaFin).toLocaleDateString('es-PY')}
-            </span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-[#232838]">
-            <span className="text-gray-400">Inscripción</span>
-            <span className="text-emerald-400 font-bold">
-              Gs. {formData.costoInscripcion.toLocaleString('es-PY')}
-            </span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-[#232838]">
-            <span className="text-gray-400">Duración por partido</span>
-            <span className="text-white font-medium">{formData.minutosPorPartido} min</span>
-          </div>
+      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5 space-y-2">
+        <div className="flex justify-between py-1.5 border-b border-white/5">
+          <span className="text-white/40 text-xs">Nombre</span>
+          <span className="text-white text-xs font-medium text-right truncate max-w-[60%]">{formData.nombre}</span>
+        </div>
+        <div className="flex justify-between py-1.5 border-b border-white/5">
+          <span className="text-white/40 text-xs">Ubicación</span>
+          <span className="text-white text-xs text-right">
+            {formData.ciudad}{sede ? ` - ${sede.nombre}` : ''}
+          </span>
+        </div>
+        <div className="flex justify-between py-1.5 border-b border-white/5">
+          <span className="text-white/40 text-xs">Fechas</span>
+          <span className="text-white text-xs text-right">
+            {new Date(formData.fechaInicio).toLocaleDateString('es-PY', {day:'numeric', month:'short'})} - {new Date(formData.fechaFin).toLocaleDateString('es-PY', {day:'numeric', month:'short'})}
+          </span>
+        </div>
+        <div className="flex justify-between py-1.5 border-b border-white/5">
+          <span className="text-white/40 text-xs">Inscripción</span>
+          <span className="text-emerald-400 text-xs font-medium">
+            Gs. {formData.costoInscripcion.toLocaleString('es-PY')}
+          </span>
+        </div>
+        <div className="flex justify-between py-1.5">
+          <span className="text-white/40 text-xs">Duración</span>
+          <span className="text-white text-xs">{formData.minutosPorPartido} min</span>
         </div>
 
         {/* Categorías */}
-        <div className="pt-4">
-          <span className="text-gray-400 block mb-3">Categorías habilitadas:</span>
-          <div className="flex flex-wrap gap-2">
+        <div className="pt-2 border-t border-white/5">
+          <span className="text-white/40 text-xs block mb-2">Categorías:</span>
+          <div className="flex flex-wrap gap-1">
             {catMasculinas.map(c => (
-              <span key={c.id} className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+              <span key={c.id} className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px]">
                 {c.nombre}
               </span>
             ))}
             {catFemeninas.map(c => (
-              <span key={c.id} className="px-3 py-1 bg-pink-500/20 text-pink-400 rounded-full text-sm">
+              <span key={c.id} className="px-2 py-0.5 bg-pink-500/10 text-pink-400 rounded text-[10px]">
                 {c.nombre}
               </span>
             ))}
@@ -968,22 +872,18 @@ function Step5Confirmar({
 
         {/* Flyer */}
         {formData.flyerUrl && (
-          <div className="pt-4">
-            <span className="text-gray-400 block mb-3">Flyer:</span>
-            <img
-              src={formData.flyerUrl}
-              alt="Flyer"
-              className="max-h-32 rounded-xl"
-            />
+          <div className="pt-2">
+            <span className="text-white/40 text-xs block mb-2">Flyer:</span>
+            <img src={formData.flyerUrl} alt="" className="max-h-20 rounded-lg" />
           </div>
         )}
       </div>
 
-      {/* Info final */}
-      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-        <p className="text-emerald-400 text-sm text-center">
-          <Sparkles className="w-4 h-4 inline mr-2" />
-          Al crear, tu torneo será público y recibirás el link de inscripción
+      {/* Info */}
+      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3">
+        <p className="text-emerald-400 text-xs text-center flex items-center justify-center gap-1.5">
+          <Sparkles className="w-3 h-3" />
+          El torneo será público al crearlo
         </p>
       </div>
     </div>
