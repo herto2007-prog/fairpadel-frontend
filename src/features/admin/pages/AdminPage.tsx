@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings, Trophy } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
+import { TorneosPendientesManager } from '../components/TorneosPendientesManager';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
 
   const tabs = [
     { id: 'fairpadel' as AdminTab, label: 'FairPadel', icon: LayoutDashboard, color: 'bg-emerald-500' },
+    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-red-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Settings, color: 'bg-pink-500' },
     { id: 'roles' as AdminTab, label: 'Usuarios', icon: Shield, color: 'bg-blue-500' },
@@ -72,6 +74,7 @@ export function AdminPage() {
           {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'modalidades' && <ModalidadesManager />}
           {activeTab === 'fairpadel' && <FairpadelPanel />}
+          {activeTab === 'torneos' && <TorneosPendientesManager />}
         </motion.div>
       </div>
     </div>
