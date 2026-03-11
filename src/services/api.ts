@@ -22,3 +22,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor para manejar errores 401 (token expirado o inválido)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expirado o inválido
+      localStorage.removeItem('fairpadel_token');
+      localStorage.removeItem('fairpadel_user');
+      // Redirigir a login
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
