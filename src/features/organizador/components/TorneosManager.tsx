@@ -6,7 +6,7 @@ import {
   ChevronRight, Users
 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { ChecklistTorneo } from './ChecklistTorneo';
+import { ChecklistCuaderno } from './checklist/ChecklistCuaderno';
 import { ComisionTorneo } from './ComisionTorneo';
 import { formatCurrency } from '../../../utils/currency';
 import { formatDatePY } from '../../../utils/date';
@@ -323,7 +323,7 @@ function TorneoDetalle({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <ChecklistTorneo tournamentId={torneo.id} />
+            <ChecklistCuaderno tournamentId={torneo.id} />
           </motion.div>
         )}
 
