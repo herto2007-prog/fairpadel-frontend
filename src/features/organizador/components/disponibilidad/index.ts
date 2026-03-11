@@ -1,0 +1,1 @@
+export { DisponibilidadConfig } from './DisponibilidadConfig';
