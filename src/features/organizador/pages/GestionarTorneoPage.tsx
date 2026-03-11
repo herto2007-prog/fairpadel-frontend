@@ -97,6 +97,11 @@ export function GestionarTorneoPage() {
             onClick={() => setActiveTab('checklist')}
           />
           <TabButton
+            label="Inscripciones"
+            active={activeTab === 'inscripciones'}
+            onClick={() => setActiveTab('inscripciones')}
+          />
+          <TabButton
             label="Comisión"
             active={activeTab === 'comision'}
             onClick={() => setActiveTab('comision')}
