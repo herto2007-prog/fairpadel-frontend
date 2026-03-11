@@ -161,16 +161,23 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     console.log('[Submit] Enviando datos:', formData);
 
     try {
+      console.log('[Submit] Iniciando petición POST...');
       const { data } = await api.post('/admin/torneos', formData);
+      console.log('[Submit] Respuesta recibida:', data);
+      
       if (data.success) {
+        console.log('[Submit] Éxito, llamando onSuccess');
         onSuccess(data.torneo);
       } else {
+        console.log('[Submit] Error en respuesta:', data.message);
         setError(data.message || 'Error creando torneo');
       }
     } catch (err: any) {
-      console.error('[Submit] Error:', err.response?.data);
+      console.error('[Submit] Error:', err);
+      console.error('[Submit] Error response:', err.response?.data);
       const errorMsg = err.response?.data?.message || 
                        err.response?.data?.error || 
+                       err.message ||
                        'Error creando torneo';
       setError(errorMsg);
     } finally {
