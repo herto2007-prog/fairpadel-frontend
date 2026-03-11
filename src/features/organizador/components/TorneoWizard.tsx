@@ -6,6 +6,7 @@ import {
   Sparkles, Users, Clock, Info
 } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+import { SedeAutocomplete } from './SedeAutocomplete';
 import { api } from '../../../services/api';
 
 // ═══════════════════════════════════════════════════════════
@@ -471,23 +472,15 @@ function Step1Identidad({
 
       {/* Sede */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Sede <span className="text-gray-500">(Opcional)</span>
-        </label>
-        <select
+        <SedeAutocomplete
+          sedes={sedes}
           value={formData.sedeId}
-          onChange={(e) => updateField('sedeId', e.target.value)}
-          className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#df2531] transition-colors"
-        >
-          <option value="">Selecciona una sede registrada...</option>
-          {sedes.map((sede) => (
-            <option key={sede.id} value={sede.id}>
-              {sede.nombre} - {sede.ciudad}
-            </option>
-          ))}
-        </select>
+          onChange={(sedeId) => updateField('sedeId', sedeId)}
+          placeholder="Buscar sede..."
+          label={`Sede ${sedes.length === 0 ? '(No hay sedes registradas)' : '(Opcional)'}`}
+        />
         <p className="text-xs text-gray-500 mt-1">
-          ¿No encuentras tu sede? Podrás agregarla más tarde o seleccionar &quot;Otra sede&quot;.
+          ¿No encuentras tu sede? Podrás agregarla más tarde desde el panel de administración.
         </p>
       </div>
 
