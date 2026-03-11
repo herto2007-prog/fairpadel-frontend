@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Trophy } from 'lucide-react';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
+import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { api } from '../../../services/api';
 
 interface Torneo {
@@ -17,7 +18,7 @@ export function GestionarTorneoPage() {
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'comision' | 'info'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'comision' | 'info'>('checklist');
 
   useEffect(() => {
     if (id) {
@@ -110,6 +111,10 @@ export function GestionarTorneoPage() {
         {/* Contenido */}
         {activeTab === 'checklist' && id && (
           <ChecklistCuaderno tournamentId={id} />
+        )}
+
+        {activeTab === 'inscripciones' && id && (
+          <InscripcionesManager tournamentId={id} />
         )}
 
         {activeTab === 'comision' && (
