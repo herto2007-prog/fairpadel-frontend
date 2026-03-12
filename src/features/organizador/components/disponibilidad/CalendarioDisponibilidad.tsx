@@ -61,6 +61,8 @@ interface DiaConfig {
 
 interface CalendarioDisponibilidadProps {
   tournamentId: string;
+  fechaInicio?: string;
+  fechaFin?: string;
 }
 
 // Colores para cada cancha
@@ -78,10 +80,17 @@ const HORAS = Array.from({ length: 24 }, (_, i) => {
   return `${h}:00`;
 });
 
-export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibilidadProps) {
+export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }: CalendarioDisponibilidadProps) {
   const [loading, setLoading] = useState(true);
   const [torneo, setTorneo] = useState<{ fechaInicio?: string; fechaFin?: string } | null>(null);
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  
+  // Inicializar currentWeek con la fecha de inicio del torneo
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    if (fechaInicio) {
+      return new Date(fechaInicio);
+    }
+    return new Date();
+  });
   const [slots, setSlots] = useState<Slot[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [todasSedes, setTodasSedes] = useState<Sede[]>([]);
@@ -165,6 +174,28 @@ export function CalendarioDisponibilidad({ tournamentId }: CalendarioDisponibili
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentWeek);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    
+    // Limitar navegación a las fechas del torneo
+    if (fechaInicio && fechaFin) {
+      const inicio = new Date(fechaInicio);
+      const fin = new Date(fechaFin);
+      
+      // Calcular inicio de semana para comparación
+      const day = newDate.getDay();
+      const weekStart = new Date(newDate);
+      weekStart.setDate(newDate.getDate() - day + (day === 0 ? -6 : 1));
+      
+      // Calcular fin de semana
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      // Solo permitir navegar si hay alguna fecha del torneo en esta semana
+      if (weekEnd < inicio || weekStart > fin) {
+        // Fuera de rango, no navegar
+        return;
+      }
+    }
+    
     setCurrentWeek(newDate);
   };
 

@@ -24,6 +24,7 @@ export function GestionarTorneoPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'comision' | 'info'>('checklist');
   const [dispVista, setDispVista] = useState<'configurar' | 'ver'>('configurar');
+  const [dispRefreshKey, setDispRefreshKey] = useState(0); // Para forzar refresh del calendario
 
   useEffect(() => {
     if (id) {
@@ -168,9 +169,18 @@ export function GestionarTorneoPage() {
                 tournamentId={id} 
                 fechaInicio={torneo?.fechaInicio}
                 fechaFin={torneo?.fechaFin}
+                onSave={() => {
+                  setDispRefreshKey(prev => prev + 1);
+                  setDispVista('ver'); // Auto-cambiar a vista calendario después de guardar
+                }}
               />
             ) : (
-              <CalendarioDisponibilidad tournamentId={id} />
+              <CalendarioDisponibilidad 
+                key={dispRefreshKey}
+                tournamentId={id} 
+                fechaInicio={torneo?.fechaInicio}
+                fechaFin={torneo?.fechaFin}
+              />
             )}
           </div>
         )}

@@ -12,6 +12,7 @@ interface ConfiguradorSedeProps {
   tournamentId: string;
   fechaInicio?: string;
   fechaFin?: string;
+  onSave?: () => void; // Callback cuando se guarda exitosamente
 }
 
 interface CanchaConfig {
@@ -24,7 +25,7 @@ interface CanchaConfig {
 // Horas fijas: 9 a 24 (16 horas) en hora de Paraguay
 const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
-export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: ConfiguradorSedeProps) {
+export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }: ConfiguradorSedeProps) {
   const [step, setStep] = useState<'sedes' | 'canchas' | 'grid'>('sedes');
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<any[]>([]);
@@ -152,6 +153,10 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
 
       alert(`¡Configuración guardada! ${slotsTemporales.size} horarios creados.`);
       
+      // Notificar al padre que se guardó exitosamente
+      onSave?.();
+      
+      // Reset del formulario
       setSlotsTemporales(new Set());
       setCanchasSeleccionadas(new Set());
       setStep('sedes');
