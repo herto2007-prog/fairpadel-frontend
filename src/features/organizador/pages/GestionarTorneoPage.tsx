@@ -7,6 +7,7 @@ import { InscripcionesManager } from '../components/inscripciones/InscripcionesM
 import { BracketManager } from '../components/bracket';
 import { ProgramacionManager } from '../components/programacion/ProgramacionManager';
 import { ConfiguradorSede, CalendarioDisponibilidad } from '../components/disponibilidad';
+import { VistaDemo } from '../components/vista-demo';
 import { api } from '../../../services/api';
 
 interface Torneo {
@@ -23,7 +24,7 @@ export function GestionarTorneoPage() {
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'info'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'info' | 'vistaDemo'>('checklist');
   const [dispVista, setDispVista] = useState<'configurar' | 'ver'>('configurar');
   const [dispRefreshKey, setDispRefreshKey] = useState(0);
   const [categoriasSorteadas, setCategoriasSorteadas] = useState<any[]>([]);
@@ -153,6 +154,11 @@ export function GestionarTorneoPage() {
             active={activeTab === 'info'}
             onClick={() => setActiveTab('info')}
           />
+          <TabButton
+            label="Vista Demo"
+            active={activeTab === 'vistaDemo'}
+            onClick={() => setActiveTab('vistaDemo')}
+          />
         </div>
 
         {/* Contenido */}
@@ -249,6 +255,8 @@ export function GestionarTorneoPage() {
             </div>
           </div>
         )}
+
+        {activeTab === 'vistaDemo' && <VistaDemo />}
       </div>
     </div>
   );
