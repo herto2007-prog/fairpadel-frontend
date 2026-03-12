@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calculator, Users, Trophy, ArrowRight, AlertCircle } from 'lucide-react';
+import { X, Calculator, Users, Trophy, AlertCircle, Swords, Shuffle } from 'lucide-react';
 import { api } from '../../../../services/api';
 
 interface ConfigurarBracketModalProps {
@@ -11,6 +11,7 @@ interface ConfigurarBracketModalProps {
       nombre: string;
     };
     inscripcionesCount: number;
+    estado: string;
   };
   onClose: () => void;
   onGenerado: () => void;
@@ -18,14 +19,10 @@ interface ConfigurarBracketModalProps {
 
 interface BracketConfig {
   totalParejas: number;
-  tamanoBracket: number;
-  parejasConBye: number;
+  objetivoBracket: number;
   partidosZona: number;
-  parejasEnRepechaje: number;
-  partidosRepechaje: number;
-  ganadoresZona: number;
-  ganadoresRepechaje: number;
-  perdedoresDirectos: number;
+  partidosRondaAjuste: number;
+  eliminaciones: number;
   fases: string[];
 }
 
@@ -41,51 +38,34 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
 
   const calcularConfiguracion = async () => {
     try {
-      // Por ahora calculamos en frontend, luego vendrá del backend
       const totalParejas = categoria.inscripcionesCount;
       
-      // Determinar tamaño del bracket
-      const potencias = [4, 8, 16, 32, 64];
-      const tamanoBracket = potencias.find(p => p >= totalParejas) || 64;
+      // SISTEMA PARAGUAYO - Fórmula correcta
+      // 1. ZONA: floor(parejas / 2) partidos
+      const partidosZona = Math.floor(totalParejas / 2);
       
-      // Calcular BYEs
-      let parejasConBye = 0;
-      let parejasQueJueganZona = totalParejas;
+      // 2. OBJETIVO: 8 (4tos) o 16 (8vos)
+      const objetivoBracket = totalParejas <= 15 ? 8 : 16;
       
-      if (totalParejas % 2 !== 0) {
-        parejasConBye = 1;
-        parejasQueJueganZona = totalParejas - 1;
+      // 3. RONDA AJUSTE: eliminaciones necesarias
+      const eliminaciones = Math.max(0, totalParejas - objetivoBracket);
+      const partidosRondaAjuste = eliminaciones;
+      
+      // Fases del bracket
+      const fases: string[] = ['ZONA'];
+      if (partidosRondaAjuste > 0) {
+        fases.push('RONDA AJUSTE');
       }
-      
-      const partidosZona = parejasQueJueganZona / 2;
-      const ganadoresZona = partidosZona;
-      const perdedoresZona = partidosZona;
-      
-      const lugaresRestantes = tamanoBracket - ganadoresZona - parejasConBye;
-      let parejasEnRepechaje = Math.min(perdedoresZona, lugaresRestantes * 2);
-      
-      if (parejasEnRepechaje % 2 !== 0) parejasEnRepechaje--;
-      
-      const ganadoresRepechaje = parejasEnRepechaje / 2;
-      const partidosRepechaje = parejasEnRepechaje / 2;
-      const perdedoresDirectos = perdedoresZona - parejasEnRepechaje;
-      
-      const fases = ['ZONA'];
-      if (parejasEnRepechaje > 0) fases.push('REPECHAJE');
-      if (tamanoBracket >= 16) fases.push('OCTAVOS');
-      if (tamanoBracket >= 8) fases.push('CUARTOS');
+      if (objetivoBracket >= 16) fases.push('OCTAVOS');
+      if (objetivoBracket >= 8) fases.push('CUARTOS');
       fases.push('SEMIS', 'FINAL');
       
       setConfig({
         totalParejas,
-        tamanoBracket,
-        parejasConBye,
+        objetivoBracket,
         partidosZona,
-        parejasEnRepechaje,
-        partidosRepechaje,
-        ganadoresZona,
-        ganadoresRepechaje,
-        perdedoresDirectos,
+        partidosRondaAjuste,
+        eliminaciones,
         fases,
       });
     } catch (err) {
@@ -97,11 +77,18 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
 
   const handleGenerar = async () => {
     setGenerando(true);
+    setError('');
     try {
-      await api.post(`/admin/torneos/${categoria.id}/bracket/generar`, {
-        totalParejas: categoria.inscripcionesCount,
+      // Llamar al endpoint de sortear
+      const { data } = await api.post(`/admin/categorias/${categoria.id}/bracket/sortear`, {
+        guardar: true,
       });
-      onGenerado();
+      
+      if (data.success) {
+        onGenerado();
+      } else {
+        setError(data.message || 'Error generando bracket');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error generando bracket');
     } finally {
@@ -169,63 +156,91 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
                 <StatCard
                   icon={<Trophy className="w-4 h-4" />}
                   label="Tamaño Bracket"
-                  value={config.tamanoBracket}
+                  value={config.objetivoBracket}
                 />
                 <StatCard
-                  label="Con BYE"
-                  value={config.parejasConBye}
-                  subtext="Ingresan directo"
+                  icon={<Swords className="w-4 h-4" />}
+                  label="Partidos Zona"
+                  value={config.partidosZona}
+                  subtext="Todos juegan"
                 />
-                <StatCard
-                  label="En Repechaje"
-                  value={config.parejasEnRepechaje}
-                  subtext={`${config.ganadoresRepechaje} pasan`}
-                />
+                {config.partidosRondaAjuste > 0 ? (
+                  <StatCard
+                    icon={<Shuffle className="w-4 h-4" />}
+                    label="Ronda Ajuste"
+                    value={config.partidosRondaAjuste}
+                    subtext={`${config.eliminaciones} eliminados`}
+                  />
+                ) : (
+                  <StatCard
+                    label="Sin Ajuste"
+                    value="Directo"
+                    subtext="Todos al bracket"
+                  />
+                )}
               </div>
 
-              {/* Distribución */}
+              {/* Explicación del flujo */}
               <div className="bg-white/[0.02] rounded-xl p-4">
-                <h3 className="text-sm font-medium text-white mb-3">Distribución</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Fase de Zona</span>
-                    <span className="text-white">{config.partidosZona} partidos</span>
+                <h3 className="text-sm font-medium text-white mb-3">Sistema Paraguayo</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#df2531]/20 text-[#df2531] flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Fase de Zona</p>
+                      <p className="text-xs text-gray-400">{config.partidosZona} partidos. Todos juegan 1 partido.</p>
+                    </div>
                   </div>
-                  {config.partidosRepechaje > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">Repechaje</span>
-                      <span className="text-white">{config.partidosRepechaje} partidos</span>
+                  
+                  {config.partidosRondaAjuste > 0 && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                      <div>
+                        <p className="text-sm text-white font-medium">Ronda de Ajuste</p>
+                        <p className="text-xs text-gray-400">
+                          {config.partidosRondaAjuste} partidos. 
+                          {config.eliminaciones} parejas eliminadas (ya jugaron 2 partidos).
+                        </p>
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-400">Bracket Principal:</span>
-                    <div className="flex gap-1">
-                      {config.fases.filter(f => ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'].includes(f)).map(fase => (
-                        <span key={fase} className="px-2 py-0.5 bg-[#df2531]/20 text-[#df2531] rounded text-xs">
-                          {fase}
-                        </span>
-                      ))}
+                  
+                  <div className="flex items-start gap-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${config.partidosRondaAjuste > 0 ? 'bg-blue-500/20 text-blue-500' : 'bg-[#df2531]/20 text-[#df2531]'}`}>
+                      {config.partidosRondaAjuste > 0 ? '3' : '2'}
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Bracket Principal</p>
+                      <p className="text-xs text-gray-400">
+                        {config.objetivoBracket} parejas. Eliminación directa.
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Flujo visual */}
+              {/* Fases del bracket */}
               <div className="bg-white/[0.02] rounded-xl p-4">
-                <h3 className="text-sm font-medium text-white mb-3">Flujo del Torneo</h3>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="px-3 py-1.5 bg-white/5 rounded-lg text-gray-300">
-                    {config.totalParejas} inscritos
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500" />
-                  <div className="px-3 py-1.5 bg-white/5 rounded-lg text-gray-300">
-                    {config.partidosZona} en zona
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500" />
-                  <div className="px-3 py-1.5 bg-[#df2531]/20 rounded-lg text-[#df2531] font-medium">
-                    {config.tamanoBracket} en bracket
-                  </div>
+                <h3 className="text-sm font-medium text-white mb-3">Fases del Bracket</h3>
+                <div className="flex flex-wrap gap-2">
+                  {config.fases.filter(f => ['OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'].includes(f)).map(fase => (
+                    <span key={fase} className="px-3 py-1 bg-[#df2531]/20 text-[#df2531] rounded-lg text-sm">
+                      {fase}
+                    </span>
+                  ))}
                 </div>
+              </div>
+
+              {/* Resumen */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                <p className="text-sm text-blue-300">
+                  <span className="font-medium">Resumen:</span> De {config.totalParejas} parejas, 
+                  {config.eliminaciones > 0 
+                    ? ` ${config.eliminaciones} serán eliminadas en ronda de ajuste (jugando 2 partidos).`
+                    : ' todas pasan al bracket.'
+                  } 
+                  {' '}Las {config.objetivoBracket} restantes juegan el bracket de eliminación directa.
+                </p>
               </div>
             </>
           )}
@@ -247,12 +262,12 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
             {generando ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Generando...
+                Sorteando...
               </>
             ) : (
               <>
-                Generar Bracket
-                <ArrowRight className="w-4 h-4" />
+                <Shuffle className="w-4 h-4" />
+                Realizar Sorteo
               </>
             )}
           </button>
