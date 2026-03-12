@@ -174,9 +174,15 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     });
 
     if (diaResult?.dia?.id) {
-      // Pasar solo las canchas seleccionadas
+      // Solo pasar canchaIds si hay canchas seleccionadas
+      // Si no hay canchas, no enviamos el campo para que use todas las canchas del torneo
       const canchaIdsArray = Array.from(canchasSeleccionadas);
-      await disponibilidadService.generarSlots(tournamentId, diaResult.dia.id, canchaIdsArray);
+      if (canchaIdsArray.length > 0) {
+        await disponibilidadService.generarSlots(tournamentId, diaResult.dia.id, canchaIdsArray);
+      } else {
+        // Si no hay canchas seleccionadas, no generamos slots para esta fecha
+        console.warn(`No hay canchas seleccionadas para la fecha ${fecha}, saltando generación de slots`);
+      }
     }
   };
 
