@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle2, Clock, AlertCircle, 
-  Search, Plus, UserPlus
+  Search, Plus, UserPlus, Lock, Unlock
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { ResumenStats } from './ResumenStats';
@@ -67,6 +67,26 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<Inscripcion | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(false);
+  const [cerrandoInscripciones, setCerrandoInscripciones] = useState(false);
+  const [categoriaEstado, setCategoriaEstado] = useState<string>('INSCRIPCIONES_ABIERTAS');
+
+  // Cargar estado de la categoría
+  useEffect(() => {
+    if (categoriaActiva) {
+      loadCategoriaEstado();
+    }
+  }, [categoriaActiva]);
+
+  const loadCategoriaEstado = async () => {
+    try {
+      const { data } = await api.get(`/admin/categorias/${categoriaActiva}/bracket/config`);
+      if (data.success) {
+        setCategoriaEstado(data.estado);
+      }
+    } catch (error) {
+      console.error('Error cargando estado de categoría:', error);
+    }
+  };
 
   useEffect(() => {
     loadInscripciones();
@@ -126,6 +146,35 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       loadInscripciones();
     } catch (error) {
       console.error('Error cancelando:', error);
+    }
+  };
+
+  const handleCerrarInscripciones = async () => {
+    if (!categoriaActiva) return;
+    setCerrandoInscripciones(true);
+    try {
+      const { data } = await api.post(`/admin/categorias/${categoriaActiva}/cerrar-inscripciones`);
+      if (data.success) {
+        setCategoriaEstado('INSCRIPCIONES_CERRADAS');
+        alert('Inscripciones cerradas correctamente');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error cerrando inscripciones');
+    } finally {
+      setCerrandoInscripciones(false);
+    }
+  };
+
+  const handleAbrirInscripciones = async () => {
+    if (!categoriaActiva) return;
+    try {
+      const { data } = await api.post(`/admin/categorias/${categoriaActiva}/abrir-inscripciones`);
+      if (data.success) {
+        setCategoriaEstado('INSCRIPCIONES_ABIERTAS');
+        alert('Inscripciones reabiertas correctamente');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error abriendo inscripciones');
     }
   };
 
@@ -291,10 +340,36 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
             </div>
           </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] text-white rounded-xl transition-colors text-sm">
-            <UserPlus className="w-4 h-4" />
-            Inscribir manual
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Botón Cerrar/Reabrir Inscripciones */}
+            {categoriaEstado === 'INSCRIPCIONES_ABIERTAS' && categoriaActual && categoriaActual.confirmadas >= 8 && (
+              <button
+                onClick={handleCerrarInscripciones}
+                disabled={cerrandoInscripciones}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl transition-colors text-sm disabled:opacity-50"
+              >
+                {cerrandoInscripciones ? (
+                  <div className="w-4 h-4 border-2 border-amber-400/20 border-t-amber-400 rounded-full animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                Cerrar inscripciones
+              </button>
+            )}
+            {categoriaEstado === 'INSCRIPCIONES_CERRADAS' && (
+              <button
+                onClick={handleAbrirInscripciones}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors text-sm"
+              >
+                <Unlock className="w-4 h-4" />
+                Reabrir
+              </button>
+            )}
+            <button className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] text-white rounded-xl transition-colors text-sm">
+              <UserPlus className="w-4 h-4" />
+              Inscribir manual
+            </button>
+          </div>
         </div>
       )}
 
