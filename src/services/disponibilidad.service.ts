@@ -73,9 +73,11 @@ export const disponibilidadService = {
   },
 
   // Generar slots para un día
-  generarSlots: async (tournamentId: string, diaId: string) => {
+  // canchaIds: opcional, array de IDs de canchas específicas a usar
+  generarSlots: async (tournamentId: string, diaId: string, canchaIds?: string[]) => {
     const { data } = await api.post(
-      `/admin/torneos/${tournamentId}/disponibilidad/dias/${diaId}/generar-slots`
+      `/admin/torneos/${tournamentId}/disponibilidad/dias/${diaId}/generar-slots`,
+      canchaIds ? { canchaIds } : {}
     );
     return data;
   },

@@ -174,7 +174,9 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
     });
 
     if (diaResult?.dia?.id) {
-      await disponibilidadService.generarSlots(tournamentId, diaResult.dia.id);
+      // Pasar solo las canchas seleccionadas
+      const canchaIdsArray = Array.from(canchasSeleccionadas);
+      await disponibilidadService.generarSlots(tournamentId, diaResult.dia.id, canchaIdsArray);
     }
   };
 
