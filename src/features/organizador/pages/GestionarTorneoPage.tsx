@@ -5,6 +5,7 @@ import { ChevronLeft, Trophy } from 'lucide-react';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
+import { ProgramacionManager } from '../components/programacion/ProgramacionManager';
 import { ConfiguradorSede, CalendarioDisponibilidad } from '../components/disponibilidad';
 import { api } from '../../../services/api';
 
@@ -22,15 +23,35 @@ export function GestionarTorneoPage() {
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'comision' | 'info'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'info'>('checklist');
   const [dispVista, setDispVista] = useState<'configurar' | 'ver'>('configurar');
-  const [dispRefreshKey, setDispRefreshKey] = useState(0); // Para forzar refresh del calendario
+  const [dispRefreshKey, setDispRefreshKey] = useState(0);
+  const [categoriasSorteadas, setCategoriasSorteadas] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       loadTorneo();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'programacion' && id) {
+      loadCategoriasSorteadas();
+    }
+  }, [activeTab, id]);
+
+  const loadCategoriasSorteadas = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${id}/categorias`);
+      if (data.success) {
+        // Filtrar solo categorías con fixture (sorteadas)
+        const sorteadas = data.categorias.filter((c: any) => c.fixtureVersionId);
+        setCategoriasSorteadas(sorteadas);
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
 
   const loadTorneo = async () => {
     try {
@@ -118,6 +139,11 @@ export function GestionarTorneoPage() {
             onClick={() => setActiveTab('bracket')}
           />
           <TabButton
+            label="Programación"
+            active={activeTab === 'programacion'}
+            onClick={() => setActiveTab('programacion')}
+          />
+          <TabButton
             label="Comisión"
             active={activeTab === 'comision'}
             onClick={() => setActiveTab('comision')}
@@ -187,6 +213,13 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'bracket' && id && (
           <BracketManager tournamentId={id} />
+        )}
+
+        {activeTab === 'programacion' && id && (
+          <ProgramacionManager 
+            tournamentId={id} 
+            categoriasSorteadas={categoriasSorteadas}
+          />
         )}
 
         {activeTab === 'comision' && (
