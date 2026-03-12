@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2, Check, ChevronLeft,
-  Save, Plus, MousePointer2
+  Save, Plus, MousePointer2, X
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
@@ -37,6 +37,8 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
   const [guardando, setGuardando] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState<boolean | null>(null);
+  const [showModalSedes, setShowModalSedes] = useState(false);
+  const [agregandoSede, setAgregandoSede] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -193,10 +195,15 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
 
   const agregarSede = async (sedeId: string) => {
     try {
+      setAgregandoSede(sedeId);
       await disponibilidadService.agregarSede(tournamentId, sedeId);
       await loadData();
+      setShowModalSedes(false);
     } catch (error) {
       console.error('Error agregando sede:', error);
+      alert('Error al agregar la sede');
+    } finally {
+      setAgregandoSede(null);
     }
   };
 
@@ -314,14 +321,11 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
               
               {sedesDisponibles.length > 0 && (
                 <button
-                  onClick={() => {
-                    const sedeId = prompt('ID de la sede:');
-                    if (sedeId) agregarSede(sedeId);
-                  }}
+                  onClick={() => setShowModalSedes(true)}
                   className="p-3 border-2 border-dashed border-[#df2531]/40 rounded-lg text-[#df2531] flex items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="text-xs font-medium">Agregar</span>
+                  <span className="text-xs font-medium">Agregar Sede</span>
                 </button>
               )}
             </div>
@@ -470,6 +474,70 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
           </div>
         )}
       </div>
+
+      {/* Modal para agregar sedes */}
+      {showModalSedes && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#151921] rounded-2xl border border-white/10 w-full max-w-md max-h-[80vh] flex flex-col"
+          >
+            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Agregar Sede</h3>
+              <button
+                onClick={() => setShowModalSedes(false)}
+                className="p-2 hover:bg-white/5 rounded-xl text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {sedesDisponibles.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400">No hay más sedes disponibles</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {sedesDisponibles.map((sede) => (
+                    <button
+                      key={sede.id}
+                      onClick={() => agregarSede(sede.id)}
+                      disabled={agregandoSede === sede.id}
+                      className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-[#df2531]" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white group-hover:text-[#df2531] transition-colors">
+                              {sede.nombre}
+                            </p>
+                            <p className="text-xs text-gray-500">{sede.ciudad}</p>
+                          </div>
+                        </div>
+                        {agregandoSede === sede.id ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="w-5 h-5 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full"
+                          />
+                        ) : (
+                          <Plus className="w-5 h-5 text-gray-600 group-hover:text-[#df2531]" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
