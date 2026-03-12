@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
+import { getDatesRangePY } from '../../../../utils/date';
 
 interface ConfiguradorSedeProps {
   tournamentId: string;
@@ -20,8 +21,8 @@ interface CanchaConfig {
   sedeNombre: string;
 }
 
-const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+// Horas fijas: 9 a 24 (16 horas) en hora de Paraguay
+const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
 export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: ConfiguradorSedeProps) {
   const [step, setStep] = useState<'sedes' | 'canchas' | 'grid'>('sedes');
@@ -60,27 +61,12 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
 
   const getFechas = useCallback(() => {
     if (!fechaInicio || !fechaFin) return [];
-    const fechas: { fecha: string; dia: number; num: number; mes: string }[] = [];
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    
-    for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
-      const date = new Date(d);
-      fechas.push({
-        fecha: date.toISOString().split('T')[0],
-        dia: date.getDay(),
-        num: date.getDate(),
-        mes: MESES[date.getMonth()],
-      });
-    }
-    return fechas;
+    // Usar utilidad de fecha de Paraguay
+    return getDatesRangePY(fechaInicio, fechaFin);
   }, [fechaInicio, fechaFin]);
 
   const fechas = getFechas();
   const canchasDeSede = canchas.filter(c => c.sedeId === sedeSeleccionada?.id);
-
-  // Horas fijas: 9 a 24 (16 horas)
-  const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
   const toggleTodasCanchas = () => {
     if (canchasSeleccionadas.size === canchasDeSede.length) {
@@ -418,7 +404,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                 </div>
                 {fechas.map((f) => (
                   <div key={f.fecha} className="flex-1 p-2 text-center bg-[#0B0E14] border-r border-white/5 min-w-0">
-                    <div className="text-[10px] text-gray-500">{DIAS_SEMANA[f.dia]}</div>
+                    <div className="text-[10px] text-gray-500">{f.diaNombre}</div>
                     <div className="text-sm font-bold text-white">{f.num}</div>
                     <div className="text-[9px] text-gray-600">{f.mes}</div>
                   </div>
@@ -445,7 +431,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                           onMouseDown={() => startDrag(f.fecha, hora, marcado)}
                           onMouseEnter={() => enterCell(f.fecha, hora)}
                           onMouseUp={endDrag}
-                          title={`${DIAS_SEMANA[f.dia]} ${f.num} ${hora}:00`}
+                          title={`${f.diaNombre} ${f.num} ${hora}:00`}
                         />
                       );
                     })}
