@@ -79,14 +79,8 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
   const fechas = getFechas();
   const canchasDeSede = canchas.filter(c => c.sedeId === sedeSeleccionada?.id);
 
-  // Horas según cantidad de fechas (más fechas = menos horas mostradas)
-  const getHoras = () => {
-    if (fechas.length <= 2) return Array.from({ length: 16 }, (_, i) => i + 9); // 9-24
-    if (fechas.length <= 4) return Array.from({ length: 12 }, (_, i) => i + 12); // 12-24
-    return Array.from({ length: 8 }, (_, i) => i + 14); // 14-22
-  };
-  
-  const HORAS = getHoras();
+  // Horas fijas: 9 a 24 (16 horas)
+  const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
   const toggleTodasCanchas = () => {
     if (canchasSeleccionadas.size === canchasDeSede.length) {
@@ -431,8 +425,8 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                 ))}
               </div>
 
-              {/* Filas de horas */}
-              <div className="max-h-[300px] overflow-y-auto">
+              {/* Filas de horas - sin scroll, todo visible */}
+              <div>
                 {HORAS.map(hora => (
                   <div key={hora} className="flex border-b border-white/5 last:border-0">
                     <div className="w-12 p-2 text-xs text-gray-500 font-medium flex items-center justify-center bg-[#0B0E14] border-r border-white/5">
@@ -472,11 +466,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin }: Config
                   <span>No disponible</span>
                 </div>
               </div>
-              <span>
-                {fechas.length <= 2 ? 'Horario completo 9-24h' : 
-                 fechas.length <= 4 ? 'Horario tarde 12-24h' : 
-                 'Horario noche 14-22h'}
-              </span>
+              <span>Horario: 9h - 24h</span>
             </div>
           </div>
         )}
