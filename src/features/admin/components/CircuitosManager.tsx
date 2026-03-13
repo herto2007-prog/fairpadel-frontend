@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, Calendar } from 'lucide-react';
+import { Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, Upload, Image as ImageIcon } from 'lucide-react';
 import { circuitosService } from '../../circuitos/circuitosService';
-import { formatDatePY } from '../../../utils/date';
 
 interface Circuito {
   id: string;
@@ -11,7 +10,7 @@ interface Circuito {
   ciudad: string;
   temporada: string;
   estado: string;
-  fechaInicio: string;
+  logoUrl?: string;
   _count?: {
     torneos: number;
   };
@@ -140,26 +139,36 @@ export function CircuitosManager() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-[#151921] border border-white/5 rounded-xl p-4"
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center gap-4">
+                  {/* Logo */}
+                  {circuito.logoUrl ? (
+                    <img 
+                      src={circuito.logoUrl} 
+                      alt={circuito.nombre}
+                      className="w-16 h-16 rounded-lg object-cover bg-white/5"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-gray-600" />
+                    </div>
+                  )}
+
+                  <div className="flex-1">
                     <h3 className="font-bold text-white text-lg">{circuito.nombre}</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {circuito.ciudad}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {formatDatePY(circuito.fechaInicio)}
-                      </span>
                       <span className="px-2 py-0.5 bg-white/5 rounded">
-                        Temp. {circuito.temporada}
+                        Temp. {circuito.temporada || '2026'}
                       </span>
                       <span className="px-2 py-0.5 bg-[#df2531]/20 text-[#df2531] rounded">
                         {circuito._count?.torneos || 0} torneos
                       </span>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <a
                       href={`/circuitos/${circuito.slug}`}
@@ -203,7 +212,7 @@ export function CircuitosManager() {
                       Organizador: {sol.torneo.organizador.apellido}, {sol.torneo.organizador.nombre}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {sol.torneo.ciudad} • {formatDatePY(sol.torneo.fechaInicio)}
+                      {sol.torneo.ciudad} • {new Date(sol.torneo.fechaInicio).toLocaleDateString('es-PY')}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -242,19 +251,41 @@ export function CircuitosManager() {
 
 function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('');
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
     ciudad: 'Asunción',
-    fechaInicio: '',
-    torneosParaClasificar: 8,
+    temporada: new Date().getFullYear().toString(),
+    colorPrimario: '#df2531',
   });
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    try {
+      const res = await circuitosService.uploadLogo(file);
+      if (res.success && res.url) {
+        setLogoUrl(res.url);
+      }
+    } catch (error) {
+      alert('Error subiendo logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await circuitosService.createCircuito(formData);
+      await circuitosService.createCircuito({
+        ...formData,
+        logoUrl: logoUrl || undefined,
+      });
       onSuccess();
     } catch (error) {
       alert('Error creando circuito');
@@ -264,21 +295,52 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[#151921] border border-white/5 rounded-xl p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-[#151921] border border-white/5 rounded-xl p-6 space-y-4 max-w-2xl">
       <h3 className="font-bold text-white text-lg">Crear Nuevo Circuito</h3>
       
+      {/* Logo Upload */}
       <div>
-        <label className="text-sm text-gray-400 block mb-1">Nombre del Circuito</label>
+        <label className="text-sm text-gray-400 block mb-2">Logo del Circuito</label>
+        <div className="flex items-center gap-4">
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt="Logo preview" 
+              className="w-20 h-20 rounded-lg object-cover bg-white/5"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-white/5 flex items-center justify-center border-2 border-dashed border-white/10">
+              <ImageIcon className="w-8 h-8 text-gray-600" />
+            </div>
+          )}
+          <label className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg cursor-pointer transition-colors">
+            <Upload className="w-4 h-4" />
+            {uploadingLogo ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleLogoUpload}
+              disabled={uploadingLogo}
+              className="hidden"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Nombre */}
+      <div>
+        <label className="text-sm text-gray-400 block mb-1">Nombre del Circuito *</label>
         <input
           type="text"
           value={formData.nombre}
           onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
           className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          placeholder="Ej: Copa Primavera 2025"
+          placeholder="Ej: Circuito Metropolitano"
           required
         />
       </div>
 
+      {/* Descripción */}
       <div>
         <label className="text-sm text-gray-400 block mb-1">Descripción</label>
         <textarea
@@ -290,9 +352,10 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </div>
 
+      {/* Ciudad y Temporada */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm text-gray-400 block mb-1">Ciudad</label>
+          <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
           <input
             type="text"
             value={formData.ciudad}
@@ -302,31 +365,43 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
         <div>
-          <label className="text-sm text-gray-400 block mb-1">Fecha de Inicio</label>
+          <label className="text-sm text-gray-400 block mb-1">Temporada *</label>
           <input
-            type="date"
-            value={formData.fechaInicio}
-            onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+            type="number"
+            value={formData.temporada}
+            onChange={(e) => setFormData({ ...formData, temporada: e.target.value })}
             className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            min={2024}
+            max={2030}
             required
           />
         </div>
       </div>
 
+      {/* Color */}
       <div>
-        <label className="text-sm text-gray-400 block mb-1">Torneos que clasifican</label>
-        <input
-          type="number"
-          value={formData.torneosParaClasificar}
-          onChange={(e) => setFormData({ ...formData, torneosParaClasificar: parseInt(e.target.value) })}
-          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          min={1}
-        />
+        <label className="text-sm text-gray-400 block mb-1">Color Principal</label>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={formData.colorPrimario}
+            onChange={(e) => setFormData({ ...formData, colorPrimario: e.target.value })}
+            className="w-12 h-10 rounded cursor-pointer bg-transparent"
+          />
+          <span className="text-gray-400 text-sm">{formData.colorPrimario}</span>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="bg-white/5 rounded-lg p-3 text-sm text-gray-400">
+        <p>• Los circuitos son por temporada anual (2026, 2027...)</p>
+        <p>• Al finalizar la temporada se resetean los puntos</p>
+        <p>• El Master Final se configura como un torneo más del circuito</p>
       </div>
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || uploadingLogo}
         className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
       >
         {saving ? 'Creando...' : 'Crear Circuito'}

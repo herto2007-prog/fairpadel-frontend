@@ -6,13 +6,9 @@ export interface CreateCircuitoPayload {
   ciudad: string;
   region?: string;
   temporada?: string;
-  fechaInicio: string;
-  fechaFin?: string;
-  fechaLimiteInscripcion?: string;
   colorPrimario?: string;
-  torneosParaClasificar?: number;
-  puntosMinimosClasificar?: number;
-  tieneFinal?: boolean;
+  logoUrl?: string;
+  bannerUrl?: string;
   destacado?: boolean;
 }
 
@@ -103,6 +99,16 @@ export const circuitosService = {
 
   confirmarClasificacion: async (circuitoId: string, jugadorId: string) => {
     const response = await api.post(`/circuitos/admin/${circuitoId}/confirmar-clasificacion/${jugadorId}`);
+    return response.data;
+  },
+
+  // Upload logo
+  uploadLogo: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/upload/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 };
