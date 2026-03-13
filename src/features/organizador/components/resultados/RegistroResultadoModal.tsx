@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trophy, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { resultadosService, RegistrarResultadoPayload } from './resultadosService';
+import { X, Trophy, Clock, AlertCircle, CheckCircle2, Activity, UserX, ShieldAlert, LogOut } from 'lucide-react';
+import { resultadosService, RegistrarResultadoPayload, ResultadoEspecialPayload } from './resultadosService';
 
 interface Props {
   isOpen: boolean;
@@ -14,7 +14,13 @@ interface Props {
   onSuccess?: () => void;
 }
 
+type TipoResultado = 'NORMAL' | 'ESPECIAL';
+type TipoResultadoEspecial = 'RETIRO_LESION' | 'RETIRO_OTRO' | 'DESCALIFICACION' | 'WO';
+
 export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Props) {
+  const [tipoResultado, setTipoResultado] = useState<TipoResultado>('NORMAL');
+  
+  // Formulario normal
   const [formData, setFormData] = useState<RegistrarResultadoPayload>({
     set1Pareja1: 6,
     set1Pareja2: 4,
@@ -22,6 +28,21 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
     set2Pareja2: 3,
     formatoSet3: 'SET_COMPLETO',
   });
+  
+  // Formulario especial
+  const [formEspecial, setFormEspecial] = useState<{
+    tipo: TipoResultadoEspecial;
+    parejaAfectada: number;
+    razon: string;
+    observaciones: string;
+    duracionMinutos?: number;
+  }>({
+    tipo: 'RETIRO_LESION',
+    parejaAfectada: 1,
+    razon: '',
+    observaciones: '',
+  });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -44,7 +65,18 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
     setError(null);
 
     try {
-      await resultadosService.registrarResultado(match.id, formData);
+      if (tipoResultado === 'NORMAL') {
+        await resultadosService.registrarResultado(match.id, formData);
+      } else {
+        const payload: ResultadoEspecialPayload = {
+          tipo: formEspecial.tipo,
+          parejaAfectada: formEspecial.parejaAfectada,
+          razon: formEspecial.razon,
+          observaciones: formEspecial.observaciones,
+          duracionMinutos: formEspecial.duracionMinutos,
+        };
+        await resultadosService.registrarResultadoEspecial(match.id, payload);
+      }
       setSuccess(true);
       setTimeout(() => {
         onSuccess?.();
@@ -112,16 +144,44 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               {/* Nombres de parejas */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                <div className={`rounded-xl p-3 text-center border ${formEspecial.parejaAfectada === 1 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
                   <p className="text-xs text-gray-500 mb-1">Pareja 1</p>
                   <p className="text-sm font-medium text-white">{pareja1Nombre}</p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                <div className={`rounded-xl p-3 text-center border ${formEspecial.parejaAfectada === 2 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
                   <p className="text-xs text-gray-500 mb-1">Pareja 2</p>
                   <p className="text-sm font-medium text-white">{pareja2Nombre}</p>
                 </div>
               </div>
 
+              {/* Tabs de tipo de resultado */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTipoResultado('NORMAL')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    tipoResultado === 'NORMAL'
+                      ? 'bg-[#df2531] text-white'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  }`}
+                >
+                  Resultado Normal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoResultado('ESPECIAL')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    tipoResultado === 'ESPECIAL'
+                      ? 'bg-[#df2531] text-white'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  }`}
+                >
+                  Retiro / Descalif.
+                </button>
+              </div>
+
+              {tipoResultado === 'NORMAL' ? (
+                <>
               {/* Set 1 */}
               <div className="bg-white/[0.02] rounded-xl p-4">
                 <p className="text-sm font-medium text-gray-400 mb-3">Set 1</p>
@@ -245,6 +305,143 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
                   <span>{error}</span>
                 </div>
               )}
+                </>
+              ) : (
+                <>
+                  {/* Resultado Especial Form */}
+                  <div className="space-y-4">
+                    {/* Tipo de resultado especial */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormEspecial({ ...formEspecial, tipo: 'RETIRO_LESION' })}
+                        className={`p-3 rounded-xl border transition-all ${
+                          formEspecial.tipo === 'RETIRO_LESION'
+                            ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <Activity className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs">Retiro por Lesión</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormEspecial({ ...formEspecial, tipo: 'RETIRO_OTRO' })}
+                        className={`p-3 rounded-xl border transition-all ${
+                          formEspecial.tipo === 'RETIRO_OTRO'
+                            ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <LogOut className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs">Retiro (Otro)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormEspecial({ ...formEspecial, tipo: 'DESCALIFICACION' })}
+                        className={`p-3 rounded-xl border transition-all ${
+                          formEspecial.tipo === 'DESCALIFICACION'
+                            ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <ShieldAlert className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs">Descalificación</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormEspecial({ ...formEspecial, tipo: 'WO' })}
+                        className={`p-3 rounded-xl border transition-all ${
+                          formEspecial.tipo === 'WO'
+                            ? 'bg-gray-500/20 border-gray-500/50 text-gray-400'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <UserX className="w-5 h-5 mx-auto mb-1" />
+                        <span className="text-xs">No se presentó (WO)</span>
+                      </button>
+                    </div>
+
+                    {/* Pareja afectada */}
+                    <div className="bg-white/[0.02] rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-400 mb-3">¿Qué pareja se retiró/fue descalificada?</p>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setFormEspecial({ ...formEspecial, parejaAfectada: 1 })}
+                          className={`flex-1 py-3 rounded-lg border transition-all ${
+                            formEspecial.parejaAfectada === 1
+                              ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                              : 'bg-white/5 border-white/10 text-gray-400'
+                          }`}
+                        >
+                          Pareja 1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormEspecial({ ...formEspecial, parejaAfectada: 2 })}
+                          className={`flex-1 py-3 rounded-lg border transition-all ${
+                            formEspecial.parejaAfectada === 2
+                              ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                              : 'bg-white/5 border-white/10 text-gray-400'
+                          }`}
+                        >
+                          Pareja 2
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Razón específica */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        {formEspecial.tipo === 'RETIRO_LESION' ? 'Tipo de lesión' : 
+                         formEspecial.tipo === 'DESCALIFICACION' ? 'Motivo de descalificación' : 
+                         'Razón (opcional)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={
+                          formEspecial.tipo === 'RETIRO_LESION' ? 'Ej: Lesión en rodilla' :
+                          formEspecial.tipo === 'DESCALIFICACION' ? 'Ej: Conducta antideportiva' :
+                          'Razón del retiro'
+                        }
+                        value={formEspecial.razon}
+                        onChange={(e) => setFormEspecial({ ...formEspecial, razon: e.target.value })}
+                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-[#df2531] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Duración */}
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <input
+                        type="number"
+                        placeholder="Duración hasta el momento (minutos)"
+                        value={formEspecial.duracionMinutos || ''}
+                        onChange={(e) => setFormEspecial({ ...formEspecial, duracionMinutos: parseInt(e.target.value) || undefined })}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-[#df2531] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Observaciones */}
+                    <textarea
+                      placeholder="Observaciones adicionales (opcional)"
+                      value={formEspecial.observaciones}
+                      onChange={(e) => setFormEspecial({ ...formEspecial, observaciones: e.target.value })}
+                      rows={2}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-[#df2531] focus:outline-none resize-none"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-center gap-2 text-red-400 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-3 pt-2">
@@ -258,9 +455,11 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2.5 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+                  className={`flex-1 py-2.5 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
+                    tipoResultado === 'ESPECIAL' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#df2531] hover:bg-[#df2531]/90'
+                  }`}
                 >
-                  {loading ? 'Guardando...' : 'Guardar Resultado'}
+                  {loading ? 'Guardando...' : tipoResultado === 'ESPECIAL' ? 'Registrar Incidencia' : 'Guardar Resultado'}
                 </button>
               </div>
             </form>

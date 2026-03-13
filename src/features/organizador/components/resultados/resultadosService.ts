@@ -18,10 +18,24 @@ export interface RegistrarPuntoPayload {
   detalle?: string;
 }
 
+export interface ResultadoEspecialPayload {
+  tipo: 'RETIRO_LESION' | 'RETIRO_OTRO' | 'DESCALIFICACION' | 'WO';
+  parejaAfectada: number; // 1 o 2
+  razon?: string;
+  duracionMinutos?: number;
+  observaciones?: string;
+}
+
 export const resultadosService = {
   // Carga directa de resultado
   registrarResultado: async (matchId: string, data: RegistrarResultadoPayload) => {
     const response = await api.post(`/admin/resultados/matches/${matchId}/resultado`, data);
+    return response.data;
+  },
+
+  // Resultado especial (retiro, descalificación, WO)
+  registrarResultadoEspecial: async (matchId: string, data: ResultadoEspecialPayload) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/resultado-especial`, data);
     return response.data;
   },
 
