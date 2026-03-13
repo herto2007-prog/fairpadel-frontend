@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, Trophy, Users, Calendar, User } from 'lucide-react';
+import { ArrowRight, Trophy, Users, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Hero = () => {
@@ -130,32 +130,24 @@ export const Hero = () => {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12"
             >
-              <motion.a
-                href="/register"
-                className="btn-primary inline-flex items-center justify-center gap-2 text-lg group"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Empezar Ahora
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
-              <motion.button
-                className="btn-secondary inline-flex items-center justify-center gap-2 text-lg group"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                <Play className="w-5 h-5" />
-                Ver Cómo Funciona
-              </motion.button>
               <Link to="/login">
                 <motion.button
-                  className="btn-outline inline-flex items-center justify-center gap-2 text-lg group"
+                  className="btn-primary inline-flex items-center justify-center gap-2 text-lg group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <User className="w-5 h-5" />
-                  Iniciar Sesión
+                  Empezar
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </motion.button>
+              </Link>
+              <Link to="/torneos">
+                <motion.button
+                  className="btn-secondary inline-flex items-center justify-center gap-2 text-lg group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Trophy className="w-5 h-5" />
+                  Ver Torneos
                 </motion.button>
               </Link>
             </motion.div>
