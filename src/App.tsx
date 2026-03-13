@@ -32,6 +32,7 @@ import MisInscripcionesPage from './features/inscripciones/pages/MisInscripcione
 // Rankings (V1)
 import RankingsPage from './features/rankings/pages/RankingsPage';
 import { CircuitosListPage, CircuitoDetailPage } from './features/circuitos';
+import { PerfilMockupPage } from './features/perfil/pages/PerfilMockupPage';
 
 // Sedes (V2)
 import SedesListPage from './features/sedes/pages/SedesListPage';
@@ -94,6 +95,9 @@ function App() {
         {/* Torneos Públicos - V2 */}
         <Route path="/torneos" element={<TorneosPublicListPage />} />
         <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
+        
+        {/* Mockup Perfil - Temporal */}
+        <Route path="/perfil-mockup" element={<PerfilMockupPage />} />
         
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
@@ -34,10 +34,19 @@ export function AdminPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex items-start justify-between"
         >
-          <h1 className="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
-          <p className="text-gray-400">Gestiona torneos, sedes y configuraciones del sistema</p>
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Panel de Administración</h1>
+            <p className="text-gray-400">Gestiona torneos, sedes y configuraciones del sistema</p>
+          </div>
+          <a
+            href="/perfil-mockup"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 rounded-xl hover:bg-purple-500/30 transition-all"
+          >
+            <User className="w-4 h-4" />
+            Ver Mockup Perfil
+          </a>
         </motion.div>
 
         {/* Tabs */}
