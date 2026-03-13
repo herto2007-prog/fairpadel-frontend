@@ -146,7 +146,9 @@ function App() {
           </Route>
           
           {/* Admin */}
-          <Route path="/admin" element={<AdminPage />} />
+          <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
           
           {/* Alias de rutas para navegación */}
           <Route path="/torneos" element={<TournamentsListPage />} />
