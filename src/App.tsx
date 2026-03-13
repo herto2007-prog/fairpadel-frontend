@@ -31,6 +31,7 @@ import MisInscripcionesPage from './features/inscripciones/pages/MisInscripcione
 
 // Rankings (V1)
 import RankingsPage from './features/rankings/pages/RankingsPage';
+import { CircuitosListPage, CircuitoDetailPage } from './features/circuitos';
 
 // Sedes (V2)
 import SedesListPage from './features/sedes/pages/SedesListPage';
@@ -118,6 +119,10 @@ function App() {
           
           {/* Rankings (V1) */}
           <Route path="/rankings" element={<RankingsPage />} />
+          
+          {/* Circuitos */}
+          <Route path="/circuitos" element={<CircuitosListPage />} />
+          <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
           
           {/* Sedes (V2) */}
           <Route path="/sedes" element={<SedesListPage />} />
