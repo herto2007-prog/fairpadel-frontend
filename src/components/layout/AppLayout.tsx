@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -70,12 +70,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-4">
               {user && (
                 <div className="hidden sm:flex items-center gap-3">
-                  <span className="text-sm text-gray-400">
-                    {user.nombre} {user.apellido}
+                  <Link
+                    to="/perfil"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
+                  >
+                    <User size={18} />
+                    <span>
+                      {user.nombre} {user.apellido}
+                    </span>
                     {user.roles?.includes('admin') && (
-                      <span className="ml-2 text-xs bg-[#df2531] px-2 py-0.5 rounded">Admin</span>
+                      <span className="ml-1 text-xs bg-[#df2531] px-2 py-0.5 rounded">Admin</span>
                     )}
-                  </span>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="p-2 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
@@ -121,13 +127,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 );
               })}
               {user && (
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg text-sm font-medium"
-                >
-                  <LogOut size={20} />
-                  Cerrar sesión
-                </button>
+                <>
+                  <Link
+                    to="/perfil"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-[#232838]"
+                  >
+                    <User size={20} />
+                    Mi Perfil
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg text-sm font-medium"
+                  >
+                    <LogOut size={20} />
+                    Cerrar sesión
+                  </button>
+                </>
               )}
             </div>
           </div>
