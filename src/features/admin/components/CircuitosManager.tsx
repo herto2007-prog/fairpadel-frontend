@@ -268,8 +268,8 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
     setUploadingLogo(true);
     try {
       const res = await circuitosService.uploadLogo(file);
-      if (res.success && res.url) {
-        setLogoUrl(res.url);
+      if (res.success && res.data?.url) {
+        setLogoUrl(res.data.url);
       }
     } catch (error) {
       alert('Error subiendo logo');

@@ -105,8 +105,9 @@ export const circuitosService = {
   // Upload logo
   uploadLogo: async (file: File) => {
     const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post('/upload/logo', formData, {
+    formData.append('image', file);
+    formData.append('folder', 'circuitos');
+    const response = await api.post('/uploads/image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
