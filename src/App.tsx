@@ -33,6 +33,7 @@ import MisInscripcionesPage from './features/inscripciones/pages/MisInscripcione
 import RankingsPage from './features/rankings/pages/RankingsPage';
 import { CircuitosListPage, CircuitoDetailPage } from './features/circuitos';
 import { PerfilMockupPage } from './features/perfil/pages/PerfilMockupPage';
+import { PerfilPage } from './features/perfil/pages/PerfilPage';
 
 // Sedes (V2)
 import SedesListPage from './features/sedes/pages/SedesListPage';
@@ -98,6 +99,10 @@ function App() {
         
         {/* Mockup Perfil - Temporal */}
         <Route path="/perfil-mockup" element={<PerfilMockupPage />} />
+        
+        {/* Perfil de Jugador */}
+        <Route path="/perfil" element={<PerfilPage />} />
+        <Route path="/perfil/:id" element={<PerfilPage />} />
         
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
