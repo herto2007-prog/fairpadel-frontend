@@ -1,0 +1,56 @@
+import { api } from '../../../../services/api';
+
+export interface RegistrarResultadoPayload {
+  set1Pareja1: number;
+  set1Pareja2: number;
+  set2Pareja1: number;
+  set2Pareja2: number;
+  set3Pareja1?: number;
+  set3Pareja2?: number;
+  formatoSet3: 'SUPER_TIE_BREAK' | 'SET_COMPLETO';
+  observaciones?: string;
+  duracionMinutos?: number;
+}
+
+export interface RegistrarPuntoPayload {
+  tipo: 'PUNTO' | 'FALTA_DIRECTA' | 'ACE' | 'DOBLE_FALTA';
+  ganador: number; // 1 o 2
+  detalle?: string;
+}
+
+export const resultadosService = {
+  // Carga directa de resultado
+  registrarResultado: async (matchId: string, data: RegistrarResultadoPayload) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/resultado`, data);
+    return response.data;
+  },
+
+  // Marcador en vivo
+  iniciarPartido: async (matchId: string, formatoSet3?: 'SUPER_TIE_BREAK' | 'SET_COMPLETO') => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/iniciar`, { formatoSet3 });
+    return response.data;
+  },
+
+  obtenerMarcador: async (matchId: string) => {
+    const response = await api.get(`/admin/resultados/matches/${matchId}/marcador`);
+    return response.data;
+  },
+
+  registrarPunto: async (matchId: string, data: RegistrarPuntoPayload) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/punto`, data);
+    return response.data;
+  },
+
+  deshacerUltimoPunto: async (matchId: string) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/deshacer`);
+    return response.data;
+  },
+
+  finalizarPartido: async (matchId: string, observaciones?: string, duracionMinutos?: number) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/finalizar`, {
+      observaciones,
+      duracionMinutos,
+    });
+    return response.data;
+  },
+};

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, MapPin, ChevronRight } from 'lucide-react';
+import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -47,6 +48,8 @@ export function BracketView({
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [faseActiva, setFaseActiva] = useState<string>('ZONA');
+  const [modalResultado, setModalResultado] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
+  const [modalVivo, setModalVivo] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
 
   useEffect(() => {
     loadPartidos();
@@ -121,9 +124,36 @@ export function BracketView({
 
         <div className="grid gap-3">
           {partidosPorFase[faseActiva as keyof typeof partidosPorFase]?.map((partido, index) => (
-            <PartidoCard key={partido.id} partido={partido} index={index} />
+            <PartidoCard 
+              key={partido.id} 
+              partido={partido} 
+              index={index} 
+              onRegistrarResultado={() => setModalResultado({ open: true, partido })}
+              onMarcadorVivo={() => setModalVivo({ open: true, partido })}
+            />
           ))}
         </div>
+
+      {/* Modales */}
+      <RegistroResultadoModal
+        isOpen={modalResultado.open}
+        onClose={() => setModalResultado({ open: false, partido: null })}
+        match={modalResultado.partido as any}
+        onSuccess={() => {
+          loadPartidos();
+          setModalResultado({ open: false, partido: null });
+        }}
+      />
+
+      <MarcadorEnVivo
+        isOpen={modalVivo.open}
+        onClose={() => setModalVivo({ open: false, partido: null })}
+        match={modalVivo.partido as any}
+        onSuccess={() => {
+          loadPartidos();
+          setModalVivo({ open: false, partido: null });
+        }}
+      />
       </div>
 
       {/* Vista previa del bracket (simplificada) */}
@@ -137,8 +167,19 @@ export function BracketView({
   );
 }
 
-function PartidoCard({ partido, index }: { partido: Partido; index: number }) {
+function PartidoCard({ 
+  partido, 
+  index,
+  onRegistrarResultado,
+  onMarcadorVivo,
+}: { 
+  partido: Partido; 
+  index: number;
+  onRegistrarResultado: () => void;
+  onMarcadorVivo: () => void;
+}) {
   const isFinalizado = !!partido.ganador;
+  const puedeJugar = partido.inscripcion1 && partido.inscripcion2 && !partido.esBye && !isFinalizado;
   
   return (
     <motion.div
@@ -208,6 +249,26 @@ function PartidoCard({ partido, index }: { partido: Partido; index: number }) {
           )}
         </div>
       </div>
+
+      {/* Acciones */}
+      {puedeJugar && (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+          <button
+            onClick={onMarcadorVivo}
+            className="flex-1 flex items-center justify-center gap-2 py-2 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg text-sm font-medium transition-colors"
+          >
+            <Play className="w-4 h-4" />
+            En Vivo
+          </button>
+          <button
+            onClick={onRegistrarResultado}
+            className="flex-1 flex items-center justify-center gap-2 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Edit3 className="w-4 h-4" />
+            Resultado
+          </button>
+        </div>
+      )}
 
       {/* Info adicional */}
       {(partido.fecha || partido.cancha) && (
