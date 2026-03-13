@@ -10,6 +10,7 @@ import {
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { perfilService, PerfilJugador } from '../perfilService';
 import { useAuth } from '../../auth/context/AuthContext';
+import { EditarPerfilModal } from '../components/EditarPerfilModal';
 
 export function PerfilPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ export function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMyProfile, setIsMyProfile] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     loadPerfil();
@@ -107,6 +109,10 @@ export function PerfilPage() {
       </div>
     );
   }
+
+  const handleUpdatePerfil = (updatedData: Partial<PerfilJugador>) => {
+    setPerfil(prev => prev ? { ...prev, ...updatedData } : null);
+  };
 
   const statCards = [
     { label: 'Torneos Ganados', value: perfil.stats.torneosGanados, icon: Trophy, color: 'from-yellow-500/20 to-orange-500/20', iconColor: 'text-yellow-400' },
@@ -236,7 +242,10 @@ export function PerfilPage() {
                   Seguir
                 </button>
               ) : (
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all">
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all"
+                >
                   <Edit3 className="w-4 h-4" />
                   Editar Perfil
                 </button>
@@ -504,6 +513,16 @@ export function PerfilPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Edición */}
+      {isMyProfile && (
+        <EditarPerfilModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          perfil={perfil}
+          onUpdate={handleUpdatePerfil}
+        />
+      )}
     </div>
   );
 }

@@ -9,8 +9,11 @@ export interface PerfilJugador {
   fotoUrl?: string;
   bannerUrl?: string;
   bio?: string;
+  instagram?: string;
+  facebook?: string;
+  telefono?: string;
   ciudad?: string;
-  pais: string;
+  pais?: string;
   categoria?: {
     id: string;
     nombre: string;
