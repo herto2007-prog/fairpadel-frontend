@@ -152,7 +152,7 @@ export function TorneosPublicListPage() {
           >
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
               Descubre los mejores{' '}
-              <span className="bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent">
+              <span className="text-[#df2531]">
                 torneos de pádel
               </span>
             </h1>
