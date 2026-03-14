@@ -10,7 +10,7 @@ import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
 import { ProgramacionManager } from '../components/programacion/ProgramacionManager';
-import { ConfiguradorSede, CalendarioDisponibilidad } from '../components/disponibilidad';
+import { CanchasManager } from '../components/disponibilidad/CanchasManager';
 import { VistaDemo } from '../components/vista-demo';
 import { api } from '../../../services/api';
 
@@ -38,8 +38,6 @@ export function GestionarTorneoPage() {
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [dispVista, setDispVista] = useState<'configurar' | 'ver'>('configurar');
-  const [dispRefreshKey, setDispRefreshKey] = useState(0);
   const [categoriasSorteadas, setCategoriasSorteadas] = useState<any[]>([]);
   const [stats, setStats] = useState({
     inscripcionesPendientes: 0,
@@ -215,49 +213,11 @@ export function GestionarTorneoPage() {
         )}
 
         {activeTab === 'disponibilidad' && id && (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDispVista('configurar')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  dispVista === 'configurar'
-                    ? 'bg-[#df2531] text-white'
-                    : 'bg-[#151921] text-gray-400 hover:text-white'
-                }`}
-              >
-                Configurar
-              </button>
-              <button
-                onClick={() => setDispVista('ver')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  dispVista === 'ver'
-                    ? 'bg-[#df2531] text-white'
-                    : 'bg-[#151921] text-gray-400 hover:text-white'
-                }`}
-              >
-                Ver Calendario
-              </button>
-            </div>
-            
-            {dispVista === 'configurar' ? (
-              <ConfiguradorSede 
-                tournamentId={id} 
-                fechaInicio={torneo?.fechaInicio}
-                fechaFin={torneo?.fechaFin}
-                onSave={() => {
-                  setDispRefreshKey(prev => prev + 1);
-                  setDispVista('ver');
-                }}
-              />
-            ) : (
-              <CalendarioDisponibilidad 
-                key={dispRefreshKey}
-                tournamentId={id} 
-                fechaInicio={torneo?.fechaInicio}
-                fechaFin={torneo?.fechaFin}
-              />
-            )}
-          </div>
+          <CanchasManager
+            tournamentId={id}
+            fechaInicio={torneo?.fechaInicio}
+            fechaFin={torneo?.fechaFin}
+          />
         )}
 
         {activeTab === 'bracket' && id && (
