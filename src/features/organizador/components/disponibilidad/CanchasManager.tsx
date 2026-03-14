@@ -462,7 +462,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         </div>
       </div>
 
-      {/* MODAL: Copiar Día */}
+      {/* MODALES */}
       <AnimatePresence>
         {/* MODAL: Agregar Día */}
         {showConfigDia && (
