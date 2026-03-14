@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, RotateCcw, Trophy, Flag } from 'lucide-react';
 import { resultadosService } from './resultadosService';
 
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -110,7 +111,8 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   };
 
   const finalizarPartido = async () => {
-    if (!confirm('¿Finalizar el partido?')) return;
+    if (!window.confirm('¿Finalizar el partido?')) return;
+    
     setLoading(true);
     try {
       await resultadosService.finalizarPartido(match.id);

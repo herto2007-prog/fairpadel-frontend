@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, CheckCircle, XCircle, Loader2, ArrowUp, Calendar } from 'lucide-react';
 import { rankingsService } from '../../rankings/rankingsService';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 interface Ascenso {
   id: string;
@@ -28,6 +30,8 @@ interface Ascenso {
 }
 
 export function AscensosManager() {
+  const { showSuccess, showError, showInfo } = useToast();
+  const { confirm } = useConfirm();
   const [ascensos, setAscensos] = useState<Ascenso[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -55,29 +59,47 @@ export function AscensosManager() {
   };
 
   const handleProcesar = async (id: string, estado: 'CONFIRMADO' | 'RECHAZADO') => {
-    if (!confirm(`¿${estado === 'CONFIRMADO' ? 'Confirmar' : 'Rechazar'} este ascenso?`)) return;
+    const confirmed = await confirm({
+      title: estado === 'CONFIRMADO' ? 'Confirmar ascenso' : 'Rechazar ascenso',
+      message: `¿Estás seguro de ${estado === 'CONFIRMADO' ? 'confirmar' : 'rechazar'} este ascenso de categoría?`,
+      confirmText: estado === 'CONFIRMADO' ? 'Confirmar' : 'Rechazar',
+      cancelText: 'Cancelar',
+      variant: estado === 'CONFIRMADO' ? 'success' : 'danger',
+    });
+    if (!confirmed) return;
     
     setProcessing(id);
     try {
       await rankingsService.procesarAscenso(id, estado);
+      showSuccess(
+        estado === 'CONFIRMADO' ? 'Ascenso confirmado' : 'Ascenso rechazado',
+        `El ascenso fue ${estado === 'CONFIRMADO' ? 'confirmado' : 'rechazado'} exitosamente`
+      );
       await loadAscensos();
     } catch (error) {
-      alert('Error procesando ascenso');
+      showError('Error', 'No se pudo procesar el ascenso');
     } finally {
       setProcessing(null);
     }
   };
 
   const calcularAscensos = async () => {
-    if (!confirm('¿Calcular ascensos automáticamente? Se revisarán todos los jugadores.')) return;
+    const confirmed = await confirm({
+      title: 'Calcular ascensos',
+      message: '¿Calcular ascensos automáticamente? Se revisarán todos los jugadores del sistema.',
+      confirmText: 'Calcular',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) return;
     
     setLoading(true);
     try {
       const res = await rankingsService.calcularAscensos();
-      alert(res.message);
+      showInfo('Cálculo completado', res.message);
       await loadAscensos();
     } catch (error) {
-      alert('Error calculando ascensos');
+      showError('Error', 'No se pudieron calcular los ascensos');
     } finally {
       setLoading(false);
     }

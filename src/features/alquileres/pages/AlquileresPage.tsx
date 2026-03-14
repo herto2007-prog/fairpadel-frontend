@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { alquileresService } from '../../../services/alquileresService';
 import { sedesService } from '../../../services/sedesService';
+import { useToast } from '../../../components/ui/ToastProvider';
 import { Clock, MapPin } from 'lucide-react';
 
 interface Slot {
@@ -16,6 +17,7 @@ interface CanchaDisponibilidad {
 }
 
 export default function AlquileresPage() {
+  const { showSuccess, showError } = useToast();
   const [searchParams] = useSearchParams();
   const sedeIdParam = searchParams.get('sedeId');
 
@@ -62,10 +64,10 @@ export default function AlquileresPage() {
         horaFin,
         precio: 50000, // TODO: obtener precio real
       });
-      alert('Reserva creada exitosamente');
+      showSuccess('Reserva creada', `Tu reserva para las ${horaInicio} - ${horaFin} fue creada exitosamente`);
       loadDisponibilidad();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al crear reserva');
+      showError('Error al crear reserva', err.response?.data?.message || 'No se pudo crear la reserva');
     }
   };
 

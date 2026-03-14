@@ -4,6 +4,9 @@ import {
   Plus, Trash2, Check, Clock, Bell, X, Edit3
 } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -78,6 +81,8 @@ const TAB_COLORS = [
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════
 export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
+  const { showError, showInfo } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [tabs, setTabs] = useState<Tab[]>([
     { id: 'general', nombre: 'General', color: '0' },
     { id: 'logistica', nombre: 'Logística', color: '1' },
@@ -160,13 +165,19 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
 
   // Eliminar tarea
   const eliminarTarea = async (tareaId: string) => {
-    if (!confirm('¿Eliminar esta tarea?')) return;
+    const confirmed = await confirm({
+      title: 'Eliminar tarea',
+      message: '¿Estás seguro de eliminar esta tarea?',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     
     try {
-      // Por ahora solo local
       setTareas(tareas.filter(t => t.id !== tareaId));
     } catch (error) {
-      console.error('Error eliminando tarea:', error);
+      showError('Error', 'No se pudo eliminar la tarea');
     }
   };
 
@@ -186,7 +197,7 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
   // Agregar nuevo tab
   const agregarTab = () => {
     if (tabs.length >= 10) {
-      alert('Máximo 10 tabs permitidos');
+      showInfo('Límite alcanzado', 'Máximo 10 tabs permitidos');
       return;
     }
     const newId = `tab-${Date.now()}`;
@@ -200,12 +211,19 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
   };
 
   // Eliminar tab
-  const eliminarTab = (tabId: string) => {
+  const eliminarTab = async (tabId: string) => {
     if (tabs.length <= 1) {
-      alert('Debes tener al menos un tab');
+      showInfo('Acción no permitida', 'Debes tener al menos una sección');
       return;
     }
-    if (!confirm('¿Eliminar este tab y todas sus tareas?')) return;
+    const confirmed = await confirm({
+      title: 'Eliminar sección',
+      message: '¿Eliminar esta sección y todas sus tareas? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     
     setTabs(tabs.filter(t => t.id !== tabId));
     setTareas(tareas.filter(t => t.categoria !== tabId));
@@ -527,6 +545,17 @@ export function ChecklistCuaderno({ tournamentId }: ChecklistCuadernoProps) {
           </div>
         </motion.div>
       </div>
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

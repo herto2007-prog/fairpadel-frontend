@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 
+
 interface Jugador {
   id: string;
   nombre: string;
@@ -130,7 +131,7 @@ export function ModalInscripcionManual({
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error creando inscripción');
+      console.error('Error creando inscripción:', error.response?.data?.message || 'Error creando inscripción');
     } finally {
       setLoading(false);
     }

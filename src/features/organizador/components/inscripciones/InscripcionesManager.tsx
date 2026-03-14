@@ -5,6 +5,9 @@ import {
   Trash2, CheckSquare, Square, Phone, Mail
 } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { ResumenStats } from './ResumenStats';
 import { InscripcionCard } from './InscripcionCard';
 import { ModalConfirmar } from './ModalConfirmar';
@@ -68,6 +71,8 @@ interface InscripcionesManagerProps {
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════
 export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps) {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [data, setData] = useState<{ stats: Stats; porCategoria: CategoriaInscritos[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
@@ -236,7 +241,15 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
 
   // Acciones masivas
   const confirmarSeleccionados = async () => {
-    if (!confirm(`¿Confirmar ${seleccionados.size} inscripciones?`)) return;
+    const confirmed = await confirm({
+      title: 'Confirmar inscripciones',
+      message: `¿Estás seguro de confirmar ${seleccionados.size} inscripciones? Esta acción no se puede deshacer.`,
+      confirmText: 'Confirmar',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) return;
+    
     try {
       await Promise.all(
         Array.from(seleccionados).map(id => 
@@ -244,9 +257,10 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         )
       );
       setSeleccionados(new Set());
+      showSuccess('Inscripciones confirmadas', `${seleccionados.size} inscripciones fueron confirmadas exitosamente`);
       loadInscripciones();
     } catch (error) {
-      alert('Error confirmando inscripciones');
+      showError('Error al confirmar', 'No se pudieron confirmar las inscripciones');
     }
   };
 
@@ -666,6 +680,17 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       )}
 
       {/* Modales */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
+      
       <ModalConfirmar
         isOpen={modalConfirmar}
         onClose={() => setModalConfirmar(false)}

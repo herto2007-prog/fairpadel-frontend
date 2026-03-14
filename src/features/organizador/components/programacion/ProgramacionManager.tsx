@@ -5,6 +5,9 @@ import {
   Calculator, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 interface Categoria {
   id: string;
@@ -65,6 +68,8 @@ interface ProgramacionManagerProps {
 }
 
 export function ProgramacionManager({ tournamentId, categoriasSorteadas }: ProgramacionManagerProps) {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [calculando, setCalculando] = useState(false);
   const [aplicando, setAplicando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoProgramacion | null>(null);
@@ -72,7 +77,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
   const calcularProgramacion = async () => {
     if (categoriasSorteadas.length === 0) {
-      alert('No hay categorías sorteadas para programar');
+      showError('Sin categorías', 'No hay categorías sorteadas para programar');
       return;
     }
 
@@ -84,9 +89,10 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       
       setResultado(data);
       setDiasExpandidos(new Set(data.distribucion.map((d: DistribucionDia) => d.fecha)));
+      showSuccess('Programación calculada', `Se calcularon ${data.distribucion.length} días de programación`);
     } catch (error: any) {
       console.error('Error calculando programación:', error);
-      alert(error.response?.data?.message || 'Error calculando programación');
+      showError('Error', error.response?.data?.message || 'Error calculando programación');
     } finally {
       setCalculando(false);
     }
@@ -95,10 +101,14 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   const aplicarProgramacion = async () => {
     if (!resultado || resultado.distribucion.length === 0) return;
 
-    const confirmar = window.confirm(
-      '¿Aplicar esta programación? Los partidos serán asignados a las fechas/horas/canchas indicadas.'
-    );
-    if (!confirmar) return;
+    const confirmed = await confirm({
+      title: 'Aplicar programación',
+      message: '¿Aplicar esta programación? Los partidos serán asignados a las fechas/horas/canchas indicadas. Esta acción no se puede deshacer.',
+      confirmText: 'Aplicar',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) return;
 
     setAplicando(true);
     try {
@@ -106,10 +116,10 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       await api.post(`/programacion/torneos/${tournamentId}/aplicar`, {
         asignaciones,
       });
-      alert('Programación aplicada exitosamente');
+      showSuccess('Programación aplicada', 'Los partidos fueron asignados exitosamente');
     } catch (error: any) {
       console.error('Error aplicando programación:', error);
-      alert(error.response?.data?.message || 'Error aplicando programación');
+      showError('Error', error.response?.data?.message || 'Error aplicando programación');
     } finally {
       setAplicando(false);
     }
@@ -414,6 +424,17 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

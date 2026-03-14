@@ -6,6 +6,8 @@ import {
   ChevronRight, X
 } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 
 interface Sede {
@@ -46,6 +48,8 @@ interface DisponibilidadConfigProps {
 }
 
 export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps) {
+  const { showSuccess, showError } = useToast();
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [, setTorneo] = useState<any>(null);
@@ -107,13 +111,22 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
   };
 
   const quitarSede = async (sedeId: string) => {
-    if (!confirm('¿Quitar esta sede del torneo?')) return;
+    const confirmed = await confirm({
+      title: 'Quitar sede',
+      message: '¿Estás seguro de quitar esta sede del torneo? Las canchas asociadas también serán removidas.',
+      confirmText: 'Quitar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+    
     try {
       setSaving(true);
       await disponibilidadService.quitarSede(tournamentId, sedeId);
+      showSuccess('Sede removida', 'La sede fue removida del torneo exitosamente');
       await loadData();
     } catch (error) {
-      console.error('Error quitando sede:', error);
+      showError('Error', 'No se pudo quitar la sede');
     } finally {
       setSaving(false);
     }
@@ -159,13 +172,22 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
   };
 
   const eliminarDia = async (diaId: string) => {
-    if (!confirm('¿Eliminar este día?')) return;
+    const confirmed = await confirm({
+      title: 'Eliminar día',
+      message: '¿Estás seguro de eliminar este día? Todos los slots generados serán eliminados también.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    
     try {
       setSaving(true);
       await disponibilidadService.eliminarDia(tournamentId, diaId);
+      showSuccess('Día eliminado', 'El día fue eliminado exitosamente');
       await loadData();
     } catch (error) {
-      console.error('Error eliminando día:', error);
+      showError('Error', 'No se pudo eliminar el día');
     } finally {
       setSaving(false);
     }
@@ -175,11 +197,10 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
     try {
       setSaving(true);
       const result = await disponibilidadService.generarSlots(tournamentId, diaId);
-      alert(`${result.totalSlots} slots generados`);
+      showSuccess('Slots generados', `${result.totalSlots} slots fueron generados exitosamente`);
       await loadData();
     } catch (error) {
-      console.error('Error generando slots:', error);
-      alert('Error generando slots');
+      showError('Error', 'No se pudieron generar los slots');
     } finally {
       setSaving(false);
     }

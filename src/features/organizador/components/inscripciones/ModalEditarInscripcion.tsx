@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 
+
 interface Jugador {
   id: string;
   nombre: string;

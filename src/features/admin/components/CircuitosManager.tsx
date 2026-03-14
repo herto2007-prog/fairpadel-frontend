@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, Upload, Image as ImageIcon } from 'lucide-react';
 import { circuitosService } from '../../circuitos/circuitosService';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 interface Circuito {
   id: string;
@@ -38,6 +41,8 @@ interface Solicitud {
 }
 
 export function CircuitosManager() {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [activeSubTab, setActiveSubTab] = useState<'circuitos' | 'solicitudes' | 'nuevo'>('circuitos');
   const [circuitos, setCircuitos] = useState<Circuito[]>([]);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
@@ -66,7 +71,14 @@ export function CircuitosManager() {
   };
 
   const handleProcesarSolicitud = async (id: string, estado: 'APROBADO' | 'RECHAZADO') => {
-    if (!confirm(`¿${estado === 'APROBADO' ? 'Aprobar' : 'Rechazar'} esta solicitud?`)) return;
+    const confirmed = await confirm({
+      title: estado === 'APROBADO' ? 'Aprobar solicitud' : 'Rechazar solicitud',
+      message: `¿Estás seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusión al circuito?`,
+      confirmText: estado === 'APROBADO' ? 'Aprobar' : 'Rechazar',
+      cancelText: 'Cancelar',
+      variant: estado === 'APROBADO' ? 'success' : 'danger',
+    });
+    if (!confirmed) return;
     
     setProcessing(id);
     try {
@@ -74,9 +86,13 @@ export function CircuitosManager() {
         estado,
         puntosValidos: estado === 'APROBADO',
       });
+      showSuccess(
+        estado === 'APROBADO' ? 'Solicitud aprobada' : 'Solicitud rechazada',
+        `La solicitud fue ${estado === 'APROBADO' ? 'aprobada' : 'rechazada'} exitosamente`
+      );
       await loadData();
     } catch (error) {
-      alert('Error procesando solicitud');
+      showError('Error', 'No se pudo procesar la solicitud');
     } finally {
       setProcessing(null);
     }
@@ -245,11 +261,23 @@ export function CircuitosManager() {
       ) : (
         <NuevoCircuitoForm onSuccess={() => { setActiveSubTab('circuitos'); loadData(); }} />
       )}
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
 
 function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
+  const { showError } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -272,7 +300,7 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
         setLogoUrl(res.data.url);
       }
     } catch (error) {
-      alert('Error subiendo logo');
+      showError('Error', 'No se pudo subir el logo');
     } finally {
       setUploadingLogo(false);
     }
@@ -288,7 +316,7 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
       });
       onSuccess();
     } catch (error) {
-      alert('Error creando circuito');
+      showError('Error', 'No se pudo crear el circuito');
     } finally {
       setSaving(false);
     }

@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { adminService, Sede, CreateSedeData, Cancha, CreateCanchaData } from '../../../services/adminService';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 // Países con códigos de teléfono
 const countries = [
@@ -27,6 +30,8 @@ const countries = [
 // En 2026 todas las canchas son césped sintético, no necesitamos seleccionar tipo
 
 export function SedesManager() {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -207,30 +212,42 @@ export function SedesManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de desactivar esta sede?')) return;
+    const confirmed = await confirm({
+      title: 'Desactivar sede',
+      message: '¿Estás seguro de desactivar esta sede? Las canchas asociadas también serán desactivadas.',
+      confirmText: 'Desactivar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
     
     try {
       await adminService.deleteSede(id);
-      setMessage({ type: 'success', text: 'Sede desactivada' });
+      showSuccess('Sede desactivada', 'La sede fue desactivada exitosamente');
       await loadSedes();
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error desactivando sede' });
+      showError('Error', 'Error desactivando sede');
     }
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleDeleteCancha = async (canchaId: string, sedeId: string) => {
-    if (!confirm('¿Estás seguro de desactivar esta cancha?')) return;
+    const confirmed = await confirm({
+      title: 'Desactivar cancha',
+      message: '¿Estás seguro de desactivar esta cancha?',
+      confirmText: 'Desactivar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
     
     try {
       await adminService.deleteCancha(canchaId);
-      setMessage({ type: 'success', text: 'Cancha desactivada' });
+      showSuccess('Cancha desactivada', 'La cancha fue desactivada exitosamente');
       const data = await adminService.getCanchas(sedeId);
       setCanchas(prev => ({ ...prev, [sedeId]: data }));
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error desactivando cancha' });
+      showError('Error', 'Error desactivando cancha');
     }
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleActivate = async (id: string) => {
@@ -837,6 +854,17 @@ export function SedesManager() {
           </button>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { ProfilePhotoGuidelines } from '../../../components/upload/ProfilePhotoG
 import { authService } from '../../../services/authService';
 import { useAuth } from '../context/AuthContext';
 
+
 interface FormData {
   nombre: string;
   apellido: string;
@@ -263,7 +264,8 @@ export const RegisterWizard = () => {
       setTimeout(() => navigate('/login'), 2000);
     } catch (error: any) {
       console.error('Error en registro:', error);
-      alert(error.response?.data?.message || 'Error al crear cuenta. Intenta nuevamente.');
+      const message = error.response?.data?.message || 'Error al crear cuenta. Intenta nuevamente.';
+      console.error('Error registrando:', message);
     } finally {
       setIsSubmitting(false);
     }

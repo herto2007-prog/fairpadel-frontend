@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
 interface Torneo {
@@ -55,6 +56,7 @@ const CODIGOS_PAIS = [
 ];
 
 export function InscripcionWizardPage() {
+  const { showError } = useToast();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -168,7 +170,7 @@ export function InscripcionWizardPage() {
       const { data } = await api.post('/inscripciones/public', payload);
       if (data.success) navigate('/inscripciones/my');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error creando inscripción');
+      showError('Error', error.response?.data?.message || 'Error creando inscripción');
     } finally {
       setSubmitting(false);
     }

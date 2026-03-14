@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRightLeft, AlertTriangle, Loader2, Check } from 'lucide-react';
 import { api } from '../../../../services/api';
 
+
 interface Categoria {
   categoriaId: string;
   categoriaNombre: string;
@@ -50,7 +51,7 @@ export function ModalCambiarCategoria({
       onSuccess();
       onClose();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error cambiando categoría');
+      console.error('Error cambiando categoría:', error.response?.data?.message || 'Error cambiando categoría');
     } finally {
       setLoading(false);
     }

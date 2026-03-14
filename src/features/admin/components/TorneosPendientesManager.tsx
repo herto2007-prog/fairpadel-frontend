@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { Trophy, Calendar, MapPin, User, CheckCircle, XCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 interface TorneoPendiente {
   id: string;
@@ -34,6 +37,8 @@ interface TorneoPendiente {
 
 export function TorneosPendientesManager() {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [torneos, setTorneos] = useState<TorneoPendiente[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -58,35 +63,48 @@ export function TorneosPendientesManager() {
   };
 
   const handleAprobar = async (id: string) => {
-    if (!confirm('¿Estás seguro de aprobar este torneo? Aparecerá públicamente en la lista de torneos.')) return;
+    const confirmed = await confirm({
+      title: 'Aprobar torneo',
+      message: '¿Estás seguro de aprobar este torneo? Aparecerá públicamente en la lista de torneos.',
+      confirmText: 'Aprobar',
+      cancelText: 'Cancelar',
+      variant: 'success',
+    });
+    if (!confirmed) return;
     
     setProcessing(id);
     try {
       const { data } = await api.post(`/admin/torneos/${id}/aprobar`);
       if (data.success) {
         setTorneos(prev => prev.filter(t => t.id !== id));
-        alert('Torneo aprobado exitosamente');
+        showSuccess('Torneo aprobado', 'El torneo fue aprobado y ahora es público');
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error aprobando torneo');
+      showError('Error', err.response?.data?.message || 'Error aprobando torneo');
     } finally {
       setProcessing(null);
     }
   };
 
   const handleRechazar = async (id: string) => {
-    const motivo = prompt('¿Por qué deseas rechazar este torneo? (opcional)');
-    if (motivo === null) return; // Cancelado
+    const confirmed = await confirm({
+      title: 'Rechazar torneo',
+      message: '¿Estás seguro de rechazar este torneo? El organizador será notificado.',
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     
     setProcessing(id);
     try {
-      const { data } = await api.post(`/admin/torneos/${id}/rechazar`, { motivo });
+      const { data } = await api.post(`/admin/torneos/${id}/rechazar`, { motivo: 'No cumple requisitos' });
       if (data.success) {
         setTorneos(prev => prev.filter(t => t.id !== id));
-        alert('Torneo rechazado');
+        showSuccess('Torneo rechazado', 'El torneo fue rechazado y el organizador será notificado');
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error rechazando torneo');
+      showError('Error', err.response?.data?.message || 'Error rechazando torneo');
     } finally {
       setProcessing(null);
     }
@@ -297,6 +315,17 @@ export function TorneosPendientesManager() {
           </motion.div>
         ))}
       </div>
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

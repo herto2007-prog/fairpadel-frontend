@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
+import { useToast } from '../../../../components/ui/ToastProvider';
 import { getDatesRangePY } from '../../../../utils/date';
 
 interface ConfiguradorSedeProps {
@@ -26,6 +27,7 @@ interface CanchaConfig {
 const HORAS = Array.from({ length: 16 }, (_, i) => i + 9);
 
 export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }: ConfiguradorSedeProps) {
+  const { showSuccess, showError } = useToast();
   const [step, setStep] = useState<'sedes' | 'canchas' | 'grid'>('sedes');
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<any[]>([]);
@@ -121,7 +123,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
 
   const guardar = async () => {
     if (canchasSeleccionadas.size === 0 || slotsTemporales.size === 0) {
-      alert('Selecciona al menos una cancha y un horario');
+      showError('Configuración incompleta', 'Selecciona al menos una cancha y un horario');
       return;
     }
 
@@ -153,7 +155,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
         await guardarBloque(fecha, bloqueInicio, bloqueFin + 1);
       }
 
-      alert(`¡Configuración guardada! ${slotsTemporales.size} horarios creados.`);
+      showSuccess('Configuración guardada', `${slotsTemporales.size} horarios creados exitosamente`);
       
       // Notificar al padre que se guardó exitosamente
       onSave?.();
@@ -166,7 +168,7 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
       
     } catch (error) {
       console.error('Error guardando:', error);
-      alert('Error guardando configuración');
+      showError('Error', 'No se pudo guardar la configuración');
     } finally {
       setGuardando(false);
     }
@@ -197,11 +199,12 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
     try {
       setAgregandoSede(sedeId);
       await disponibilidadService.agregarSede(tournamentId, sedeId);
+      showSuccess('Sede agregada', 'La sede fue agregada exitosamente');
       await loadData();
       setShowModalSedes(false);
     } catch (error) {
       console.error('Error agregando sede:', error);
-      alert('Error al agregar la sede');
+      showError('Error', 'No se pudo agregar la sede');
     } finally {
       setAgregandoSede(null);
     }

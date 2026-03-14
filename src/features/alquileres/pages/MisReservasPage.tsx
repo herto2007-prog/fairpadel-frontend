@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { alquileresService, Reserva } from '../../../services/alquileresService';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { Calendar, Clock, MapPin, CheckCircle, XCircle, Clock3 } from 'lucide-react';
 
 const estadoConfig = {
@@ -9,6 +12,8 @@ const estadoConfig = {
 };
 
 export default function MisReservasPage() {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,13 +32,21 @@ export default function MisReservasPage() {
   };
 
   const handleCancelar = async (id: string) => {
-    if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
+    const confirmed = await confirm({
+      title: 'Cancelar reserva',
+      message: '¿Estás seguro de cancelar esta reserva? Esta acción no se puede deshacer.',
+      confirmText: 'Cancelar reserva',
+      cancelText: 'Mantener',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
     
     try {
       await alquileresService.cancelarReserva(id, {});
+      showSuccess('Reserva cancelada', 'Tu reserva ha sido cancelada exitosamente');
       loadReservas();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cancelar');
+      showError('Error al cancelar', err.response?.data?.message || 'No se pudo cancelar la reserva');
     }
   };
 
@@ -103,6 +116,17 @@ export default function MisReservasPage() {
           </div>
         )}
       </div>
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

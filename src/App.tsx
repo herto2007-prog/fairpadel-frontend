@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from './features/auth/context/AuthContext';
+import { ToastProvider } from './components/ui/ToastProvider';
 
 // Layout
 import AppLayout from './components/layout/AppLayout';
@@ -88,10 +89,11 @@ function ProtectedLayout() {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Landing - Pública */}
-        <Route path="/" element={<LandingPage />} />
+    <ToastProvider>
+      <Router>
+        <Routes>
+          {/* Landing - Pública */}
+          <Route path="/" element={<LandingPage />} />
         
         {/* Torneos Públicos - V2 */}
         <Route path="/torneos" element={<TorneosPublicListPage />} />
@@ -165,6 +167,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    </ToastProvider>
   );
 }
 

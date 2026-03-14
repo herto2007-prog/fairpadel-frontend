@@ -6,8 +6,13 @@ import {
   Users, Target
 } from 'lucide-react';
 import { adminService, Modalidad, CreateModalidadData } from '../../../services/adminService';
+import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 export function ModalidadesManager() {
+  const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
   const [modalidades, setModalidades] = useState<Modalidad[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -48,18 +53,24 @@ export function ModalidadesManager() {
   };
 
   const handleSeedDefaults = async () => {
-    if (!confirm('¿Crear las 8 modalidades por defecto (PY + Mundo)?')) return;
+    const confirmed = await confirm({
+      title: 'Crear modalidades por defecto',
+      message: '¿Crear las 8 modalidades por defecto (PY + Mundo)?',
+      confirmText: 'Crear',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) return;
     
     setSeeding(true);
     try {
       const result = await adminService.seedModalidades();
-      setMessage({ type: 'success', text: result.message });
+      showSuccess('Modalidades creadas', result.message);
       await loadModalidades();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.response?.data?.message || 'Error creando modalidades' });
+      showError('Error', error.response?.data?.message || 'Error creando modalidades');
     } finally {
       setSeeding(false);
-      setTimeout(() => setMessage(null), 3000);
     }
   };
 
@@ -98,16 +109,22 @@ export function ModalidadesManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de desactivar esta modalidad?')) return;
+    const confirmed = await confirm({
+      title: 'Desactivar modalidad',
+      message: '¿Estás seguro de desactivar esta modalidad?',
+      confirmText: 'Desactivar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
     
     try {
       await adminService.deleteModalidad(id);
-      setMessage({ type: 'success', text: 'Modalidad desactivada' });
+      showSuccess('Modalidad desactivada', 'La modalidad fue desactivada exitosamente');
       await loadModalidades();
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error desactivando modalidad' });
+      showError('Error', 'Error desactivando modalidad');
     }
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleActivate = async (id: string) => {
@@ -555,6 +572,17 @@ export function ModalidadesManager() {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
