@@ -775,6 +775,9 @@ interface VistaSemanaProps {
 }
 
 function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: VistaSemanaProps) {
+  console.log('[VistaSemana] Slots recibidos:', slots.length, 'Slots:', slots.map(s => ({fecha: s.fecha, hora: s.horaInicio, cancha: s.cancha.nombre})));
+  console.log('[VistaSemana] WeekDays:', weekDays.map(d => getDateOnlyPY(d)));
+  
   // Si no hay canchas filtradas, mostrar todas
   const canchasToShow = canchasFiltradas.size > 0 
     ? canchasFiltradas 
@@ -782,6 +785,8 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
 
   // Filtrar slots por canchas seleccionadas
   const filteredSlots = slots.filter(s => canchasToShow.has(s.cancha.id));
+  
+  console.log('[VistaSemana] Filtered slots:', filteredSlots.length);
 
   return (
     <div className="overflow-x-auto">
@@ -816,7 +821,13 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
         <div className="space-y-2">
           {weekDays.map((day, dayIndex) => {
             const fechaStr = getDateOnlyPY(day);
-            const daySlots = filteredSlots.filter(s => s.fecha === fechaStr);
+            console.log('[VistaSemana] Comparando fecha:', fechaStr, 'con slots:', filteredSlots.map(s => s.fecha));
+            const daySlots = filteredSlots.filter(s => {
+              const match = s.fecha === fechaStr;
+              console.log('[VistaSemana]   Slot fecha:', s.fecha, '===', fechaStr, '?', match);
+              return match;
+            });
+            console.log('[VistaSemana] DaySlots para', fechaStr, ':', daySlots.length);
             
             if (daySlots.length === 0) return null;
             
