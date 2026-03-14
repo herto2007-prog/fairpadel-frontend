@@ -173,7 +173,7 @@ export const RegisterWizard = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/novedades" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   
   const [formData, setFormData] = useState<FormData>({

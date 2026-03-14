@@ -22,6 +22,7 @@ interface Inscripcion {
   modoPago?: 'COMPLETO' | 'INDIVIDUAL';
   createdAt: string;
   pagos: { monto: number; estado: string }[];
+  categoriaNombre?: string;
 }
 
 interface InscripcionCardProps {
@@ -96,6 +97,13 @@ export function InscripcionCard({ inscripcion, index, onConfirmar, onCancelar }:
                 {estadoConfig.label}
               </span>
             </div>
+
+            {/* Categoria */}
+            {inscripcion.categoriaNombre && (
+              <span className="text-xs text-[#df2531] bg-[#df2531]/10 px-2 py-1 rounded-full font-medium">
+                {inscripcion.categoriaNombre}
+              </span>
+            )}
 
             {/* Modo de pago */}
             {inscripcion.modoPago && (

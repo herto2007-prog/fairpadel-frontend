@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Trophy } from 'lucide-react';
+import { 
+  ChevronLeft, Trophy, LayoutDashboard, Users, Calendar, 
+  GitBranch, Settings, DollarSign, Info, Eye 
+} from 'lucide-react';
+import { OverviewTab } from '../components/overview/OverviewTab';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
@@ -19,19 +23,33 @@ interface Torneo {
   fechaFin?: string;
 }
 
+type TabType = 'overview' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'vistaDemo';
+
+interface TabConfig {
+  id: TabType;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+}
+
 export function GestionarTorneoPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'info' | 'vistaDemo'>('checklist');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [dispVista, setDispVista] = useState<'configurar' | 'ver'>('configurar');
   const [dispRefreshKey, setDispRefreshKey] = useState(0);
   const [categoriasSorteadas, setCategoriasSorteadas] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    inscripcionesPendientes: 0,
+    tareasChecklist: 0,
+  });
 
   useEffect(() => {
     if (id) {
       loadTorneo();
+      loadStats();
     }
   }, [id]);
 
@@ -41,16 +59,43 @@ export function GestionarTorneoPage() {
     }
   }, [activeTab, id]);
 
+  const loadStats = async () => {
+    if (!id) return;
+    try {
+      // Cargar stats para badges
+      const [inscResponse, checklistResponse] = await Promise.all([
+        api.get(`/admin/torneos/${id}/inscripciones`),
+        api.get(`/admin/torneos/${id}/checklist`),
+      ]);
+
+      if (inscResponse.data?.stats) {
+        setStats(prev => ({
+          ...prev,
+          inscripcionesPendientes: inscResponse.data.stats.pendientes || 0,
+        }));
+      }
+
+      if (checklistResponse.data?.items) {
+        const pendientes = checklistResponse.data.items.filter((i: any) => !i.completado).length;
+        setStats(prev => ({
+          ...prev,
+          tareasChecklist: pendientes,
+        }));
+      }
+    } catch (error) {
+      console.error('Error cargando stats:', error);
+    }
+  };
+
   const loadCategoriasSorteadas = async () => {
     try {
       const { data } = await api.get(`/admin/torneos/${id}/categorias`);
       if (data.success) {
-        // Filtrar solo categorías con fixture (sorteadas)
         const sorteadas = data.categorias.filter((c: any) => c.fixtureVersionId);
         setCategoriasSorteadas(sorteadas);
       }
     } catch (error) {
-      console.error('Error cargando categorías:', error);
+      console.error('Error cargando categorias:', error);
     }
   };
 
@@ -66,6 +111,28 @@ export function GestionarTorneoPage() {
       setLoading(false);
     }
   };
+
+  const tabs: TabConfig[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { 
+      id: 'inscripciones', 
+      label: 'Inscripciones', 
+      icon: Users,
+      badge: stats.inscripcionesPendientes > 0 ? stats.inscripcionesPendientes : undefined,
+    },
+    { id: 'disponibilidad', label: 'Canchas', icon: Calendar },
+    { id: 'bracket', label: 'Fixture', icon: GitBranch },
+    { id: 'programacion', label: 'Programacion', icon: Calendar },
+    { id: 'comision', label: 'Comision', icon: DollarSign },
+    { 
+      id: 'checklist', 
+      label: 'Checklist', 
+      icon: Settings,
+      badge: stats.tareasChecklist > 0 ? stats.tareasChecklist : undefined,
+    },
+    { id: 'info', label: 'Info', icon: Info },
+    { id: 'vistaDemo', label: 'Vista Publica', icon: Eye },
+  ];
 
   if (loading) {
     return (
@@ -118,50 +185,27 @@ export function GestionarTorneoPage() {
 
       {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex gap-2 mb-6">
-          <TabButton
-            label="Checklist"
-            active={activeTab === 'checklist'}
-            onClick={() => setActiveTab('checklist')}
-          />
-          <TabButton
-            label="Inscripciones"
-            active={activeTab === 'inscripciones'}
-            onClick={() => setActiveTab('inscripciones')}
-          />
-          <TabButton
-            label="Disponibilidad"
-            active={activeTab === 'disponibilidad'}
-            onClick={() => setActiveTab('disponibilidad')}
-          />
-          <TabButton
-            label="Fixture"
-            active={activeTab === 'bracket'}
-            onClick={() => setActiveTab('bracket')}
-          />
-          <TabButton
-            label="Programación"
-            active={activeTab === 'programacion'}
-            onClick={() => setActiveTab('programacion')}
-          />
-          <TabButton
-            label="Comisión"
-            active={activeTab === 'comision'}
-            onClick={() => setActiveTab('comision')}
-          />
-          <TabButton
-            label="Información"
-            active={activeTab === 'info'}
-            onClick={() => setActiveTab('info')}
-          />
-          <TabButton
-            label="Vista Demo"
-            active={activeTab === 'vistaDemo'}
-            onClick={() => setActiveTab('vistaDemo')}
-          />
+        <div className="flex flex-wrap gap-2 mb-6">
+          {tabs.map((tab) => (
+            <TabButton
+              key={tab.id}
+              label={tab.label}
+              icon={tab.icon}
+              active={activeTab === tab.id}
+              badge={tab.badge}
+              onClick={() => setActiveTab(tab.id)}
+            />
+          ))}
         </div>
 
         {/* Contenido */}
+        {activeTab === 'overview' && id && (
+          <OverviewTab 
+            tournamentId={id} 
+            onTabChange={(tab) => setActiveTab(tab as TabType)}
+          />
+        )}
+
         {activeTab === 'checklist' && id && (
           <ChecklistCuaderno tournamentId={id} />
         )}
@@ -172,7 +216,6 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'disponibilidad' && id && (
           <div className="space-y-4">
-            {/* Sub-tabs para disponibilidad */}
             <div className="flex gap-2">
               <button
                 onClick={() => setDispVista('configurar')}
@@ -203,7 +246,7 @@ export function GestionarTorneoPage() {
                 fechaFin={torneo?.fechaFin}
                 onSave={() => {
                   setDispRefreshKey(prev => prev + 1);
-                  setDispVista('ver'); // Auto-cambiar a vista calendario después de guardar
+                  setDispVista('ver');
                 }}
               />
             ) : (
@@ -231,14 +274,14 @@ export function GestionarTorneoPage() {
         {activeTab === 'comision' && (
           <div className="glass rounded-2xl p-8 text-center">
             <h3 className="text-lg font-medium text-gray-400">
-              Comisión - Próximamente
+              Comision - Próximamente
             </h3>
           </div>
         )}
 
         {activeTab === 'info' && (
           <div className="glass rounded-2xl p-8">
-            <h3 className="text-lg font-bold text-white mb-4">Información del Torneo</h3>
+            <h3 className="text-lg font-bold text-white mb-4">Informacion del Torneo</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Nombre:</span>
@@ -262,25 +305,33 @@ export function GestionarTorneoPage() {
   );
 }
 
-function TabButton({ 
-  label, 
-  active, 
-  onClick 
-}: { 
-  label: string; 
-  active: boolean; 
+interface TabButtonProps {
+  label: string;
+  icon: React.ElementType;
+  active: boolean;
+  badge?: number;
   onClick: () => void;
-}) {
+}
+
+function TabButton({ label, icon: Icon, active, badge, onClick }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl font-medium transition-all ${
+      className={`relative flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
         active
           ? 'bg-[#df2531] text-white'
           : 'bg-[#151921] text-gray-400 hover:text-white hover:bg-[#232838]'
       }`}
     >
-      {label}
+      <Icon className="w-4 h-4" />
+      <span className="hidden sm:inline">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+          active ? 'bg-white text-[#df2531]' : 'bg-[#df2531] text-white'
+        }`}>
+          {badge}
+        </span>
+      )}
     </button>
   );
 }

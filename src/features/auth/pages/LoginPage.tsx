@@ -35,7 +35,7 @@ export const LoginPage = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/novedades" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -45,7 +45,7 @@ export const LoginPage = () => {
     
     try {
       await login(documento, password);
-      navigate('/novedades');
+      navigate('/dashboard');
     } catch (err: any) {
       setLoginError(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {

@@ -7,7 +7,7 @@ import AppLayout from './components/layout/AppLayout';
 
 // Pages
 import LandingPage from './pages/LandingPage';
-import DashboardPage from './pages/DashboardPage';
+import HomeDashboardPage from './pages/HomeDashboardPage';
 
 // Auth
 import { LoginPage } from './features/auth/pages/LoginPage';
@@ -48,7 +48,7 @@ import InstructoresListPage from './features/instructores/pages/InstructoresList
 import InstructorDetailPage from './features/instructores/pages/InstructorDetailPage';
 
 // Feed (Novedades)
-import { NovedadesPage } from './features/feed/pages/NovedadesPage';
+// Importación removida - NovedadesPage reemplazado por HomeDashboardPage
 
 // Admin
 import { AdminPage } from './features/admin/pages/AdminPage';
@@ -113,8 +113,8 @@ function App() {
         
         {/* Rutas Protegidas con Layout */}
         <Route element={<ProtectedLayout />}>
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<DashboardPage />} />
+          {/* Dashboard - Experiencia Unificada */}
+          <Route path="/dashboard" element={<HomeDashboardPage />} />
           
           {/* Torneos - V2 Público */}
           <Route path="/tournaments" element={<TorneosPublicListPage />} />
@@ -145,8 +145,8 @@ function App() {
           <Route path="/instructores" element={<InstructoresListPage />} />
           <Route path="/instructores/:id" element={<InstructorDetailPage />} />
           
-          {/* Feed / Novedades */}
-          <Route path="/novedades" element={<NovedadesPage />} />
+          {/* Feed / Novedades - Ahora redirige al dashboard unificado */}
+          <Route path="/novedades" element={<HomeDashboardPage />} />
           
           {/* Organizador - Gestión de Torneos */}
           <Route element={<RoleProtectedRoute allowedRoles={['organizador']} />}>
@@ -161,7 +161,7 @@ function App() {
           
           {/* Alias de rutas para navegación */}
           <Route path="/torneos" element={<TournamentsListPage />} />
-          <Route path="/jugadores" element={<NovedadesPage />} /> {/* Temporal hasta tener página de jugadores */}
+          <Route path="/jugadores" element={<HomeDashboardPage />} /> {/* Temporal - redirige al dashboard */}
         </Route>
       </Routes>
     </Router>

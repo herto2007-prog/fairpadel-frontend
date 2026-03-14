@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Users, CheckCircle2, Clock, AlertCircle, 
-  Search, Plus, UserPlus, Lock, Unlock
+  Users, CheckCircle2, Search, Plus, Download, Filter, ChevronDown, ChevronUp,
+  Trash2, CheckSquare, Square, Phone, Mail
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { ResumenStats } from './ResumenStats';
@@ -31,6 +31,8 @@ interface Inscripcion {
   modoPago?: 'COMPLETO' | 'INDIVIDUAL';
   createdAt: string;
   pagos: { monto: number; estado: string }[];
+  categoriaId: string;
+  categoriaNombre: string;
 }
 
 interface CategoriaInscritos {
@@ -51,6 +53,10 @@ interface Stats {
   ingresos: number;
 }
 
+type FiltroEstado = 'todos' | 'confirmadas' | 'pendientes' | 'incompletas' | 'canceladas';
+type OrdenarPor = 'fecha' | 'nombre' | 'estado' | 'monto';
+type VistaTipo = 'cards' | 'tabla';
+
 interface InscripcionesManagerProps {
   tournamentId: string;
 }
@@ -61,32 +67,23 @@ interface InscripcionesManagerProps {
 export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps) {
   const [data, setData] = useState<{ stats: Stats; porCategoria: CategoriaInscritos[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [categoriaActiva, setCategoriaActiva] = useState<string>('');
+  const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'confirmadas' | 'pendientes' | 'incompletas'>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
+  const [ordenarPor, setOrdenarPor] = useState<OrdenarPor>('fecha');
+  const [ordenAscendente, setOrdenAscendente] = useState(false);
+  const [vista, setVista] = useState<VistaTipo>('cards');
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<Inscripcion | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(false);
-  const [cerrandoInscripciones, setCerrandoInscripciones] = useState(false);
-  const [categoriaEstado, setCategoriaEstado] = useState<string>('INSCRIPCIONES_ABIERTAS');
+  
 
-  // Cargar estado de la categoría
-  useEffect(() => {
-    if (categoriaActiva) {
-      loadCategoriaEstado();
-    }
-  }, [categoriaActiva]);
-
-  const loadCategoriaEstado = async () => {
-    try {
-      const { data } = await api.get(`/admin/categorias/${categoriaActiva}/bracket/config`);
-      if (data.success) {
-        setCategoriaEstado(data.estado);
-      }
-    } catch (error) {
-      console.error('Error cargando estado de categoría:', error);
-    }
-  };
+  
 
   useEffect(() => {
     loadInscripciones();
@@ -98,9 +95,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       const { data } = await api.get(`/admin/torneos/${tournamentId}/inscripciones`);
       if (data.success) {
         setData(data);
-        if (data.porCategoria.length > 0 && !categoriaActiva) {
-          setCategoriaActiva(data.porCategoria[0].categoriaId);
-        }
       }
     } catch (error) {
       console.error('Error cargando inscripciones:', error);
@@ -109,21 +103,146 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     }
   };
 
-  const categoriaActual = data?.porCategoria.find(c => c.categoriaId === categoriaActiva);
+  // Flatten todas las inscripciones
+  const todasLasInscripciones = useMemo(() => {
+    if (!data) return [];
+    const inscripciones: Inscripcion[] = [];
+    data.porCategoria.forEach(cat => {
+      cat.inscripciones.forEach(insc => {
+        inscripciones.push({
+          ...insc,
+          categoriaId: cat.categoriaId,
+          categoriaNombre: cat.categoriaNombre,
+        });
+      });
+    });
+    return inscripciones;
+  }, [data]);
 
-  const inscripcionesFiltradas = categoriaActual?.inscripciones.filter(insc => {
-    const searchTerm = filtroBusqueda.toLowerCase();
-    const jugador1Nombre = `${insc.jugador1.nombre} ${insc.jugador1.apellido}`.toLowerCase();
-    const jugador2Nombre = insc.jugador2 ? `${insc.jugador2.nombre} ${insc.jugador2.apellido}`.toLowerCase() : '';
-    const matchBusqueda = jugador1Nombre.includes(searchTerm) || jugador2Nombre.includes(searchTerm);
+  // Filtrar y ordenar
+  const inscripcionesFiltradas = useMemo(() => {
+    let resultado = [...todasLasInscripciones];
 
-    let matchEstado = true;
-    if (filtroEstado === 'confirmadas') matchEstado = insc.estado === 'CONFIRMADA';
-    if (filtroEstado === 'pendientes') matchEstado = insc.estado === 'PENDIENTE_PAGO' || insc.estado === 'PENDIENTE_CONFIRMACION';
-    if (filtroEstado === 'incompletas') matchEstado = !insc.jugador2;
+    // Filtro por categoría
+    if (categoriaActiva !== 'todas') {
+      resultado = resultado.filter(i => i.categoriaId === categoriaActiva);
+    }
 
-    return matchBusqueda && matchEstado;
-  }) || [];
+    // Filtro de búsqueda
+    if (filtroBusqueda) {
+      const searchTerm = filtroBusqueda.toLowerCase();
+      resultado = resultado.filter(insc => {
+        const j1 = `${insc.jugador1.nombre} ${insc.jugador1.apellido}`.toLowerCase();
+        const j2 = insc.jugador2 ? `${insc.jugador2.nombre} ${insc.jugador2.apellido}`.toLowerCase() : '';
+        const telefono = (insc.jugador1.telefono || '').toLowerCase();
+        const email = (insc.jugador1.email || '').toLowerCase();
+        return j1.includes(searchTerm) || j2.includes(searchTerm) || 
+               telefono.includes(searchTerm) || email.includes(searchTerm);
+      });
+    }
+
+    // Filtro por estado
+    if (filtroEstado !== 'todos') {
+      resultado = resultado.filter(insc => {
+        if (filtroEstado === 'confirmadas') return insc.estado === 'CONFIRMADA';
+        if (filtroEstado === 'pendientes') return insc.estado === 'PENDIENTE_PAGO' || insc.estado === 'PENDIENTE_CONFIRMACION';
+        if (filtroEstado === 'incompletas') return !insc.jugador2;
+        if (filtroEstado === 'canceladas') return insc.estado === 'CANCELADA';
+        return true;
+      });
+    }
+
+    // Filtro por fecha
+    if (fechaDesde) {
+      resultado = resultado.filter(i => new Date(i.createdAt) >= new Date(fechaDesde));
+    }
+    if (fechaHasta) {
+      resultado = resultado.filter(i => new Date(i.createdAt) <= new Date(fechaHasta));
+    }
+
+    // Ordenamiento
+    resultado.sort((a, b) => {
+      let comparacion = 0;
+      switch (ordenarPor) {
+        case 'fecha':
+          comparacion = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'nombre':
+          comparacion = `${a.jugador1.nombre} ${a.jugador1.apellido}`.localeCompare(`${b.jugador1.nombre} ${b.jugador1.apellido}`);
+          break;
+        case 'estado':
+          comparacion = a.estado.localeCompare(b.estado);
+          break;
+        case 'monto':
+          const montoA = a.pagos.reduce((s, p) => s + p.monto, 0);
+          const montoB = b.pagos.reduce((s, p) => s + p.monto, 0);
+          comparacion = montoA - montoB;
+          break;
+      }
+      return ordenAscendente ? comparacion : -comparacion;
+    });
+
+    return resultado;
+  }, [todasLasInscripciones, categoriaActiva, filtroBusqueda, filtroEstado, 
+      fechaDesde, fechaHasta, ordenarPor, ordenAscendente]);
+
+  // Exportar a CSV
+  const exportarCSV = () => {
+    const headers = ['Fecha', 'Categoria', 'Jugador 1', 'Telefono 1', 'Email 1', 
+                     'Jugador 2', 'Telefono 2', 'Email 2', 'Estado', 'Monto'];
+    
+    const rows = inscripcionesFiltradas.map(i => [
+      new Date(i.createdAt).toLocaleDateString('es-AR'),
+      i.categoriaNombre,
+      `${i.jugador1.nombre} ${i.jugador1.apellido}`,
+      i.jugador1.telefono || '',
+      i.jugador1.email || '',
+      i.jugador2 ? `${i.jugador2.nombre} ${i.jugador2.apellido}` : 'PENDIENTE',
+      i.jugador2?.telefono || '',
+      i.jugador2?.email || '',
+      i.estado,
+      i.pagos.reduce((s, p) => s + p.monto, 0),
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `inscripciones_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  // Selección múltiple
+  const toggleSeleccionarTodos = () => {
+    if (seleccionados.size === inscripcionesFiltradas.length) {
+      setSeleccionados(new Set());
+    } else {
+      setSeleccionados(new Set(inscripcionesFiltradas.map(i => i.id)));
+    }
+  };
+
+  const toggleSeleccionar = (id: string) => {
+    const nuevo = new Set(seleccionados);
+    if (nuevo.has(id)) nuevo.delete(id);
+    else nuevo.add(id);
+    setSeleccionados(nuevo);
+  };
+
+  // Acciones masivas
+  const confirmarSeleccionados = async () => {
+    if (!confirm(`¿Confirmar ${seleccionados.size} inscripciones?`)) return;
+    try {
+      await Promise.all(
+        Array.from(seleccionados).map(id => 
+          api.put(`/admin/torneos/${tournamentId}/inscripciones/${id}/confirmar`)
+        )
+      );
+      setSeleccionados(new Set());
+      loadInscripciones();
+    } catch (error) {
+      alert('Error confirmando inscripciones');
+    }
+  };
 
   const handleConfirmar = async () => {
     if (!inscripcionSeleccionada) return;
@@ -149,35 +268,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     }
   };
 
-  const handleCerrarInscripciones = async () => {
-    if (!categoriaActiva) return;
-    setCerrandoInscripciones(true);
-    try {
-      const { data } = await api.post(`/admin/categorias/${categoriaActiva}/cerrar-inscripciones`);
-      if (data.success) {
-        setCategoriaEstado('INSCRIPCIONES_CERRADAS');
-        alert('Inscripciones cerradas correctamente');
-      }
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error cerrando inscripciones');
-    } finally {
-      setCerrandoInscripciones(false);
-    }
-  };
-
-  const handleAbrirInscripciones = async () => {
-    if (!categoriaActiva) return;
-    try {
-      const { data } = await api.post(`/admin/categorias/${categoriaActiva}/abrir-inscripciones`);
-      if (data.success) {
-        setCategoriaEstado('INSCRIPCIONES_ABIERTAS');
-        alert('Inscripciones reabiertas correctamente');
-      }
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error abriendo inscripciones');
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -190,12 +280,12 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     );
   }
 
-  if (!data || data.porCategoria.length === 0) {
+  if (!data || todasLasInscripciones.length === 0) {
     return (
       <div className="glass rounded-2xl p-12 text-center">
         <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-white mb-2">Sin inscripciones aún</h3>
-        <p className="text-gray-400 mb-6">Las inscripciones aparecerán aquí cuando los jugadores se registren</p>
+        <h3 className="text-xl font-semibold text-white mb-2">Sin inscripciones aun</h3>
+        <p className="text-gray-400 mb-6">Las inscripciones apareceran aqui cuando los jugadores se registren</p>
         <button className="px-6 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all">
           <Plus className="w-5 h-5 inline mr-2" />
           Inscribir pareja manualmente
@@ -204,202 +294,359 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     );
   }
 
+  
+
   return (
     <div className="space-y-6">
       {/* Stats */}
       <ResumenStats stats={data.stats} />
 
-      {/* Filtros y Búsqueda */}
-      <div className="glass rounded-2xl p-4 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
+      {/* Barra de herramientas */}
+      <div className="bg-[#151921] border border-[#232838] rounded-2xl p-4 space-y-4">
+        {/* Fila 1: Búsqueda y acciones principales */}
+        <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre, telefono o email..."
               value={filtroBusqueda}
               onChange={(e) => setFiltroBusqueda(e.target.value)}
               className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors"
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            {[
-              { key: 'todos', label: 'Todos', icon: Users },
-              { key: 'confirmadas', label: 'Confirmados', icon: CheckCircle2 },
-              { key: 'pendientes', label: 'Pendientes', icon: Clock },
-              { key: 'incompletas', label: 'Sin pareja', icon: AlertCircle },
-            ].map((filtro) => (
+          <div className="flex gap-2 flex-wrap">
+            {/* Selector de categoría */}
+            <select
+              value={categoriaActiva}
+              onChange={(e) => setCategoriaActiva(e.target.value)}
+              className="px-4 py-2 bg-[#0B0E14] border border-[#232838] rounded-xl text-white text-sm focus:outline-none focus:border-[#df2531]"
+            >
+              <option value="todas">Todas las categorias</option>
+              {data.porCategoria.map(cat => (
+                <option key={cat.categoriaId} value={cat.categoriaId}>
+                  {cat.categoriaNombre} ({cat.total})
+                </option>
+              ))}
+            </select>
+
+            {/* Toggle vista */}
+            <div className="flex bg-[#0B0E14] rounded-xl border border-[#232838] overflow-hidden">
               <button
-                key={filtro.key}
-                onClick={() => setFiltroEstado(filtro.key as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  filtroEstado === filtro.key
-                    ? 'bg-[#df2531] text-white'
-                    : 'bg-[#151921] text-gray-400 hover:text-white hover:bg-[#232838]'
-                }`}
+                onClick={() => setVista('cards')}
+                className={`px-4 py-2 text-sm ${vista === 'cards' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'}`}
               >
-                <filtro.icon className="w-4 h-4" />
-                {filtro.label}
+                Cards
               </button>
-            ))}
+              <button
+                onClick={() => setVista('tabla')}
+                className={`px-4 py-2 text-sm ${vista === 'tabla' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'}`}
+              >
+                Tabla
+              </button>
+            </div>
+
+            {/* Exportar */}
+            <button
+              onClick={exportarCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-[#232838] text-white rounded-xl text-sm transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Exportar
+            </button>
+
+            {/* Filtros avanzados */}
+            <button
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-colors ${
+                mostrarFiltros ? 'bg-[#df2531] text-white' : 'bg-[#0B0E14] border border-[#232838] text-gray-400 hover:text-white'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filtros
+              {mostrarFiltros ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Fila 2: Filtros avanzados expandibles */}
+        <AnimatePresence>
+          {mostrarFiltros && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-4 border-t border-[#232838] grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Filtro estado */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Estado</label>
+                  <select
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value as FiltroEstado)}
+                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="confirmadas">Confirmadas</option>
+                    <option value="pendientes">Pendientes</option>
+                    <option value="incompletas">Sin pareja</option>
+                    <option value="canceladas">Canceladas</option>
+                  </select>
+                </div>
+
+                {/* Ordenar por */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Ordenar por</label>
+                  <div className="flex">
+                    <select
+                      value={ordenarPor}
+                      onChange={(e) => setOrdenarPor(e.target.value as OrdenarPor)}
+                      className="flex-1 px-3 py-2 bg-[#0B0E14] border border-r-0 border-[#232838] rounded-l-lg text-white text-sm"
+                    >
+                      <option value="fecha">Fecha</option>
+                      <option value="nombre">Nombre</option>
+                      <option value="estado">Estado</option>
+                      <option value="monto">Monto</option>
+                    </select>
+                    <button
+                      onClick={() => setOrdenAscendente(!ordenAscendente)}
+                      className="px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-r-lg text-gray-400 hover:text-white"
+                    >
+                      {ordenAscendente ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fecha desde */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Desde</label>
+                  <input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Fecha hasta */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Hasta</label>
+                  <input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Tabs de Categorías - Grupos con contorno */}
-      <div className="flex flex-col gap-4">
-        {/* Damas - ARRIBA */}
-        {data.porCategoria.some(c => c.categoriaTipo === 'FEMENINO') && (
-          <div className="bg-[#0d1117] rounded-2xl p-3 border border-pink-500/30">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-pink-500/20">
-              <span className="text-pink-400 text-lg">♀</span>
-              <span className="text-pink-400 text-sm font-semibold uppercase tracking-wider">Damas</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {data.porCategoria
-                .filter(c => c.categoriaTipo === 'FEMENINO')
-                .map((cat) => (
-                  <button
-                    key={cat.categoriaId}
-                    onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all min-w-[60px] ${
-                      categoriaActiva === cat.categoriaId
-                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
-                        : 'bg-[#151921] text-gray-400 hover:bg-[#1a1f2e] hover:text-gray-300'
-                    }`}
-                  >
-                    <span className="block">
-                      {cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.').replace(' Femenina', '').replace(' Femenino', '')}
-                    </span>
-                    <span className={`block text-xs ${categoriaActiva === cat.categoriaId ? 'text-pink-100' : 'text-gray-500'}`}>
-                      {cat.total} insc.
-                    </span>
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Caballeros - ABAJO */}
-        {data.porCategoria.some(c => c.categoriaTipo === 'MASCULINO') && (
-          <div className="bg-[#0d1117] rounded-2xl p-3 border border-blue-500/30">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-500/20">
-              <span className="text-blue-400 text-lg">♂</span>
-              <span className="text-blue-400 text-sm font-semibold uppercase tracking-wider">Caballeros</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {data.porCategoria
-                .filter(c => c.categoriaTipo === 'MASCULINO')
-                .map((cat) => (
-                  <button
-                    key={cat.categoriaId}
-                    onClick={() => setCategoriaActiva(cat.categoriaId)}
-                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all min-w-[60px] ${
-                      categoriaActiva === cat.categoriaId
-                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-[#151921] text-gray-400 hover:bg-[#1a1f2e] hover:text-gray-300'
-                    }`}
-                  >
-                    <span className="block">
-                      {cat.categoriaNombre.replace(' Categoría', '').replace('Principiante', 'Prin.')}
-                    </span>
-                    <span className={`block text-xs ${categoriaActiva === cat.categoriaId ? 'text-blue-100' : 'text-gray-500'}`}>
-                      {cat.total} insc.
-                    </span>
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Info de categoría */}
-      {categoriaActual && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="text-gray-500 text-sm">Total inscritos</span>
-              <p className="text-2xl font-bold text-white">{categoriaActual.total}</p>
-            </div>
-            <div className="w-px h-10 bg-[#232838]" />
-            <div>
-              <span className="text-emerald-500 text-sm flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                Confirmados
-              </span>
-              <p className="text-xl font-bold text-emerald-400">{categoriaActual.confirmadas}</p>
-            </div>
-            <div className="w-px h-10 bg-[#232838]" />
-            <div>
-              <span className="text-amber-500 text-sm flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Pendientes
-              </span>
-              <p className="text-xl font-bold text-amber-400">{categoriaActual.pendientes}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Botón Cerrar/Reabrir Inscripciones */}
-            {categoriaEstado === 'INSCRIPCIONES_ABIERTAS' && categoriaActual && categoriaActual.confirmadas >= 8 && (
-              <button
-                onClick={handleCerrarInscripciones}
-                disabled={cerrandoInscripciones}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl transition-colors text-sm disabled:opacity-50"
-              >
-                {cerrandoInscripciones ? (
-                  <div className="w-4 h-4 border-2 border-amber-400/20 border-t-amber-400 rounded-full animate-spin" />
-                ) : (
-                  <Lock className="w-4 h-4" />
-                )}
-                Cerrar inscripciones
-              </button>
-            )}
-            {categoriaEstado === 'INSCRIPCIONES_CERRADAS' && (
-              <button
-                onClick={handleAbrirInscripciones}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors text-sm"
-              >
-                <Unlock className="w-4 h-4" />
-                Reabrir
-              </button>
-            )}
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] text-white rounded-xl transition-colors text-sm">
-              <UserPlus className="w-4 h-4" />
-              Inscribir manual
+      {/* Acciones masivas */}
+      {seleccionados.size > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between bg-[#df2531]/10 border border-[#df2531]/30 rounded-xl p-4"
+        >
+          <span className="text-white font-medium">
+            {seleccionados.size} inscripciones seleccionadas
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSeleccionados(new Set())}
+              className="px-4 py-2 text-gray-400 hover:text-white text-sm"
+            >
+              Cancelar
             </button>
+            <button
+              onClick={confirmarSeleccionados}
+              className="flex items-center gap-2 px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-lg text-sm"
+            >
+              <CheckSquare className="w-4 h-4" />
+              Confirmar seleccionadas
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Resultados count */}
+      <div className="flex items-center justify-between text-sm text-gray-400">
+        <span>Mostrando {inscripcionesFiltradas.length} de {todasLasInscripciones.length} inscripciones</span>
+        {categoriaActiva !== 'todas' && (
+          <button
+            onClick={() => setCategoriaActiva('todas')}
+            className="text-[#df2531] hover:underline"
+          >
+            Ver todas las categorias
+          </button>
+        )}
+      </div>
+
+      {/* Lista/Tabla de inscripciones */}
+      {vista === 'cards' ? (
+        <div className="space-y-3">
+          <AnimatePresence mode="popLayout">
+            {inscripcionesFiltradas.map((inscripcion, index) => (
+              <div key={inscripcion.id} className="flex items-center gap-3">
+                <button
+                  onClick={() => toggleSeleccionar(inscripcion.id)}
+                  className="text-gray-400 hover:text-[#df2531]"
+                >
+                  {seleccionados.has(inscripcion.id) ? 
+                    <CheckSquare className="w-5 h-5 text-[#df2531]" /> : 
+                    <Square className="w-5 h-5" />
+                  }
+                </button>
+                <div className="flex-1">
+                  <InscripcionCard
+                    inscripcion={inscripcion}
+                    index={index}
+                    onConfirmar={() => {
+                      setInscripcionSeleccionada(inscripcion);
+                      setModalConfirmar(true);
+                    }}
+                    onCancelar={() => {
+                      setInscripcionSeleccionada(inscripcion);
+                      setModalCancelar(true);
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </AnimatePresence>
+        </div>
+      ) : (
+        /* Vista tabla */
+        <div className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#0B0E14] border-b border-[#232838]">
+                  <th className="px-4 py-3 text-left">
+                    <button 
+                      onClick={toggleSeleccionarTodos}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      {seleccionados.size === inscripcionesFiltradas.length && inscripcionesFiltradas.length > 0 ? 
+                        <CheckSquare className="w-5 h-5 text-[#df2531]" /> : 
+                        <Square className="w-5 h-5" />
+                      }
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoria</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jugadores</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacto</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inscripcionesFiltradas.map((insc) => (
+                  <tr key={insc.id} className="border-b border-[#232838] hover:bg-[#1a1f2e]">
+                    <td className="px-4 py-3">
+                      <button 
+                        onClick={() => toggleSeleccionar(insc.id)}
+                        className="text-gray-400 hover:text-[#df2531]"
+                      >
+                        {seleccionados.has(insc.id) ? 
+                          <CheckSquare className="w-5 h-5 text-[#df2531]" /> : 
+                          <Square className="w-5 h-5" />
+                        }
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-400">
+                      {new Date(insc.createdAt).toLocaleDateString('es-AR')}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-white">
+                      {insc.categoriaNombre}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-white">
+                        {insc.jugador1.nombre} {insc.jugador1.apellido}
+                      </div>
+                      <div className={`text-sm ${insc.jugador2 ? 'text-gray-400' : 'text-amber-500'}`}>
+                        {insc.jugador2 ? 
+                          `${insc.jugador2.nombre} ${insc.jugador2.apellido}` : 
+                          'Sin pareja'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {insc.jugador1.telefono || '-'}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Mail className="w-3 h-3" />
+                        {insc.jugador1.email || '-'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <EstadoBadge estado={insc.estado} />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-white">
+                      Gs. {insc.pagos.reduce((s, p) => s + p.monto, 0).toLocaleString('es-PY')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {insc.estado !== 'CONFIRMADA' && insc.estado !== 'CANCELADA' && (
+                          <button
+                            onClick={() => {
+                              setInscripcionSeleccionada(insc);
+                              setModalConfirmar(true);
+                            }}
+                            className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg"
+                            title="Confirmar"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        {insc.estado !== 'CANCELADA' && (
+                          <button
+                            onClick={() => {
+                              setInscripcionSeleccionada(insc);
+                              setModalCancelar(true);
+                            }}
+                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"
+                            title="Cancelar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Lista de inscripciones */}
-      <div className="space-y-3">
-        <AnimatePresence mode="popLayout">
-          {inscripcionesFiltradas.map((inscripcion, index) => (
-            <InscripcionCard
-              key={inscripcion.id}
-              inscripcion={inscripcion}
-              index={index}
-              onConfirmar={() => {
-                setInscripcionSeleccionada(inscripcion);
-                setModalConfirmar(true);
-              }}
-              onCancelar={() => {
-                setInscripcionSeleccionada(inscripcion);
-                setModalCancelar(true);
-              }}
-            />
-          ))}
-        </AnimatePresence>
-
-        {inscripcionesFiltradas.length === 0 && (
-          <div className="glass rounded-2xl p-12 text-center">
-            <Search className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No se encontraron inscripciones con los filtros aplicados</p>
-          </div>
-        )}
-      </div>
+      {inscripcionesFiltradas.length === 0 && (
+        <div className="glass rounded-2xl p-12 text-center">
+          <Search className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No se encontraron inscripciones con los filtros aplicados</p>
+          <button
+            onClick={() => {
+              setFiltroBusqueda('');
+              setFiltroEstado('todos');
+              setCategoriaActiva('todas');
+              setFechaDesde('');
+              setFechaHasta('');
+            }}
+            className="mt-4 text-[#df2531] hover:underline"
+          >
+            Limpiar filtros
+          </button>
+        </div>
+      )}
 
       {/* Modales */}
       <ModalConfirmar
@@ -416,5 +663,26 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         inscripcion={inscripcionSeleccionada}
       />
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPONENTE: EstadoBadge
+// ═══════════════════════════════════════════════════════════
+function EstadoBadge({ estado }: { estado: string }) {
+  const config: Record<string, { text: string; className: string }> = {
+    CONFIRMADA: { text: 'Confirmada', className: 'bg-emerald-500/20 text-emerald-400' },
+    PENDIENTE_PAGO: { text: 'Pendiente Pago', className: 'bg-amber-500/20 text-amber-400' },
+    PENDIENTE_CONFIRMACION: { text: 'Pendiente Conf.', className: 'bg-blue-500/20 text-blue-400' },
+    CANCELADA: { text: 'Cancelada', className: 'bg-red-500/20 text-red-400' },
+    RECHAZADA: { text: 'Rechazada', className: 'bg-gray-500/20 text-gray-400' },
+  };
+
+  const { text, className } = config[estado] || { text: estado, className: 'bg-gray-500/20 text-gray-400' };
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${className}`}>
+      {text}
+    </span>
   );
 }
