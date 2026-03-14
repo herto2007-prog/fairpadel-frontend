@@ -198,31 +198,38 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     if (!diaOrigen || !diaDestino) return;
     
     try {
+      console.log('[CanchasManager] Copiando día:', { diaOrigen, diaDestino });
+      
       const diaOrigenConfig = dias.find(d => d.fecha === diaOrigen);
       if (!diaOrigenConfig) {
         alert('Día origen no encontrado');
         return;
       }
       
-      // Crear nuevo día con misma config
-      await disponibilidadService.configurarDia(tournamentId, {
+      // 1. Crear nuevo día con misma config
+      const result = await disponibilidadService.configurarDia(tournamentId, {
         fecha: diaDestino,
         horaInicio: diaOrigenConfig.horaInicio,
         horaFin: diaOrigenConfig.horaFin,
         minutosSlot: diaOrigenConfig.minutosSlot,
       });
+      console.log('[CanchasManager] Día creado:', result);
       
-      // Generar slots
-      const nuevoDia = dias.find(d => d.fecha === diaDestino);
-      if (nuevoDia) {
-        await disponibilidadService.generarSlots(tournamentId, nuevoDia.id);
+      // 2. Generar slots usando el ID del resultado (no buscar en estado)
+      if (result?.dia?.id) {
+        console.log('[CanchasManager] Generando slots para:', result.dia.id);
+        await disponibilidadService.generarSlots(tournamentId, result.dia.id);
+      } else {
+        console.error('[CanchasManager] No se recibió ID del día creado');
       }
       
+      // 3. Recargar datos
       await loadData();
       setShowCopiarDia(false);
       setDiaOrigen('');
       setDiaDestino('');
     } catch (error: any) {
+      console.error('[CanchasManager] Error copiando día:', error);
       alert(error.response?.data?.message || 'Error copiando día');
     }
   };
@@ -233,19 +240,26 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     
     setGuardandoDia(true);
     try {
+      console.log('[CanchasManager] Guardando día:', nuevoDia);
+      
       // 1. Configurar el día
       const result = await disponibilidadService.configurarDia(tournamentId, nuevoDia);
+      console.log('[CanchasManager] Día guardado:', result);
       
-      // 2. Generar slots para ese día
+      // 2. Generar slots para ese día (usar el ID del resultado)
       if (result?.dia?.id) {
+        console.log('[CanchasManager] Generando slots para día:', result.dia.id);
         await disponibilidadService.generarSlots(tournamentId, result.dia.id);
+      } else {
+        console.error('[CanchasManager] No se recibió ID del día');
       }
       
+      // 3. Recargar datos
       await loadData();
       setShowConfigDia(false);
       setNuevoDia({ fecha: '', horaInicio: '18:00', horaFin: '23:00', minutosSlot: 90 });
     } catch (error: any) {
-      console.error('Error guardando día:', error);
+      console.error('[CanchasManager] Error guardando día:', error);
       alert(error.response?.data?.message || 'Error guardando día');
     } finally {
       setGuardandoDia(false);
