@@ -761,16 +761,13 @@ interface VistaSemanaProps {
 }
 
 function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: VistaSemanaProps) {
-  // Horas del día para mostrar (8am a 11pm)
-  const HORAS = Array.from({ length: 16 }, (_, i) => {
-    const h = (i + 8).toString().padStart(2, '0');
-    return `${h}:00`;
-  });
-
   // Si no hay canchas filtradas, mostrar todas
   const canchasToShow = canchasFiltradas.size > 0 
     ? canchasFiltradas 
     : new Set(canchas.map(c => c.id));
+
+  // Filtrar slots por canchas seleccionadas
+  const filteredSlots = slots.filter(s => canchasToShow.has(s.cancha.id));
 
   return (
     <div className="overflow-x-auto">
@@ -801,48 +798,52 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
           })}
         </div>
 
-        {/* Slots grid */}
-        <div className="space-y-1">
-          {HORAS.slice(8, 24).map((hora) => (
-            <div key={hora} className="grid grid-cols-8 gap-2">
-              <div className="text-xs text-gray-500 py-2">{hora}</div>
-              {weekDays.map((day, dayIndex) => {
-                const fechaStr = day.toISOString().split('T')[0];
-                const daySlots = slots.filter(
-                  s => s.fecha === fechaStr && 
-                       s.horaInicio.startsWith(hora) &&
-                       canchasToShow.has(s.cancha.id)
-                );
-                
-                return (
-                  <div key={dayIndex} className="min-h-[40px] bg-[#0B0E14] rounded-lg p-1 space-y-1">
-                    {daySlots.length === 0 ? (
-                      <div className="h-full flex items-center justify-center">
-                        <span className="text-[10px] text-gray-700">-</span>
-                      </div>
-                    ) : (
-                      daySlots.map((slot) => (
-                        <div
-                          key={slot.id}
-                          className={`text-[10px] px-2 py-1 rounded truncate ${
-                            slot.estado === 'OCUPADO' 
-                              ? 'bg-red-500/20 text-red-400' 
-                              : slot.estado === 'BLOQUEADO'
-                              ? 'bg-gray-700 text-gray-500'
-                              : 'bg-emerald-500/20 text-emerald-400'
-                          }`}
-                          title={`${slot.cancha.nombre} - ${slot.estado}`}
-                        >
-                          {slot.cancha.nombre}
+        {/* Por cada día, mostrar sus slots */}
+        <div className="space-y-2">
+          {weekDays.map((day, dayIndex) => {
+            const fechaStr = day.toISOString().split('T')[0];
+            const daySlots = filteredSlots.filter(s => s.fecha === fechaStr);
+            
+            if (daySlots.length === 0) return null;
+            
+            return (
+              <div key={dayIndex} className="grid grid-cols-8 gap-2">
+                <div className="text-xs text-gray-500 py-2">
+                  {day.toLocaleDateString('es-PY', { weekday: 'short', day: 'numeric' })}
+                </div>
+                <div className="col-span-7 bg-[#0B0E14] rounded-lg p-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {daySlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className={`text-xs px-3 py-2 rounded-lg flex items-center justify-between ${
+                          slot.estado === 'OCUPADO' 
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                            : slot.estado === 'BLOQUEADO'
+                            ? 'bg-gray-700 text-gray-500'
+                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        }`}
+                      >
+                        <div>
+                          <span className="font-medium">{slot.horaInicio}</span>
+                          <span className="text-gray-500 mx-1">-</span>
+                          <span className="text-gray-400">{slot.horaFin}</span>
                         </div>
-                      ))
-                    )}
+                        <span className="text-[10px] opacity-70">{slot.cancha.nombre}</span>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
+        
+        {filteredSlots.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <p>No hay slots en esta semana</p>
+          </div>
+        )}
       </div>
     </div>
   );
