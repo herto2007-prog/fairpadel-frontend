@@ -8,7 +8,7 @@ import {
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
 import { api } from '../../../../services/api';
-import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
+import { getDatesRangePY, formatDatePY, getDateOnlyPY } from '../../../../utils/date';
 
 interface Slot {
   id: string;
@@ -776,7 +776,7 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
         <div className="grid grid-cols-8 gap-2 mb-2">
           <div className="text-sm text-gray-500 py-2">Hora</div>
           {weekDays.map((day, i) => {
-            const fechaStr = day.toISOString().split('T')[0];
+            const fechaStr = getDateOnlyPY(day);
             const diaConfig = dias.find(d => d.fecha === fechaStr);
             return (
               <div key={i} className={`text-center py-2 rounded-lg ${
@@ -801,7 +801,7 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
         {/* Por cada día, mostrar sus slots */}
         <div className="space-y-2">
           {weekDays.map((day, dayIndex) => {
-            const fechaStr = day.toISOString().split('T')[0];
+            const fechaStr = getDateOnlyPY(day);
             const daySlots = filteredSlots.filter(s => s.fecha === fechaStr);
             
             if (daySlots.length === 0) return null;
