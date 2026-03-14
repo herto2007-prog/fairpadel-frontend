@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, MapPin,
   Calendar, Grid3X3, List, Building2, CheckCircle2,
-  X, Copy, BarChart3
+  X, Copy, BarChart3, Clock
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
-
+import { api } from '../../../../services/api';
 import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
 
 interface Slot {
@@ -90,14 +90,26 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   });
   const [slots, setSlots] = useState<Slot[]>([]);
   const [, setSedes] = useState<Sede[]>([]);
-  const [, setTodasSedes] = useState<Sede[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [dias, setDias] = useState<DiaConfig[]>([]);
   const [canchasFiltradas, setCanchasFiltradas] = useState<Set<string>>(new Set());
   const [vista, setVista] = useState<'semana' | 'lista'>('semana');
-  const [, setShowConfigDia] = useState(false);
-  const [, setShowAgregarSede] = useState(false);
+  const [showConfigDia, setShowConfigDia] = useState(false);
+  const [showAgregarSede, setShowAgregarSede] = useState(false);
   const [showCopiarDia, setShowCopiarDia] = useState(false);
+  
+  // Form para nuevo día
+  const [nuevoDia, setNuevoDia] = useState({
+    fecha: '',
+    horaInicio: '18:00',
+    horaFin: '23:00',
+    minutosSlot: 90,
+  });
+  const [guardandoDia, setGuardandoDia] = useState(false);
+  
+  // Datos para gestionar sedes
+  const [todasSedes, setTodasSedes] = useState<any[]>([]);
+  const [sedesLoading, setSedesLoading] = useState(false);
   const [diaOrigen, setDiaOrigen] = useState('');
   const [diaDestino, setDiaDestino] = useState('');
 
@@ -218,6 +230,55 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     }
   };
 
+  // AGREGAR DÍA
+  const handleGuardarDia = async () => {
+    if (!nuevoDia.fecha) return;
+    
+    setGuardandoDia(true);
+    try {
+      // 1. Configurar el día
+      const result = await disponibilidadService.configurarDia(tournamentId, nuevoDia);
+      
+      // 2. Generar slots para ese día
+      if (result?.dia?.id) {
+        await disponibilidadService.generarSlots(tournamentId, result.dia.id);
+      }
+      
+      await loadData();
+      setShowConfigDia(false);
+      setNuevoDia({ fecha: '', horaInicio: '18:00', horaFin: '23:00', minutosSlot: 90 });
+    } catch (error: any) {
+      console.error('Error guardando día:', error);
+      alert(error.response?.data?.message || 'Error guardando día');
+    } finally {
+      setGuardandoDia(false);
+    }
+  };
+
+  // GESTIONAR SEDES
+  const loadTodasSedes = async () => {
+    setSedesLoading(true);
+    try {
+      const { data } = await api.get('/admin/sedes');
+      setTodasSedes(data);
+    } catch (error) {
+      console.error('Error cargando sedes:', error);
+    } finally {
+      setSedesLoading(false);
+    }
+  };
+
+  const handleAgregarSede = async (sedeId: string) => {
+    try {
+      await disponibilidadService.agregarSede(tournamentId, sedeId);
+      await loadData();
+      setShowAgregarSede(false);
+    } catch (error: any) {
+      console.error('Error agregando sede:', error);
+      alert(error.response?.data?.message || 'Error agregando sede');
+    }
+  };
+
   const toggleCanchaFilter = (canchaId: string) => {
     const newSet = new Set(canchasFiltradas);
     if (newSet.has(canchaId)) {
@@ -295,7 +356,10 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         )}
         
         <button
-          onClick={() => setShowAgregarSede(true)}
+          onClick={() => {
+            loadTodasSedes();
+            setShowAgregarSede(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] border border-[#232838] text-white rounded-xl transition-colors text-sm font-medium"
         >
           <Building2 className="w-4 h-4" />
@@ -448,6 +512,182 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
 
       {/* MODAL: Copiar Día */}
       <AnimatePresence>
+        {/* MODAL: Agregar Día */}
+        {showConfigDia && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#151921] rounded-2xl border border-[#232838] max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#df2531]" />
+                  Agregar Día de Juego
+                </h3>
+                <button
+                  onClick={() => setShowConfigDia(false)}
+                  className="p-2 hover:bg-white/5 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Fecha</label>
+                  <input
+                    type="date"
+                    value={nuevoDia.fecha}
+                    onChange={(e) => setNuevoDia({ ...nuevoDia, fecha: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Hora Inicio
+                    </label>
+                    <input
+                      type="time"
+                      value={nuevoDia.horaInicio}
+                      onChange={(e) => setNuevoDia({ ...nuevoDia, horaInicio: e.target.value })}
+                      className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400 mb-2 block flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Hora Fin
+                    </label>
+                    <input
+                      type="time"
+                      value={nuevoDia.horaFin}
+                      onChange={(e) => setNuevoDia({ ...nuevoDia, horaFin: e.target.value })}
+                      className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Duración Partido</label>
+                  <select
+                    value={nuevoDia.minutosSlot}
+                    onChange={(e) => setNuevoDia({ ...nuevoDia, minutosSlot: Number(e.target.value) })}
+                    className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
+                  >
+                    <option value={60}>60 minutos</option>
+                    <option value={90}>90 minutos</option>
+                    <option value={120}>120 minutos</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowConfigDia(false)}
+                    className="flex-1 py-3 bg-[#232838] hover:bg-[#2a3042] text-white rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleGuardarDia}
+                    disabled={!nuevoDia.fecha || guardandoDia}
+                    className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 text-white rounded-xl"
+                  >
+                    {guardandoDia ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL: Gestionar Sedes */}
+        {showAgregarSede && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAgregarSede(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#151921] rounded-2xl border border-[#232838] max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#df2531]" />
+                  Gestionar Sedes
+                </h3>
+                <button
+                  onClick={() => setShowAgregarSede(false)}
+                  className="p-2 hover:bg-white/5 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {sedesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-8 h-8 border-4 border-[#df2531]/20 border-t-[#df2531] rounded-full"
+                    />
+                  </div>
+                ) : todasSedes.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No hay sedes disponibles</p>
+                ) : (
+                  todasSedes.map((sede: any) => (
+                      <button
+                        key={sede.id}
+                        onClick={() => handleAgregarSede(sede.id)}
+                        className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
+                              <Building2 className="w-5 h-5 text-[#df2531]" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-white group-hover:text-[#df2531] transition-colors">
+                                {sede.nombre}
+                              </p>
+                              <p className="text-xs text-gray-500">{sede.ciudad}</p>
+                              <p className="text-xs text-gray-600">{sede.canchas?.length || 0} canchas</p>
+                            </div>
+                          </div>
+                          <Plus className="w-5 h-5 text-gray-600 group-hover:text-[#df2531]" />
+                        </div>
+                      </button>
+                    ))
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowAgregarSede(false)}
+                className="w-full mt-4 py-3 bg-[#232838] hover:bg-[#2a3042] text-white rounded-xl"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL: Copiar Día */}
         {showCopiarDia && (
           <motion.div
             initial={{ opacity: 0 }}
