@@ -443,31 +443,6 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         {/* Grid */}
         <div className="overflow-x-auto">
           <div className="min-w-[800px] p-4">
-            {/* Días header */}
-            <div className="grid grid-cols-8 gap-2 mb-2">
-              <div className="text-sm text-gray-500 py-2">Hora</div>
-              {weekDays.map((day, i) => {
-                const diaConfig = dias.find(d => d.fecha === day.toISOString().split('T')[0]);
-                return (
-                  <div key={i} className={`text-center py-2 rounded-lg ${
-                    diaConfig?.activo ? 'bg-[#df2531]/10 border border-[#df2531]/30' : 'bg-[#0B0E14]'
-                  }`}>
-                    <p className="text-sm font-medium text-white">
-                      {day.toLocaleDateString('es-PY', { weekday: 'short' })}
-                    </p>
-                    <p className={`text-xs ${diaConfig?.activo ? 'text-[#df2531]' : 'text-gray-500'}`}>
-                      {day.getDate()}
-                    </p>
-                    {diaConfig && (
-                      <p className="text-[10px] text-gray-500 mt-1">
-                        {diaConfig.horaInicio}-{diaConfig.horaFin}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Vista SEGÚN estado */}
             {vista === 'semana' ? (
               <VistaSemana 
