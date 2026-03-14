@@ -9,6 +9,9 @@ import { ResumenStats } from './ResumenStats';
 import { InscripcionCard } from './InscripcionCard';
 import { ModalConfirmar } from './ModalConfirmar';
 import { ModalCancelar } from './ModalCancelar';
+import { ModalInscripcionManual } from './ModalInscripcionManual';
+import { ModalEditarInscripcion } from './ModalEditarInscripcion';
+import { ModalCambiarCategoria } from './ModalCambiarCategoria';
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -81,6 +84,9 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<Inscripcion | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(false);
+  const [modalInscripcionManual, setModalInscripcionManual] = useState(false);
+  const [modalEditar, setModalEditar] = useState(false);
+  const [modalCambiarCategoria, setModalCambiarCategoria] = useState(false);
   
 
   
@@ -286,7 +292,10 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Sin inscripciones aun</h3>
         <p className="text-gray-400 mb-6">Las inscripciones apareceran aqui cuando los jugadores se registren</p>
-        <button className="px-6 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all">
+        <button 
+          onClick={() => setModalInscripcionManual(true)}
+          className="px-6 py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all"
+        >
           <Plus className="w-5 h-5 inline mr-2" />
           Inscribir pareja manualmente
         </button>
@@ -514,6 +523,14 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                       setInscripcionSeleccionada(inscripcion);
                       setModalCancelar(true);
                     }}
+                    onEditar={() => {
+                      setInscripcionSeleccionada(inscripcion);
+                      setModalEditar(true);
+                    }}
+                    onCambiarCategoria={() => {
+                      setInscripcionSeleccionada(inscripcion);
+                      setModalCambiarCategoria(true);
+                    }}
                   />
                 </div>
               </div>
@@ -661,6 +678,32 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         onClose={() => setModalCancelar(false)}
         onConfirm={handleCancelar}
         inscripcion={inscripcionSeleccionada}
+      />
+
+      <ModalInscripcionManual
+        isOpen={modalInscripcionManual}
+        onClose={() => setModalInscripcionManual(false)}
+        onSuccess={loadInscripciones}
+        tournamentId={tournamentId}
+        categorias={data?.porCategoria || []}
+        costoInscripcion={0}
+      />
+
+      <ModalEditarInscripcion
+        isOpen={modalEditar}
+        onClose={() => setModalEditar(false)}
+        onSuccess={loadInscripciones}
+        tournamentId={tournamentId}
+        inscripcion={inscripcionSeleccionada}
+      />
+
+      <ModalCambiarCategoria
+        isOpen={modalCambiarCategoria}
+        onClose={() => setModalCambiarCategoria(false)}
+        onSuccess={loadInscripciones}
+        tournamentId={tournamentId}
+        inscripcion={inscripcionSeleccionada}
+        categorias={data?.porCategoria || []}
       />
     </div>
   );

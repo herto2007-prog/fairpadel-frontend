@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { 
   Phone, CheckCircle2, Clock, AlertCircle, XCircle,
-  MoreHorizontal, UserPlus, CreditCard
+  UserPlus, CreditCard, Edit2, ArrowRightLeft
 } from 'lucide-react';
 
 interface Jugador {
@@ -30,9 +30,11 @@ interface InscripcionCardProps {
   index: number;
   onConfirmar: () => void;
   onCancelar: () => void;
+  onEditar?: () => void;
+  onCambiarCategoria?: () => void;
 }
 
-export function InscripcionCard({ inscripcion, index, onConfirmar, onCancelar }: InscripcionCardProps) {
+export function InscripcionCard({ inscripcion, index, onConfirmar, onCancelar, onEditar, onCambiarCategoria }: InscripcionCardProps) {
   const getEstadoConfig = () => {
     switch (inscripcion.estado) {
       case 'CONFIRMADA':
@@ -213,9 +215,27 @@ export function InscripcionCard({ inscripcion, index, onConfirmar, onCancelar }:
             </>
           )}
           
-          <button className="p-2 hover:bg-[#232838] rounded-xl transition-colors opacity-0 group-hover:opacity-100">
-            <MoreHorizontal className="w-5 h-5 text-gray-400" />
-          </button>
+          {/* Acciones adicionales */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onEditar && (
+              <button
+                onClick={onEditar}
+                className="p-2 hover:bg-blue-500/10 text-blue-400 hover:text-blue-300 rounded-xl transition-colors"
+                title="Editar"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            )}
+            {onCambiarCategoria && (
+              <button
+                onClick={onCambiarCategoria}
+                className="p-2 hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 rounded-xl transition-colors"
+                title="Cambiar categoría"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
