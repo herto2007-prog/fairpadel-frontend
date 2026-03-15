@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
+import { getDateOnlyPY, formatDatePY } from '../../../../utils/date';
 
 interface Slot {
   id: string;
@@ -102,7 +103,7 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
   const [showConfigDia, setShowConfigDia] = useState(false);
   const [showAgregarSede, setShowAgregarSede] = useState(false);
 
-  // Calcular inicio y fin de semana
+  // Calcular inicio y fin de semana (usando timezone Paraguay)
   const weekStart = useMemo(() => {
     const d = new Date(currentWeek);
     const day = d.getDay();
@@ -126,6 +127,10 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
       return d;
     });
   }, [weekStart]);
+  
+  // Fechas como strings YYYY-MM-DD para comparación (usando timezone Paraguay)
+  const weekStartStr = useMemo(() => getDateOnlyPY(weekStart), [weekStart]);
+  const weekEndStr = useMemo(() => getDateOnlyPY(weekEnd), [weekEnd]);
 
   useEffect(() => {
     loadData();
@@ -152,9 +157,9 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
       setCanchasFiltradas(new Set(canchasConColor.map((c: Cancha) => c.id)));
       setDias(data.dias);
 
-      // Cargar slots de la semana
-      const fechaInicio = weekStart.toISOString().split('T')[0];
-      const fechaFin = weekEnd.toISOString().split('T')[0];
+      // Cargar slots de la semana (usando fechas en timezone Paraguay)
+      const fechaInicio = weekStartStr;
+      const fechaFin = weekEndStr;
       const slotsData = await disponibilidadService.getSlotsPorSemana(tournamentId, fechaInicio, fechaFin);
       setSlots(slotsData.slots || []);
     } catch (error) {
@@ -210,10 +215,11 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
   };
 
   const getSlotsForDayAndHour = (date: Date, hour: string) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getDateOnlyPY(date); // Usar timezone Paraguay
     return slots.filter(slot => {
       if (!canchasFiltradas.has(slot.cancha.id)) return false;
-      const slotDate = new Date(slot.fecha).toISOString().split('T')[0];
+      // Normalizar fecha del slot (viene como ISO del backend)
+      const slotDate = slot.fecha.split('T')[0];
       return slotDate === dateStr && slot.horaInicio.startsWith(hour.split(':')[0]);
     });
   };
@@ -233,7 +239,7 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
     return {
       dia: dias[date.getDay()],
       numero: date.getDate(),
-      mes: date.toLocaleDateString('es-PY', { month: 'short' }),
+      mes: formatDatePY(date).split('/')[1], // Obtener mes formateado
     };
   };
 
@@ -473,7 +479,7 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
             <div className="space-y-2">
               {slots
                 .filter(s => canchasFiltradas.has(s.cancha.id))
-                .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime() || a.horaInicio.localeCompare(b.horaInicio))
+                .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio.localeCompare(b.horaInicio))
                 .map((slot) => (
                   <motion.div
                     key={slot.id}
@@ -482,9 +488,9 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
                     className={`p-4 rounded-xl border flex items-center gap-4 ${getSlotStyle(slot)}`}
                   >
                     <div className="w-16 text-center">
-                      <div className="text-sm font-bold">{new Date(slot.fecha).getDate()}</div>
+                      <div className="text-sm font-bold">{parseInt(slot.fecha.split('T')[0].split('-')[2])}</div>
                       <div className="text-xs opacity-70">
-                        {new Date(slot.fecha).toLocaleDateString('es-PY', { month: 'short' })}
+                        {formatDatePY(slot.fecha).split('/')[1]}
                       </div>
                     </div>
                     <div className="w-24 text-center">
@@ -556,11 +562,7 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
                   <div>
                     <p className="text-sm text-gray-400">Fecha</p>
                     <p className="text-white">
-                      {new Date(slotSeleccionado.fecha).toLocaleDateString('es-PY', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                      })}
+                      {formatDatePY(slotSeleccionado.fecha)}
                     </p>
                   </div>
                 </div>
