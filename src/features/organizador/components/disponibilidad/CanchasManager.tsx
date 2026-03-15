@@ -8,7 +8,7 @@ import {
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
 import { api } from '../../../../services/api';
-import { getDatesRangePY, formatDatePY, getDateOnlyPY } from '../../../../utils/date';
+import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
 
 interface Slot {
   id: string;
@@ -764,7 +764,7 @@ function StatCard({ label, value, subtext, color, icon: Icon }: {
 }
 
 // ═══════════════════════════════════════════════════════════
-// VISTA SEMANA - Grid de calendario
+// VISTA SEMANA - Grid tipo Google Calendar (horas x días)
 // ═══════════════════════════════════════════════════════════
 interface VistaSemanaProps {
   slots: Slot[];
@@ -774,13 +774,18 @@ interface VistaSemanaProps {
   dias: DiaConfig[];
 }
 
+// Horas a mostrar en el calendario (06:00 a 23:00)
+const HORAS_CALENDARIO = Array.from({ length: 18 }, (_, i) => {
+  const h = (i + 6).toString().padStart(2, '0');
+  return `${h}:00`;
+});
+
 function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: VistaSemanaProps) {
   // Si no hay canchas filtradas, mostrar todas
   const canchasToShow = canchasFiltradas.size > 0 
     ? canchasFiltradas 
     : new Set(canchas.map(c => c.id));
 
-  // Filtrar slots por canchas seleccionadas
   // Normalizar fechas de slots a formato YYYY-MM-DD
   const normalizedSlots = slots.map(s => ({
     ...s,
@@ -789,74 +794,86 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
   
   const filteredSlots = normalizedSlots.filter(s => canchasToShow.has(s.cancha.id));
 
+  // Función para obtener slots de un día y hora específicos
+  const getSlotsForDayAndHour = (day: Date, hour: string) => {
+    const fechaStr = day.toISOString().split('T')[0];
+    return filteredSlots.filter(s => {
+      if (s.fecha !== fechaStr) return false;
+      // El slot está en esta hora si su horaInicio empieza con esta hora
+      return s.horaInicio.startsWith(hour.split(':')[0]);
+    });
+  };
+
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[800px] p-4">
-        {/* Días header */}
-        <div className="grid grid-cols-8 gap-2 mb-2">
-          <div className="text-sm text-gray-500 py-2">Hora</div>
+      <div className="min-w-[800px]">
+        {/* Header de días */}
+        <div className="grid grid-cols-8 border-b border-white/10 sticky top-0 bg-[#0B0E14] z-10">
+          <div className="p-3 border-r border-white/10" /> {/* Celda vacía para esquina */}
           {weekDays.map((day, i) => {
-            const fechaStr = getDateOnlyPY(day);
+            const fechaStr = day.toISOString().split('T')[0];
             const diaConfig = dias.find(d => d.fecha === fechaStr);
+            const isToday = new Date().toDateString() === day.toDateString();
             return (
-              <div key={i} className={`text-center py-2 rounded-lg ${
-                diaConfig?.activo ? 'bg-[#df2531]/10 border border-[#df2531]/30' : 'bg-[#0B0E14]'
-              }`}>
-                <p className="text-sm font-medium text-white">
+              <div key={i} className={`p-3 text-center border-r border-white/10 ${isToday ? 'bg-[#df2531]/10' : ''}`}>
+                <div className={`text-xs font-medium ${isToday ? 'text-[#df2531]' : 'text-gray-500'}`}>
                   {day.toLocaleDateString('es-PY', { weekday: 'short' })}
-                </p>
-                <p className={`text-xs ${diaConfig?.activo ? 'text-[#df2531]' : 'text-gray-500'}`}>
+                </div>
+                <div className={`text-lg font-bold ${isToday ? 'text-white' : 'text-gray-300'}`}>
                   {day.getDate()}
-                </p>
+                </div>
                 {diaConfig && (
-                  <p className="text-[10px] text-gray-500 mt-1">
+                  <div className="text-[10px] text-gray-500 mt-1">
                     {diaConfig.horaInicio}-{diaConfig.horaFin}
-                  </p>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Por cada día, mostrar sus slots */}
-        <div className="space-y-2">
-          {weekDays.map((day, dayIndex) => {
-            const fechaStr = getDateOnlyPY(day);
-            const daySlots = filteredSlots.filter(s => s.fecha === fechaStr);
-            
-            if (daySlots.length === 0) return null;
-            
-            return (
-              <div key={dayIndex} className="grid grid-cols-8 gap-2">
-                <div className="text-xs text-gray-500 py-2">
-                  {day.toLocaleDateString('es-PY', { weekday: 'short', day: 'numeric' })}
-                </div>
-                <div className="col-span-7 bg-[#0B0E14] rounded-lg p-2">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {daySlots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className={`text-xs px-3 py-2 rounded-lg flex items-center justify-between ${
-                          slot.estado === 'OCUPADO' 
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                            : slot.estado === 'BLOQUEADO'
-                            ? 'bg-gray-700 text-gray-500'
-                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        }`}
-                      >
-                        <div>
-                          <span className="font-medium">{slot.horaInicio}</span>
-                          <span className="text-gray-500 mx-1">-</span>
-                          <span className="text-gray-400">{slot.horaFin}</span>
-                        </div>
-                        <span className="text-[10px] opacity-70">{slot.cancha.nombre}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        {/* Grid de horas */}
+        <div className="relative">
+          {HORAS_CALENDARIO.map((hour) => (
+            <div key={hour} className="grid grid-cols-8 border-b border-white/5 min-h-[60px]">
+              {/* Columna de hora */}
+              <div className="p-2 border-r border-white/10 text-xs text-gray-500 text-right sticky left-0 bg-[#0B0E14]">
+                {hour}
               </div>
-            );
-          })}
+              
+              {/* Celdas de días */}
+              {weekDays.map((day, dayIndex) => {
+                const hourSlots = getSlotsForDayAndHour(day, hour);
+                return (
+                  <div
+                    key={dayIndex}
+                    className="border-r border-white/5 p-1 relative group hover:bg-white/[0.02] transition-colors"
+                  >
+                    {hourSlots.length > 0 && (
+                      <div className="space-y-1">
+                        {hourSlots.map((slot) => (
+                          <div
+                            key={slot.id}
+                            className={`text-[10px] px-2 py-1 rounded border truncate ${
+                              slot.estado === 'OCUPADO' 
+                                ? 'bg-red-500/20 text-red-400 border-red-500/30' 
+                                : slot.estado === 'BLOQUEADO'
+                                ? 'bg-gray-700 text-gray-500 border-gray-600'
+                                : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            }`}
+                            title={`${slot.cancha.nombre}: ${slot.horaInicio}-${slot.horaFin}`}
+                          >
+                            <div className="font-medium truncate">{slot.cancha.nombre}</div>
+                            <div className="opacity-70">{slot.horaInicio}-{slot.horaFin}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
         
         {filteredSlots.length === 0 && (
