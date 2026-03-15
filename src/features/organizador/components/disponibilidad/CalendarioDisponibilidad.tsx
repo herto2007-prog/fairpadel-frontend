@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
-import { getDateOnlyPY, formatDatePY } from '../../../../utils/date';
+import { formatDatePY } from '../../../../utils/date';
 
 interface Slot {
   id: string;
@@ -128,9 +128,9 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
     });
   }, [weekStart]);
   
-  // Fechas como strings YYYY-MM-DD para comparación (usando timezone Paraguay)
-  const weekStartStr = useMemo(() => getDateOnlyPY(weekStart), [weekStart]);
-  const weekEndStr = useMemo(() => getDateOnlyPY(weekEnd), [weekEnd]);
+  // Fechas como strings YYYY-MM-DD para enviar al backend (usando UTC)
+  const weekStartStr = useMemo(() => weekStart.toISOString().split('T')[0], [weekStart]);
+  const weekEndStr = useMemo(() => weekEnd.toISOString().split('T')[0], [weekEnd]);
 
   useEffect(() => {
     loadData();
@@ -215,7 +215,8 @@ export function CalendarioDisponibilidad({ tournamentId, fechaInicio, fechaFin }
   };
 
   const getSlotsForDayAndHour = (date: Date, hour: string) => {
-    const dateStr = getDateOnlyPY(date); // Usar timezone Paraguay
+    // Usar UTC para consistencia con backend (fechas guardadas como UTC 00:00:00)
+    const dateStr = date.toISOString().split('T')[0];
     return slots.filter(slot => {
       if (!canchasFiltradas.has(slot.cancha.id)) return false;
       // Normalizar fecha del slot (viene como ISO del backend)
