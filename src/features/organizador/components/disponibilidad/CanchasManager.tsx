@@ -928,7 +928,9 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
   // Ordenar fechas
   const sortedDates = useMemo(() => {
-    return Array.from(slotsByDate.keys()).sort();
+    const dates = Array.from(slotsByDate.keys()).sort();
+    console.log('[VistaLista] sortedDates:', dates);
+    return dates;
   }, [slotsByDate]);
 
   const handleEliminarDia = async (fecha: string) => {
@@ -952,7 +954,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
     const confirmed = await confirm({
       title: '¿Eliminar día?',
-      message: `Se eliminarán todos los slots del ${formatDatePY(fecha)}. Esta acción no se puede deshacer.`,
+      message: `Se eliminarán todos los slots del ${fecha.split('-').reverse().join('/')}. Esta acción no se puede deshacer.`,
       variant: 'danger',
     });
 
@@ -960,7 +962,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
     try {
       await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
-      showSuccess('Día eliminado', `Los slots del ${formatDatePY(fecha)} han sido eliminados`);
+      showSuccess('Día eliminado', `Los slots del ${fecha.split('-').reverse().join('/')} han sido eliminados`);
       onRefresh();
     } catch (error) {
       console.error('Error eliminando día:', error);
@@ -1007,7 +1009,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
             <div className="flex items-center justify-between px-4 py-3 bg-[#151921] border-b border-white/5">
               <div className="flex items-center gap-4">
                 <div className="text-white font-medium">
-                  {formatDatePY(fecha)}
+                  {fecha.split('-').reverse().join('/')} {/* DD/MM/YYYY sin conversión timezone */}
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="text-emerald-400">{slotsLibres} libres</span>
