@@ -237,21 +237,25 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     
     setReSorteando(true);
     try {
+      console.log('[Re-Sortear] Iniciando re-sorteo para fixture:', categoriaSeleccionada.fixtureVersionId);
       const { data } = await api.post(
         `/admin/bracket/${categoriaSeleccionada.fixtureVersionId}/sortear-nuevo`,
         { usarSemillas: false }
       );
+      console.log('[Re-Sortear] Respuesta:', data);
       if (data.success) {
         showSuccess('Bracket re-sorteado', 'Se generó un nuevo sorteo con las parejas asignadas');
-        loadCategorias();
-        // Recargar la vista
-        setCategoriaSeleccionada(null);
-        setTimeout(() => {
-          const catActualizada = categorias.find(c => c.id === categoriaSeleccionada.id);
-          if (catActualizada) setCategoriaSeleccionada(catActualizada);
-        }, 100);
+        // Recargar categorías y volver a seleccionar la categoría actualizada
+        await loadCategorias();
+        const catActualizada = categorias.find(c => c.id === categoriaSeleccionada.id);
+        if (catActualizada?.fixtureVersionId) {
+          setCategoriaSeleccionada(catActualizada);
+        } else {
+          setCategoriaSeleccionada(null);
+        }
       }
     } catch (error: any) {
+      console.error('[Re-Sortear] Error:', error);
       showError('Error', error.response?.data?.message || 'Error al re-sortear');
     } finally {
       setReSorteando(false);
