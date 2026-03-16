@@ -47,11 +47,22 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   const [partidoFinalizado, setPartidoFinalizado] = useState(false);
   const [mostrarConfig, setMostrarConfig] = useState(false);
 
+  // Resetear estado cuando cambia el match
   useEffect(() => {
-    if (match?.formatoSet3) {
-      setFormatoSet3(match.formatoSet3);
-    }
-  }, [match]);
+    setLiveScore(null);
+    setPartidoIniciado(false);
+    setPartidoFinalizado(false);
+    setMostrarConfig(false);
+    setError(null);
+    setLoading(false);
+    
+    // Resetear configuración a defaults
+    setFormatoSet3(match?.formatoSet3 || 'SET_COMPLETO');
+    setModoPunto('PUNTO_ORO');
+    setJugadorSacaP1(1);
+    setJugadorSacaP2(1);
+    setSaqueInicial(1);
+  }, [match?.id]); // Solo cuando cambia el ID del match
 
   const cargarMarcador = useCallback(async () => {
     if (!match) return;
