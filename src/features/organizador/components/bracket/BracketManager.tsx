@@ -60,32 +60,32 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     }
   };
 
-  // Agrupar y ordenar categorías
+  // Agrupar y ordenar categorías por género
   const categoriasAgrupadas = useMemo(() => {
     const grupos: Record<string, Categoria[]> = {
       DAMAS: [],
       CABALLEROS: [],
       MIXTO: [],
-      OTROS: [],
     };
 
     categorias.forEach((cat) => {
-      const nombre = cat.category.nombre?.toUpperCase() || '';
       const tipo = cat.category.tipo?.toUpperCase() || '';
       
-      // Detectar género por nombre o tipo
-      if (nombre.includes('FEMENIN') || nombre.includes('DAMA') || tipo.includes('DAMA') || tipo.includes('FEMENIN')) {
+      // El tipo viene como MASCULINO o FEMENINO (enum Gender)
+      if (tipo === 'FEMENINO') {
         grupos.DAMAS.push(cat);
-      } else if (nombre.includes('MASCULIN') || nombre.includes('CABALLERO') || tipo.includes('CABALLERO') || tipo.includes('MASCULIN')) {
+      } else if (tipo === 'MASCULINO') {
         grupos.CABALLEROS.push(cat);
-      } else if (nombre.includes('MIXTO') || tipo.includes('MIXTO')) {
-        grupos.MIXTO.push(cat);
       } else {
-        // Si no tiene género en nombre, inferir por tipo o poner en OTROS
-        if (tipo === 'DAMAS') grupos.DAMAS.push(cat);
-        else if (tipo === 'CABALLEROS') grupos.CABALLEROS.push(cat);
-        else if (tipo === 'MIXTO') grupos.MIXTO.push(cat);
-        else grupos.OTROS.push(cat);
+        // Si no tiene tipo definido, intentar inferir por nombre
+        const nombre = cat.category.nombre?.toUpperCase() || '';
+        if (nombre.includes('FEMENIN') || nombre.includes('DAMA')) {
+          grupos.DAMAS.push(cat);
+        } else if (nombre.includes('MASCULIN') || nombre.includes('CABALLERO')) {
+          grupos.CABALLEROS.push(cat);
+        } else {
+          grupos.MIXTO.push(cat);
+        }
       }
     });
 
@@ -281,7 +281,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
       {/* Lista de categorías por género */}
       <div className="space-y-8">
-        {['CABALLEROS', 'DAMAS', 'MIXTO', 'OTROS'].map((tipo) => {
+        {['CABALLEROS', 'DAMAS', 'MIXTO'].map((tipo) => {
           const cats = categoriasAgrupadas[tipo];
           if (cats.length === 0) return null;
 
@@ -291,7 +291,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
               <div className="flex items-center gap-3 pb-2">
                 <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                 <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                  {tipo === 'CABALLEROS' ? 'Caballeros' : tipo === 'DAMAS' ? 'Damas' : tipo === 'MIXTO' ? 'Mixto' : 'Otras'}
+                  {tipo === 'CABALLEROS' ? 'Caballeros' : tipo === 'DAMAS' ? 'Damas' : 'Mixto'}
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-l from-white/10 to-transparent" />
               </div>
