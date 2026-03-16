@@ -925,9 +925,15 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
   }, [slotsByDate]);
 
   const handleEliminarDia = async (fecha: string) => {
-    const diaConfig = dias.find(d => d.fecha === fecha);
+    // Normalizar fecha para comparación (fecha viene como YYYY-MM-DD)
+    const fechaNormalizada = fecha.split('T')[0];
+    const diaConfig = dias.find(d => {
+      const diaFecha = d.fecha.split('T')[0];
+      return diaFecha === fechaNormalizada;
+    });
     if (!diaConfig) {
       showError('Error', 'No se encontró la configuración del día');
+      console.error('Fecha buscada:', fechaNormalizada, 'Días disponibles:', dias.map(d => d.fecha));
       return;
     }
 
