@@ -208,6 +208,21 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
            liveScore?.modoPunto === 'PUNTO_ORO';
   };
 
+  // Verificar si es súper tie-break
+  const esSuperTieBreak = () => {
+    return liveScore?.setActual === 3 && liveScore?.formatoSet3 === 'SUPER_TIE_BREAK';
+  };
+
+  // Renderizar punto según el formato
+  const renderPuntoAdaptativo = (punto: number | string) => {
+    // En súper tie-break, mostrar número directo
+    if (esSuperTieBreak()) {
+      return punto.toString();
+    }
+    // En juego normal, usar formato tenis
+    return renderPunto(punto);
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -478,7 +493,7 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       <span className={`text-5xl font-bold transition-colors duration-300 ${
                         esPuntoDeOro() ? 'text-yellow-400 animate-pulse' : 'text-[#df2531]'
                       }`}>
-                        {renderPunto(liveScore?.puntoP1 || 0)}
+                        {renderPuntoAdaptativo(liveScore?.puntoP1 || 0)}
                       </span>
                     </motion.div>
                     <motion.div
@@ -490,7 +505,7 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       <span className={`text-5xl font-bold transition-colors duration-300 ${
                         esPuntoDeOro() ? 'text-yellow-400 animate-pulse' : 'text-[#df2531]'
                       }`}>
-                        {renderPunto(liveScore?.puntoP2 || 0)}
+                        {renderPuntoAdaptativo(liveScore?.puntoP2 || 0)}
                       </span>
                     </motion.div>
                   </div>
