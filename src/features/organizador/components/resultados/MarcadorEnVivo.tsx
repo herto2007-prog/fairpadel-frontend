@@ -201,6 +201,13 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
     return null;
   };
 
+  // Verificar si es punto de oro (40-40 con modo punto de oro)
+  const esPuntoDeOro = () => {
+    return liveScore?.puntoP1 === 40 && 
+           liveScore?.puntoP2 === 40 && 
+           liveScore?.modoPunto === 'PUNTO_ORO';
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -468,7 +475,9 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       animate={{ scale: 1 }}
                       className="text-center"
                     >
-                      <span className="text-5xl font-bold text-[#df2531]">
+                      <span className={`text-5xl font-bold transition-colors duration-300 ${
+                        esPuntoDeOro() ? 'text-yellow-400 animate-pulse' : 'text-[#df2531]'
+                      }`}>
                         {renderPunto(liveScore?.puntoP1 || 0)}
                       </span>
                     </motion.div>
@@ -478,10 +487,30 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       animate={{ scale: 1 }}
                       className="text-center"
                     >
-                      <span className="text-5xl font-bold text-[#df2531]">
+                      <span className={`text-5xl font-bold transition-colors duration-300 ${
+                        esPuntoDeOro() ? 'text-yellow-400 animate-pulse' : 'text-[#df2531]'
+                      }`}>
                         {renderPunto(liveScore?.puntoP2 || 0)}
                       </span>
                     </motion.div>
+                  </div>
+                )}
+
+                {/* Indicador de Punto de Oro */}
+                {esPuntoDeOro() && (
+                  <div className="mt-4 text-center">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="inline-flex items-center gap-2 px-6 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-full"
+                    >
+                      <span className="text-2xl">⚡</span>
+                      <span className="text-yellow-400 font-bold text-lg">PUNTO DE ORO</span>
+                      <span className="text-2xl">⚡</span>
+                    </motion.div>
+                    <p className="text-yellow-500/80 text-sm mt-2">
+                      El siguiente punto gana el game
+                    </p>
                   </div>
                 )}
 
