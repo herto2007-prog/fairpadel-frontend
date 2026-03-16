@@ -302,7 +302,16 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           fixtureVersionId={categoriaSeleccionada.fixtureVersionId}
         />
         {/* Modal de confirmación */}
-        <ConfirmModal {...confirmState} />
+        <ConfirmModal 
+          isOpen={confirmState.isOpen}
+          onClose={confirmState.close}
+          onConfirm={confirmState.handleConfirm}
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmText={confirmState.confirmText}
+          cancelText={confirmState.cancelText}
+          variant={confirmState.variant}
+        />
       </div>
     );
   }
@@ -555,7 +564,16 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       )}
 
       {/* Modal de confirmación */}
-      <ConfirmModal {...confirmState} />
+      <ConfirmModal 
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
