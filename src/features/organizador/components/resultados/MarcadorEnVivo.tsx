@@ -22,7 +22,10 @@ type LiveScore = {
   gameP2: number;
   puntoP1: number | string;
   puntoP2: number | string;
-  saque: number;
+  saque: number; // 1 o 2 - qué pareja saca
+  jugadorSacaP1: 1 | 2; // Qué jugador de la pareja 1 saca
+  jugadorSacaP2: 1 | 2; // Qué jugador de la pareja 2 saca
+  puntosConsecutivos: number;
   historial: any[];
   setsCompletados: any[];
   estado: string;
@@ -37,6 +40,9 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [formatoSet3, setFormatoSet3] = useState<'SUPER_TIE_BREAK' | 'SET_COMPLETO'>('SET_COMPLETO');
   const [modoPunto, setModoPunto] = useState<'VENTAJA' | 'PUNTO_ORO'>('PUNTO_ORO');
+  const [jugadorSacaP1, setJugadorSacaP1] = useState<1 | 2>(1);
+  const [jugadorSacaP2, setJugadorSacaP2] = useState<1 | 2>(1);
+  const [saqueInicial, setSaqueInicial] = useState<1 | 2>(1);
   const [partidoIniciado, setPartidoIniciado] = useState(false);
   const [partidoFinalizado, setPartidoFinalizado] = useState(false);
   const [mostrarConfig, setMostrarConfig] = useState(false);
@@ -83,7 +89,7 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   const iniciarPartido = async () => {
     setLoading(true);
     try {
-      await resultadosService.iniciarPartido(match.id, formatoSet3, modoPunto);
+      await resultadosService.iniciarPartido(match.id, formatoSet3, modoPunto, jugadorSacaP1, jugadorSacaP2, saqueInicial);
       setPartidoIniciado(true);
       await cargarMarcador();
     } catch (err: any) {
@@ -167,6 +173,21 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
       return ['0', '15', '30', '40'][punto];
     }
     return punto;
+  };
+
+  // Obtener el nombre del jugador que está sacando
+  const getJugadorSaca = () => {
+    if (!liveScore) return null;
+    
+    if (liveScore.saque === 1 && match?.inscripcion1) {
+      const jugador = liveScore.jugadorSacaP1 === 1 ? match.inscripcion1.jugador1 : match.inscripcion1.jugador2;
+      return { nombre: `${jugador?.nombre?.[0]}. ${jugador?.apellido}`, pareja: 1 };
+    }
+    if (liveScore.saque === 2 && match?.inscripcion2) {
+      const jugador = liveScore.jugadorSacaP2 === 1 ? match.inscripcion2.jugador1 : match.inscripcion2.jugador2;
+      return { nombre: `${jugador?.nombre?.[0]}. ${jugador?.apellido}`, pareja: 2 };
+    }
+    return null;
   };
 
   return (
@@ -261,6 +282,102 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                 </p>
               </div>
 
+              {/* Saque inicial */}
+              <div className="bg-white/5 rounded-xl p-4 space-y-4">
+                <p className="text-gray-400 text-center mb-3">🏓 Configuración del Saque</p>
+                
+                {/* Quién saca primero */}
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm mb-2">¿Qué pareja saca primero?</p>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => setSaqueInicial(1)}
+                      className={`px-4 py-2 rounded-lg border transition-all ${
+                        saqueInicial === 1
+                          ? 'bg-[#df2531] border-[#df2531] text-white'
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
+                    >
+                      {match?.inscripcion1?.jugador1?.apellido || 'Pareja 1'}
+                    </button>
+                    <button
+                      onClick={() => setSaqueInicial(2)}
+                      className={`px-4 py-2 rounded-lg border transition-all ${
+                        saqueInicial === 2
+                          ? 'bg-[#df2531] border-[#df2531] text-white'
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
+                    >
+                      {match?.inscripcion2?.jugador1?.apellido || 'Pareja 2'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Jugador que saca de la pareja 1 */}
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-2">
+                      {match?.inscripcion1?.jugador1?.apellido || 'Pareja 1'}: ¿quién saca?
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => setJugadorSacaP1(1)}
+                        className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+                          jugadorSacaP1 === 1
+                            ? 'bg-[#df2531] border-[#df2531] text-white'
+                            : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {match?.inscripcion1?.jugador1?.nombre?.[0] || 'J1'}. {match?.inscripcion1?.jugador1?.apellido}
+                      </button>
+                      <button
+                        onClick={() => setJugadorSacaP1(2)}
+                        className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+                          jugadorSacaP1 === 2
+                            ? 'bg-[#df2531] border-[#df2531] text-white'
+                            : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {match?.inscripcion1?.jugador2?.nombre?.[0] || 'J2'}. {match?.inscripcion1?.jugador2?.apellido}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Jugador que saca de la pareja 2 */}
+                  <div className="text-center">
+                    <p className="text-gray-400 text-xs mb-2">
+                      {match?.inscripcion2?.jugador1?.apellido || 'Pareja 2'}: ¿quién saca?
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => setJugadorSacaP2(1)}
+                        className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+                          jugadorSacaP2 === 1
+                            ? 'bg-[#df2531] border-[#df2531] text-white'
+                            : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {match?.inscripcion2?.jugador1?.nombre?.[0] || 'J1'}. {match?.inscripcion2?.jugador1?.apellido}
+                      </button>
+                      <button
+                        onClick={() => setJugadorSacaP2(2)}
+                        className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+                          jugadorSacaP2 === 2
+                            ? 'bg-[#df2531] border-[#df2531] text-white'
+                            : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {match?.inscripcion2?.jugador2?.nombre?.[0] || 'J2'}. {match?.inscripcion2?.jugador2?.apellido}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 text-center">
+                  El saque cambia cada 2 puntos entre jugadores de la misma pareja
+                </p>
+              </div>
+
               <div className="flex justify-center">
                 <button
                   onClick={iniciarPartido}
@@ -303,6 +420,16 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       : `Set ${liveScore?.setActual || 1}`}
                   </span>
                 </div>
+
+                {/* Indicador de quién saca */}
+                {getJugadorSaca() && (
+                  <div className="text-center mb-4">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#df2531]/20 text-[#df2531] rounded-full text-sm font-medium">
+                      <span className="animate-pulse">🎾</span>
+                      Saca: {getJugadorSaca()?.nombre}
+                    </span>
+                  </div>
+                )}
 
                 {/* Games */}
                 <div className="grid grid-cols-3 gap-4 items-center mb-6">
