@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy, Clock, AlertCircle, CheckCircle2, Activity, UserX, ShieldAlert, LogOut } from 'lucide-react';
 import { resultadosService, RegistrarResultadoPayload, ResultadoEspecialPayload } from './resultadosService';
+import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   match: {
     id: string;
-    inscripcion1?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
-    inscripcion2?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
+    inscripcion1?: { id: string; jugador1: { nombre: string; apellido: string; fotoUrl?: string | null }; jugador2?: { nombre: string; apellido: string; fotoUrl?: string | null } } | null;
+    inscripcion2?: { id: string; jugador1: { nombre: string; apellido: string; fotoUrl?: string | null }; jugador2?: { nombre: string; apellido: string; fotoUrl?: string | null } } | null;
     resultado?: {
       set1: [number, number];
       set2: [number, number];
@@ -151,14 +152,52 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
           className="bg-[#151921] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-5 h-5 text-[#df2531]" />
-              <h2 className="text-lg font-bold text-white">Registrar Resultado</h2>
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-5 h-5 text-[#df2531]" />
+                <h2 className="text-lg font-bold text-white">Registrar Resultado</h2>
+              </div>
+              <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-gray-400" />
-            </button>
+            
+            {/* Parejas con fotos */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Pareja 1 */}
+              <div className="flex items-center gap-3 flex-1">
+                <ParejaAvatar
+                  jugador1={match?.inscripcion1?.jugador1}
+                  jugador2={match?.inscripcion1?.jugador2}
+                  size="md"
+                />
+                <div className="text-left">
+                  <p className="text-xs text-gray-500">Pareja 1</p>
+                  <p className="text-sm font-medium text-white truncate max-w-[120px]">
+                    {pareja1Nombre}
+                  </p>
+                </div>
+              </div>
+              
+              {/* VS */}
+              <div className="text-[#df2531] font-bold text-lg">VS</div>
+              
+              {/* Pareja 2 */}
+              <div className="flex items-center gap-3 flex-1 justify-end">
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Pareja 2</p>
+                  <p className="text-sm font-medium text-white truncate max-w-[120px]">
+                    {pareja2Nombre}
+                  </p>
+                </div>
+                <ParejaAvatar
+                  jugador1={match?.inscripcion2?.jugador1}
+                  jugador2={match?.inscripcion2?.jugador2}
+                  size="md"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Success State */}
@@ -176,15 +215,29 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* Nombres de parejas */}
+              {/* Info de parejas con fotos */}
               <div className="grid grid-cols-2 gap-4">
-                <div className={`rounded-xl p-3 text-center border ${formEspecial.parejaAfectada === 1 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
-                  <p className="text-xs text-gray-500 mb-1">Pareja 1</p>
-                  <p className="text-sm font-medium text-white">{pareja1Nombre}</p>
+                <div className={`flex items-center gap-3 rounded-xl p-3 border ${formEspecial.parejaAfectada === 1 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
+                  <ParejaAvatar
+                    jugador1={match?.inscripcion1?.jugador1}
+                    jugador2={match?.inscripcion1?.jugador2}
+                    size="sm"
+                  />
+                  <div>
+                    <p className="text-xs text-gray-500">Pareja 1</p>
+                    <p className="text-sm font-medium text-white truncate max-w-[120px]">{pareja1Nombre}</p>
+                  </div>
                 </div>
-                <div className={`rounded-xl p-3 text-center border ${formEspecial.parejaAfectada === 2 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
-                  <p className="text-xs text-gray-500 mb-1">Pareja 2</p>
-                  <p className="text-sm font-medium text-white">{pareja2Nombre}</p>
+                <div className={`flex items-center gap-3 rounded-xl p-3 border ${formEspecial.parejaAfectada === 2 && tipoResultado === 'ESPECIAL' ? 'border-red-500/50 bg-red-500/10' : 'bg-white/5 border-transparent'}`}>
+                  <ParejaAvatar
+                    jugador1={match?.inscripcion2?.jugador1}
+                    jugador2={match?.inscripcion2?.jugador2}
+                    size="sm"
+                  />
+                  <div>
+                    <p className="text-xs text-gray-500">Pareja 2</p>
+                    <p className="text-sm font-medium text-white truncate max-w-[120px]">{pareja2Nombre}</p>
+                  </div>
                 </div>
               </div>
 

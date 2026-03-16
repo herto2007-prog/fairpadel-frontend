@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
+import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -17,18 +18,18 @@ interface Partido {
   esBye: boolean;
   inscripcion1?: {
     id: string;
-    jugador1: { nombre: string; apellido: string };
-    jugador2: { nombre: string; apellido: string };
+    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
   };
   inscripcion2?: {
     id: string;
-    jugador1: { nombre: string; apellido: string };
-    jugador2: { nombre: string; apellido: string };
+    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
   };
   ganador?: {
     id: string;
-    jugador1: { nombre: string; apellido: string };
-    jugador2: { nombre: string; apellido: string };
+    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
   };
   resultado?: {
     set1: [number, number];
@@ -213,23 +214,35 @@ function PartidoCard({
 
       <div className="flex items-center gap-4">
         {/* Pareja 1 */}
-        <div className={`flex-1 ${partido.ganador?.id === partido.inscripcion1?.id ? 'text-green-400' : 'text-white'}`}>
+        <div className={`flex-1 flex items-center gap-3 ${partido.ganador?.id === partido.inscripcion1?.id ? 'text-green-400' : 'text-white'}`}>
           {partido.inscripcion1 ? (
             <>
-              <div className="font-medium">
-                {partido.inscripcion1.jugador1.nombre} {partido.inscripcion1.jugador1.apellido}
-              </div>
-              <div className="text-sm text-gray-400">
-                {partido.inscripcion1.jugador2.nombre} {partido.inscripcion1.jugador2.apellido}
+              <ParejaAvatar 
+                jugador1={partido.inscripcion1.jugador1}
+                jugador2={partido.inscripcion1.jugador2}
+                size="sm"
+              />
+              <div className="min-w-0">
+                <div className="font-medium truncate">
+                  {partido.inscripcion1.jugador1.nombre} {partido.inscripcion1.jugador1.apellido}
+                </div>
+                <div className="text-sm text-gray-400 truncate">
+                  {partido.inscripcion1.jugador2.nombre} {partido.inscripcion1.jugador2.apellido}
+                </div>
               </div>
             </>
           ) : (
-            <div className="text-gray-500 italic">Por definir</div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                <span className="text-gray-500 text-xs">?</span>
+              </div>
+              <div className="text-gray-500 italic">Por definir</div>
+            </div>
           )}
         </div>
 
         {/* Resultado */}
-        <div className="text-center px-4">
+        <div className="text-center px-4 flex-shrink-0">
           {isFinalizado && partido.resultado ? (
             <div className="font-mono text-lg font-bold text-white">
               {partido.resultado.set1[0]}-{partido.resultado.set1[1]}
@@ -237,23 +250,35 @@ function PartidoCard({
               {partido.resultado.set3 && ` | ${partido.resultado.set3[0]}-${partido.resultado.set3[1]}`}
             </div>
           ) : (
-            <div className="text-gray-500">VS</div>
+            <div className="text-gray-500 font-bold">VS</div>
           )}
         </div>
 
         {/* Pareja 2 */}
-        <div className={`flex-1 text-right ${partido.ganador?.id === partido.inscripcion2?.id ? 'text-green-400' : 'text-white'}`}>
+        <div className={`flex-1 flex items-center justify-end gap-3 ${partido.ganador?.id === partido.inscripcion2?.id ? 'text-green-400' : 'text-white'}`}>
           {partido.inscripcion2 ? (
             <>
-              <div className="font-medium">
-                {partido.inscripcion2.jugador1.nombre} {partido.inscripcion2.jugador1.apellido}
+              <div className="text-right min-w-0">
+                <div className="font-medium truncate">
+                  {partido.inscripcion2.jugador1.nombre} {partido.inscripcion2.jugador1.apellido}
+                </div>
+                <div className="text-sm text-gray-400 truncate">
+                  {partido.inscripcion2.jugador2.nombre} {partido.inscripcion2.jugador2.apellido}
+                </div>
               </div>
-              <div className="text-sm text-gray-400">
-                {partido.inscripcion2.jugador2.nombre} {partido.inscripcion2.jugador2.apellido}
-              </div>
+              <ParejaAvatar 
+                jugador1={partido.inscripcion2.jugador1}
+                jugador2={partido.inscripcion2.jugador2}
+                size="sm"
+              />
             </>
           ) : (
-            <div className="text-gray-500 italic">Por definir</div>
+            <div className="flex items-center gap-3">
+              <div className="text-gray-500 italic">Por definir</div>
+              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                <span className="text-gray-500 text-xs">?</span>
+              </div>
+            </div>
           )}
         </div>
       </div>

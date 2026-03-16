@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, RotateCcw, Trophy, Flag, Save } from 'lucide-react';
 import { resultadosService } from './resultadosService';
+import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 
 
 interface Props {
@@ -9,8 +10,8 @@ interface Props {
   onClose: () => void;
   match: {
     id: string;
-    inscripcion1?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
-    inscripcion2?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
+    inscripcion1?: { id: string; jugador1: { nombre: string; apellido: string; fotoUrl?: string | null }; jugador2?: { nombre: string; apellido: string; fotoUrl?: string | null } } | null;
+    inscripcion2?: { id: string; jugador1: { nombre: string; apellido: string; fotoUrl?: string | null }; jugador2?: { nombre: string; apellido: string; fotoUrl?: string | null } } | null;
     formatoSet3?: 'SUPER_TIE_BREAK' | 'SET_COMPLETO';
   } | null;
   onSuccess?: () => void;
@@ -245,19 +246,57 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
           className="bg-[#151921] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-[#df2531]/20 to-transparent">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-5 h-5 text-[#df2531]" />
-              <h2 className="text-lg font-bold text-white">Marcador en Vivo</h2>
-              {liveScore?.estado === 'FINALIZADO' && (
-                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                  Finalizado
-                </span>
-              )}
+          <div className="p-4 border-b border-white/10 bg-gradient-to-r from-[#df2531]/20 to-transparent">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-5 h-5 text-[#df2531]" />
+                <h2 className="text-lg font-bold text-white">Marcador en Vivo</h2>
+                {liveScore?.estado === 'FINALIZADO' && (
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
+                    Finalizado
+                  </span>
+                )}
+              </div>
+              <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-gray-400" />
-            </button>
+            
+            {/* Parejas con fotos */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Pareja 1 */}
+              <div className="flex items-center gap-3 flex-1">
+                <ParejaAvatar
+                  jugador1={match?.inscripcion1?.jugador1}
+                  jugador2={match?.inscripcion1?.jugador2}
+                  size="md"
+                />
+                <div className="text-left">
+                  <p className="text-xs text-gray-500">Pareja 1</p>
+                  <p className="text-sm font-medium text-white truncate max-w-[120px]">
+                    {pareja1Nombre}
+                  </p>
+                </div>
+              </div>
+              
+              {/* VS */}
+              <div className="text-[#df2531] font-bold text-lg">VS</div>
+              
+              {/* Pareja 2 */}
+              <div className="flex items-center gap-3 flex-1 justify-end">
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Pareja 2</p>
+                  <p className="text-sm font-medium text-white truncate max-w-[120px]">
+                    {pareja2Nombre}
+                  </p>
+                </div>
+                <ParejaAvatar
+                  jugador1={match?.inscripcion2?.jugador1}
+                  jugador2={match?.inscripcion2?.jugador2}
+                  size="md"
+                />
+              </div>
+            </div>
           </div>
 
           {!partidoIniciado ? (
