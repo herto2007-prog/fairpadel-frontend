@@ -9,6 +9,8 @@ import { disponibilidadService } from '../../../../services/disponibilidad.servi
 import { sedesService } from '../../../../services/sedesService';
 import { api } from '../../../../services/api';
 import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Slot {
   id: string;
@@ -470,6 +472,9 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
               <VistaLista 
                 slots={slots} 
                 canchas={canchas}
+                dias={dias}
+                tournamentId={tournamentId}
+                onRefresh={loadData}
               />
             )}
           </div>
@@ -887,74 +892,149 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
 }
 
 // ═══════════════════════════════════════════════════════════
-// VISTA LISTA - Lista de slots
+// VISTA LISTA - Lista de slots agrupados por día
 // ═══════════════════════════════════════════════════════════
 interface VistaListaProps {
   slots: Slot[];
   canchas: Cancha[];
+  dias: DiaConfig[];
+  tournamentId: string;
+  onRefresh: () => void;
 }
 
-function VistaLista({ slots, canchas }: VistaListaProps) {
-  const slotsSorted = [...slots].sort((a, b) => {
-    // Ordenar por fecha, luego por hora, luego por cancha
-    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    if (a.horaInicio !== b.horaInicio) return a.horaInicio.localeCompare(b.horaInicio);
-    return a.cancha.nombre.localeCompare(b.cancha.nombre);
-  });
-
+function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaListaProps) {
+  const { confirm } = useConfirm();
+  const { showSuccess, showError } = useToast();
+  
   const canchaColors = canchas.reduce((acc, c) => {
     acc[c.id] = c.color;
     return acc;
   }, {} as Record<string, CanchaColor>);
 
+  // Agrupar slots por fecha
+  const slotsByDate = useMemo(() => {
+    const grouped = new Map<string, Slot[]>();
+    slots.forEach(slot => {
+      const fecha = slot.fecha.split('T')[0];
+      if (!grouped.has(fecha)) {
+        grouped.set(fecha, []);
+      }
+      grouped.get(fecha)!.push(slot);
+    });
+    return grouped;
+  }, [slots]);
+
+  // Ordenar fechas
+  const sortedDates = useMemo(() => {
+    return Array.from(slotsByDate.keys()).sort();
+  }, [slotsByDate]);
+
+  const handleEliminarDia = async (fecha: string) => {
+    const diaConfig = dias.find(d => d.fecha === fecha);
+    if (!diaConfig) {
+      showError('Error', 'No se encontró la configuración del día');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: '¿Eliminar día?',
+      message: `Se eliminarán todos los slots del ${formatDatePY(fecha)}. Esta acción no se puede deshacer.`,
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
+      showSuccess('Día eliminado', `Los slots del ${formatDatePY(fecha)} han sido eliminados`);
+      onRefresh();
+    } catch (error) {
+      console.error('Error eliminando día:', error);
+      showError('Error', 'No se pudo eliminar el día');
+    }
+  };
+
+  if (slots.length === 0) {
+    return (
+      <div className="p-4 text-center py-12 text-gray-500">
+        <p>No hay slots configurados</p>
+        <p className="text-sm mt-2">Agrega días y genera slots para verlos aquí</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4">
-      {slotsSorted.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p>No hay slots configurados</p>
-          <p className="text-sm mt-2">Agrega días y genera slots para verlos aquí</p>
-        </div>
-      ) : (
-        <div className="space-y-2 max-h-[500px] overflow-y-auto">
-          {slotsSorted.map((slot) => {
-            const color = canchaColors[slot.cancha.id] || CANCHA_COLORS[0];
-            return (
-              <div 
-                key={slot.id}
-                className="flex items-center gap-4 p-3 bg-[#0B0E14] rounded-lg hover:bg-[#0B0E14]/80 transition-colors"
-              >
-                <div className={`w-3 h-3 rounded-full ${color.text.replace('text-', 'bg-')}`} />
-                
-                <div className="w-24">
-                  <p className="text-sm text-gray-400">{formatDatePY(slot.fecha)}</p>
+    <div className="p-4 space-y-4 max-h-[600px] overflow-y-auto">
+      {sortedDates.map((fecha) => {
+        const daySlots = slotsByDate.get(fecha) || [];
+        const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE').length;
+        const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO').length;
+        
+        return (
+          <div key={fecha} className="bg-[#0B0E14] rounded-xl overflow-hidden">
+            {/* Header del día */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#151921] border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="text-white font-medium">
+                  {formatDatePY(fecha)}
                 </div>
-                
-                <div className="w-20">
-                  <p className="text-sm text-white">{slot.horaInicio}</p>
-                  <p className="text-xs text-gray-500">{slot.horaFin}</p>
-                </div>
-                
-                <div className="flex-1">
-                  <p className="text-sm text-white">{slot.cancha.nombre}</p>
-                  <p className="text-xs text-gray-500">{slot.cancha.sedeNombre}</p>
-                </div>
-                
-                <div>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    slot.estado === 'OCUPADO' 
-                      ? 'bg-red-500/20 text-red-400' 
-                      : slot.estado === 'BLOQUEADO'
-                      ? 'bg-gray-700 text-gray-500'
-                      : 'bg-emerald-500/20 text-emerald-400'
-                  }`}>
-                    {slot.estado}
-                  </span>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-emerald-400">{slotsLibres} libres</span>
+                  {slotsOcupados > 0 && (
+                    <span className="text-red-400">{slotsOcupados} ocupados</span>
+                  )}
+                  <span className="text-gray-500">{daySlots.length} total</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <button
+                onClick={() => handleEliminarDia(fecha)}
+                className="px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              >
+                Eliminar día
+              </button>
+            </div>
+            
+            {/* Lista de slots */}
+            <div className="divide-y divide-white/5">
+              {daySlots
+                .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio) || a.cancha.nombre.localeCompare(b.cancha.nombre))
+                .map((slot) => {
+                  const color = canchaColors[slot.cancha.id] || CANCHA_COLORS[0];
+                  return (
+                    <div 
+                      key={slot.id}
+                      className="flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                    >
+                      <div className={`w-3 h-3 rounded-full ${color.text.replace('text-', 'bg-')}`} />
+                      
+                      <div className="w-20">
+                        <p className="text-sm text-white">{slot.horaInicio}</p>
+                        <p className="text-xs text-gray-500">{slot.horaFin}</p>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <p className="text-sm text-white">{slot.cancha.nombre}</p>
+                        <p className="text-xs text-gray-500">{slot.cancha.sedeNombre}</p>
+                      </div>
+                      
+                      <div>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          slot.estado === 'OCUPADO' 
+                            ? 'bg-red-500/20 text-red-400' 
+                            : slot.estado === 'BLOQUEADO'
+                            ? 'bg-gray-700 text-gray-500'
+                            : 'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {slot.estado}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
