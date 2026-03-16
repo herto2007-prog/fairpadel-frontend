@@ -40,8 +40,13 @@ export const resultadosService = {
   },
 
   // Marcador en vivo
-  iniciarPartido: async (matchId: string, formatoSet3?: 'SUPER_TIE_BREAK' | 'SET_COMPLETO') => {
-    const response = await api.post(`/admin/resultados/matches/${matchId}/iniciar`, { formatoSet3 });
+  iniciarPartido: async (matchId: string, formatoSet3?: 'SUPER_TIE_BREAK' | 'SET_COMPLETO', modoPunto?: 'VENTAJA' | 'PUNTO_ORO') => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/iniciar`, { formatoSet3, modoPunto });
+    return response.data;
+  },
+
+  cambiarConfiguracion: async (matchId: string, data: { formatoSet3?: 'SUPER_TIE_BREAK' | 'SET_COMPLETO'; modoPunto?: 'VENTAJA' | 'PUNTO_ORO' }) => {
+    const response = await api.post(`/admin/resultados/matches/${matchId}/configuracion`, data);
     return response.data;
   },
 

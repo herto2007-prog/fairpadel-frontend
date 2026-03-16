@@ -27,6 +27,8 @@ type LiveScore = {
   setsCompletados: any[];
   estado: string;
   iniciadoAt: string;
+  modoPunto: 'VENTAJA' | 'PUNTO_ORO';
+  formatoSet3: 'SET_COMPLETO' | 'SUPER_TIE_BREAK';
 };
 
 export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
@@ -34,8 +36,10 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formatoSet3, setFormatoSet3] = useState<'SUPER_TIE_BREAK' | 'SET_COMPLETO'>('SET_COMPLETO');
+  const [modoPunto, setModoPunto] = useState<'VENTAJA' | 'PUNTO_ORO'>('PUNTO_ORO');
   const [partidoIniciado, setPartidoIniciado] = useState(false);
   const [partidoFinalizado, setPartidoFinalizado] = useState(false);
+  const [mostrarConfig, setMostrarConfig] = useState(false);
 
   useEffect(() => {
     if (match?.formatoSet3) {
@@ -50,6 +54,13 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
       if (response.data?.liveScore) {
         setLiveScore(response.data.liveScore);
         setPartidoIniciado(true);
+        // Sincronizar configuración desde el servidor
+        if (response.data.liveScore.modoPunto) {
+          setModoPunto(response.data.liveScore.modoPunto);
+        }
+        if (response.data.liveScore.formatoSet3) {
+          setFormatoSet3(response.data.liveScore.formatoSet3);
+        }
       }
       if (response.data?.estado === 'FINALIZADO') {
         setPartidoFinalizado(true);
@@ -72,11 +83,27 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   const iniciarPartido = async () => {
     setLoading(true);
     try {
-      await resultadosService.iniciarPartido(match.id, formatoSet3);
+      await resultadosService.iniciarPartido(match.id, formatoSet3, modoPunto);
       setPartidoIniciado(true);
       await cargarMarcador();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar el partido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cambiarConfiguracion = async () => {
+    setLoading(true);
+    try {
+      await resultadosService.cambiarConfiguracion(match.id, {
+        formatoSet3,
+        modoPunto,
+      });
+      await cargarMarcador();
+      setMostrarConfig(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al cambiar configuración');
     } finally {
       setLoading(false);
     }
@@ -177,8 +204,9 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
           {!partidoIniciado ? (
             /* Pantalla de inicio */
             <div className="p-8 space-y-6">
+              {/* Formato del set 3 */}
               <div className="text-center">
-                <p className="text-gray-400 mb-4">Selecciona el formato del set 3 (si aplica)</p>
+                <p className="text-gray-400 mb-3">Formato del set 3 (si aplica)</p>
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={() => setFormatoSet3('SET_COMPLETO')}
@@ -201,6 +229,36 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                     Súper Tie-Break
                   </button>
                 </div>
+              </div>
+
+              {/* Modo de punto */}
+              <div className="text-center">
+                <p className="text-gray-400 mb-3">Sistema de puntuación</p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setModoPunto('PUNTO_ORO')}
+                    className={`px-6 py-3 rounded-xl border transition-all ${
+                      modoPunto === 'PUNTO_ORO'
+                        ? 'bg-[#df2531] border-[#df2531] text-white'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    Punto de Oro
+                  </button>
+                  <button
+                    onClick={() => setModoPunto('VENTAJA')}
+                    className={`px-6 py-3 rounded-xl border transition-all ${
+                      modoPunto === 'VENTAJA'
+                        ? 'bg-[#df2531] border-[#df2531] text-white'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    Ventaja
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Punto de Oro: a 40-40, el siguiente punto gana el game
+                </p>
               </div>
 
               <div className="flex justify-center">
@@ -335,6 +393,12 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       Deshacer
                     </button>
                     <button
+                      onClick={() => setMostrarConfig(!mostrarConfig)}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-lg text-sm transition-colors"
+                    >
+                      ⚙️ Configuración
+                    </button>
+                    <button
                       onClick={finalizarPartido}
                       disabled={loading || liveScore?.estado !== 'FINALIZADO'}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors ${
@@ -347,6 +411,87 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                       Finalizar
                     </button>
                   </div>
+
+                  {/* Panel de configuración */}
+                  {mostrarConfig && (
+                    <div className="bg-white/5 rounded-xl p-4 space-y-4">
+                      <h4 className="text-white font-medium text-center">Configuración del Partido</h4>
+                      
+                      {/* Cambiar formato del set 3 (solo si aún no se juega el set 3) */}
+                      {liveScore && liveScore.setActual < 3 && (
+                        <div>
+                          <p className="text-gray-400 text-sm mb-2">Formato del set 3</p>
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => setFormatoSet3('SET_COMPLETO')}
+                              className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                                formatoSet3 === 'SET_COMPLETO'
+                                  ? 'bg-[#df2531] border-[#df2531] text-white'
+                                  : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                              }`}
+                            >
+                              Set Completo
+                            </button>
+                            <button
+                              onClick={() => setFormatoSet3('SUPER_TIE_BREAK')}
+                              className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                                formatoSet3 === 'SUPER_TIE_BREAK'
+                                  ? 'bg-[#df2531] border-[#df2531] text-white'
+                                  : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                              }`}
+                            >
+                              Súper Tie-Break
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {liveScore && liveScore.setActual >= 3 && (
+                        <p className="text-yellow-400 text-xs text-center">
+                          El set 3 ya comenzó - no se puede cambiar el formato
+                        </p>
+                      )}
+
+                      {/* Cambiar modo de punto */}
+                      <div>
+                        <p className="text-gray-400 text-sm mb-2">Sistema de puntuación</p>
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => setModoPunto('PUNTO_ORO')}
+                            className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                              modoPunto === 'PUNTO_ORO'
+                                ? 'bg-[#df2531] border-[#df2531] text-white'
+                                : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                            }`}
+                          >
+                            Punto de Oro
+                          </button>
+                          <button
+                            onClick={() => setModoPunto('VENTAJA')}
+                            className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                              modoPunto === 'VENTAJA'
+                                ? 'bg-[#df2531] border-[#df2531] text-white'
+                                : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                            }`}
+                          >
+                            Ventaja
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 text-center">
+                          {modoPunto === 'PUNTO_ORO' 
+                            ? 'A 40-40, el siguiente punto gana el game' 
+                            : 'Se requiere diferencia de 2 puntos para ganar'}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={cambiarConfiguracion}
+                        disabled={loading}
+                        className="w-full py-2 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {loading ? 'Guardando...' : 'Aplicar Cambios'}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
 
