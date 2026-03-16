@@ -227,6 +227,7 @@ function PartidoCard({
             <div className="font-mono text-lg font-bold text-white">
               {partido.resultado.set1[0]}-{partido.resultado.set1[1]}
               {partido.resultado.set2 && ` | ${partido.resultado.set2[0]}-${partido.resultado.set2[1]}`}
+              {partido.resultado.set3 && ` | ${partido.resultado.set3[0]}-${partido.resultado.set3[1]}`}
             </div>
           ) : (
             <div className="text-gray-500">VS</div>
