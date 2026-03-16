@@ -35,6 +35,8 @@ interface Partido {
     set2: [number, number];
     set3?: [number, number];
   };
+  formatoSet3?: 'SET_COMPLETO' | 'SUPER_TIE_BREAK';
+  estado?: string;
   fecha?: string;
   hora?: string;
   cancha?: string;

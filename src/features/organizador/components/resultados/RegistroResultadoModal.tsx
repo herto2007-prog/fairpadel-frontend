@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy, Clock, AlertCircle, CheckCircle2, Activity, UserX, ShieldAlert, LogOut } from 'lucide-react';
 import { resultadosService, RegistrarResultadoPayload, ResultadoEspecialPayload } from './resultadosService';
@@ -10,6 +10,13 @@ interface Props {
     id: string;
     inscripcion1?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
     inscripcion2?: { id: string; jugador1: { nombre: string; apellido: string }; jugador2?: { nombre: string; apellido: string } } | null;
+    resultado?: {
+      set1: [number, number];
+      set2: [number, number];
+      set3?: [number, number];
+    };
+    formatoSet3?: 'SET_COMPLETO' | 'SUPER_TIE_BREAK';
+    estado?: string;
   } | null;
   onSuccess?: () => void;
 }
@@ -46,6 +53,33 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Cargar resultado existente cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && match) {
+      // Si el partido ya tiene resultado, cargarlo en el formulario
+      if (match.resultado) {
+        setFormData({
+          set1Pareja1: match.resultado.set1[0],
+          set1Pareja2: match.resultado.set1[1],
+          set2Pareja1: match.resultado.set2[0],
+          set2Pareja2: match.resultado.set2[1],
+          set3Pareja1: match.resultado.set3?.[0],
+          set3Pareja2: match.resultado.set3?.[1],
+          formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
+        });
+      } else {
+        // Resetear a valores por defecto si no hay resultado
+        setFormData({
+          set1Pareja1: 6,
+          set1Pareja2: 4,
+          set2Pareja1: 6,
+          set2Pareja2: 3,
+          formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
+        });
+      }
+    }
+  }, [isOpen, match?.id]);
 
   if (!isOpen || !match) return null;
 
