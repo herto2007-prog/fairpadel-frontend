@@ -905,11 +905,6 @@ interface VistaListaProps {
 function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaListaProps) {
   const { confirm } = useConfirm();
   const { showSuccess, showError } = useToast();
-  
-  const canchaColors = canchas.reduce((acc, c) => {
-    acc[c.id] = c.color;
-    return acc;
-  }, {} as Record<string, CanchaColor>);
 
   // Agrupar slots por fecha
   const slotsByDate = useMemo(() => {
@@ -970,6 +965,23 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
         const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE').length;
         const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO').length;
         
+        // Obtener canchas únicas para este día (ordenadas)
+        const canchasDelDia = [...new Set(daySlots.map(s => s.cancha.id))]
+          .map(id => canchas.find(c => c.id === id))
+          .filter(Boolean) as Cancha[];
+        
+        // Obtener horarios únicos ordenados
+        const horarios = [...new Set(daySlots.map(s => s.horaInicio))].sort();
+        
+        // Crear mapa de slots por hora y cancha
+        const slotMap = new Map<string, Map<string, Slot>>();
+        daySlots.forEach(slot => {
+          if (!slotMap.has(slot.horaInicio)) {
+            slotMap.set(slot.horaInicio, new Map());
+          }
+          slotMap.get(slot.horaInicio)!.set(slot.cancha.id, slot);
+        });
+        
         return (
           <div key={fecha} className="bg-[#0B0E14] rounded-xl overflow-hidden">
             {/* Header del día */}
@@ -994,43 +1006,50 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
               </button>
             </div>
             
-            {/* Lista de slots */}
-            <div className="divide-y divide-white/5">
-              {daySlots
-                .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio) || a.cancha.nombre.localeCompare(b.cancha.nombre))
-                .map((slot) => {
-                  const color = canchaColors[slot.cancha.id] || CANCHA_COLORS[0];
-                  return (
-                    <div 
-                      key={slot.id}
-                      className="flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors"
-                    >
-                      <div className={`w-3 h-3 rounded-full ${color.text.replace('text-', 'bg-')}`} />
-                      
-                      <div className="w-20">
-                        <p className="text-sm text-white">{slot.horaInicio}</p>
-                        <p className="text-xs text-gray-500">{slot.horaFin}</p>
-                      </div>
-                      
-                      <div className="flex-1">
-                        <p className="text-sm text-white">{slot.cancha.nombre}</p>
-                        <p className="text-xs text-gray-500">{slot.cancha.sedeNombre}</p>
-                      </div>
-                      
-                      <div>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          slot.estado === 'OCUPADO' 
-                            ? 'bg-red-500/20 text-red-400' 
-                            : slot.estado === 'BLOQUEADO'
-                            ? 'bg-gray-700 text-gray-500'
-                            : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {slot.estado}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Tabla de canchas x horarios */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    <th className="px-3 py-2 text-left text-xs text-gray-500 font-medium w-16">Hora</th>
+                    {canchasDelDia.map(cancha => (
+                      <th key={cancha.id} className="px-3 py-2 text-center text-xs text-gray-400 font-medium">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${cancha.color.text.replace('text-', 'bg-')}`} />
+                          {cancha.nombre}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {horarios.map(hora => (
+                    <tr key={hora} className="hover:bg-white/[0.02]">
+                      <td className="px-3 py-2 text-xs text-gray-500">{hora}</td>
+                      {canchasDelDia.map(cancha => {
+                        const slot = slotMap.get(hora)?.get(cancha.id);
+                        return (
+                          <td key={cancha.id} className="px-3 py-2 text-center">
+                            {slot ? (
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-medium ${
+                                slot.estado === 'OCUPADO' 
+                                  ? 'bg-red-500/20 text-red-400' 
+                                  : slot.estado === 'BLOQUEADO'
+                                  ? 'bg-gray-700 text-gray-500'
+                                  : 'bg-emerald-500/20 text-emerald-400'
+                              }`}>
+                                {slot.estado === 'LIBRE' ? 'Libre' : slot.estado === 'OCUPADO' ? 'Ocupado' : 'Bloqueado'}
+                              </span>
+                            ) : (
+                              <span className="text-gray-700">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         );
