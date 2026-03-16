@@ -913,6 +913,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
   // Agrupar slots por fecha
   const slotsByDate = useMemo(() => {
+    console.log('[VistaLista] Slots recibidos:', slots.length, slots.map(s => s.fecha));
     const grouped = new Map<string, Slot[]>();
     slots.forEach(slot => {
       const fecha = slot.fecha.split('T')[0];
@@ -921,6 +922,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
       }
       grouped.get(fecha)!.push(slot);
     });
+    console.log('[VistaLista] Fechas agrupadas:', Array.from(grouped.keys()));
     return grouped;
   }, [slots]);
 
