@@ -252,19 +252,26 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       console.log('[Re-Sortear] Respuesta:', data);
       if (data.success) {
         showSuccess('Bracket re-sorteado', 'Se generó un nuevo sorteo con las parejas asignadas');
-        // Recargar categorías para obtener el nuevo fixtureVersionId
-        await loadCategorias();
-        // Esperar un momento para que el estado se actualice
-        setTimeout(() => {
-          const catActualizada = categorias.find(c => c.id === categoriaSeleccionada.id);
-          console.log('[Re-Sortear] Categoría actualizada:', catActualizada);
-          if (catActualizada?.fixtureVersionId) {
-            setCategoriaSeleccionada(null);
-            setTimeout(() => setCategoriaSeleccionada(catActualizada), 50);
-          } else {
-            setCategoriaSeleccionada(null);
-          }
-        }, 100);
+        // El API devuelve el nuevo fixtureVersionId
+        const nuevoFixtureVersionId = data.fixtureVersionId;
+        console.log('[Re-Sortear] Nuevo fixtureVersionId:', nuevoFixtureVersionId);
+        // Actualizar la categoría seleccionada con el nuevo fixtureVersionId
+        if (categoriaSeleccionada && nuevoFixtureVersionId) {
+          const categoriaActualizada = {
+            ...categoriaSeleccionada,
+            fixtureVersionId: nuevoFixtureVersionId
+          };
+          // Primero limpiar para forzar re-render
+          setCategoriaSeleccionada(null);
+          // Luego setear la actualizada
+          await loadCategorias();
+          setTimeout(() => {
+            setCategoriaSeleccionada(categoriaActualizada);
+          }, 50);
+        } else {
+          await loadCategorias();
+          setCategoriaSeleccionada(null);
+        }
       }
     } catch (error: any) {
       console.error('[Re-Sortear] Error:', error);
