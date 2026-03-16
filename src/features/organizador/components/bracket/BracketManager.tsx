@@ -5,6 +5,7 @@ import { api } from '../../../../services/api';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Categoria {
@@ -41,7 +42,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [cerrandoGrupo, setCerrandoGrupo] = useState(false);
   const [reSorteando, setReSorteando] = useState(false);
   
-  const { confirm } = useConfirm();
+  const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -300,6 +301,8 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           categoriaId={categoriaSeleccionada.categoryId}
           fixtureVersionId={categoriaSeleccionada.fixtureVersionId}
         />
+        {/* Modal de confirmación */}
+        <ConfirmModal {...confirmState} />
       </div>
     );
   }
@@ -550,6 +553,9 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           }}
         />
       )}
+
+      {/* Modal de confirmación */}
+      <ConfirmModal {...confirmState} />
     </div>
   );
 }
