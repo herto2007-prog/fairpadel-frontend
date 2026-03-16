@@ -61,6 +61,11 @@ export function BracketView({
     try {
       const { data } = await api.get(`/admin/bracket/${fixtureVersionId}/partidos`);
       if (data.success) {
+        console.log('[BracketView] Partidos recibidos:', data.partidos.slice(0, 2).map((p: any) => ({
+          id: p.id,
+          resultado: p.resultado,
+          estado: p.estado,
+        })));
         setPartidos(data.partidos);
       }
     } catch (error) {
