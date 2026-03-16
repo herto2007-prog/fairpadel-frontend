@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Settings, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AlertCircle, Lock, Unlock, Settings, Eye, CheckSquare, Square, X } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Categoria {
   id: string;
@@ -32,6 +34,14 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [loading, setLoading] = useState(true);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [cerrandoInscripciones, setCerrandoInscripciones] = useState<string | null>(null);
+  
+  // Estado para selección múltiple
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<Set<string>>(new Set());
+  const [modoSeleccion, setModoSeleccion] = useState(false);
+  const [cerrandoGrupo, setCerrandoGrupo] = useState(false);
+  
+  const { confirm } = useConfirm();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadCategorias();
@@ -103,6 +113,70 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     }
   };
 
+  // Funciones para selección múltiple
+  const toggleSeleccion = (categoriaId: string) => {
+    const newSet = new Set(categoriasSeleccionadas);
+    if (newSet.has(categoriaId)) {
+      newSet.delete(categoriaId);
+    } else {
+      newSet.add(categoriaId);
+    }
+    setCategoriasSeleccionadas(newSet);
+  };
+
+  const seleccionarTodas = () => {
+    const seleccionables = categorias.filter(
+      c => c.estado === 'INSCRIPCIONES_ABIERTAS' && c.inscripcionesCount >= MINIMO_PARA_SORTEAR
+    );
+    setCategoriasSeleccionadas(new Set(seleccionables.map(c => c.id)));
+  };
+
+  const limpiarSeleccion = () => {
+    setCategoriasSeleccionadas(new Set());
+    setModoSeleccion(false);
+  };
+
+  const handleCerrarGrupo = async () => {
+    const categoriasACerrar = categorias.filter(c => categoriasSeleccionadas.has(c.id));
+    
+    if (categoriasACerrar.length === 0) return;
+
+    const confirmed = await confirm({
+      title: `¿Cerrar ${categoriasACerrar.length} categorías?`,
+      message: `Se cerrarán las inscripciones para: ${categoriasACerrar.map(c => c.category.nombre).join(', ')}`,
+      variant: 'warning',
+    });
+
+    if (!confirmed) return;
+
+    setCerrandoGrupo(true);
+    try {
+      // Cerrar todas las categorías seleccionadas en paralelo
+      const promises = categoriasACerrar.map(c => 
+        api.post(`/admin/categorias/${c.id}/cerrar-inscripciones`)
+      );
+      
+      const results = await Promise.allSettled(promises);
+      const exitosos = results.filter(r => r.status === 'fulfilled').length;
+      const fallidos = results.filter(r => r.status === 'rejected').length;
+
+      if (exitosos > 0) {
+        showSuccess('Inscripciones cerradas', `${exitosos} categorías cerradas exitosamente`);
+      }
+      if (fallidos > 0) {
+        showError('Error', `${fallidos} categorías no pudieron cerrarse`);
+      }
+
+      limpiarSeleccion();
+      loadCategorias();
+    } catch (error) {
+      console.error('Error cerrando grupo:', error);
+      showError('Error', 'No se pudieron cerrar las inscripciones');
+    } finally {
+      setCerrandoGrupo(false);
+    }
+  };
+
   const handleConfigurar = (categoria: Categoria) => {
     setCategoriaSeleccionada(categoria);
     setShowConfigModal(true);
@@ -171,9 +245,27 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             Gestiona el sorteo por categoría
           </p>
         </div>
-        <span className="text-xs text-neutral-500 px-3 py-1 bg-white/5 rounded-full">
-          {categorias.length} categorías
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-neutral-500 px-3 py-1 bg-white/5 rounded-full">
+            {categorias.length} categorías
+          </span>
+          {!modoSeleccion ? (
+            <button
+              onClick={() => setModoSeleccion(true)}
+              className="text-xs text-neutral-400 hover:text-white px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              Selección múltiple
+            </button>
+          ) : (
+            <button
+              onClick={limpiarSeleccion}
+              className="text-xs text-neutral-400 hover:text-white px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <X className="w-3 h-3" />
+              Cancelar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lista de categorías por género */}
@@ -218,6 +310,20 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                       <div className="flex items-center justify-between gap-4">
                         {/* Info principal */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
+                          {/* Checkbox en modo selección */}
+                          {modoSeleccion && puedeCerrar && (
+                            <button
+                              onClick={() => toggleSeleccion(categoria.id)}
+                              className="text-neutral-400 hover:text-white transition-colors"
+                            >
+                              {categoriasSeleccionadas.has(categoria.id) ? (
+                                <CheckSquare className="w-5 h-5 text-emerald-400" />
+                              ) : (
+                                <Square className="w-5 h-5" />
+                              )}
+                            </button>
+                          )}
+                          
                           {/* Número de orden */}
                           <span className="text-xs text-neutral-600 font-mono w-6">
                             {String(categoria.category.orden).padStart(2, '0')}
@@ -315,6 +421,54 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           Las categorías se ordenan automáticamente por nivel (Primera, Segunda, etc.)
         </p>
       </div>
+
+      {/* Barra de acciones en grupo */}
+      <AnimatePresence>
+        {modoSeleccion && categoriasSeleccionadas.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#151921] border border-white/10 rounded-xl px-6 py-4 shadow-2xl z-50 flex items-center gap-6"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-white font-medium">
+                {categoriasSeleccionadas.size} seleccionadas
+              </span>
+              <button
+                onClick={seleccionarTodas}
+                className="text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                Seleccionar todas
+              </button>
+              <button
+                onClick={() => setCategoriasSeleccionadas(new Set())}
+                className="text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                Limpiar
+              </button>
+            </div>
+            <div className="w-px h-6 bg-white/10" />
+            <button
+              onClick={handleCerrarGrupo}
+              disabled={cerrandoGrupo}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {cerrandoGrupo ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                  Cerrando...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  Cerrar inscripciones
+                </>
+              )}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal de configuración */}
       {showConfigModal && categoriaSeleccionada && (
