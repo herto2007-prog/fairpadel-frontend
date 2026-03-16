@@ -32,6 +32,7 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState('');
   const [confirmar, setConfirmar] = useState(false);
+  const [usarSemillas, setUsarSemillas] = useState(false);
 
   useEffect(() => {
     calcularConfiguracion();
@@ -78,6 +79,7 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
     try {
       const { data } = await api.post(`/admin/categorias/${categoria.id}/bracket/sortear`, {
         guardar: true,
+        usarSemillas,
       });
       
       if (data.success) {
@@ -152,6 +154,24 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
                   <div className="text-lg font-light text-white">{config.eliminaciones}</div>
                   <div className="text-[10px] text-neutral-500 uppercase tracking-wide">Eliminados</div>
                 </div>
+              </div>
+
+              {/* Opción de semillas */}
+              <div className="p-3 bg-white/[0.02] rounded-lg">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={usarSemillas}
+                    onChange={(e) => setUsarSemillas(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/20"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm text-white">Usar semillas por ranking</div>
+                    <div className="text-xs text-neutral-500">
+                      Las parejas se ordenan según su posición en el ranking del circuito
+                    </div>
+                  </div>
+                </label>
               </div>
 
               {/* Flujo */}
