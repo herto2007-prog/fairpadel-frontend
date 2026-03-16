@@ -800,14 +800,19 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
   const filteredSlots = normalizedSlots.filter(s => canchasToShow.has(s.cancha.id));
 
   // Función para obtener slots de un día y hora específicos
+  // Usar UTC consistente para evitar desfases de timezone
   const getSlotsForDayAndHour = (day: Date, hour: string) => {
-    const fechaStr = day.toISOString().split('T')[0];
+    const fechaStr = day.toISOString().split('T')[0]; // UTC
     return filteredSlots.filter(s => {
       if (s.fecha !== fechaStr) return false;
       // El slot está en esta hora si su horaInicio empieza con esta hora
       return s.horaInicio.startsWith(hour.split(':')[0]);
     });
   };
+  
+  // Debug: mostrar qué fechas tenemos
+  console.log('[VistaSemana] weekDays:', weekDays.map(d => d.toISOString().split('T')[0]));
+  console.log('[VistaSemana] slots disponibles:', filteredSlots.map(s => s.fecha));
 
   return (
     <div className="overflow-x-auto">
@@ -927,15 +932,21 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
   const handleEliminarDia = async (fecha: string) => {
     // Normalizar fecha para comparación (fecha viene como YYYY-MM-DD)
     const fechaNormalizada = fecha.split('T')[0];
+    console.log('[EliminarDia] Buscando día para fecha:', fechaNormalizada);
+    console.log('[EliminarDia] Días disponibles:', dias);
+    
     const diaConfig = dias.find(d => {
       const diaFecha = d.fecha.split('T')[0];
       return diaFecha === fechaNormalizada;
     });
+    
     if (!diaConfig) {
       showError('Error', 'No se encontró la configuración del día');
-      console.error('Fecha buscada:', fechaNormalizada, 'Días disponibles:', dias.map(d => d.fecha));
+      console.error('[EliminarDia] No encontrado. Fecha:', fechaNormalizada);
       return;
     }
+    
+    console.log('[EliminarDia] Día encontrado:', diaConfig);
 
     const confirmed = await confirm({
       title: '¿Eliminar día?',
