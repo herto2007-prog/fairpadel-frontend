@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, RotateCcw, Trophy, Flag } from 'lucide-react';
+import { X, Play, RotateCcw, Trophy, Flag, Save } from 'lucide-react';
 import { resultadosService } from './resultadosService';
 
 
@@ -155,16 +155,21 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
   };
 
   const finalizarPartido = async () => {
-    if (!window.confirm('¿Finalizar el partido?')) return;
-    
     setLoading(true);
+    setError(null);
     try {
-      await resultadosService.finalizarPartido(match.id);
+      console.log('[MarcadorEnVivo] Guardando resultado...', { matchId: match.id });
+      const response = await resultadosService.finalizarPartido(match.id);
+      console.log('[MarcadorEnVivo] Resultado guardado:', response);
       setPartidoFinalizado(true);
       onSuccess?.();
-      setTimeout(onClose, 1500);
+      // Cerrar el modal después de 2 segundos para que el usuario vea el mensaje de éxito
+      setTimeout(() => {
+        onClose();
+      }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al finalizar');
+      console.error('[MarcadorEnVivo] Error al guardar:', err);
+      setError(err.response?.data?.message || 'Error al guardar el resultado');
     } finally {
       setLoading(false);
     }
@@ -677,8 +682,41 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                 </>
               )}
 
-              {/* Partido finalizado */}
-              {(partidoFinalizado || liveScore?.estado === 'FINALIZADO') && (
+              {/* Partido finalizado - Botón para guardar resultado */}
+              {liveScore?.estado === 'FINALIZADO' && !partidoFinalizado && (
+                <div className="text-center py-4 space-y-4">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                  >
+                    <Trophy className="w-8 h-8 text-yellow-400" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold text-white mb-2">¡Partido Terminado!</h3>
+                  <p className="text-gray-400 mb-4">Guarda el resultado para actualizar el bracket</p>
+                  
+                  <button
+                    onClick={finalizarPartido}
+                    disabled={loading}
+                    className="flex items-center justify-center gap-2 px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors disabled:opacity-50 mx-auto"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5" />
+                        Guardar Resultado
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Partido guardado exitosamente */}
+              {partidoFinalizado && (
                 <div className="text-center py-4">
                   <motion.div
                     initial={{ scale: 0 }}
@@ -687,7 +725,7 @@ export function MarcadorEnVivo({ isOpen, onClose, match, onSuccess }: Props) {
                   >
                     <Trophy className="w-8 h-8 text-green-400" />
                   </motion.div>
-                  <h3 className="text-xl font-bold text-white mb-2">¡Partido Finalizado!</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">¡Resultado Guardado!</h3>
                   <p className="text-gray-400">El ganador avanza automáticamente</p>
                 </div>
               )}
