@@ -39,6 +39,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<Set<string>>(new Set());
   const [modoSeleccion, setModoSeleccion] = useState(false);
   const [cerrandoGrupo, setCerrandoGrupo] = useState(false);
+  const [reSorteando, setReSorteando] = useState(false);
   
   const { confirm } = useConfirm();
   const { showSuccess, showError } = useToast();
@@ -222,6 +223,41 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     );
   }
 
+  // Handler para re-sortear bracket
+  const handleReSortear = async () => {
+    if (!categoriaSeleccionada?.fixtureVersionId) return;
+    
+    const confirmed = await confirm({
+      title: '¿Re-sortear bracket?',
+      message: 'Se eliminará el bracket actual y se generará uno nuevo. Las parejas se asignarán nuevamente.',
+      variant: 'warning',
+    });
+    
+    if (!confirmed) return;
+    
+    setReSorteando(true);
+    try {
+      const { data } = await api.post(
+        `/admin/bracket/${categoriaSeleccionada.fixtureVersionId}/sortear-nuevo`,
+        { usarSemillas: false }
+      );
+      if (data.success) {
+        showSuccess('Bracket re-sorteado', 'Se generó un nuevo sorteo con las parejas asignadas');
+        loadCategorias();
+        // Recargar la vista
+        setCategoriaSeleccionada(null);
+        setTimeout(() => {
+          const catActualizada = categorias.find(c => c.id === categoriaSeleccionada.id);
+          if (catActualizada) setCategoriaSeleccionada(catActualizada);
+        }, 100);
+      }
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'Error al re-sortear');
+    } finally {
+      setReSorteando(false);
+    }
+  };
+  
   // Si hay una categoría seleccionada con bracket generado, mostrar el bracket
   if (categoriaSeleccionada?.fixtureVersionId) {
     return (
@@ -233,9 +269,18 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           >
             ← Volver a categorías
           </button>
-          <button className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors">
-            Publicar Bracket
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReSortear}
+              disabled={reSorteando}
+              className="px-4 py-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {reSorteando ? 'Sorteando...' : 'Re-Sortear'}
+            </button>
+            <button className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors">
+              Publicar Bracket
+            </button>
+          </div>
         </div>
         <BracketView 
           tournamentId={tournamentId}
