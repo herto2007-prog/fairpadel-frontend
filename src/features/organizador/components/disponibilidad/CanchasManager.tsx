@@ -810,9 +810,7 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
     });
   };
   
-  // Debug: mostrar qué fechas tenemos
-  console.log('[VistaSemana] weekDays:', weekDays.map(d => d.toISOString().split('T')[0]));
-  console.log('[VistaSemana] slots disponibles:', filteredSlots.map(s => s.fecha));
+
 
   return (
     <div className="overflow-x-auto">
@@ -913,7 +911,6 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
   // Agrupar slots por fecha
   const slotsByDate = useMemo(() => {
-    console.log('[VistaLista] Slots recibidos:', slots.length, slots.map(s => s.fecha));
     const grouped = new Map<string, Slot[]>();
     slots.forEach(slot => {
       const fecha = slot.fecha.split('T')[0];
@@ -922,23 +919,17 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
       }
       grouped.get(fecha)!.push(slot);
     });
-    console.log('[VistaLista] Fechas agrupadas:', Array.from(grouped.keys()));
     return grouped;
   }, [slots]);
 
   // Ordenar fechas
   const sortedDates = useMemo(() => {
-    const dates = Array.from(slotsByDate.keys()).sort();
-    console.log('[VistaLista] sortedDates:', dates);
-    return dates;
+    return Array.from(slotsByDate.keys()).sort();
   }, [slotsByDate]);
 
   const handleEliminarDia = async (fecha: string) => {
     // Normalizar fecha para comparación (fecha viene como YYYY-MM-DD)
     const fechaNormalizada = fecha.split('T')[0];
-    console.log('[EliminarDia] Buscando día para fecha:', fechaNormalizada);
-    console.log('[EliminarDia] Días disponibles:', dias);
-    
     const diaConfig = dias.find(d => {
       const diaFecha = d.fecha.split('T')[0];
       return diaFecha === fechaNormalizada;
@@ -946,11 +937,8 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
     
     if (!diaConfig) {
       showError('Error', 'No se encontró la configuración del día');
-      console.error('[EliminarDia] No encontrado. Fecha:', fechaNormalizada);
       return;
     }
-    
-    console.log('[EliminarDia] Día encontrado:', diaConfig);
 
     const confirmed = await confirm({
       title: '¿Eliminar día?',
