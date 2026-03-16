@@ -70,11 +70,22 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     };
 
     categorias.forEach((cat) => {
-      const tipo = cat.category.tipo?.toUpperCase() || 'OTROS';
-      if (grupos[tipo]) {
-        grupos[tipo].push(cat);
+      const nombre = cat.category.nombre?.toUpperCase() || '';
+      const tipo = cat.category.tipo?.toUpperCase() || '';
+      
+      // Detectar género por nombre o tipo
+      if (nombre.includes('FEMENIN') || nombre.includes('DAMA') || tipo.includes('DAMA') || tipo.includes('FEMENIN')) {
+        grupos.DAMAS.push(cat);
+      } else if (nombre.includes('MASCULIN') || nombre.includes('CABALLERO') || tipo.includes('CABALLERO') || tipo.includes('MASCULIN')) {
+        grupos.CABALLEROS.push(cat);
+      } else if (nombre.includes('MIXTO') || tipo.includes('MIXTO')) {
+        grupos.MIXTO.push(cat);
       } else {
-        grupos.OTROS.push(cat);
+        // Si no tiene género en nombre, inferir por tipo o poner en OTROS
+        if (tipo === 'DAMAS') grupos.DAMAS.push(cat);
+        else if (tipo === 'CABALLEROS') grupos.CABALLEROS.push(cat);
+        else if (tipo === 'MIXTO') grupos.MIXTO.push(cat);
+        else grupos.OTROS.push(cat);
       }
     });
 
@@ -270,7 +281,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
       {/* Lista de categorías por género */}
       <div className="space-y-8">
-        {['CABALLEROS', 'DAMAS', 'MIXTO'].map((tipo) => {
+        {['CABALLEROS', 'DAMAS', 'MIXTO', 'OTROS'].map((tipo) => {
           const cats = categoriasAgrupadas[tipo];
           if (cats.length === 0) return null;
 
@@ -280,7 +291,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
               <div className="flex items-center gap-3 pb-2">
                 <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                 <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                  {tipo === 'CABALLEROS' ? 'Caballeros' : tipo === 'DAMAS' ? 'Damas' : 'Mixto'}
+                  {tipo === 'CABALLEROS' ? 'Caballeros' : tipo === 'DAMAS' ? 'Damas' : tipo === 'MIXTO' ? 'Mixto' : 'Otras'}
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-l from-white/10 to-transparent" />
               </div>
