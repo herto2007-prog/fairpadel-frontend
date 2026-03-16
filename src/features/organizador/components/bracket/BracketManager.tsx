@@ -225,13 +225,19 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
   // Handler para re-sortear bracket
   const handleReSortear = async () => {
-    if (!categoriaSeleccionada?.fixtureVersionId) return;
+    console.log('[Re-Sortear] Handler llamado');
+    if (!categoriaSeleccionada?.fixtureVersionId) {
+      console.log('[Re-Sortear] No hay fixtureVersionId');
+      return;
+    }
     
+    console.log('[Re-Sortear] Mostrando confirmación...');
     const confirmed = await confirm({
       title: '¿Re-sortear bracket?',
       message: 'Se eliminará el bracket actual y se generará uno nuevo. Las parejas se asignarán nuevamente.',
       variant: 'warning',
     });
+    console.log('[Re-Sortear] Confirmación:', confirmed);
     
     if (!confirmed) return;
     
@@ -275,7 +281,10 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleReSortear}
+              onClick={() => {
+                console.log('[Re-Sortear] Botón clickeado');
+                handleReSortear();
+              }}
               disabled={reSorteando}
               className="px-4 py-2 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
