@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, DollarSign, Image as ImageIcon, 
   Award, ChevronRight, ChevronLeft, Check, Upload,
-  Sparkles, Users, Clock, Info
+  Sparkles, Users, Clock, Info, Building2
 } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { SedeAutocomplete } from './SedeAutocomplete';
@@ -426,15 +426,41 @@ function Step1Identidad({
         )}
       </div>
 
-      {/* Sede */}
-      <div>
+      {/* Sede Principal */}
+      <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4">
+        <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-emerald-400" />
+          Sede Principal
+          {formData.sedeId && <span className="text-emerald-400 text-xs">✓ Seleccionada</span>}
+        </label>
+        
+        <p className="text-xs text-white/50 mb-3">
+          Esta será la sede principal del torneo. Las finales se jugarán aquí a menos que configures lo contrario en "Canchas".
+          {formData.fechaFinales && (
+            <span className="block mt-1 text-white/40">
+              📍 Las finales están programadas para el{' '}
+              {new Date(formData.fechaFinales).toLocaleDateString('es-PY', { 
+                day: 'numeric', 
+                month: 'long' 
+              })}
+            </span>
+          )}
+        </p>
+
         <SedeAutocomplete
           sedes={sedes}
           value={formData.sedeId}
           onChange={(sedeId) => updateField('sedeId', sedeId)}
-          placeholder="Buscar sede..."
-          label={`Sede ${sedes.length === 0 ? '(No hay sedes)' : '(Opcional)'}`}
+          placeholder="Buscar sede por nombre o ciudad..."
+          label=""
         />
+        
+        {formData.sedeId && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400/80 bg-emerald-500/10 rounded-lg px-3 py-2">
+            <Trophy className="w-3.5 h-3.5" />
+            <span>Esta sede será el escenario principal para las finales del torneo</span>
+          </div>
+        )}
       </div>
 
       {/* Fechas - Nueva lógica: Día D primero */}
