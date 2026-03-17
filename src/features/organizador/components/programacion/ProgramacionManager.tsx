@@ -53,9 +53,12 @@ interface DistribucionDia {
 }
 
 interface Conflicto {
-  tipo: 'MISMA_PAREJA' | 'CANCHA_OCUPADA' | 'SIN_DISPONIBILIDAD';
+  tipo: 'MISMA_PAREJA' | 'CANCHA_OCUPADA' | 'SIN_DISPONIBILIDAD' | 'ADVERTENCIA';
+  severidad: 'BLOQUEANTE' | 'ADVERTENCIA';
   partidoId: string;
   mensaje: string;
+  sugerencia?: string;
+  accion?: 'AGREGAR_DIAS' | 'EXTENDER_HORARIOS' | 'REDUCIR_PARTIDOS_DIA' | 'ACEPTAR_RIESGO';
 }
 
 interface ResultadoProgramacion {
@@ -347,7 +350,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
               </button>
               <button
                 onClick={aplicarProgramacion}
-                disabled={aplicando || (resultado?.conflictos?.some(c => c.tipo === 'SIN_DISPONIBILIDAD'))}
+                disabled={aplicando || (resultado?.conflictos?.some(c => c.severidad === 'BLOQUEANTE'))}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
               >
                 {aplicando ? (
@@ -581,20 +584,59 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
             )}
           </div>
 
-          {/* Conflictos */}
+          {/* Conflictos y Advertencias */}
           {resultado.conflictos.length > 0 && (
-            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Conflictos detectados ({resultado.conflictos.length})
-              </h3>
-              <div className="space-y-1">
-                {resultado.conflictos.map((conflicto, idx) => (
-                  <p key={idx} className="text-xs text-red-300">
-                    • {conflicto.mensaje}
+            <div className="space-y-3">
+              {/* Conflictos Bloqueantes */}
+              {resultado.conflictos.some(c => c.severidad === 'BLOQUEANTE') && (
+                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Conflictos detectados ({resultado.conflictos.filter(c => c.severidad === 'BLOQUEANTE').length})
+                  </h3>
+                  <div className="space-y-2">
+                    {resultado.conflictos.filter(c => c.severidad === 'BLOQUEANTE').map((conflicto, idx) => (
+                      <div key={idx} className="text-xs text-red-300">
+                        • {conflicto.mensaje}
+                        {conflicto.sugerencia && (
+                          <p className="text-red-400/70 ml-3 mt-0.5">💡 {conflicto.sugerencia}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Advertencias */}
+              {resultado.conflictos.some(c => c.severidad === 'ADVERTENCIA') && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-amber-400 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Advertencias ({resultado.conflictos.filter(c => c.severidad === 'ADVERTENCIA').length})
+                  </h3>
+                  <div className="space-y-2">
+                    {resultado.conflictos.filter(c => c.severidad === 'ADVERTENCIA').map((conflicto, idx) => (
+                      <div key={idx} className="text-xs text-amber-300">
+                        <p>• {conflicto.mensaje}</p>
+                        {conflicto.sugerencia && (
+                          <p className="text-amber-400/70 ml-3 mt-0.5">💡 {conflicto.sugerencia}</p>
+                        )}
+                        {conflicto.accion === 'AGREGAR_DIAS' && (
+                          <button
+                            onClick={() => setVistaActiva('actual')}
+                            className="ml-3 mt-1 text-[10px] px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded transition-colors"
+                          >
+                            → Ir a agregar días
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-amber-400/50 mt-3 pt-2 border-t border-amber-500/10">
+                    Puedes aplicar la programación igualmente, pero ten en cuenta estas advertencias.
                   </p>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
