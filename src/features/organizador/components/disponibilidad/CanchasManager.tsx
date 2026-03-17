@@ -118,11 +118,18 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   const [showConfigFinales, setShowConfigFinales] = useState(false);
   
   // Form para nuevo día
-  const [nuevoDia, setNuevoDia] = useState({
+  const [nuevoDia, setNuevoDia] = useState<{
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+    minutosSlot: number;
+    canchaIds?: string[];
+  }>({
     fecha: '',
     horaInicio: '18:00',
     horaFin: '23:00',
     minutosSlot: 90,
+    canchaIds: undefined, // undefined = todas las canchas
   });
   const [guardandoDia, setGuardandoDia] = useState(false);
   
@@ -301,7 +308,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
       // 3. Recargar datos
       await loadData();
       setShowConfigDia(false);
-      setNuevoDia({ fecha: '', horaInicio: '18:00', horaFin: '23:00', minutosSlot: 90 });
+      setNuevoDia({ fecha: '', horaInicio: '18:00', horaFin: '23:00', minutosSlot: 90, canchaIds: undefined });
     } catch (error: any) {
       console.error('[CanchasManager] Error guardando día:', error);
       alert(error.response?.data?.message || 'Error guardando día');
@@ -669,9 +676,41 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                     className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
                   >
                     <option value={60}>60 minutos</option>
-                    <option value={90}>90 minutos</option>
+                    <option value={90}>90 minutos (Estándar)</option>
                     <option value={120}>120 minutos</option>
                   </select>
+                </div>
+
+                {/* Selección de canchas para este día */}
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Canchas disponibles este día</label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto bg-[#0B0E14] border border-[#232838] rounded-xl p-3">
+                    {canchas.length === 0 ? (
+                      <p className="text-sm text-amber-400">No hay canchas configuradas. Agrega sedes primero.</p>
+                    ) : (
+                      canchas.map((cancha) => (
+                        <label key={cancha.id} className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={nuevoDia.canchaIds?.includes(cancha.id) ?? true}
+                            onChange={(e) => {
+                              const currentIds = nuevoDia.canchaIds || canchas.map(c => c.id);
+                              if (e.target.checked) {
+                                setNuevoDia({ ...nuevoDia, canchaIds: [...currentIds, cancha.id] });
+                              } else {
+                                setNuevoDia({ ...nuevoDia, canchaIds: currentIds.filter(id => id !== cancha.id) });
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-[#232838] bg-[#151921] text-[#df2531] focus:ring-[#df2531]/50"
+                          />
+                          <div>
+                            <p className="text-sm text-white">{cancha.nombre}</p>
+                            <p className="text-xs text-gray-500">{cancha.sedeNombre}</p>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
