@@ -183,8 +183,13 @@ export function getDatesRangePY(fechaInicio: string, fechaFin: string): {
   
   for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
     const date = new Date(d);
+    // Usar getDateOnlyPY para respetar timezone Paraguay
+    // Evita bug donde toISOString() devuelve UTC (día siguiente si son >21h PY)
+    const fechaStr = date.toLocaleDateString('en-CA', {
+      timeZone: TIMEZONE,
+    });
     fechas.push({
-      fecha: date.toISOString().split('T')[0],
+      fecha: fechaStr,
       dia: date.getDay(),
       num: date.getDate(),
       mes: meses[date.getMonth()],

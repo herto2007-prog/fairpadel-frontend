@@ -419,7 +419,10 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
               }`}
             >
               <div className={`w-2 h-2 rounded-full ${cancha.color.text.replace('text-', 'bg-')}`} />
-              {cancha.nombre}
+              <span className="flex flex-col items-start leading-tight">
+                <span>{cancha.nombre}</span>
+                <span className="text-[9px] opacity-70">{cancha.sedeNombre}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -869,9 +872,10 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
                                 ? 'bg-gray-700 text-gray-500 border-gray-600'
                                 : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                             }`}
-                            title={`${slot.cancha.nombre}: ${slot.horaInicio}-${slot.horaFin}`}
+                            title={`${slot.cancha.nombre} (${slot.cancha.sedeNombre}): ${slot.horaInicio}-${slot.horaFin}`}
                           >
                             <div className="font-medium truncate">{slot.cancha.nombre}</div>
+                            <div className="text-[9px] opacity-70 truncate">{slot.cancha.sedeNombre}</div>
                             <div className="opacity-70">{slot.horaInicio}-{slot.horaFin}</div>
                           </div>
                         ))}
@@ -1025,7 +1029,10 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
                       <th key={cancha.id} className="px-3 py-2 text-center text-xs text-gray-400 font-medium">
                         <div className="flex items-center justify-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${cancha.color.text.replace('text-', 'bg-')}`} />
-                          {cancha.nombre}
+                          <span className="flex flex-col items-center">
+                            <span>{cancha.nombre}</span>
+                            <span className="text-[9px] opacity-70">{cancha.sedeNombre}</span>
+                          </span>
                         </div>
                       </th>
                     ))}
