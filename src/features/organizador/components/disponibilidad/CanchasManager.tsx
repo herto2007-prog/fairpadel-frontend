@@ -297,10 +297,14 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
       const result = await disponibilidadService.configurarDia(tournamentId, nuevoDia);
       console.log('[CanchasManager] Día guardado:', result);
       
-      // 2. Generar slots para ese día (usar el ID del resultado)
+      // 2. Generar slots para ese día (usar el ID del resultado y canchas seleccionadas)
       if (result?.dia?.id) {
         console.log('[CanchasManager] Generando slots para día:', result.dia.id);
-        await disponibilidadService.generarSlots(tournamentId, result.dia.id);
+        await disponibilidadService.generarSlots(
+          tournamentId, 
+          result.dia.id, 
+          nuevoDia.canchaIds
+        );
       } else {
         console.error('[CanchasManager] No se recibió ID del día');
       }
