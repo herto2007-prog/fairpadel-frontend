@@ -4,6 +4,7 @@ import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight, AlertCircle } from
 import { api } from '../../../../services/api';
 import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
+import { FASES_ORDENADAS } from '../../utils/faseColors';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -371,8 +372,7 @@ function PartidoCard({
 }
 
 function MiniBracket({ fases, faseActiva }: { fases: string[]; faseActiva: string }) {
-  const fasesOrdenadas = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
-  const fasesVisibles = fasesOrdenadas.filter(f => fases.includes(f));
+  const fasesVisibles = FASES_ORDENADAS.filter(f => fases.includes(f));
   
   return (
     <div className="flex items-center gap-2">

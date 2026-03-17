@@ -5,6 +5,7 @@ import {
   MapPin, Plus, AlertCircle
 } from 'lucide-react';
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
+import { getColorFase } from '../../utils/faseColors';
 import { PartidoReal } from './ProgramacionManager';
 
 interface VistaCalendarioProps {
@@ -93,17 +94,7 @@ export function VistaCalendario({
     return partidos.filter(p => !p.fechaProgramada || !p.horaProgramada);
   }, [partidos]);
 
-  const getColorFase = (fase: string) => {
-    switch (fase) {
-      case 'ZONA': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'REPECHAJE': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'OCTAVOS': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'CUARTOS': return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
-      case 'SEMIS': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'FINAL': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-    }
-  };
+  // getColorFase se importa desde utils/faseColors
 
   if (cargando) {
     return (
