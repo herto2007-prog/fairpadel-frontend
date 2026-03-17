@@ -242,8 +242,9 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         setCanchasFiltradas(new Set(canchasConColor.map((c: Cancha) => c.id)));
       }
       
-      // Si no hay canchas para finales seleccionadas, sugerir las primeras 1-2
-      if (canchasFinales.length === 0 && canchasConColor.length > 0) {
+      // Si no hay canchas para finales seleccionadas Y no estamos cargando desde el servidor,
+      // sugerir las primeras 1-2 (solo como valor inicial, no sobreescribir config guardada)
+      if (canchasFinales.length === 0 && canchasConColor.length > 0 && !torneoInfo?.id) {
         setCanchasFinales([canchasConColor[0].id]);
       }
     } catch (error) {
