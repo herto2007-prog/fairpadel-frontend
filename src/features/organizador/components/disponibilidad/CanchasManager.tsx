@@ -1237,8 +1237,10 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
     // Verificar si hay slots ocupados
     const daySlots = slotsByDate.get(fecha) || [];
-    const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO').length;
-    const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE').length;
+    console.log('[EliminarDia] Slots del día:', daySlots.length, daySlots.map(s => ({ id: s.id, estado: s.estado, match: s.match })));
+    const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO' || s.match).length;
+    const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE' && !s.match).length;
+    console.log('[EliminarDia] Slots ocupados:', slotsOcupados, 'Libres:', slotsLibres);
 
     // Mensaje diferente según el caso
     let title = '¿Eliminar día?';
@@ -1251,13 +1253,18 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
       message = `Se eliminará completamente el día ${fecha.split('-').reverse().join('/')}. Esta acción no se puede deshacer.`;
     }
 
+    console.log('[EliminarDia] Mostrando confirmación...');
     const confirmed = await confirm({
       title,
       message,
       variant: slotsOcupados > 0 ? 'warning' : 'danger',
     });
+    console.log('[EliminarDia] Usuario confirmó:', confirmed);
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('[EliminarDia] Cancelado por usuario');
+      return;
+    }
 
     console.log('[EliminarDia] Enviando petición DELETE para día:', diaConfig.id);
     
