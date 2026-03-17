@@ -69,14 +69,16 @@ interface ProgramacionManagerProps {
   categoriasSorteadas: Categoria[];
 }
 
-// Importar el modal
+// Importar componentes
 import { ModalEditarProgramacion } from './ModalEditarProgramacion';
+import { VistaCalendario } from './VistaCalendario';
+import { VistaDragDrop } from './VistaDragDrop';
 
 // ═══════════════════════════════════════════════════════════
 // INTERFACES PARA VISTA DE ESTADO ACTUAL (FASE 1)
 // ═══════════════════════════════════════════════════════════
 
-interface PartidoReal {
+export interface PartidoReal {
   id: string;
   fase: string;
   orden: number;
@@ -112,7 +114,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   // ═══════════════════════════════════════════════════════════
   // ESTADO PARA VISTA DE ESTADO ACTUAL (FASE 1)
   // ═══════════════════════════════════════════════════════════
-  const [vistaActiva, setVistaActiva] = useState<'actual' | 'calculadora'>('actual');
+  const [vistaActiva, setVistaActiva] = useState<'actual' | 'calendario' | 'dragdrop' | 'calculadora'>('actual');
   const [partidos, setPartidos] = useState<PartidoReal[]>([]);
   const [cargandoPartidos, setCargandoPartidos] = useState(false);
   
@@ -324,7 +326,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       </div>
 
       {/* Tabs de navegación */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setVistaActiva('actual')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -334,12 +336,36 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           }`}
         >
           <Eye className="w-4 h-4" />
-          Vista Actual
+          Lista
           {partidosPendientes.length > 0 && (
             <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
               {partidosPendientes.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setVistaActiva('calendario')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            vistaActiva === 'calendario'
+              ? 'bg-[#df2531] text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          Calendario
+        </button>
+        <button
+          onClick={() => setVistaActiva('dragdrop')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            vistaActiva === 'dragdrop'
+              ? 'bg-[#df2531] text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          Arrastrar
         </button>
         <button
           onClick={() => {
@@ -360,7 +386,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
-          VISTA ACTUAL (FASE 1)
+          VISTA LISTA (FASE 1)
           ═══════════════════════════════════════════════════════════ */}
       {vistaActiva === 'actual' && (
         <VistaActual 
@@ -381,6 +407,43 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           categoriasSorteadas={categoriasSorteadas}
           onRecargar={cargarPartidos}
           onEditar={(partido) => setModalEditar({ open: true, partido })}
+        />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          VISTA CALENDARIO (FASE 3)
+          ═══════════════════════════════════════════════════════════ */}
+      {vistaActiva === 'calendario' && (
+        <VistaCalendario
+          partidos={partidos}
+          cargando={cargandoPartidos}
+          onEditar={(partido) => setModalEditar({ open: true, partido })}
+          onProgramarNuevo={(fecha, hora, canchaId) => {
+            // Abrir modal con datos pre-llenados
+            setModalEditar({ 
+              open: true, 
+              partido: {
+                id: '', // Se seleccionará de los pendientes
+                fase: '',
+                categoriaNombre: '',
+                esBye: false,
+                fechaProgramada: fecha,
+                horaProgramada: hora,
+                torneoCanchaId: canchaId,
+              } as PartidoReal
+            });
+          }}
+        />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          VISTA DRAG & DROP (FASE 4)
+          ═══════════════════════════════════════════════════════════ */}
+      {vistaActiva === 'dragdrop' && (
+        <VistaDragDrop
+          partidos={partidos}
+          cargando={cargandoPartidos}
+          onActualizar={cargarPartidos}
         />
       )}
 
