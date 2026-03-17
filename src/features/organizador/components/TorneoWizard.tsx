@@ -22,6 +22,7 @@ interface TorneoFormData {
   sedeId: string;
   fechaInicio: string;
   fechaFin: string;
+  fechaFinales: string;
   costoInscripcion: number;
   minutosPorPartido: number;
   flyerUrl: string;
@@ -68,6 +69,7 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     sedeId: '',
     fechaInicio: '',
     fechaFin: '',
+    fechaFinales: '',
     costoInscripcion: 0,
     minutosPorPartido: 120,
     flyerUrl: '',
@@ -121,12 +123,12 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
           setError('Debes seleccionar una ciudad');
           return false;
         }
-        if (!formData.fechaInicio || !formData.fechaFin) {
-          setError('Debes seleccionar las fechas del torneo');
+        if (!formData.fechaFinales) {
+          setError('Debes seleccionar el día de las finales');
           return false;
         }
-        if (new Date(formData.fechaInicio) > new Date(formData.fechaFin)) {
-          setError('La fecha de inicio no puede ser posterior a la fecha de fin');
+        if (formData.fechaInicio && new Date(formData.fechaInicio) > new Date(formData.fechaFinales)) {
+          setError('La fecha de inicio no puede ser posterior al día de las finales');
           return false;
         }
         return true;
@@ -435,28 +437,45 @@ function Step1Identidad({
         />
       </div>
 
-      {/* Fechas */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Fechas - Nueva lógica: Día D primero */}
+      <div className="space-y-4">
+        {/* Día D - Finales (OBLIGATORIO) */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+          <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-primary" />
+            ¿Qué día se jugarán las Finales? <span className="text-primary">*</span>
+          </label>
+          <p className="text-xs text-white/50 mb-3">
+            Este es tu "Día D" - La gran final del torneo. El sistema calculará automáticamente las fechas anteriores.
+          </p>
+          <input
+            type="date"
+            value={formData.fechaFinales}
+            onChange={(e) => {
+              const fechaFinales = e.target.value;
+              updateField('fechaFinales', fechaFinales);
+              // Auto-actualizar fechaFin si no está seteada
+              if (!formData.fechaFin || formData.fechaFin < fechaFinales) {
+                updateField('fechaFin', fechaFinales);
+              }
+            }}
+            className="w-full bg-white/5 border border-primary/30 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+
+        {/* Fecha de inicio (Opcional) */}
         <div>
           <label className="block text-xs text-white/60 mb-1.5">
-            Inicio <span className="text-primary">*</span>
+            ¿Qué día te gustaría comenzar? <span className="text-white/40">(Opcional)</span>
           </label>
+          <p className="text-[10px] text-white/40 mb-2">
+            Si lo dejas vacío, el sistema calculará la mejor fecha según las categorías e inscriptos.
+          </p>
           <input
             type="date"
             value={formData.fechaInicio}
+            max={formData.fechaFinales}
             onChange={(e) => updateField('fechaInicio', e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-white/60 mb-1.5">
-            Fin <span className="text-primary">*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.fechaFin}
-            min={formData.fechaInicio}
-            onChange={(e) => updateField('fechaFin', e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
           />
         </div>
@@ -837,11 +856,19 @@ function Step5Confirmar({
           </span>
         </div>
         <div className="flex justify-between py-1.5 border-b border-white/5">
-          <span className="text-white/40 text-xs">Fechas</span>
-          <span className="text-white text-xs text-right">
-            {new Date(formData.fechaInicio).toLocaleDateString('es-PY', {day:'numeric', month:'short'})} - {new Date(formData.fechaFin).toLocaleDateString('es-PY', {day:'numeric', month:'short'})}
+          <span className="text-white/40 text-xs">Día de Finales</span>
+          <span className="text-primary text-xs font-medium text-right">
+            {formData.fechaFinales ? new Date(formData.fechaFinales).toLocaleDateString('es-PY', {day:'numeric', month:'short', year:'2-digit'}) : '-'}
           </span>
         </div>
+        {formData.fechaInicio && (
+          <div className="flex justify-between py-1.5 border-b border-white/5">
+            <span className="text-white/40 text-xs">Inicio sugerido</span>
+            <span className="text-white text-xs text-right">
+              {new Date(formData.fechaInicio).toLocaleDateString('es-PY', {day:'numeric', month:'short'})}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between py-1.5 border-b border-white/5">
           <span className="text-white/40 text-xs">Inscripción</span>
           <span className="text-emerald-400 text-xs font-medium">
