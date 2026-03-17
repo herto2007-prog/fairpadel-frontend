@@ -10,6 +10,7 @@ import { sedesService } from '../../../../services/sedesService';
 import { api } from '../../../../services/api';
 import { getDatesRangePY, formatDatePY, getDateOnlyPY } from '../../../../utils/date';
 import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Slot {
@@ -1195,7 +1196,8 @@ interface VistaListaProps {
 }
 
 function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaListaProps) {
-  const { confirm } = useConfirm();
+  const confirmState = useConfirm();
+  const { confirm } = confirmState;
   const { showSuccess, showError } = useToast();
 
   // Agrupar slots por fecha
@@ -1397,6 +1399,18 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
           </div>
         );
       })}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
