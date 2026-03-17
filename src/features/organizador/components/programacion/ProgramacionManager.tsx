@@ -239,8 +239,14 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
     setCalculando(true);
     try {
+      // Obtener configuración de finales del torneo
+      const { data: torneoData } = await api.get(`/tournaments/${tournamentId}`);
+      const torneo = torneoData.tournament || torneoData;
+      
       const { data } = await api.post(`/programacion/torneos/${tournamentId}/calcular`, {
         categoriasSorteadas: categorias.map(c => c.id),
+        canchasFinales: torneo.canchasFinales || [],
+        horaInicioFinales: torneo.horaInicioFinales || null,
       });
       
       setResultado(data);

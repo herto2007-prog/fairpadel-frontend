@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
+import { tournamentService } from '../../../../services/tournamentService';
 import { api } from '../../../../services/api';
 import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -116,6 +117,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
   const [horaInicioFinales, setHoraInicioFinales] = useState('18:00');
   const [showConfigFinales, setShowConfigFinales] = useState(false);
+  const [guardandoFinales, setGuardandoFinales] = useState(false);
   
   // Form para nuevo día
   const [nuevoDia, setNuevoDia] = useState<{
@@ -197,6 +199,13 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           sedePrincipal: data.data.torneo.sede,
           fechaFinales: data.data.torneo.fechaFinales,
         });
+        // Cargar config de finales si existe
+        if (data.data.torneo.canchasFinales?.length > 0) {
+          setCanchasFinales(data.data.torneo.canchasFinales);
+        }
+        if (data.data.torneo.horaInicioFinales) {
+          setHoraInicioFinales(data.data.torneo.horaInicioFinales);
+        }
       }
     } catch (error) {
       console.error('Error cargando info del torneo:', error);
@@ -990,10 +999,25 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
 
                 <div className="pt-4 border-t border-white/10">
                   <button
-                    onClick={() => setShowConfigFinales(false)}
-                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-colors"
+                    onClick={async () => {
+                      setGuardandoFinales(true);
+                      try {
+                        await tournamentService.update(tournamentId, {
+                          canchasFinales,
+                          horaInicioFinales,
+                        });
+                        setShowConfigFinales(false);
+                      } catch (error) {
+                        console.error('Error guardando config de finales:', error);
+                        alert('Error guardando configuración');
+                      } finally {
+                        setGuardandoFinales(false);
+                      }
+                    }}
+                    disabled={guardandoFinales}
+                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
                   >
-                    Guardar Configuración
+                    {guardandoFinales ? 'Guardando...' : 'Guardar Configuración'}
                   </button>
                 </div>
               </div>
@@ -1195,27 +1219,58 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
   const handleEliminarDia = async (fecha: string) => {
     // Normalizar fecha para comparación (fecha viene como YYYY-MM-DD)
     const fechaNormalizada = fecha.split('T')[0];
+    console.log('[EliminarDia] Buscando día para fecha:', fechaNormalizada);
+    console.log('[EliminarDia] Días disponibles:', dias.map(d => ({ id: d.id, fecha: d.fecha })));
+    
     const diaConfig = dias.find(d => {
-      const diaFecha = d.fecha.split('T')[0];
+      // d.fecha puede ser string o Date
+      const diaFecha = typeof d.fecha === 'string' ? d.fecha.split('T')[0] : new Date(d.fecha).toISOString().split('T')[0];
       return diaFecha === fechaNormalizada;
     });
     
     if (!diaConfig) {
+      console.error('[EliminarDia] No se encontró día para:', fechaNormalizada);
       showError('Error', 'No se encontró la configuración del día');
       return;
     }
+    console.log('[EliminarDia] Día encontrado:', diaConfig);
+
+    // Verificar si hay slots ocupados
+    const daySlots = slotsByDate.get(fecha) || [];
+    const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO').length;
+    const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE').length;
+
+    // Mensaje diferente según el caso
+    let title = '¿Eliminar día?';
+    let message = '';
+    
+    if (slotsOcupados > 0) {
+      title = '¿Eliminar slots libres?';
+      message = `Este día tiene ${slotsOcupados} partido(s) programado(s). Solo se eliminarán los ${slotsLibres} slots libres. Los partidos programados permanecerán.`;
+    } else {
+      message = `Se eliminará completamente el día ${fecha.split('-').reverse().join('/')}. Esta acción no se puede deshacer.`;
+    }
 
     const confirmed = await confirm({
-      title: '¿Eliminar día?',
-      message: `Se eliminarán todos los slots del ${fecha.split('-').reverse().join('/')}. Esta acción no se puede deshacer.`,
-      variant: 'danger',
+      title,
+      message,
+      variant: slotsOcupados > 0 ? 'warning' : 'danger',
     });
 
     if (!confirmed) return;
 
     try {
-      await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
-      showSuccess('Día eliminado', `Los slots del ${fecha.split('-').reverse().join('/')} han sido eliminados`);
+      const result = await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
+      
+      if (result.parcial) {
+        showSuccess(
+          'Slots libres eliminados', 
+          `Se eliminaron ${result.eliminados} slots libres. ${result.preservados} slots con partidos permanecen activos.`
+        );
+      } else {
+        showSuccess('Día eliminado', 'El día y todos sus slots han sido eliminados');
+      }
+      
       onRefresh();
     } catch (error) {
       console.error('Error eliminando día:', error);
