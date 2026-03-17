@@ -69,6 +69,12 @@ interface ProgramacionManagerProps {
   categoriasSorteadas: Categoria[];
 }
 
+interface Cancha {
+  id: string;
+  nombre: string;
+  sede: string;
+}
+
 // Importar componentes
 import { ModalEditarProgramacion } from './ModalEditarProgramacion';
 import { VistaCalendario } from './VistaCalendario';
@@ -118,6 +124,8 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   const [vistaActiva, setVistaActiva] = useState<'actual' | 'calendario' | 'dragdrop' | 'calculadora'>('actual');
   const [partidos, setPartidos] = useState<PartidoReal[]>([]);
   const [cargandoPartidos, setCargandoPartidos] = useState(false);
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [cargandoCanchas, setCargandoCanchas] = useState(false);
   
   // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todas');
@@ -136,6 +144,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
     if (tournamentId) {
       cargarPartidos();
       cargarCategorias();
+      cargarCanchas();
     }
   }, [tournamentId]);
 
@@ -162,6 +171,21 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       }
     } catch (error) {
       console.error('Error cargando categorías:', error);
+    }
+  };
+
+  // Cargar canchas del torneo
+  const cargarCanchas = async () => {
+    setCargandoCanchas(true);
+    try {
+      const { data } = await api.get(`/programacion/torneos/${tournamentId}/canchas`);
+      if (data.success) {
+        setCanchas(data.canchas || []);
+      }
+    } catch (error) {
+      console.error('Error cargando canchas:', error);
+    } finally {
+      setCargandoCanchas(false);
     }
   };
 
@@ -323,7 +347,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
               </button>
               <button
                 onClick={aplicarProgramacion}
-                disabled={aplicando || (resultado?.conflictos?.length > 0)}
+                disabled={aplicando || (resultado?.conflictos?.some(c => c.tipo === 'SIN_DISPONIBILIDAD'))}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
               >
                 {aplicando ? (
@@ -434,7 +458,8 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       {vistaActiva === 'calendario' && (
         <VistaCalendario
           partidos={partidos}
-          cargando={cargandoPartidos}
+          canchas={canchas}
+          cargando={cargandoPartidos || cargandoCanchas}
           onEditar={(partido) => setModalEditar({ open: true, partido })}
           onProgramarNuevo={(fecha, hora, canchaId) => {
             // Abrir modal con datos pre-llenados
@@ -460,7 +485,8 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       {vistaActiva === 'dragdrop' && (
         <VistaDragDrop
           partidos={partidos}
-          cargando={cargandoPartidos}
+          canchas={canchas}
+          cargando={cargandoPartidos || cargandoCanchas}
           onActualizar={cargarPartidos}
         />
       )}

@@ -10,6 +10,7 @@ import { PartidoReal } from './ProgramacionManager';
 
 interface VistaCalendarioProps {
   partidos: PartidoReal[];
+  canchas: { id: string; nombre: string; sede: string }[];
   cargando: boolean;
   onEditar: (partido: PartidoReal) => void;
   onProgramarNuevo: (fecha: string, hora: string, canchaId: string) => void;
@@ -17,6 +18,7 @@ interface VistaCalendarioProps {
 
 export function VistaCalendario({ 
   partidos, 
+  canchas,
   cargando, 
   onEditar,
   onProgramarNuevo 
@@ -35,20 +37,8 @@ export function VistaCalendario({
   // Fecha seleccionada (por defecto la primera)
   const [fechaSeleccionada, setFechaSeleccionada] = useState<string>(fechasDisponibles[0] || '');
 
-  // Obtener canchas únicas
-  const canchas = useMemo(() => {
-    const map = new Map<string, { id: string; nombre: string; sede: string }>();
-    partidos.forEach(p => {
-      if (p.torneoCanchaId && p.canchaNombre) {
-        map.set(p.torneoCanchaId, {
-          id: p.torneoCanchaId,
-          nombre: p.canchaNombre,
-          sede: p.sedeNombre || '',
-        });
-      }
-    });
-    return Array.from(map.values());
-  }, [partidos]);
+  // Usar canchas pasadas como prop (del torneo), no extraer de partidos
+  // Esto permite ver el calendario aunque no haya partidos programados
 
   // Horarios disponibles (de 08:00 a 22:00 cada 1.5h)
   const horarios = useMemo(() => {

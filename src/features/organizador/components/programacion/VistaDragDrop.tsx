@@ -21,6 +21,7 @@ import { programacionService } from './programacionService';
 
 interface VistaDragDropProps {
   partidos: PartidoReal[];
+  canchas: { id: string; nombre: string; sede: string }[];
   cargando: boolean;
   onActualizar: () => void;
 }
@@ -35,7 +36,7 @@ interface Slot {
   partidoId?: string;
 }
 
-export function VistaDragDrop({ partidos, cargando, onActualizar }: VistaDragDropProps) {
+export function VistaDragDrop({ partidos, canchas, cargando, onActualizar }: VistaDragDropProps) {
   const { showSuccess, showError } = useToast();
   const [arrastrando, setArrastrando] = useState(false);
 
@@ -44,20 +45,7 @@ export function VistaDragDrop({ partidos, cargando, onActualizar }: VistaDragDro
     return partidos.filter(p => !p.fechaProgramada || !p.horaProgramada);
   }, [partidos]);
 
-  // Obtener canchas y fechas
-  const canchas = useMemo(() => {
-    const map = new Map<string, { id: string; nombre: string; sede: string }>();
-    partidos.forEach(p => {
-      if (p.torneoCanchaId && p.canchaNombre) {
-        map.set(p.torneoCanchaId, {
-          id: p.torneoCanchaId,
-          nombre: p.canchaNombre,
-          sede: p.sedeNombre || '',
-        });
-      }
-    });
-    return Array.from(map.values());
-  }, [partidos]);
+  // Usar canchas pasadas como prop (del torneo), no extraer de partidos
 
   const fechasDisponibles = useMemo(() => {
     const fechas = new Set<string>();
