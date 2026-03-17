@@ -80,18 +80,14 @@ export function BracketView({
     }
   };
 
-  const partidosPorFase = {
-    ZONA: partidos.filter(p => p.fase === 'ZONA'),
-    REPECHAJE: partidos.filter(p => p.fase === 'REPECHAJE'),
-    OCTAVOS: partidos.filter(p => p.fase === 'OCTAVOS'),
-    CUARTOS: partidos.filter(p => p.fase === 'CUARTOS'),
-    SEMIS: partidos.filter(p => p.fase === 'SEMIS'),
-    FINAL: partidos.filter(p => p.fase === 'FINAL'),
-  };
+  // Generar partidosPorFase dinámicamente para todas las fases posibles
+  const partidosPorFase: Record<string, Partido[]> = {};
+  FASES_ORDENADAS.forEach(fase => {
+    partidosPorFase[fase] = partidos.filter(p => p.fase === fase);
+  });
 
-  const fasesDisponibles = Object.entries(partidosPorFase)
-    .filter(([, partidos]) => partidos.length > 0)
-    .map(([fase]) => fase);
+  // Fases disponibles = las que tienen partidos, en el orden correcto
+  const fasesDisponibles = FASES_ORDENADAS.filter(fase => partidosPorFase[fase].length > 0);
 
   // Calcular partidos sin programar (sin cancha/fecha/hora asignadas)
   const partidosSinProgramar = partidos.filter(p => 
