@@ -130,12 +130,38 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
     partido: null 
   });
 
-  // Cargar partidos al montar o cambiar torneo
+  // Cargar partidos y categorías al montar o cambiar torneo
   useEffect(() => {
     if (tournamentId) {
       cargarPartidos();
+      cargarCategorias();
     }
   }, [tournamentId]);
+
+  // Cargar categorías si no vienen por props
+  const [categoriasLocales, setCategoriasLocales] = useState<Categoria[]>([]);
+  
+  const categorias = categoriasSorteadas.length > 0 ? categoriasSorteadas : categoriasLocales;
+
+  const cargarCategorias = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
+      if (data.success) {
+        const sorteadas = data.categorias.filter((c: any) => c.fixtureVersionId);
+        // Mapear al formato correcto
+        const mapeadas = sorteadas.map((c: any) => ({
+          id: c.categoryId || c.id,
+          nombre: c.category?.nombre || c.nombre,
+          tipo: c.category?.tipo || c.tipo,
+          orden: c.category?.orden || c.orden,
+          totalParejas: c.inscripcionesCount || c.totalParejas || 0,
+        }));
+        setCategoriasLocales(mapeadas);
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════
   // FUNCIONES PARA VISTA DE ESTADO ACTUAL (FASE 1)
@@ -177,7 +203,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   const fasesDisponibles = [...new Set(partidos.map(p => p.fase))].sort();
 
   const calcularProgramacion = async () => {
-    if (categoriasSorteadas.length === 0) {
+    if (categorias.length === 0) {
       showError('Sin categorías', 'No hay categorías sorteadas para programar');
       return;
     }
@@ -185,7 +211,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
     setCalculando(true);
     try {
       const { data } = await api.post(`/programacion/torneos/${tournamentId}/calcular`, {
-        categoriasSorteadas: categoriasSorteadas.map(c => c.id),
+        categoriasSorteadas: categorias.map(c => c.id),
       });
       
       setResultado(data);
@@ -404,7 +430,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           busqueda={busqueda}
           setBusqueda={setBusqueda}
           fasesDisponibles={fasesDisponibles}
-          categoriasSorteadas={categoriasSorteadas}
+          categoriasSorteadas={categorias}
           onRecargar={cargarPartidos}
           onEditar={(partido) => setModalEditar({ open: true, partido })}
         />
@@ -806,11 +832,18 @@ function VistaActual({
           <select
             value={filtroCategoria}
             onChange={(e) => setFiltroCategoria(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+            className="bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none appearance-none cursor-pointer hover:border-white/20 transition-colors"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.5rem center',
+              backgroundSize: '1rem',
+              paddingRight: '2rem'
+            }}
           >
             <option value="todas">Todas las categorías</option>
             {categoriasSorteadas.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+              <option key={cat.id} value={cat.id} className="bg-[#151921]">{cat.nombre}</option>
             ))}
           </select>
 
@@ -818,11 +851,18 @@ function VistaActual({
           <select
             value={filtroFase}
             onChange={(e) => setFiltroFase(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+            className="bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none appearance-none cursor-pointer hover:border-white/20 transition-colors"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.5rem center',
+              backgroundSize: '1rem',
+              paddingRight: '2rem'
+            }}
           >
             <option value="todas">Todas las fases</option>
             {fasesDisponibles.map(fase => (
-              <option key={fase} value={fase}>{fase}</option>
+              <option key={fase} value={fase} className="bg-[#151921]">{fase}</option>
             ))}
           </select>
 
@@ -830,7 +870,14 @@ function VistaActual({
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+            className="bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none appearance-none cursor-pointer hover:border-white/20 transition-colors"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.5rem center',
+              backgroundSize: '1rem',
+              paddingRight: '2rem'
+            }}
           >
             <option value="todos">Todos los estados</option>
             <option value="programados">Programados</option>
