@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, MapPin,
   Calendar, Grid3X3, List, Building2, CheckCircle2,
-  X, Copy, BarChart3, Clock
+  X, Copy, BarChart3, Clock, Trophy, AlertCircle
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
@@ -68,6 +68,18 @@ interface CanchasManagerProps {
   tournamentId: string;
   fechaInicio?: string;
   fechaFin?: string;
+  fechaFinales?: string;
+}
+
+interface TorneoInfo {
+  id: string;
+  nombre: string;
+  sedePrincipal?: {
+    id: string;
+    nombre: string;
+    ciudad: string;
+  };
+  fechaFinales?: string;
 }
 
 const CANCHA_COLORS = [
@@ -96,6 +108,13 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   const [showConfigDia, setShowConfigDia] = useState(false);
   const [showAgregarSede, setShowAgregarSede] = useState(false);
   const [showCopiarDia, setShowCopiarDia] = useState(false);
+  
+  // Info del torneo
+  const [torneoInfo, setTorneoInfo] = useState<TorneoInfo | null>(null);
+  
+  // Canchas principales para finales
+  const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
+  const [showConfigFinales, setShowConfigFinales] = useState(false);
   
   // Form para nuevo día
   const [nuevoDia, setNuevoDia] = useState({
@@ -157,7 +176,24 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
 
   useEffect(() => {
     loadData();
+    loadTorneoInfo();
   }, [tournamentId, currentWeek]);
+
+  const loadTorneoInfo = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/overview`);
+      if (data.success) {
+        setTorneoInfo({
+          id: data.data.torneo.id,
+          nombre: data.data.torneo.nombre,
+          sedePrincipal: data.data.torneo.sede,
+          fechaFinales: data.data.torneo.fechaFinales,
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando info del torneo:', error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -188,6 +224,11 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
       // Init filter with all canchas
       if (canchasConColor.length > 0 && canchasFiltradas.size === 0) {
         setCanchasFiltradas(new Set(canchasConColor.map((c: Cancha) => c.id)));
+      }
+      
+      // Si no hay canchas para finales seleccionadas, sugerir las primeras 1-2
+      if (canchasFinales.length === 0 && canchasConColor.length > 0) {
+        setCanchasFinales([canchasConColor[0].id]);
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -347,6 +388,71 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           icon={MapPin}
         />
       </div>
+
+      {/* CONFIGURACIÓN DE FINALES */}
+      {torneoInfo && (
+        <div className="bg-gradient-to-r from-[#df2531]/10 to-transparent border border-[#df2531]/20 rounded-xl p-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            {/* Info del torneo */}
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-white flex items-center gap-2 mb-2">
+                <Trophy className="w-4 h-4 text-[#df2531]" />
+                Configuración del Día de Finales
+              </h3>
+              
+              <div className="flex flex-wrap gap-4 text-xs">
+                {torneoInfo.sedePrincipal ? (
+                  <div className="flex items-center gap-1.5 text-white/70">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Sede Principal: <span className="text-white font-medium">{torneoInfo.sedePrincipal.nombre}</span></span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-amber-400">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>No hay sede principal seleccionada</span>
+                  </div>
+                )}
+                
+                {torneoInfo.fechaFinales ? (
+                  <div className="flex items-center gap-1.5 text-white/70">
+                    <Calendar className="w-3.5 h-3.5 text-[#df2531]" />
+                    <span>Finales: <span className="text-white font-medium">{formatDatePY(torneoInfo.fechaFinales)}</span></span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-amber-400">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>No hay fecha de finales configurada</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Canchas para finales */}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Canchas para Finales</p>
+                <p className="text-sm text-white font-medium">
+                  {canchasFinales.length > 0 
+                    ? canchas.filter(c => canchasFinales.includes(c.id)).map(c => c.nombre).join(', ')
+                    : 'No configuradas'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowConfigFinales(true)}
+                className="px-3 py-1.5 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg text-xs font-medium transition-colors"
+              >
+                Configurar
+              </button>
+            </div>
+          </div>
+          
+          {/* Mensaje explicativo */}
+          <p className="text-[10px] text-white/40 mt-3 pt-3 border-t border-white/5">
+            💡 Las finales de todas las categorías se jugarán en las canchas seleccionadas. 
+            El sistema calculará el orden y horarios automáticamente para maximizar el espectáculo.
+          </p>
+        </div>
+      )}
 
       {/* ACCIONES RÁPIDAS */}
       <div className="flex flex-wrap gap-3">
@@ -733,6 +839,91 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                     className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 text-white rounded-xl"
                   >
                     Copiar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL: CONFIGURAR CANCHAS PARA FINALES */}
+        {showConfigFinales && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#0a0b0f] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-white font-medium flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-[#df2531]" />
+                  Canchas para Finales
+                </h3>
+                <button
+                  onClick={() => setShowConfigFinales(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <p className="text-xs text-white/50">
+                  Selecciona las canchas donde se jugarán las finales de todas las categorías. 
+                  El sistema priorizará estas canchas para las finales.
+                </p>
+
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {canchas.length === 0 ? (
+                    <p className="text-sm text-amber-400 text-center py-4">
+                      No hay canchas configuradas. Agrega sedes primero.
+                    </p>
+                  ) : (
+                    canchas.map((cancha) => (
+                      <label
+                        key={cancha.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          canchasFinales.includes(cancha.id)
+                            ? 'bg-[#df2531]/10 border-[#df2531]/30'
+                            : 'bg-white/5 border-white/10 hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={canchasFinales.includes(cancha.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCanchasFinales([...canchasFinales, cancha.id]);
+                            } else {
+                              setCanchasFinales(canchasFinales.filter(id => id !== cancha.id));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#df2531] focus:ring-[#df2531]/50"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm text-white font-medium">{cancha.nombre}</p>
+                          <p className="text-xs text-white/50">{cancha.sedeNombre}</p>
+                        </div>
+                        {canchasFinales.includes(cancha.id) && (
+                          <Trophy className="w-4 h-4 text-[#df2531]" />
+                        )}
+                      </label>
+                    ))
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => setShowConfigFinales(false)}
+                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-colors"
+                  >
+                    Guardar Configuración
                   </button>
                 </div>
               </div>
