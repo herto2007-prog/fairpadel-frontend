@@ -114,6 +114,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   
   // Canchas principales para finales
   const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
+  const [horaInicioFinales, setHoraInicioFinales] = useState('18:00');
   const [showConfigFinales, setShowConfigFinales] = useState(false);
   
   // Form para nuevo día
@@ -428,13 +429,16 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
             </div>
             
             {/* Canchas para finales */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-[10px] text-white/50 uppercase tracking-wide">Canchas para Finales</p>
                 <p className="text-sm text-white font-medium">
                   {canchasFinales.length > 0 
-                    ? canchas.filter(c => canchasFinales.includes(c.id)).map(c => c.nombre).join(', ')
+                    ? `${canchas.filter(c => canchasFinales.includes(c.id)).map(c => c.nombre).join(', ')}`
                     : 'No configuradas'}
+                </p>
+                <p className="text-xs text-[#df2531]">
+                  {horaInicioFinales ? `Inicio: ${horaInicioFinales} hs` : ''}
                 </p>
               </div>
               <button
@@ -879,7 +883,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                   El sistema priorizará estas canchas para las finales.
                 </p>
 
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {canchas.length === 0 ? (
                     <p className="text-sm text-amber-400 text-center py-4">
                       No hay canchas configuradas. Agrega sedes primero.
@@ -916,6 +920,29 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                       </label>
                     ))
                   )}
+                </div>
+
+                {/* Horario de inicio de finales */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <label className="flex items-center gap-2 text-sm text-white font-medium mb-2">
+                    <Clock className="w-4 h-4 text-[#df2531]" />
+                    ¿A qué hora empiezan las Finales?
+                  </label>
+                  <p className="text-xs text-white/50 mb-3">
+                    Este será el horario de inicio para las finales de todas las categorías. 
+                    El sistema calculará automáticamente el orden de las finales.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="time"
+                      value={horaInicioFinales}
+                      onChange={(e) => setHoraInicioFinales(e.target.value)}
+                      className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+                    />
+                    <span className="text-xs text-white/50">
+                      Ej: 18:00 para público general, 20:00 para mayor espectáculo
+                    </span>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/10">
