@@ -148,14 +148,15 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
       if (data.success) {
         const sorteadas = data.categorias.filter((c: any) => c.fixtureVersionId);
-        // Mapear al formato correcto
+        // Mapear al formato correcto usando category.id (no tournamentCategory.id)
         const mapeadas = sorteadas.map((c: any) => ({
-          id: c.categoryId || c.id,
-          nombre: c.category?.nombre || c.nombre,
-          tipo: c.category?.tipo || c.tipo,
-          orden: c.category?.orden || c.orden,
-          totalParejas: c.inscripcionesCount || c.totalParejas || 0,
+          id: c.category?.id || c.categoryId, // ID de la categoría real (para filtrar con partidos)
+          nombre: c.category?.nombre || 'Sin nombre',
+          tipo: c.category?.tipo || '',
+          orden: c.category?.orden || 0,
+          totalParejas: c.inscripcionesCount || 0,
         }));
+        console.log('[Programacion] Categorías cargadas:', mapeadas);
         setCategoriasLocales(mapeadas);
       }
     } catch (error) {
