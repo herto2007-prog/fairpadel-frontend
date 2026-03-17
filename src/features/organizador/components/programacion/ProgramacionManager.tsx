@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, AlertTriangle, CheckCircle2, 
   Calculator, Save, ChevronDown, ChevronUp, Eye, 
-  Filter, Search, Clock, X, RotateCcw
+  Filter, Search, Clock, X, RotateCcw, Edit2
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -69,6 +69,9 @@ interface ProgramacionManagerProps {
   categoriasSorteadas: Categoria[];
 }
 
+// Importar el modal
+import { ModalEditarProgramacion } from './ModalEditarProgramacion';
+
 // ═══════════════════════════════════════════════════════════
 // INTERFACES PARA VISTA DE ESTADO ACTUAL (FASE 1)
 // ═══════════════════════════════════════════════════════════
@@ -118,6 +121,12 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   const [filtroFase, setFiltroFase] = useState<string>('todas');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
+  
+  // Estado para edición
+  const [modalEditar, setModalEditar] = useState<{ open: boolean; partido: PartidoReal | null }>({ 
+    open: false, 
+    partido: null 
+  });
 
   // Cargar partidos al montar o cambiar torneo
   useEffect(() => {
@@ -371,6 +380,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           fasesDisponibles={fasesDisponibles}
           categoriasSorteadas={categoriasSorteadas}
           onRecargar={cargarPartidos}
+          onEditar={(partido) => setModalEditar({ open: true, partido })}
         />
       )}
 
@@ -596,6 +606,17 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
         cancelText={confirmState.cancelText}
         variant={confirmState.variant}
       />
+
+      {/* Modal de Edición */}
+      <ModalEditarProgramacion
+        isOpen={modalEditar.open}
+        onClose={() => setModalEditar({ open: false, partido: null })}
+        partido={modalEditar.partido}
+        tournamentId={tournamentId}
+        onSuccess={() => {
+          cargarPartidos();
+        }}
+      />
     </div>
   );
 }
@@ -621,6 +642,7 @@ interface VistaActualProps {
   fasesDisponibles: string[];
   categoriasSorteadas: Categoria[];
   onRecargar: () => void;
+  onEditar: (partido: PartidoReal) => void;
 }
 
 function VistaActual({
@@ -640,6 +662,7 @@ function VistaActual({
   fasesDisponibles,
   categoriasSorteadas,
   onRecargar,
+  onEditar,
 }: VistaActualProps) {
   const getColorFase = (fase: string) => {
     switch (fase) {
@@ -866,6 +889,15 @@ function VistaActual({
                     <span className="text-xs text-amber-400">Sin programar</span>
                   )}
                 </div>
+
+                {/* Botón Editar */}
+                <button
+                  onClick={() => onEditar(partido)}
+                  className="flex-shrink-0 p-2 bg-white/5 hover:bg-[#df2531]/20 text-neutral-400 hover:text-[#df2531] rounded-lg transition-colors"
+                  title="Editar programación"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
               </div>
             </motion.div>
           ))
