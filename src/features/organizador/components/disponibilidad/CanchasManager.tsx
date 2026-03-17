@@ -113,6 +113,9 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   // Info del torneo
   const [torneoInfo, setTorneoInfo] = useState<TorneoInfo | null>(null);
   
+  // Toast notifications
+  const { showSuccess, showError } = useToast();
+  
   // Canchas principales para finales
   const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
   const [horaInicioFinales, setHoraInicioFinales] = useState('18:00');
@@ -199,12 +202,15 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           sedePrincipal: data.data.torneo.sede,
           fechaFinales: data.data.torneo.fechaFinales,
         });
-        // Cargar config de finales si existe
-        if (data.data.torneo.canchasFinales?.length > 0) {
-          setCanchasFinales(data.data.torneo.canchasFinales);
-        }
-        if (data.data.torneo.horaInicioFinales) {
-          setHoraInicioFinales(data.data.torneo.horaInicioFinales);
+        // Cargar config de finales si existe (solo si el modal NO está abierto)
+        // Esto evita sobrescribir cambios del usuario mientras edita
+        if (!showConfigFinales) {
+          if (data.data.torneo.canchasFinales?.length > 0) {
+            setCanchasFinales(data.data.torneo.canchasFinales);
+          }
+          if (data.data.torneo.horaInicioFinales) {
+            setHoraInicioFinales(data.data.torneo.horaInicioFinales);
+          }
         }
       }
     } catch (error) {
@@ -1003,14 +1009,22 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                     onClick={async () => {
                       setGuardandoFinales(true);
                       try {
-                        await disponibilidadService.actualizarFinales(tournamentId, {
+                        const result = await disponibilidadService.actualizarFinales(tournamentId, {
                           canchasFinales,
                           horaInicioFinales,
                         });
-                        setShowConfigFinales(false);
+                        
+                        if (result.success) {
+                          showSuccess('Configuración guardada', 'Las canchas y horario para finales han sido guardadas correctamente');
+                          setShowConfigFinales(false);
+                          // Recargar datos para reflejar cambios
+                          await loadTorneoInfo();
+                        } else {
+                          showError('Error', result.message || 'No se pudo guardar la configuración');
+                        }
                       } catch (error: any) {
                         console.error('Error guardando config de finales:', error);
-                        alert(error.response?.data?.message || 'Error guardando configuración');
+                        showError('Error', error.response?.data?.message || 'Error guardando configuración');
                       } finally {
                         setGuardandoFinales(false);
                       }
@@ -1199,6 +1213,8 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
   const confirmState = useConfirm();
   const { confirm } = confirmState;
   const { showSuccess, showError } = useToast();
+  
+  // Hook useToast también disponible en scope principal (para modales dentro del return)
 
   // Agrupar slots por fecha
   const slotsByDate = useMemo(() => {
