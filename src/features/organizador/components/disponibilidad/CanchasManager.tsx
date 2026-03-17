@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
-import { tournamentService } from '../../../../services/tournamentService';
 import { api } from '../../../../services/api';
 import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -1002,14 +1001,14 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                     onClick={async () => {
                       setGuardandoFinales(true);
                       try {
-                        await tournamentService.update(tournamentId, {
+                        await disponibilidadService.actualizarFinales(tournamentId, {
                           canchasFinales,
                           horaInicioFinales,
                         });
                         setShowConfigFinales(false);
-                      } catch (error) {
+                      } catch (error: any) {
                         console.error('Error guardando config de finales:', error);
-                        alert('Error guardando configuración');
+                        alert(error.response?.data?.message || 'Error guardando configuración');
                       } finally {
                         setGuardandoFinales(false);
                       }
@@ -1259,8 +1258,11 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
 
     if (!confirmed) return;
 
+    console.log('[EliminarDia] Enviando petición DELETE para día:', diaConfig.id);
+    
     try {
       const result = await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
+      console.log('[EliminarDia] Respuesta del servidor:', result);
       
       if (result.parcial) {
         showSuccess(
@@ -1272,9 +1274,10 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
       }
       
       onRefresh();
-    } catch (error) {
-      console.error('Error eliminando día:', error);
-      showError('Error', 'No se pudo eliminar el día');
+    } catch (error: any) {
+      console.error('[EliminarDia] Error eliminando día:', error);
+      console.error('[EliminarDia] Error response:', error.response?.data);
+      showError('Error', error.response?.data?.message || 'No se pudo eliminar el día');
     }
   };
 
