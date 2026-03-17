@@ -26,6 +26,7 @@ interface CanchaSede {
 
 interface CanchaTorneo {
   id: string;
+  sedeCanchaId: string;
   nombre: string;
   sedeId: string;
   sedeNombre: string;
@@ -132,21 +133,14 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
     }
   };
 
-  const toggleCancha = async (sedeCanchaId: string, isActive: boolean) => {
+  const toggleCancha = async (sedeCanchaId: string, isActive: boolean, torneoCanchaId?: string) => {
     try {
       setSaving(true);
-      if (isActive) {
-        // Quitar
-        const cancha = canchasTorneo.find(_c => {
-          // Necesitamos el torneoCanchaId, no el sedeCanchaId
-          // Esto es un workaround, necesitaría ajustar el backend
-          return false;
-        });
-        if (cancha) {
-          await disponibilidadService.quitarCancha(tournamentId, cancha.id);
-        }
+      if (isActive && torneoCanchaId) {
+        // Quitar - usar el torneoCanchaId directamente
+        await disponibilidadService.quitarCancha(tournamentId, torneoCanchaId);
       } else {
-        // Agregar
+        // Agregar - usar el sedeCanchaId
         await disponibilidadService.agregarCancha(tournamentId, sedeCanchaId);
       }
       await loadData();
@@ -328,13 +322,15 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
                           .find(s => s.id === sede.id)
                           ?.canchas
                           ?.map((cancha) => {
-                            const isActive = canchasTorneo.some(
-                              ct => ct.sedeId === sede.id && ct.nombre === cancha.nombre
+                            // Buscar la cancha del torneo por sedeCanchaId
+                            const canchaTorneo = canchasTorneo.find(
+                              ct => ct.sedeCanchaId === cancha.id
                             );
+                            const isActive = !!canchaTorneo;
                             return (
                               <button
                                 key={cancha.id}
-                                onClick={() => toggleCancha(cancha.id, isActive)}
+                                onClick={() => toggleCancha(cancha.id, isActive, canchaTorneo?.id)}
                                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                                   isActive
                                     ? 'bg-[#df2531] text-white'

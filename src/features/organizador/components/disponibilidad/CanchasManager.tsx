@@ -8,7 +8,7 @@ import {
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
 import { api } from '../../../../services/api';
-import { getDatesRangePY, formatDatePY } from '../../../../utils/date';
+import { getDatesRangePY, formatDatePY, getDateOnlyPY } from '../../../../utils/date';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { useToast } from '../../../../components/ui/ToastProvider';
 
@@ -232,8 +232,8 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
       // Load slots for current week
       const slotsRes = await disponibilidadService.getSlotsPorSemana(
         tournamentId,
-        weekStart.toISOString().split('T')[0],
-        weekEnd.toISOString().split('T')[0]
+        getDateOnlyPY(weekStart),
+        getDateOnlyPY(weekEnd)
       );
       setSlots(slotsRes.slots || []);
       
