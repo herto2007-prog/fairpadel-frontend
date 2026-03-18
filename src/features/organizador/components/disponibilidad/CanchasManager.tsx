@@ -331,9 +331,13 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
         // Generar slots para finales automáticamente
         if (fechaFinales || torneoInfo?.fechaFinales) {
           const fechaFinal = fechaFinales || torneoInfo?.fechaFinales;
+          // Convertir fecha ISO a YYYY-MM-DD
+          const fechaStr = typeof fechaFinal === 'string' 
+            ? fechaFinal.split('T')[0] 
+            : getDateOnlyPY(fechaFinal);
           // Buscar o crear día para finales
           const resultDia = await disponibilidadService.configurarDia(tournamentId, {
-            fecha: fechaFinal!,
+            fecha: fechaStr,
             horaInicio: horaInicioFinales,
             horaFin: '23:00',
             minutosSlot: 90,
