@@ -16,13 +16,41 @@ export function nowPY(): Date {
 }
 
 /**
+ * Parsea un string de fecha como hora de Paraguay
+ * @param dateString Puede ser ISO, YYYY-MM-DD, o cualquier formato
+ * @returns Date en hora de Paraguay
+ */
+export function parseDatePY(dateString: string): Date {
+  // Si es formato YYYY-MM-DD (sin hora), asumir 00:00 Paraguay (UTC-3)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return new Date(`${dateString}T00:00:00-03:00`);
+  }
+
+  // Si tiene hora, parsear normalmente
+  return new Date(dateString);
+}
+
+/**
  * Formatea una fecha al formato Paraguay (dd/mm/yyyy)
  * Maneja correctamente el timezone de Paraguay
  */
 export function formatDatePY(dateString: string | Date): string {
   if (!dateString) return '-';
   
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  // Si es string YYYY-MM-DD, usar parseDatePY para evitar problemas de timezone
+  // Si es Date o ISO string, usar directamente
+  let date: Date;
+  if (typeof dateString === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      // Formato YYYY-MM-DD: parsear como fecha Paraguay
+      date = parseDatePY(dateString);
+    } else {
+      // ISO string u otro formato
+      date = new Date(dateString);
+    }
+  } else {
+    date = dateString;
+  }
   
   return date.toLocaleDateString(LOCALE, {
     timeZone: TIMEZONE,
@@ -116,20 +144,7 @@ export function getTimeOnlyPY(date: Date | string = new Date()): string {
   });
 }
 
-/**
- * Parsea un string de fecha como hora de Paraguay
- * @param dateString Puede ser ISO, YYYY-MM-DD, o cualquier formato
- * @returns Date en hora de Paraguay
- */
-export function parseDatePY(dateString: string): Date {
-  // Si es formato YYYY-MM-DD (sin hora), asumir 00:00 Paraguay
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return new Date(`${dateString}T00:00:00-03:00`);
-  }
 
-  // Si tiene hora, parsear normalmente
-  return new Date(dateString);
-}
 
 /**
  * Calcula días restantes hasta una fecha
