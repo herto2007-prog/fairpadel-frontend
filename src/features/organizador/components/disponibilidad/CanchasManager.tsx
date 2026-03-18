@@ -587,6 +587,16 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Alerta si no hay fecha de finales */}
+          {!fechaFinales && !torneoInfo?.fechaFinales && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <p className="text-sm text-amber-400 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                No hay fecha de finales configurada en el torneo. Configúrala primero en la pestaña "Info".
+              </p>
+            </div>
+          )}
+
           {/* Grid de canchas seleccionables */}
           <div>
             <label className="text-sm text-gray-400 mb-3 block">Selecciona las canchas para finales</label>
@@ -628,11 +638,6 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
                           </motion.div>
                         )}
                       </div>
-                      {isSelected && (
-                        <div className="absolute top-2 right-2">
-                          <Trophy className="w-4 h-4 text-[#df2531]" />
-                        </div>
-                      )}
                     </button>
                   );
                 })
@@ -660,7 +665,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
           {/* Botón Guardar */}
           <button
             onClick={handleGuardarFinales}
-            disabled={guardandoFinales || canchasFinales.length === 0}
+            disabled={guardandoFinales || canchasFinales.length === 0 || (!fechaFinales && !torneoInfo?.fechaFinales)}
             className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
           >
             {guardandoFinales ? (
@@ -671,6 +676,16 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
                   className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                 />
                 Guardando...
+              </>
+            ) : !fechaFinales && !torneoInfo?.fechaFinales ? (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                Configura fecha de finales primero
+              </>
+            ) : canchasFinales.length === 0 ? (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                Selecciona al menos una cancha
               </>
             ) : (
               <>
@@ -815,16 +830,20 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
                   <p className="text-xs text-amber-400">No hay canchas configuradas.</p>
                 ) : (
                   canchas.map((cancha) => {
-                    const isSelected = nuevoDia.canchaIds?.includes(cancha.id) ?? true;
+                    // Si canchaIds es undefined, todas están seleccionadas por defecto
+                    const isSelected = nuevoDia.canchaIds === undefined ? true : nuevoDia.canchaIds.includes(cancha.id);
                     return (
                       <button
                         key={cancha.id}
                         onClick={() => {
-                          const currentIds = nuevoDia.canchaIds || canchas.map(c => c.id);
+                          // Inicializar con todas las canchas si es undefined
+                          const currentIds = nuevoDia.canchaIds === undefined ? canchas.map(c => c.id) : nuevoDia.canchaIds;
                           if (isSelected) {
+                            // Deseleccionar
                             const newIds = currentIds.filter(id => id !== cancha.id);
-                            setNuevoDia({ ...nuevoDia, canchaIds: newIds.length > 0 ? newIds : [] });
+                            setNuevoDia({ ...nuevoDia, canchaIds: newIds });
                           } else {
+                            // Seleccionar
                             setNuevoDia({ ...nuevoDia, canchaIds: [...currentIds, cancha.id] });
                           }
                         }}
@@ -840,6 +859,9 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
                   })
                 )}
               </div>
+              <p className="text-[10px] text-gray-600 mt-1">
+                Haz clic para seleccionar/deseleccionar canchas para este día
+              </p>
             </div>
 
             {/* Botón Agregar Día */}
@@ -1333,8 +1355,7 @@ interface VistaListaProps {
 }
 
 function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaListaProps) {
-  const confirmState = useConfirm();
-  const { confirm } = confirmState;
+  const { confirm } = useConfirm();
   const { showSuccess, showError } = useToast();
 
   const slotsByDate = useMemo(() => {
@@ -1508,17 +1529,6 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
           </div>
         );
       })}
-
-      <ConfirmModal
-        isOpen={confirmState.isOpen}
-        onClose={confirmState.close}
-        onConfirm={confirmState.handleConfirm}
-        title={confirmState.title}
-        message={confirmState.message}
-        confirmText={confirmState.confirmText}
-        cancelText={confirmState.cancelText}
-        variant={confirmState.variant}
-      />
     </div>
   );
 }
