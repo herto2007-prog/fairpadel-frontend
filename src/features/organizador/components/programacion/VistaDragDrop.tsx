@@ -18,6 +18,7 @@ import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 import { getColorFase } from '../../utils/faseColors';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { programacionService } from './programacionService';
+import { parseDatePY } from '../../../../utils/date';
 
 interface VistaDragDropProps {
   partidos: PartidoReal[];
@@ -190,7 +191,7 @@ export function VistaDragDrop({ partidos, canchas, cargando, onActualizar }: Vis
               >
                 {fechasDisponibles.map(fecha => (
                   <option key={fecha} value={fecha}>
-                    {new Date(fecha).toLocaleDateString('es-PY', { 
+                    {parseDatePY(fecha).toLocaleDateString('es-PY', { 
                       weekday: 'long', 
                       month: 'long', 
                       day: 'numeric' 

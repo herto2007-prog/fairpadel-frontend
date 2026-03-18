@@ -7,6 +7,7 @@ import {
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 import { getColorFase } from '../../utils/faseColors';
 import { PartidoReal } from './ProgramacionManager';
+import { formatDatePY, parseDatePY } from '../../../../utils/date';
 
 interface VistaCalendarioProps {
   partidos: PartidoReal[];
@@ -121,7 +122,7 @@ export function VistaCalendario({
             <p className="text-sm text-neutral-400">Fecha seleccionada</p>
             <p className="text-lg font-medium text-white">
               {fechaSeleccionada 
-                ? new Date(fechaSeleccionada).toLocaleDateString('es-PY', { 
+                ? parseDatePY(fechaSeleccionada).toLocaleDateString('es-PY', { 
                     weekday: 'long', 
                     year: 'numeric', 
                     month: 'long', 
@@ -153,7 +154,7 @@ export function VistaCalendario({
             >
               {fechasDisponibles.map(fecha => (
                 <option key={fecha} value={fecha}>
-                  {new Date(fecha).toLocaleDateString('es-PY')}
+                  {formatDatePY(fecha)}
                 </option>
               ))}
             </select>

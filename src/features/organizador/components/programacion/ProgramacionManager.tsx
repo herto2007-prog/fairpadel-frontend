@@ -83,6 +83,7 @@ import { ModalEditarProgramacion } from './ModalEditarProgramacion';
 import { VistaCalendario } from './VistaCalendario';
 import { VistaDragDrop } from './VistaDragDrop';
 import { getColorFase } from '../../utils/faseColors';
+import { formatDatePY } from '../../../../utils/date';
 
 // ═══════════════════════════════════════════════════════════
 // INTERFACES PARA VISTA DE ESTADO ACTUAL (FASE 1)
@@ -670,7 +671,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                     <div className="flex items-center gap-4">
                       <div className="text-left">
                         <div className="text-sm font-medium text-white">
-                          {dia.diaSemana}, {new Date(dia.fecha).toLocaleDateString('es-PY')}
+                          {dia.diaSemana}, {formatDatePY(dia.fecha)}
                         </div>
                         <div className="text-xs text-neutral-500">
                           {dia.horarioInicio} - {dia.horarioFin} • {dia.slotsAsignados} partidos
@@ -1050,7 +1051,7 @@ function VistaActual({
                     <>
                       <div className="flex items-center gap-1 justify-end text-sm text-white">
                         <Calendar className="w-3 h-3 text-neutral-500" />
-                        {new Date(partido.fechaProgramada).toLocaleDateString('es-PY')}
+                        {formatDatePY(partido.fechaProgramada)}
                       </div>
                       <div className="flex items-center gap-1 justify-end text-xs text-neutral-400 mt-0.5">
                         <Clock className="w-3 h-3" />
