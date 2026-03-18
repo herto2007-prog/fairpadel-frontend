@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Plus, MapPin,
   Calendar, Grid3X3, List, Building2, CheckCircle2,
-  X, Copy, BarChart3, Clock, Trophy, AlertCircle
+  X, Copy, BarChart3, Clock, Trophy, AlertCircle,
+  Trash2, Edit2
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
@@ -12,6 +13,10 @@ import { getDatesRangePY, formatDatePY, getDateOnlyPY } from '../../../../utils/
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
+
+// ═══════════════════════════════════════════════════════════
+// INTERFACES
+// ═══════════════════════════════════════════════════════════
 
 interface Slot {
   id: string;
@@ -83,6 +88,10 @@ interface TorneoInfo {
   fechaFinales?: string;
 }
 
+// ═══════════════════════════════════════════════════════════
+// CONSTANTES Y UTILIDADES
+// ═══════════════════════════════════════════════════════════
+
 const CANCHA_COLORS = [
   { bg: 'bg-emerald-500/20', border: 'border-emerald-500/40', text: 'text-emerald-400', hover: 'hover:bg-emerald-500/30' },
   { bg: 'bg-blue-500/20', border: 'border-blue-500/40', text: 'text-blue-400', hover: 'hover:bg-blue-500/30' },
@@ -92,9 +101,21 @@ const CANCHA_COLORS = [
   { bg: 'bg-cyan-500/20', border: 'border-cyan-500/40', text: 'text-cyan-400', hover: 'hover:bg-cyan-500/30' },
 ];
 
+// Horas a mostrar en el calendario (06:00 a 23:00)
+const HORAS_CALENDARIO = Array.from({ length: 18 }, (_, i) => {
+  const h = (i + 6).toString().padStart(2, '0');
+  return `${h}:00`;
+});
 
+// ═══════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════════════════════
 
-export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasManagerProps) {
+export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinales }: CanchasManagerProps) {
+  // ═══════════════════════════════════════════════════════════
+  // ESTADOS
+  // ═══════════════════════════════════════════════════════════
+  
   const [loading, setLoading] = useState(true);
   const [currentWeek, setCurrentWeek] = useState(() => {
     if (fechaInicio) return new Date(fechaInicio);
@@ -106,9 +127,6 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   const [dias, setDias] = useState<DiaConfig[]>([]);
   const [canchasFiltradas, setCanchasFiltradas] = useState<Set<string>>(new Set());
   const [vista, setVista] = useState<'semana' | 'lista'>('semana');
-  const [showConfigDia, setShowConfigDia] = useState(false);
-  const [showAgregarSede, setShowAgregarSede] = useState(false);
-  const [showCopiarDia, setShowCopiarDia] = useState(false);
   
   // Info del torneo
   const [torneoInfo, setTorneoInfo] = useState<TorneoInfo | null>(null);
@@ -116,13 +134,21 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
   // Toast notifications
   const { showSuccess, showError } = useToast();
   
-  // Canchas principales para finales
+  // Confirm modal hook
+  const confirmState = useConfirm();
+  const { confirm } = confirmState;
+  
+  // ═══════════════════════════════════════════════════════════
+  // STEP 1: Canchas para Finales
+  // ═══════════════════════════════════════════════════════════
   const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
   const [horaInicioFinales, setHoraInicioFinales] = useState('18:00');
-  const [showConfigFinales, setShowConfigFinales] = useState(false);
   const [guardandoFinales, setGuardandoFinales] = useState(false);
+  const [showSuccessFinales, setShowSuccessFinales] = useState(false);
   
-  // Form para nuevo día
+  // ═══════════════════════════════════════════════════════════
+  // STEP 2: Configurar Días de Juego
+  // ═══════════════════════════════════════════════════════════
   const [nuevoDia, setNuevoDia] = useState<{
     fecha: string;
     horaInicio: string;
@@ -134,17 +160,25 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     horaInicio: '18:00',
     horaFin: '23:00',
     minutosSlot: 90,
-    canchaIds: undefined, // undefined = todas las canchas
+    canchaIds: undefined,
   });
   const [guardandoDia, setGuardandoDia] = useState(false);
-  
-  // Datos para gestionar sedes
-  const [todasSedes, setTodasSedes] = useState<any[]>([]);
-  const [sedesLoading, setSedesLoading] = useState(false);
+  const [showSuccessDia, setShowSuccessDia] = useState(false);
+  const [showCopiarDia, setShowCopiarDia] = useState(false);
   const [diaOrigen, setDiaOrigen] = useState('');
   const [diaDestino, setDiaDestino] = useState('');
+  
+  // ═══════════════════════════════════════════════════════════
+  // MODAL: Gestionar Sedes
+  // ═══════════════════════════════════════════════════════════
+  const [showAgregarSede, setShowAgregarSede] = useState(false);
+  const [todasSedes, setTodasSedes] = useState<any[]>([]);
+  const [sedesLoading, setSedesLoading] = useState(false);
 
-  // Stats
+  // ═══════════════════════════════════════════════════════════
+  // COMPUTED VALUES
+  // ═══════════════════════════════════════════════════════════
+
   const stats = useMemo(() => {
     const totalSlots = slots.length;
     const slotsLibres = slots.filter(s => s.estado === 'LIBRE').length;
@@ -162,7 +196,6 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     };
   }, [slots, canchas, dias]);
 
-  // Week calculation
   const weekStart = useMemo(() => {
     const d = new Date(currentWeek);
     const day = d.getDay();
@@ -187,10 +220,18 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     });
   }, [weekStart]);
 
+  // ═══════════════════════════════════════════════════════════
+  // EFFECTS
+  // ═══════════════════════════════════════════════════════════
+
   useEffect(() => {
     loadData();
     loadTorneoInfo();
   }, [tournamentId, currentWeek]);
+
+  // ═══════════════════════════════════════════════════════════
+  // DATA LOADING
+  // ═══════════════════════════════════════════════════════════
 
   const loadTorneoInfo = async () => {
     try {
@@ -202,15 +243,12 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           sedePrincipal: data.data.torneo.sede,
           fechaFinales: data.data.torneo.fechaFinales,
         });
-        // Cargar config de finales si existe (solo si el modal NO está abierto)
-        // Esto evita sobrescribir cambios del usuario mientras edita
-        if (!showConfigFinales) {
-          if (data.data.torneo.canchasFinales?.length > 0) {
-            setCanchasFinales(data.data.torneo.canchasFinales);
-          }
-          if (data.data.torneo.horaInicioFinales) {
-            setHoraInicioFinales(data.data.torneo.horaInicioFinales);
-          }
+        // Cargar config de finales si existe
+        if (data.data.torneo.canchasFinales?.length > 0) {
+          setCanchasFinales(data.data.torneo.canchasFinales);
+        }
+        if (data.data.torneo.horaInicioFinales) {
+          setHoraInicioFinales(data.data.torneo.horaInicioFinales);
         }
       }
     } catch (error) {
@@ -249,9 +287,8 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         setCanchasFiltradas(new Set(canchasConColor.map((c: Cancha) => c.id)));
       }
       
-      // Si no hay canchas para finales seleccionadas Y no estamos cargando desde el servidor,
-      // sugerir las primeras 1-2 (solo como valor inicial, no sobreescribir config guardada)
-      if (canchasFinales.length === 0 && canchasConColor.length > 0 && !torneoInfo?.id) {
+      // Si no hay canchas para finales seleccionadas, sugerir las primeras
+      if (canchasFinales.length === 0 && canchasConColor.length > 0) {
         setCanchasFinales([canchasConColor[0].id]);
       }
     } catch (error) {
@@ -261,83 +298,6 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     }
   };
 
-  const handleCopiarDia = async () => {
-    if (!diaOrigen || !diaDestino) return;
-    
-    try {
-      console.log('[CanchasManager] Copiando día:', { diaOrigen, diaDestino });
-      
-      const diaOrigenConfig = dias.find(d => d.fecha === diaOrigen);
-      if (!diaOrigenConfig) {
-        alert('Día origen no encontrado');
-        return;
-      }
-      
-      // 1. Crear nuevo día con misma config
-      const result = await disponibilidadService.configurarDia(tournamentId, {
-        fecha: diaDestino,
-        horaInicio: diaOrigenConfig.horaInicio,
-        horaFin: diaOrigenConfig.horaFin,
-        minutosSlot: diaOrigenConfig.minutosSlot,
-      });
-      console.log('[CanchasManager] Día creado:', result);
-      
-      // 2. Generar slots usando el ID del resultado (no buscar en estado)
-      if (result?.dia?.id) {
-        console.log('[CanchasManager] Generando slots para:', result.dia.id);
-        await disponibilidadService.generarSlots(tournamentId, result.dia.id);
-      } else {
-        console.error('[CanchasManager] No se recibió ID del día creado');
-      }
-      
-      // 3. Recargar datos
-      await loadData();
-      setShowCopiarDia(false);
-      setDiaOrigen('');
-      setDiaDestino('');
-    } catch (error: any) {
-      console.error('[CanchasManager] Error copiando día:', error);
-      alert(error.response?.data?.message || 'Error copiando día');
-    }
-  };
-
-  // AGREGAR DÍA
-  const handleGuardarDia = async () => {
-    if (!nuevoDia.fecha) return;
-    
-    setGuardandoDia(true);
-    try {
-      console.log('[CanchasManager] Guardando día:', nuevoDia);
-      
-      // 1. Configurar el día
-      const result = await disponibilidadService.configurarDia(tournamentId, nuevoDia);
-      console.log('[CanchasManager] Día guardado:', result);
-      
-      // 2. Generar slots para ese día (usar el ID del resultado y canchas seleccionadas)
-      if (result?.dia?.id) {
-        console.log('[CanchasManager] Generando slots para día:', result.dia.id);
-        await disponibilidadService.generarSlots(
-          tournamentId, 
-          result.dia.id, 
-          nuevoDia.canchaIds
-        );
-      } else {
-        console.error('[CanchasManager] No se recibió ID del día');
-      }
-      
-      // 3. Recargar datos
-      await loadData();
-      setShowConfigDia(false);
-      setNuevoDia({ fecha: '', horaInicio: '18:00', horaFin: '23:00', minutosSlot: 90, canchaIds: undefined });
-    } catch (error: any) {
-      console.error('[CanchasManager] Error guardando día:', error);
-      alert(error.response?.data?.message || 'Error guardando día');
-    } finally {
-      setGuardandoDia(false);
-    }
-  };
-
-  // GESTIONAR SEDES
   const loadTodasSedes = async () => {
     setSedesLoading(true);
     try {
@@ -350,16 +310,182 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     }
   };
 
+  // ═══════════════════════════════════════════════════════════
+  // HANDLERS - STEP 1: Finales
+  // ═══════════════════════════════════════════════════════════
+
+  const handleGuardarFinales = async () => {
+    if (canchasFinales.length === 0) {
+      showError('Error', 'Selecciona al menos una cancha para las finales');
+      return;
+    }
+
+    setGuardandoFinales(true);
+    try {
+      const result = await disponibilidadService.actualizarFinales(tournamentId, {
+        canchasFinales,
+        horaInicioFinales,
+      });
+      
+      if (result.success) {
+        // Generar slots para finales automáticamente
+        if (fechaFinales || torneoInfo?.fechaFinales) {
+          const fechaFinal = fechaFinales || torneoInfo?.fechaFinales;
+          // Buscar o crear día para finales
+          const resultDia = await disponibilidadService.configurarDia(tournamentId, {
+            fecha: fechaFinal!,
+            horaInicio: horaInicioFinales,
+            horaFin: '23:00',
+            minutosSlot: 90,
+          });
+          
+          if (resultDia?.dia?.id) {
+            await disponibilidadService.generarSlots(tournamentId, resultDia.dia.id, canchasFinales);
+          }
+        }
+        
+        setShowSuccessFinales(true);
+        await loadData();
+        await loadTorneoInfo();
+      } else {
+        showError('Error', result.message || 'No se pudo guardar la configuración');
+      }
+    } catch (error: any) {
+      console.error('Error guardando config de finales:', error);
+      showError('Error', error.response?.data?.message || 'Error guardando configuración');
+    } finally {
+      setGuardandoFinales(false);
+    }
+  };
+
+  const toggleCanchaFinal = (canchaId: string) => {
+    if (canchasFinales.includes(canchaId)) {
+      setCanchasFinales(canchasFinales.filter(id => id !== canchaId));
+    } else {
+      setCanchasFinales([...canchasFinales, canchaId]);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // HANDLERS - STEP 2: Días de Juego
+  // ═══════════════════════════════════════════════════════════
+
+  const handleGuardarDia = async () => {
+    if (!nuevoDia.fecha) {
+      showError('Error', 'Selecciona una fecha');
+      return;
+    }
+    
+    setGuardandoDia(true);
+    try {
+      // 1. Configurar el día
+      const result = await disponibilidadService.configurarDia(tournamentId, {
+        fecha: nuevoDia.fecha,
+        horaInicio: nuevoDia.horaInicio,
+        horaFin: '23:00', // Siempre 23:00
+        minutosSlot: nuevoDia.minutosSlot,
+      });
+      
+      // 2. Generar slots para ese día
+      if (result?.dia?.id) {
+        await disponibilidadService.generarSlots(
+          tournamentId, 
+          result.dia.id, 
+          nuevoDia.canchaIds
+        );
+      }
+      
+      // 3. Mostrar éxito y recargar
+      setShowSuccessDia(true);
+      await loadData();
+      
+      // 4. Resetear formulario
+      setNuevoDia({
+        fecha: '',
+        horaInicio: '18:00',
+        horaFin: '23:00',
+        minutosSlot: 90,
+        canchaIds: undefined,
+      });
+    } catch (error: any) {
+      console.error('[CanchasManager] Error guardando día:', error);
+      showError('Error', error.response?.data?.message || 'Error guardando día');
+    } finally {
+      setGuardandoDia(false);
+    }
+  };
+
+  const handleEliminarDia = async (diaId: string, fecha: string) => {
+    const confirmed = await confirm({
+      title: '¿Eliminar día?',
+      message: `Se eliminará el día ${formatDatePY(fecha)} y todos sus slots. Esta acción no se puede deshacer.`,
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await disponibilidadService.eliminarDia(tournamentId, diaId);
+      showSuccess('Día eliminado', 'El día y todos sus slots han sido eliminados');
+      await loadData();
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudo eliminar el día');
+    }
+  };
+
+  const handleCopiarDia = async () => {
+    if (!diaOrigen || !diaDestino) return;
+    
+    try {
+      const diaOrigenConfig = dias.find(d => d.fecha === diaOrigen);
+      if (!diaOrigenConfig) {
+        showError('Error', 'Día origen no encontrado');
+        return;
+      }
+      
+      // 1. Crear nuevo día con misma config
+      const result = await disponibilidadService.configurarDia(tournamentId, {
+        fecha: diaDestino,
+        horaInicio: diaOrigenConfig.horaInicio,
+        horaFin: '23:00',
+        minutosSlot: diaOrigenConfig.minutosSlot,
+      });
+      
+      // 2. Generar slots
+      if (result?.dia?.id) {
+        await disponibilidadService.generarSlots(tournamentId, result.dia.id);
+      }
+      
+      await loadData();
+      setShowCopiarDia(false);
+      setDiaOrigen('');
+      setDiaDestino('');
+      showSuccess('Configuración copiada', 'El día ha sido configurado exitosamente');
+    } catch (error: any) {
+      console.error('[CanchasManager] Error copiando día:', error);
+      showError('Error', error.response?.data?.message || 'Error copiando día');
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // HANDLERS - Sedes
+  // ═══════════════════════════════════════════════════════════
+
   const handleAgregarSede = async (sedeId: string) => {
     try {
       await disponibilidadService.agregarSede(tournamentId, sedeId);
       await loadData();
       setShowAgregarSede(false);
+      showSuccess('Sede agregada', 'La sede ha sido agregada al torneo');
     } catch (error: any) {
       console.error('Error agregando sede:', error);
-      alert(error.response?.data?.message || 'Error agregando sede');
+      showError('Error', error.response?.data?.message || 'Error agregando sede');
     }
   };
+
+  // ═══════════════════════════════════════════════════════════
+  // HANDLERS - Filtros y Vista
+  // ═══════════════════════════════════════════════════════════
 
   const toggleCanchaFilter = (canchaId: string) => {
     const newSet = new Set(canchasFiltradas);
@@ -370,6 +496,10 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     }
     setCanchasFiltradas(newSet);
   };
+
+  // ═══════════════════════════════════════════════════════════
+  // RENDER - LOADING
+  // ═══════════════════════════════════════════════════════════
 
   if (loading) {
     return (
@@ -383,9 +513,17 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // RENDER - MAIN
+  // ═══════════════════════════════════════════════════════════
+
   return (
     <div className="space-y-6">
-      {/* STATS CARDS */}
+      {/* ═══════════════════════════════════════════════════════════
+          HEADER SIEMPRE VISIBLE - Stats y Gestionar Sedes
+          ═══════════════════════════════════════════════════════════ */}
+      
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total Slots"
@@ -417,94 +555,8 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
         />
       </div>
 
-      {/* CONFIGURACIÓN DE FINALES */}
-      {torneoInfo && (
-        <div className="bg-gradient-to-r from-[#df2531]/10 to-transparent border border-[#df2531]/20 rounded-xl p-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            {/* Info del torneo */}
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-white flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-[#df2531]" />
-                Configuración del Día de Finales
-              </h3>
-              
-              <div className="flex flex-wrap gap-4 text-xs">
-                {torneoInfo.sedePrincipal ? (
-                  <div className="flex items-center gap-1.5 text-white/70">
-                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Sede Principal: <span className="text-white font-medium">{torneoInfo.sedePrincipal.nombre}</span></span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-amber-400">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>No hay sede principal seleccionada</span>
-                  </div>
-                )}
-                
-                {torneoInfo.fechaFinales ? (
-                  <div className="flex items-center gap-1.5 text-white/70">
-                    <Calendar className="w-3.5 h-3.5 text-[#df2531]" />
-                    <span>Finales: <span className="text-white font-medium">{formatDatePY(torneoInfo.fechaFinales)}</span></span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-amber-400">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>No hay fecha de finales configurada</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Canchas para finales */}
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-[10px] text-white/50 uppercase tracking-wide">Canchas para Finales</p>
-                <p className="text-sm text-white font-medium">
-                  {canchasFinales.length > 0 
-                    ? `${canchas.filter(c => canchasFinales.includes(c.id)).map(c => c.nombre).join(', ')}`
-                    : 'No configuradas'}
-                </p>
-                <p className="text-xs text-[#df2531]">
-                  {horaInicioFinales ? `Inicio: ${horaInicioFinales} hs` : ''}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowConfigFinales(true)}
-                className="px-3 py-1.5 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg text-xs font-medium transition-colors"
-              >
-                Configurar
-              </button>
-            </div>
-          </div>
-          
-          {/* Mensaje explicativo */}
-          <p className="text-[10px] text-white/40 mt-3 pt-3 border-t border-white/5">
-            💡 Las finales de todas las categorías se jugarán en las canchas seleccionadas. 
-            El sistema calculará el orden y horarios automáticamente para maximizar el espectáculo.
-          </p>
-        </div>
-      )}
-
-      {/* ACCIONES RÁPIDAS */}
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={() => setShowConfigDia(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Día
-        </button>
-        
-        {dias.length > 0 && (
-          <button
-            onClick={() => setShowCopiarDia(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#151921] hover:bg-[#232838] border border-[#232838] text-white rounded-xl transition-colors text-sm font-medium"
-          >
-            <Copy className="w-4 h-4" />
-            Copiar Configuración
-          </button>
-        )}
-        
+      {/* Botón Gestionar Sedes */}
+      <div className="flex justify-end">
         <button
           onClick={() => {
             loadTodasSedes();
@@ -515,59 +567,313 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           <Building2 className="w-4 h-4" />
           Gestionar Sedes
         </button>
-
-        <div className="flex-1" />
-
-        {/* Vista toggle */}
-        <div className="flex bg-[#151921] rounded-xl border border-[#232838] overflow-hidden">
-          <button
-            onClick={() => setVista('semana')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-              vista === 'semana' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Semana
-          </button>
-          <button
-            onClick={() => setVista('lista')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-              vista === 'lista' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <List className="w-4 h-4" />
-            Lista
-          </button>
-        </div>
       </div>
 
-      {/* FILTRO DE CANCHAS */}
-      {canchas.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm text-gray-400 py-2">Filtrar canchas:</span>
-          {canchas.map((cancha) => (
-            <button
-              key={cancha.id}
-              onClick={() => toggleCanchaFilter(cancha.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                canchasFiltradas.has(cancha.id)
-                  ? `${cancha.color.bg} ${cancha.color.text} border ${cancha.color.border}`
-                  : 'bg-[#151921] text-gray-500 border border-[#232838]'
-              }`}
-            >
-              <div className={`w-2 h-2 rounded-full ${cancha.color.text.replace('text-', 'bg-')}`} />
-              <span className="flex flex-col items-start leading-tight">
-                <span>{cancha.nombre}</span>
-                <span className="text-[9px] opacity-70">{cancha.sedeNombre}</span>
-              </span>
-            </button>
-          ))}
+      {/* ═══════════════════════════════════════════════════════════
+          STEP 1: Canchas para Finales
+          ═══════════════════════════════════════════════════════════ */}
+      
+      <section className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-[#232838]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-[#df2531]/20 flex items-center justify-center">
+              <span className="text-[#df2531] font-bold text-sm">1</span>
+            </div>
+            <h2 className="text-lg font-bold text-white">Step 1: Canchas para Finales</h2>
+          </div>
+          <p className="text-sm text-gray-400 ml-11">
+            Selecciona las canchas que serán usadas en las finales. Se recomienda usar N canchas según la cantidad de categorías habilitadas.
+          </p>
         </div>
-      )}
 
-      {/* CALENDARIO */}
-      <div className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
-        {/* Header */}
+        <div className="p-6 space-y-6">
+          {/* Grid de canchas seleccionables */}
+          <div>
+            <label className="text-sm text-gray-400 mb-3 block">Selecciona las canchas para finales</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {canchas.length === 0 ? (
+                <div className="col-span-full p-4 bg-[#0B0E14] rounded-xl border border-[#232838]">
+                  <p className="text-sm text-amber-400 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    No hay canchas configuradas. Agrega sedes primero.
+                  </p>
+                </div>
+              ) : (
+                canchas.map((cancha) => {
+                  const isSelected = canchasFinales.includes(cancha.id);
+                  return (
+                    <button
+                      key={cancha.id}
+                      onClick={() => toggleCanchaFinal(cancha.id)}
+                      className={`relative p-4 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? `${cancha.color.bg} ${cancha.color.border} ${cancha.color.text}`
+                          : 'bg-[#0B0E14] border-[#232838] text-gray-400 hover:border-[#df2531]/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className={`font-medium ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                            {cancha.nombre}
+                          </p>
+                          <p className="text-xs opacity-70 mt-1">{cancha.sedeNombre}</p>
+                        </div>
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="w-6 h-6 rounded-full bg-[#df2531] flex items-center justify-center"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          </motion.div>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2">
+                          <Trophy className="w-4 h-4 text-[#df2531]" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Selector de hora de inicio */}
+          <div className="bg-[#0B0E14] rounded-xl p-4 border border-[#232838]">
+            <label className="flex items-center gap-2 text-sm text-white font-medium mb-2">
+              <Clock className="w-4 h-4 text-[#df2531]" />
+              Hora de inicio de las Finales
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Este será el horario de inicio para las finales de todas las categorías.
+            </p>
+            <input
+              type="time"
+              value={horaInicioFinales}
+              onChange={(e) => setHoraInicioFinales(e.target.value)}
+              className="px-4 py-2 bg-[#151921] border border-[#232838] rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+            />
+          </div>
+
+          {/* Botón Guardar */}
+          <button
+            onClick={handleGuardarFinales}
+            disabled={guardandoFinales || canchasFinales.length === 0}
+            className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {guardandoFinales ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Trophy className="w-4 h-4" />
+                Guardar Configuración de Finales
+              </>
+            )}
+          </button>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          STEP 2: Configurar Horarios Fase Regular
+          ═══════════════════════════════════════════════════════════ */}
+      
+      <section className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-[#232838]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-[#df2531]/20 flex items-center justify-center">
+              <span className="text-[#df2531] font-bold text-sm">2</span>
+            </div>
+            <h2 className="text-lg font-bold text-white">Step 2: Configurar Días de Juego</h2>
+          </div>
+          <p className="text-sm text-gray-400 ml-11">
+            Configura el horario de inicio para cada día de juego. Los slots se generarán automáticamente hasta las 23:00 hs.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Lista de días ya configurados */}
+          {dias.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm text-gray-400">Días configurados</label>
+                {dias.length > 0 && (
+                  <button
+                    onClick={() => setShowCopiarDia(true)}
+                    className="text-xs text-[#df2531] hover:text-[#ff2d3a] flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copiar configuración
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {dias.filter(d => d.activo).map((dia) => (
+                  <div
+                    key={dia.id}
+                    className="flex items-center justify-between p-3 bg-[#0B0E14] rounded-xl border border-[#232838]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-4 h-4 text-[#df2531]" />
+                      <div>
+                        <p className="text-sm text-white font-medium">
+                          {formatDatePY(dia.fecha)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {dia.horaInicio} - {dia.horaFin} • {dia.minutosSlot} min/slot • {dia.totalSlots} slots
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-emerald-400">{dia.slotsLibres} libres</span>
+                      <button
+                        onClick={() => handleEliminarDia(dia.id, dia.fecha)}
+                        className="p-2 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-lg transition-colors"
+                        title="Eliminar día"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Formulario para agregar nuevo día */}
+          <div className="bg-[#0B0E14] rounded-xl p-4 border border-[#232838]">
+            <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-[#df2531]" />
+              Agregar nuevo día
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Selector de fecha */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1.5 block">Fecha</label>
+                <input
+                  type="date"
+                  value={nuevoDia.fecha}
+                  onChange={(e) => setNuevoDia({ ...nuevoDia, fecha: e.target.value })}
+                  min={fechaInicio}
+                  max={fechaFin}
+                  className="w-full px-3 py-2 bg-[#151921] border border-[#232838] rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+                />
+              </div>
+
+              {/* Selector de hora de inicio */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1.5 block flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Hora Inicio
+                </label>
+                <input
+                  type="time"
+                  value={nuevoDia.horaInicio}
+                  onChange={(e) => setNuevoDia({ ...nuevoDia, horaInicio: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#151921] border border-[#232838] rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+                />
+                <p className="text-[10px] text-gray-600 mt-1">
+                  Los partidos se jugarán hasta las 23:00 hs
+                </p>
+              </div>
+            </div>
+
+            {/* Selector de duración */}
+            <div className="mb-4">
+              <label className="text-xs text-gray-500 mb-1.5 block">Duración de partido</label>
+              <div className="flex gap-2">
+                {[60, 90, 120].map((minutos) => (
+                  <button
+                    key={minutos}
+                    onClick={() => setNuevoDia({ ...nuevoDia, minutosSlot: minutos })}
+                    className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                      nuevoDia.minutosSlot === minutos
+                        ? 'bg-[#df2531] text-white'
+                        : 'bg-[#151921] text-gray-400 border border-[#232838] hover:border-[#df2531]/30'
+                    }`}
+                  >
+                    {minutos} min
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selección de canchas */}
+            <div className="mb-4">
+              <label className="text-xs text-gray-500 mb-2 block">Canchas disponibles este día</label>
+              <div className="flex flex-wrap gap-2">
+                {canchas.length === 0 ? (
+                  <p className="text-xs text-amber-400">No hay canchas configuradas.</p>
+                ) : (
+                  canchas.map((cancha) => {
+                    const isSelected = nuevoDia.canchaIds?.includes(cancha.id) ?? true;
+                    return (
+                      <button
+                        key={cancha.id}
+                        onClick={() => {
+                          const currentIds = nuevoDia.canchaIds || canchas.map(c => c.id);
+                          if (isSelected) {
+                            const newIds = currentIds.filter(id => id !== cancha.id);
+                            setNuevoDia({ ...nuevoDia, canchaIds: newIds.length > 0 ? newIds : [] });
+                          } else {
+                            setNuevoDia({ ...nuevoDia, canchaIds: [...currentIds, cancha.id] });
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                          isSelected
+                            ? `${cancha.color.bg} ${cancha.color.text} border ${cancha.color.border}`
+                            : 'bg-[#151921] text-gray-500 border border-[#232838]'
+                        }`}
+                      >
+                        {cancha.nombre}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Botón Agregar Día */}
+            <button
+              onClick={handleGuardarDia}
+              disabled={!nuevoDia.fecha || guardandoDia}
+              className="w-full py-2.5 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              {guardandoDia ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                  />
+                  Generando slots...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Agregar Día y Generar Slots
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          CALENDARIO DE VISUALIZACIÓN
+          ═══════════════════════════════════════════════════════════ */}
+      
+      <section className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
+        {/* Header del calendario */}
         <div className="flex items-center justify-between p-4 border-b border-[#232838]">
           <div className="flex items-center gap-4">
             <button
@@ -594,12 +900,59 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
           </div>
+
+          {/* Vista toggle */}
+          <div className="flex bg-[#0B0E14] rounded-xl border border-[#232838] overflow-hidden">
+            <button
+              onClick={() => setVista('semana')}
+              className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                vista === 'semana' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Semana
+            </button>
+            <button
+              onClick={() => setVista('lista')}
+              className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                vista === 'lista' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              Lista
+            </button>
+          </div>
         </div>
 
-        {/* Grid */}
+        {/* Filtro de canchas */}
+        {canchas.length > 0 && (
+          <div className="p-4 border-b border-[#232838]">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-gray-400">Filtrar canchas:</span>
+              {canchas.map((cancha) => (
+                <button
+                  key={cancha.id}
+                  onClick={() => toggleCanchaFilter(cancha.id)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    canchasFiltradas.has(cancha.id)
+                      ? `${cancha.color.bg} ${cancha.color.text} border ${cancha.color.border}`
+                      : 'bg-[#0B0E14] text-gray-500 border border-[#232838]'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${cancha.color.text.replace('text-', 'bg-')}`} />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span>{cancha.nombre}</span>
+                    <span className="text-[9px] opacity-70">{cancha.sedeNombre}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Grid del calendario */}
         <div className="overflow-x-auto">
           <div className="min-w-[800px] p-4">
-            {/* Vista SEGÚN estado */}
             {vista === 'semana' ? (
               <VistaSemana 
                 slots={slots} 
@@ -619,141 +972,14 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* MODALES */}
+      {/* ═══════════════════════════════════════════════════════════
+          MODALES
+          ═══════════════════════════════════════════════════════════ */}
+      
       <AnimatePresence>
-        {/* MODAL: Agregar Día */}
-        {showConfigDia && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-[#151921] rounded-2xl border border-[#232838] max-w-md w-full p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#df2531]" />
-                  Agregar Día de Juego
-                </h3>
-                <button
-                  onClick={() => setShowConfigDia(false)}
-                  className="p-2 hover:bg-white/5 rounded-lg"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Fecha</label>
-                  <input
-                    type="date"
-                    value={nuevoDia.fecha}
-                    onChange={(e) => setNuevoDia({ ...nuevoDia, fecha: e.target.value })}
-                    className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-400 mb-2 block flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Hora Inicio
-                    </label>
-                    <input
-                      type="time"
-                      value={nuevoDia.horaInicio}
-                      onChange={(e) => setNuevoDia({ ...nuevoDia, horaInicio: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400 mb-2 block flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Hora Fin
-                    </label>
-                    <input
-                      type="time"
-                      value={nuevoDia.horaFin}
-                      onChange={(e) => setNuevoDia({ ...nuevoDia, horaFin: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Duración Partido</label>
-                  <select
-                    value={nuevoDia.minutosSlot}
-                    onChange={(e) => setNuevoDia({ ...nuevoDia, minutosSlot: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-[#0B0E14] border border-[#232838] rounded-xl text-white"
-                  >
-                    <option value={60}>60 minutos</option>
-                    <option value={90}>90 minutos (Estándar)</option>
-                    <option value={120}>120 minutos</option>
-                  </select>
-                </div>
-
-                {/* Selección de canchas para este día */}
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Canchas disponibles este día</label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto bg-[#0B0E14] border border-[#232838] rounded-xl p-3">
-                    {canchas.length === 0 ? (
-                      <p className="text-sm text-amber-400">No hay canchas configuradas. Agrega sedes primero.</p>
-                    ) : (
-                      canchas.map((cancha) => (
-                        <label key={cancha.id} className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={nuevoDia.canchaIds?.includes(cancha.id) ?? true}
-                            onChange={(e) => {
-                              const currentIds = nuevoDia.canchaIds || canchas.map(c => c.id);
-                              if (e.target.checked) {
-                                setNuevoDia({ ...nuevoDia, canchaIds: [...currentIds, cancha.id] });
-                              } else {
-                                setNuevoDia({ ...nuevoDia, canchaIds: currentIds.filter(id => id !== cancha.id) });
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-[#232838] bg-[#151921] text-[#df2531] focus:ring-[#df2531]/50"
-                          />
-                          <div>
-                            <p className="text-sm text-white">{cancha.nombre}</p>
-                            <p className="text-xs text-gray-500">{cancha.sedeNombre}</p>
-                          </div>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => setShowConfigDia(false)}
-                    className="flex-1 py-3 bg-[#232838] hover:bg-[#2a3042] text-white rounded-xl"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleGuardarDia}
-                    disabled={!nuevoDia.fecha || guardandoDia}
-                    className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 text-white rounded-xl"
-                  >
-                    {guardandoDia ? 'Guardando...' : 'Guardar'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* MODAL: Gestionar Sedes */}
+        {/* Modal: Gestionar Sedes */}
         {showAgregarSede && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -795,28 +1021,28 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
                   <p className="text-gray-400 text-center py-8">No hay sedes disponibles</p>
                 ) : (
                   todasSedes.map((sede: any) => (
-                      <button
-                        key={sede.id}
-                        onClick={() => handleAgregarSede(sede.id)}
-                        className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
-                              <Building2 className="w-5 h-5 text-[#df2531]" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-white group-hover:text-[#df2531] transition-colors">
-                                {sede.nombre}
-                              </p>
-                              <p className="text-xs text-gray-500">{sede.ciudad}</p>
-                              <p className="text-xs text-gray-600">{sede.canchas?.length || 0} canchas</p>
-                            </div>
+                    <button
+                      key={sede.id}
+                      onClick={() => handleAgregarSede(sede.id)}
+                      className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-[#df2531]/30 rounded-xl text-left transition-all group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-[#df2531]" />
                           </div>
-                          <Plus className="w-5 h-5 text-gray-600 group-hover:text-[#df2531]" />
+                          <div>
+                            <p className="font-medium text-white group-hover:text-[#df2531] transition-colors">
+                              {sede.nombre}
+                            </p>
+                            <p className="text-xs text-gray-500">{sede.ciudad}</p>
+                            <p className="text-xs text-gray-600">{sede.canchas?.length || 0} canchas</p>
+                          </div>
                         </div>
-                      </button>
-                    ))
+                        <Plus className="w-5 h-5 text-gray-600 group-hover:text-[#df2531]" />
+                      </div>
+                    </button>
+                  ))
                 )}
               </div>
 
@@ -830,7 +1056,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
           </motion.div>
         )}
 
-        {/* MODAL: Copiar Día */}
+        {/* Modal: Copiar Día */}
         {showCopiarDia && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -908,143 +1134,53 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin }: CanchasM
             </motion.div>
           </motion.div>
         )}
-
-        {/* MODAL: CONFIGURAR CANCHAS PARA FINALES */}
-        {showConfigFinales && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-[#0a0b0f] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden"
-            >
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-white font-medium flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-[#df2531]" />
-                  Canchas para Finales
-                </h3>
-                <button
-                  onClick={() => setShowConfigFinales(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-4 space-y-4">
-                <p className="text-xs text-white/50">
-                  Selecciona las canchas donde se jugarán las finales de todas las categorías. 
-                  El sistema priorizará estas canchas para las finales.
-                </p>
-
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {canchas.length === 0 ? (
-                    <p className="text-sm text-amber-400 text-center py-4">
-                      No hay canchas configuradas. Agrega sedes primero.
-                    </p>
-                  ) : (
-                    canchas.map((cancha) => (
-                      <label
-                        key={cancha.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                          canchasFinales.includes(cancha.id)
-                            ? 'bg-[#df2531]/10 border-[#df2531]/30'
-                            : 'bg-white/5 border-white/10 hover:bg-white/[0.08]'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={canchasFinales.includes(cancha.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCanchasFinales([...canchasFinales, cancha.id]);
-                            } else {
-                              setCanchasFinales(canchasFinales.filter(id => id !== cancha.id));
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#df2531] focus:ring-[#df2531]/50"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm text-white font-medium">{cancha.nombre}</p>
-                          <p className="text-xs text-white/50">{cancha.sedeNombre}</p>
-                        </div>
-                        {canchasFinales.includes(cancha.id) && (
-                          <Trophy className="w-4 h-4 text-[#df2531]" />
-                        )}
-                      </label>
-                    ))
-                  )}
-                </div>
-
-                {/* Horario de inicio de finales */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <label className="flex items-center gap-2 text-sm text-white font-medium mb-2">
-                    <Clock className="w-4 h-4 text-[#df2531]" />
-                    ¿A qué hora empiezan las Finales?
-                  </label>
-                  <p className="text-xs text-white/50 mb-3">
-                    Este será el horario de inicio para las finales de todas las categorías. 
-                    El sistema calculará automáticamente el orden de las finales.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="time"
-                      value={horaInicioFinales}
-                      onChange={(e) => setHoraInicioFinales(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-[#df2531]/50"
-                    />
-                    <span className="text-xs text-white/50">
-                      Ej: 18:00 para público general, 20:00 para mayor espectáculo
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-white/10">
-                  <button
-                    onClick={async () => {
-                      setGuardandoFinales(true);
-                      try {
-                        const result = await disponibilidadService.actualizarFinales(tournamentId, {
-                          canchasFinales,
-                          horaInicioFinales,
-                        });
-                        
-                        if (result.success) {
-                          showSuccess('Configuración guardada', 'Las canchas y horario para finales han sido guardadas correctamente');
-                          setShowConfigFinales(false);
-                          // Recargar datos para reflejar cambios
-                          await loadTorneoInfo();
-                        } else {
-                          showError('Error', result.message || 'No se pudo guardar la configuración');
-                        }
-                      } catch (error: any) {
-                        console.error('Error guardando config de finales:', error);
-                        showError('Error', error.response?.data?.message || 'Error guardando configuración');
-                      } finally {
-                        setGuardandoFinales(false);
-                      }
-                    }}
-                    disabled={guardandoFinales}
-                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
-                  >
-                    {guardandoFinales ? 'Guardando...' : 'Guardar Configuración'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════
+          CONFIRM MODALS
+          ═══════════════════════════════════════════════════════════ */}
+      
+      {/* ConfirmModal de éxito para Finales */}
+      <ConfirmModal
+        isOpen={showSuccessFinales}
+        onClose={() => setShowSuccessFinales(false)}
+        onConfirm={() => setShowSuccessFinales(false)}
+        title="¡Configuración Guardada!"
+        message="Las canchas y horario para finales han sido guardadas correctamente. Los slots se han generado automáticamente."
+        confirmText="Entendido"
+        variant="success"
+      />
+
+      {/* ConfirmModal de éxito para Día */}
+      <ConfirmModal
+        isOpen={showSuccessDia}
+        onClose={() => setShowSuccessDia(false)}
+        onConfirm={() => setShowSuccessDia(false)}
+        title="¡Día Agregado!"
+        message="El día ha sido configurado y los slots se han generado automáticamente hasta las 23:00 hs."
+        confirmText="Entendido"
+        variant="success"
+      />
+
+      {/* ConfirmModal para confirmaciones generales */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
 
-// StatCard component
+// ═══════════════════════════════════════════════════════════
+// COMPONENTES AUXILIARES
+// ═══════════════════════════════════════════════════════════
+
 function StatCard({ label, value, subtext, color, icon: Icon }: {
   label: string;
   value: number;
@@ -1060,7 +1196,7 @@ function StatCard({ label, value, subtext, color, icon: Icon }: {
   };
 
   return (
-    <div className={`glass rounded-2xl p-4 border ${colors[color]}`}>
+    <div className={`rounded-2xl p-4 border ${colors[color]} bg-[#151921]`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-gray-500 text-xs">{label}</span>
         <Icon className="w-4 h-4" />
@@ -1072,8 +1208,9 @@ function StatCard({ label, value, subtext, color, icon: Icon }: {
 }
 
 // ═══════════════════════════════════════════════════════════
-// VISTA SEMANA - Grid tipo Google Calendar (horas x días)
+// VISTA SEMANA - Grid tipo Google Calendar
 // ═══════════════════════════════════════════════════════════
+
 interface VistaSemanaProps {
   slots: Slot[];
   weekDays: Date[];
@@ -1082,45 +1219,32 @@ interface VistaSemanaProps {
   dias: DiaConfig[];
 }
 
-// Horas a mostrar en el calendario (06:00 a 23:00)
-const HORAS_CALENDARIO = Array.from({ length: 18 }, (_, i) => {
-  const h = (i + 6).toString().padStart(2, '0');
-  return `${h}:00`;
-});
-
 function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: VistaSemanaProps) {
-  // Si no hay canchas filtradas, mostrar todas
   const canchasToShow = canchasFiltradas.size > 0 
     ? canchasFiltradas 
     : new Set(canchas.map(c => c.id));
 
-  // Normalizar fechas de slots a formato YYYY-MM-DD
   const normalizedSlots = slots.map(s => ({
     ...s,
-    fecha: s.fecha.split('T')[0] // Extraer solo YYYY-MM-DD
+    fecha: s.fecha.split('T')[0]
   }));
   
   const filteredSlots = normalizedSlots.filter(s => canchasToShow.has(s.cancha.id));
 
-  // Función para obtener slots de un día y hora específicos
-  // Usar UTC consistente para evitar desfases de timezone
   const getSlotsForDayAndHour = (day: Date, hour: string) => {
-    const fechaStr = day.toISOString().split('T')[0]; // UTC
+    const fechaStr = day.toISOString().split('T')[0];
     return filteredSlots.filter(s => {
       if (s.fecha !== fechaStr) return false;
-      // El slot está en esta hora si su horaInicio empieza con esta hora
       return s.horaInicio.startsWith(hour.split(':')[0]);
     });
   };
-  
-
 
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[800px]">
         {/* Header de días */}
         <div className="grid grid-cols-8 border-b border-white/10 sticky top-0 bg-[#0B0E14] z-10">
-          <div className="p-3 border-r border-white/10" /> {/* Celda vacía para esquina */}
+          <div className="p-3 border-r border-white/10" />
           {weekDays.map((day, i) => {
             const fechaStr = day.toISOString().split('T')[0];
             const diaConfig = dias.find(d => d.fecha === fechaStr);
@@ -1147,12 +1271,10 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
         <div className="relative">
           {HORAS_CALENDARIO.map((hour) => (
             <div key={hour} className="grid grid-cols-8 border-b border-white/5 min-h-[60px]">
-              {/* Columna de hora */}
               <div className="p-2 border-r border-white/10 text-xs text-gray-500 text-right sticky left-0 bg-[#0B0E14]">
                 {hour}
               </div>
               
-              {/* Celdas de días */}
               {weekDays.map((day, dayIndex) => {
                 const hourSlots = getSlotsForDayAndHour(day, hour);
                 return (
@@ -1201,6 +1323,7 @@ function VistaSemana({ slots, weekDays, canchasFiltradas, canchas, dias }: Vista
 // ═══════════════════════════════════════════════════════════
 // VISTA LISTA - Lista de slots agrupados por día
 // ═══════════════════════════════════════════════════════════
+
 interface VistaListaProps {
   slots: Slot[];
   canchas: Cancha[];
@@ -1213,10 +1336,7 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
   const confirmState = useConfirm();
   const { confirm } = confirmState;
   const { showSuccess, showError } = useToast();
-  
-  // Hook useToast también disponible en scope principal (para modales dentro del return)
 
-  // Agrupar slots por fecha
   const slotsByDate = useMemo(() => {
     const grouped = new Map<string, Slot[]>();
     slots.forEach(slot => {
@@ -1229,71 +1349,51 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
     return grouped;
   }, [slots]);
 
-  // Ordenar fechas
   const sortedDates = useMemo(() => {
     return Array.from(slotsByDate.keys()).sort();
   }, [slotsByDate]);
 
   const handleEliminarDia = async (fecha: string) => {
-    // Normalizar fecha para comparación (fecha viene como YYYY-MM-DD)
     const fechaNormalizada = fecha.split('T')[0];
-    console.log('[EliminarDia] Buscando día para fecha:', fechaNormalizada);
-    console.log('[EliminarDia] Días disponibles:', dias.map(d => ({ id: d.id, fecha: d.fecha })));
-    
     const diaConfig = dias.find(d => {
-      // d.fecha puede ser string o Date
       const diaFecha = typeof d.fecha === 'string' ? d.fecha.split('T')[0] : new Date(d.fecha).toISOString().split('T')[0];
       return diaFecha === fechaNormalizada;
     });
     
     if (!diaConfig) {
-      console.error('[EliminarDia] No se encontró día para:', fechaNormalizada);
       showError('Error', 'No se encontró la configuración del día');
       return;
     }
-    console.log('[EliminarDia] Día encontrado:', diaConfig);
 
-    // Verificar si hay slots ocupados
     const daySlots = slotsByDate.get(fecha) || [];
-    console.log('[EliminarDia] Slots del día:', daySlots.length, daySlots.map(s => ({ id: s.id, estado: s.estado, match: s.match })));
     const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO' || s.match).length;
     const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE' && !s.match).length;
-    console.log('[EliminarDia] Slots ocupados:', slotsOcupados, 'Libres:', slotsLibres);
 
-    // Mensaje diferente según el caso
     let title = '¿Eliminar día?';
     let message = '';
     
     if (slotsOcupados > 0) {
       title = '¿Eliminar slots libres?';
-      message = `Este día tiene ${slotsOcupados} partido(s) programado(s). Solo se eliminarán los ${slotsLibres} slots libres. Los partidos programados permanecerán.`;
+      message = `Este día tiene ${slotsOcupados} partido(s) programado(s). Solo se eliminarán los ${slotsLibres} slots libres.`;
     } else {
       message = `Se eliminará completamente el día ${fecha.split('-').reverse().join('/')}. Esta acción no se puede deshacer.`;
     }
 
-    console.log('[EliminarDia] Mostrando confirmación...');
     const confirmed = await confirm({
       title,
       message,
       variant: slotsOcupados > 0 ? 'warning' : 'danger',
     });
-    console.log('[EliminarDia] Usuario confirmó:', confirmed);
 
-    if (!confirmed) {
-      console.log('[EliminarDia] Cancelado por usuario');
-      return;
-    }
+    if (!confirmed) return;
 
-    console.log('[EliminarDia] Enviando petición DELETE para día:', diaConfig.id);
-    
     try {
       const result = await disponibilidadService.eliminarDia(tournamentId, diaConfig.id);
-      console.log('[EliminarDia] Respuesta del servidor:', result);
       
       if (result.parcial) {
         showSuccess(
           'Slots libres eliminados', 
-          `Se eliminaron ${result.eliminados} slots libres. ${result.preservados} slots con partidos permanecen activos.`
+          `Se eliminaron ${result.eliminados} slots libres.`
         );
       } else {
         showSuccess('Día eliminado', 'El día y todos sus slots han sido eliminados');
@@ -1301,8 +1401,6 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
       
       onRefresh();
     } catch (error: any) {
-      console.error('[EliminarDia] Error eliminando día:', error);
-      console.error('[EliminarDia] Error response:', error.response?.data);
       showError('Error', error.response?.data?.message || 'No se pudo eliminar el día');
     }
   };
@@ -1323,15 +1421,12 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
         const slotsLibres = daySlots.filter(s => s.estado === 'LIBRE').length;
         const slotsOcupados = daySlots.filter(s => s.estado === 'OCUPADO').length;
         
-        // Obtener canchas únicas para este día (ordenadas)
         const canchasDelDia = [...new Set(daySlots.map(s => s.cancha.id))]
           .map(id => canchas.find(c => c.id === id))
           .filter(Boolean) as Cancha[];
         
-        // Obtener horarios únicos ordenados
         const horarios = [...new Set(daySlots.map(s => s.horaInicio))].sort();
         
-        // Crear mapa de slots por hora y cancha
         const slotMap = new Map<string, Map<string, Slot>>();
         daySlots.forEach(slot => {
           if (!slotMap.has(slot.horaInicio)) {
@@ -1342,11 +1437,10 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
         
         return (
           <div key={fecha} className="bg-[#0B0E14] rounded-xl overflow-hidden">
-            {/* Header del día */}
             <div className="flex items-center justify-between px-4 py-3 bg-[#151921] border-b border-white/5">
               <div className="flex items-center gap-4">
                 <div className="text-white font-medium">
-                  {fecha.split('-').reverse().join('/')} {/* DD/MM/YYYY sin conversión timezone */}
+                  {fecha.split('-').reverse().join('/')}
                 </div>
                 <div className="flex items-center gap-3 text-xs">
                   <span className="text-emerald-400">{slotsLibres} libres</span>
@@ -1364,7 +1458,6 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
               </button>
             </div>
             
-            {/* Tabla de canchas x horarios */}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[400px]">
                 <thead>
@@ -1416,7 +1509,6 @@ function VistaLista({ slots, canchas, dias, tournamentId, onRefresh }: VistaList
         );
       })}
 
-      {/* Confirm Modal */}
       <ConfirmModal
         isOpen={confirmState.isOpen}
         onClose={confirmState.close}
