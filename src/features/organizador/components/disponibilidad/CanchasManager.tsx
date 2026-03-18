@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Plus, MapPin,
   Calendar, Grid3X3, List, Building2, CheckCircle2,
   X, Copy, BarChart3, Clock, Trophy, AlertCircle,
-  Trash2, Edit2
+  Trash2
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
