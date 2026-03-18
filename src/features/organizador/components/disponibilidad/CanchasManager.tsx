@@ -86,6 +86,8 @@ interface TorneoInfo {
     ciudad: string;
   };
   fechaFinales?: string;
+  canchasFinales?: string[];
+  horaInicioFinales?: string;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -229,6 +231,20 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
     loadTorneoInfo();
   }, [tournamentId, currentWeek]);
 
+  // Sugerir canchas para finales SOLO si el torneo no tiene config guardada
+  useEffect(() => {
+    if (canchas.length > 0 && canchasFinales.length === 0 && torneoInfo) {
+      // Solo sugerir si el torneo no tiene canchasFinales guardadas en el backend
+      const tieneCanchasGuardadas = torneoInfo.canchasFinales && torneoInfo.canchasFinales.length > 0;
+      if (!tieneCanchasGuardadas) {
+        setCanchasFinales([canchas[0].id]);
+      } else if (torneoInfo.canchasFinales) {
+        // Si tiene canchas guardadas, usar esas (por si no se cargaron correctamente)
+        setCanchasFinales(torneoInfo.canchasFinales);
+      }
+    }
+  }, [canchas, torneoInfo]);
+
   // ═══════════════════════════════════════════════════════════
   // DATA LOADING
   // ═══════════════════════════════════════════════════════════
@@ -242,6 +258,8 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
           nombre: data.data.torneo.nombre,
           sedePrincipal: data.data.torneo.sede,
           fechaFinales: data.data.torneo.fechaFinales,
+          canchasFinales: data.data.torneo.canchasFinales,
+          horaInicioFinales: data.data.torneo.horaInicioFinales,
         });
         // Cargar config de finales si existe
         if (data.data.torneo.canchasFinales?.length > 0) {
@@ -287,10 +305,8 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
         setCanchasFiltradas(new Set(canchasConColor.map((c: Cancha) => c.id)));
       }
       
-      // Si no hay canchas para finales seleccionadas, sugerir las primeras
-      if (canchasFinales.length === 0 && canchasConColor.length > 0) {
-        setCanchasFinales([canchasConColor[0].id]);
-      }
+      // NOTA: La sugerencia de canchas para finales se hace en useEffect separado
+      // para evitar race condition con loadTorneoInfo()
     } catch (error) {
       console.error('Error cargando datos:', error);
     } finally {
