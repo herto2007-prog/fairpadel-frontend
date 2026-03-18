@@ -42,13 +42,31 @@ export function ConfigurarBracketModal({ categoria, onClose, onGenerado }: Confi
     try {
       const totalParejas = categoria.inscripcionesCount;
       
-      // SISTEMA PARAGUAYO
+      // SISTEMA PARAGUAYO - Fórmula escalable como el backend
+      // 8-15 parejas → Bracket de 8 (Cuartos)
+      // 16-31 parejas → Bracket de 16 (Octavos)
+      // 32-63 parejas → Bracket de 32 (16avos)
+      // 64+ parejas → Bracket de 64 (32avos)
       const partidosZona = Math.floor(totalParejas / 2);
-      const objetivoBracket = totalParejas <= 15 ? 8 : 16;
+      
+      let objetivoBracket: number;
+      if (totalParejas <= 15) {
+        objetivoBracket = 8;
+      } else if (totalParejas <= 31) {
+        objetivoBracket = 16;
+      } else if (totalParejas <= 63) {
+        objetivoBracket = 32;
+      } else {
+        objetivoBracket = 64;
+      }
+      
       const eliminaciones = Math.max(0, totalParejas - objetivoBracket);
       const partidosRondaAjuste = eliminaciones;
       
-      const fases: string[] = [];
+      const fases: string[] = ['ZONA'];
+      if (partidosRondaAjuste > 0) fases.push('RONDA AJUSTE');
+      if (objetivoBracket >= 64) fases.push('32AVOS');
+      if (objetivoBracket >= 32) fases.push('16AVOS');
       if (objetivoBracket >= 16) fases.push('OCTAVOS');
       if (objetivoBracket >= 8) fases.push('CUARTOS');
       fases.push('SEMIS', 'FINAL');

@@ -108,7 +108,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       }
     } catch (error: any) {
       console.error('Error cerrando inscripciones:', error);
-      alert(error.response?.data?.message || 'Error cerrando inscripciones');
+      showError('Error', error.response?.data?.message || 'Error cerrando inscripciones');
     } finally {
       setCerrandoInscripciones(null);
     }
@@ -122,7 +122,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       }
     } catch (error: any) {
       console.error('Error abriendo inscripciones:', error);
-      alert(error.response?.data?.message || 'Error abriendo inscripciones');
+      showError('Error', error.response?.data?.message || 'Error abriendo inscripciones');
     }
   };
 
