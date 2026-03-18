@@ -104,7 +104,11 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     try {
       const { data } = await api.post(`/admin/categorias/${categoria.id}/cerrar-inscripciones`);
       if (data.success) {
+        showSuccess('Inscripciones cerradas', data.message);
         loadCategorias();
+      } else {
+        // Manejar success: false del backend
+        showError('Error', data.message || 'No se pudieron cerrar las inscripciones');
       }
     } catch (error: any) {
       console.error('Error cerrando inscripciones:', error);
@@ -118,7 +122,11 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     try {
       const { data } = await api.post(`/admin/categorias/${categoria.id}/abrir-inscripciones`);
       if (data.success) {
+        showSuccess('Inscripciones reabiertas', data.message);
         loadCategorias();
+      } else {
+        // Manejar success: false del backend
+        showError('Error', data.message || 'No se pudieron reabrir las inscripciones');
       }
     } catch (error: any) {
       console.error('Error abriendo inscripciones:', error);
@@ -170,14 +178,35 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       );
       
       const results = await Promise.allSettled(promises);
-      const exitosos = results.filter(r => r.status === 'fulfilled').length;
-      const fallidos = results.filter(r => r.status === 'rejected').length;
+      
+      // Verificar que cada respuesta tenga data.success = true
+      let exitosos = 0;
+      let fallidos = 0;
+      let errores: string[] = [];
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          // Verificar que el backend retornó success: true
+          if (result.value.data?.success) {
+            exitosos++;
+          } else {
+            fallidos++;
+            errores.push(result.value.data?.message || `Categoría ${index + 1}: Error desconocido`);
+          }
+        } else {
+          fallidos++;
+          errores.push(result.reason?.response?.data?.message || `Categoría ${index + 1}: Error de conexión`);
+        }
+      });
 
       if (exitosos > 0) {
         showSuccess('Inscripciones cerradas', `${exitosos} categorías cerradas exitosamente`);
       }
       if (fallidos > 0) {
-        showError('Error', `${fallidos} categorías no pudieron cerrarse`);
+        const mensajeError = errores.length > 0 
+          ? errores.slice(0, 3).join('\n') + (errores.length > 3 ? `\n... y ${errores.length - 3} más` : '')
+          : `${fallidos} categorías no pudieron cerrarse`;
+        showError('Error', mensajeError);
       }
 
       limpiarSeleccion();
