@@ -156,7 +156,14 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post('/admin/torneos', formData);
+      // Limpiar campos vacíos antes de enviar (evitar validaciones del backend)
+      const payload = {
+        ...formData,
+        fechaInicio: formData.fechaInicio || undefined,
+        fechaFin: formData.fechaFin || formData.fechaFinales, // Si no hay fechaFin, usar fechaFinales
+      };
+      
+      const { data } = await api.post('/admin/torneos', payload);
       if (data.success) {
         onSuccess(data.torneo);
       } else {
