@@ -100,8 +100,8 @@ export const disponibilidadService = {
     return data;
   },
 
-  // Actualizar config de finales (canchas y hora de inicio)
-  actualizarFinales: async (tournamentId: string, config: { canchasFinales?: string[]; horaInicioFinales?: string }) => {
+  // Actualizar config de finales (canchas y horas)
+  actualizarFinales: async (tournamentId: string, config: { canchasFinales?: string[]; horaInicioFinales?: string; horaFinFinales?: string }) => {
     const { data } = await api.put(
       `/admin/torneos/${tournamentId}`,
       config

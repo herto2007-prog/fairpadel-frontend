@@ -88,6 +88,7 @@ interface TorneoInfo {
   fechaFinales?: string;
   canchasFinales?: string[];
   horaInicioFinales?: string;
+  horaFinFinales?: string;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -145,6 +146,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
   // ═══════════════════════════════════════════════════════════
   const [canchasFinales, setCanchasFinales] = useState<string[]>([]);
   const [horaInicioFinales, setHoraInicioFinales] = useState('18:00');
+  const [horaFinFinales, setHoraFinFinales] = useState('23:00');
   const [guardandoFinales, setGuardandoFinales] = useState(false);
   const [showSuccessFinales, setShowSuccessFinales] = useState(false);
   
@@ -260,6 +262,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
           fechaFinales: data.data.torneo.fechaFinales,
           canchasFinales: data.data.torneo.canchasFinales,
           horaInicioFinales: data.data.torneo.horaInicioFinales,
+          horaFinFinales: data.data.torneo.horaFinFinales,
         });
         // Cargar config de finales si existe
         if (data.data.torneo.canchasFinales?.length > 0) {
@@ -267,6 +270,9 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
         }
         if (data.data.torneo.horaInicioFinales) {
           setHoraInicioFinales(data.data.torneo.horaInicioFinales);
+        }
+        if (data.data.torneo.horaFinFinales) {
+          setHoraFinFinales(data.data.torneo.horaFinFinales);
         }
       }
     } catch (error) {
@@ -341,6 +347,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
       const result = await disponibilidadService.actualizarFinales(tournamentId, {
         canchasFinales,
         horaInicioFinales,
+        horaFinFinales,
       });
       
       if (result.success) {
@@ -659,6 +666,23 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
               type="time"
               value={horaInicioFinales}
               onChange={(e) => setHoraInicioFinales(e.target.value)}
+              className="px-4 py-2 bg-[#151921] border border-[#232838] rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+            />
+          </div>
+
+          {/* Selector de hora de fin */}
+          <div className="bg-[#0B0E14] rounded-xl p-4 border border-[#232838]">
+            <label className="flex items-center gap-2 text-sm text-white font-medium mb-2">
+              <Clock className="w-4 h-4 text-[#df2531]" />
+              Hora de fin de las Finales
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Horario máximo para terminar las finales. Permite extender el horario si hay muchas categorías.
+            </p>
+            <input
+              type="time"
+              value={horaFinFinales}
+              onChange={(e) => setHoraFinFinales(e.target.value)}
               className="px-4 py-2 bg-[#151921] border border-[#232838] rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
             />
           </div>
