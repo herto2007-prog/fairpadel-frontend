@@ -9,6 +9,7 @@ import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { SedeAutocomplete } from './SedeAutocomplete';
 import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { formatDatePY } from '../../../utils/date';
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -439,10 +440,7 @@ function Step1Identidad({
           {formData.fechaFinales && (
             <span className="block mt-1 text-white/40">
               📍 Las finales están programadas para el{' '}
-              {new Date(formData.fechaFinales).toLocaleDateString('es-PY', { 
-                day: 'numeric', 
-                month: 'long' 
-              })}
+              {formatDatePY(formData.fechaFinales)}
             </span>
           )}
         </p>
@@ -884,14 +882,14 @@ function Step5Confirmar({
         <div className="flex justify-between py-1.5 border-b border-white/5">
           <span className="text-white/40 text-xs">Día de Finales</span>
           <span className="text-primary text-xs font-medium text-right">
-            {formData.fechaFinales ? new Date(formData.fechaFinales).toLocaleDateString('es-PY', {day:'numeric', month:'short', year:'2-digit'}) : '-'}
+            {formData.fechaFinales ? formatDatePY(formData.fechaFinales) : '-'}
           </span>
         </div>
         {formData.fechaInicio && (
           <div className="flex justify-between py-1.5 border-b border-white/5">
             <span className="text-white/40 text-xs">Inicio sugerido</span>
             <span className="text-white text-xs text-right">
-              {new Date(formData.fechaInicio).toLocaleDateString('es-PY', {day:'numeric', month:'short'})}
+              {formatDatePY(formData.fechaInicio)}
             </span>
           </div>
         )}
