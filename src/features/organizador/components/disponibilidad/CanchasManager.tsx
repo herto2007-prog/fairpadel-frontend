@@ -344,26 +344,7 @@ export function CanchasManager({ tournamentId, fechaInicio, fechaFin, fechaFinal
       });
       
       if (result.success) {
-        // Generar slots para finales automáticamente
-        if (fechaFinales || torneoInfo?.fechaFinales) {
-          const fechaFinal = fechaFinales || torneoInfo?.fechaFinales;
-          // Convertir fecha ISO a YYYY-MM-DD
-          const fechaStr = typeof fechaFinal === 'string' 
-            ? fechaFinal.split('T')[0] 
-            : getDateOnlyPY(fechaFinal);
-          // Buscar o crear día para finales
-          const resultDia = await disponibilidadService.configurarDia(tournamentId, {
-            fecha: fechaStr,
-            horaInicio: horaInicioFinales,
-            horaFin: '23:00',
-            minutosSlot: 90,
-          });
-          
-          if (resultDia?.dia?.id) {
-            await disponibilidadService.generarSlots(tournamentId, resultDia.dia.id, canchasFinales);
-          }
-        }
-        
+        // El backend crea automáticamente el día y slots para finales
         setShowSuccessFinales(true);
         await loadData();
         await loadTorneoInfo();
