@@ -42,6 +42,8 @@ interface PartidoAsignado {
   pareja2?: string;
 }
 
+
+
 interface DistribucionDia {
   fecha: string;
   diaSemana: string;
@@ -121,6 +123,17 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
   const [aplicando, setAplicando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoProgramacion | null>(null);
   const [diasExpandidos, setDiasExpandidos] = useState<Set<string>>(new Set());
+  
+  // ═══════════════════════════════════════════════════════════
+  // ESTADO PARA MODO EDICIÓN HÍBRIDA
+  // ═══════════════════════════════════════════════════════════
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [asignacionesEditadas, setAsignacionesEditadas] = useState<PartidoAsignado[]>([]);
+  const [modalEditarSlot, setModalEditarSlot] = useState<{ 
+    open: boolean; 
+    partido: PartidoAsignado | null;
+    diaFecha?: string;
+  }>({ open: false, partido: null });
   
   // ═══════════════════════════════════════════════════════════
   // ESTADO PARA VISTA DE ESTADO ACTUAL (FASE 1)
@@ -251,6 +264,10 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       });
       
       setResultado(data);
+      // Inicializar asignaciones editadas con el resultado del cálculo
+      const todasLasAsignaciones = data.distribucion.flatMap((d: DistribucionDia) => d.partidos);
+      setAsignacionesEditadas(todasLasAsignaciones);
+      setModoEdicion(false); // Resetear modo edición
       setDiasExpandidos(new Set(data.distribucion.map((d: DistribucionDia) => d.fecha)));
       showSuccess('Programación calculada', `Se calcularon ${data.distribucion.length} días de programación`);
     } catch (error: any) {
@@ -266,7 +283,9 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
     const confirmed = await confirm({
       title: 'Aplicar programación',
-      message: '¿Aplicar esta programación? Los partidos serán asignados a las fechas/horas/canchas indicadas. Esta acción no se puede deshacer.',
+      message: modoEdicion 
+        ? '¿Aplicar la programación con los cambios realizados? Esta acción no se puede deshacer.'
+        : '¿Aplicar esta programación? Los partidos serán asignados a las fechas/horas/canchas indicadas. Esta acción no se puede deshacer.',
       confirmText: 'Aplicar',
       cancelText: 'Cancelar',
       variant: 'info',
@@ -275,7 +294,8 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
     setAplicando(true);
     try {
-      const asignaciones = resultado.distribucion.flatMap(d => d.partidos);
+      // Usar asignaciones editadas si estamos en modo edición
+      const asignaciones = modoEdicion ? asignacionesEditadas : resultado.distribucion.flatMap(d => d.partidos);
       await api.post(`/programacion/torneos/${tournamentId}/aplicar`, {
         asignaciones,
       });
@@ -284,12 +304,106 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       await cargarPartidos();
       setVistaActiva('actual');
       setResultado(null);
+      setModoEdicion(false);
+      setAsignacionesEditadas([]);
     } catch (error: any) {
       console.error('Error aplicando programación:', error);
       showError('Error', error.response?.data?.message || 'Error aplicando programación');
     } finally {
       setAplicando(false);
     }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // FUNCIONES PARA MODO EDICIÓN HÍBRIDA
+  // ═══════════════════════════════════════════════════════════
+  
+  const activarModoEdicion = () => {
+    setModoEdicion(true);
+    // Expandir todos los días para facilitar la edición
+    if (resultado) {
+      setDiasExpandidos(new Set(resultado.distribucion.map(d => d.fecha)));
+    }
+  };
+
+  const cancelarModoEdicion = () => {
+    if (resultado) {
+      // Restaurar asignaciones originales
+      const todasLasAsignaciones = resultado.distribucion.flatMap(d => d.partidos);
+      setAsignacionesEditadas(todasLasAsignaciones);
+    }
+    setModoEdicion(false);
+  };
+
+  const abrirEditarSlot = (partido: PartidoAsignado, fecha: string) => {
+    setModalEditarSlot({ open: true, partido, diaFecha: fecha });
+  };
+
+  const guardarSlotEditado = (partidoId: string, nuevaFecha: string, nuevaHora: string, nuevoCanchaId: string) => {
+    setAsignacionesEditadas(prev => prev.map(a => {
+      if (a.partidoId !== partidoId) return a;
+      
+      // Buscar información de la cancha
+      const cancha = canchas.find(c => c.id === nuevoCanchaId);
+      
+      return {
+        ...a,
+        fecha: nuevaFecha,
+        horaInicio: nuevaHora,
+        // Calcular hora fin (aprox 1.5h después)
+        horaFin: calcularHoraFin(nuevaHora),
+        torneoCanchaId: nuevoCanchaId,
+        sedeNombre: cancha?.sede || a.sedeNombre,
+        canchaNombre: cancha?.nombre || a.canchaNombre,
+      };
+    }));
+  };
+
+  const calcularHoraFin = (horaInicio: string): string => {
+    const [h, m] = horaInicio.split(':').map(Number);
+    const totalMinutos = h * 60 + m + 90; // 90 min = 1.5h
+    const horaFin = Math.floor(totalMinutos / 60);
+    const minutosFin = totalMinutos % 60;
+    return `${horaFin.toString().padStart(2, '0')}:${minutosFin.toString().padStart(2, '0')}`;
+  };
+
+  // Obtener distribución actual (editada o original)
+  const getDistribucionActual = (): DistribucionDia[] => {
+    if (!resultado) return [];
+    if (!modoEdicion) return resultado.distribucion;
+    
+    // Reconstruir distribución desde asignaciones editadas
+    const porFecha: Record<string, PartidoAsignado[]> = {};
+    for (const a of asignacionesEditadas) {
+      if (!porFecha[a.fecha]) porFecha[a.fecha] = [];
+      porFecha[a.fecha].push(a);
+    }
+    
+    return Object.keys(porFecha)
+      .sort()
+      .map(fecha => {
+        const partidos = porFecha[fecha].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
+        const horas = partidos.map(p => p.horaInicio);
+        
+        // Buscar slots disponibles para este día en el resultado original
+        const diaOriginal = resultado.distribucion.find(d => d.fecha === fecha);
+        
+        return {
+          fecha,
+          diaSemana: diaOriginal?.diaSemana || getDiaSemana(fecha),
+          horarioInicio: horas[0] || '18:00',
+          horarioFin: horas[horas.length - 1] || '23:00',
+          slotsDisponibles: diaOriginal?.slotsDisponibles || partidos.length,
+          slotsAsignados: partidos.length,
+          partidos,
+        };
+      });
+  };
+
+  const getDiaSemana = (fecha: string): string => {
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const date = new Date(fecha + 'T12:00:00-03:00');
+    return dias[date.getDay()];
   };
 
   const toggleDia = (fecha: string) => {
@@ -347,31 +461,71 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
             </button>
           ) : (
             <>
-              <button
-                onClick={calcularProgramacion}
-                disabled={calculando}
-                className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white rounded-lg text-sm hover:bg-white/10 transition-colors disabled:opacity-50"
-              >
-                <Calculator className="w-4 h-4" />
-                Recalcular
-              </button>
-              <button
-                onClick={aplicarProgramacion}
-                disabled={aplicando || (resultado?.conflictos?.some(c => c.severidad === 'BLOQUEANTE'))}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
-              >
-                {aplicando ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                    Aplicando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Aplicar Programación
-                  </>
-                )}
-              </button>
+              {!modoEdicion ? (
+                <>
+                  <button
+                    onClick={calcularProgramacion}
+                    disabled={calculando}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white rounded-lg text-sm hover:bg-white/10 transition-colors disabled:opacity-50"
+                  >
+                    <Calculator className="w-4 h-4" />
+                    Recalcular
+                  </button>
+                  <button
+                    onClick={activarModoEdicion}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white rounded-lg text-sm hover:bg-white/10 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Modo Edición
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={cancelarModoEdicion}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white rounded-lg text-sm hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancelar Edición
+                  </button>
+                  <button
+                    onClick={aplicarProgramacion}
+                    disabled={aplicando}
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                  >
+                    {aplicando ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                        Aplicando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Aplicar Cambios
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+              {!modoEdicion && (
+                <button
+                  onClick={aplicarProgramacion}
+                  disabled={aplicando || (resultado?.conflictos?.some(c => c.severidad === 'BLOQUEANTE'))}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                >
+                  {aplicando ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                      Aplicando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Aplicar
+                    </>
+                  )}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -649,14 +803,22 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
           {/* Distribución por Día */}
           <div className="space-y-3">
-            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
-              Distribución por Día
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+                Distribución por Día
+              </h3>
+              {modoEdicion && (
+                <span className="text-xs text-amber-400 flex items-center gap-1">
+                  <Edit2 className="w-3 h-3" />
+                  Modo edición activo - Haz clic en un partido para editar
+                </span>
+              )}
+            </div>
 
-            {resultado.distribucion.length === 0 ? (
+            {getDistribucionActual().length === 0 ? (
               <p className="text-sm text-neutral-500">No se pudo distribuir los partidos en los días disponibles.</p>
             ) : (
-              resultado.distribucion.map((dia) => (
+              getDistribucionActual().map((dia) => (
                 <motion.div
                   key={dia.fecha}
                   initial={{ opacity: 0, y: 10 }}
@@ -681,7 +843,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className="text-xs text-neutral-500">
-                          {Math.round((dia.slotsAsignados / dia.slotsDisponibles) * 100)}% ocupado
+                          {Math.round((dia.slotsAsignados / Math.max(dia.slotsDisponibles, 1)) * 100)}% ocupado
                         </div>
                       </div>
                       {diasExpandidos.has(dia.fecha) ? (
@@ -705,7 +867,12 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                           {dia.partidos.map((partido) => (
                             <div
                               key={partido.partidoId}
-                              className="flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg hover:bg-white/[0.05] transition-colors"
+                              onClick={() => modoEdicion && abrirEditarSlot(partido, dia.fecha)}
+                              className={`flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg transition-colors ${
+                                modoEdicion 
+                                  ? 'cursor-pointer hover:bg-[#df2531]/10 border border-transparent hover:border-[#df2531]/30' 
+                                  : 'hover:bg-white/[0.05]'
+                              }`}
                             >
                               {/* Hora */}
                               <div className="text-center min-w-[80px]">
@@ -737,6 +904,13 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                                 </div>
                                 <div className="text-[10px] text-neutral-600">{partido.sedeNombre}</div>
                               </div>
+
+                              {/* Icono de editar en modo edición */}
+                              {modoEdicion && (
+                                <div className="flex-shrink-0">
+                                  <Edit2 className="w-4 h-4 text-[#df2531]" />
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -763,7 +937,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
         variant={confirmState.variant}
       />
 
-      {/* Modal de Edición */}
+      {/* Modal de Edición de Partido Real */}
       <ModalEditarProgramacion
         isOpen={modalEditar.open}
         onClose={() => setModalEditar({ open: false, partido: null })}
@@ -773,6 +947,156 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
           cargarPartidos();
         }}
       />
+
+      {/* Modal de Edición de Slot (Modo Híbrido) */}
+      <ModalEditarSlot
+        isOpen={modalEditarSlot.open}
+        onClose={() => setModalEditarSlot({ open: false, partido: null })}
+        partido={modalEditarSlot.partido}
+        tournamentId={tournamentId}
+        canchas={canchas}
+        onGuardar={guardarSlotEditado}
+      />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL PARA EDITAR SLOT (MODO HÍBRIDO)
+// ═══════════════════════════════════════════════════════════
+
+interface ModalEditarSlotProps {
+  isOpen: boolean;
+  onClose: () => void;
+  partido: PartidoAsignado | null;
+  tournamentId: string;
+  canchas: Cancha[];
+  onGuardar: (partidoId: string, fecha: string, hora: string, canchaId: string) => void;
+}
+
+function ModalEditarSlot({ isOpen, onClose, partido, canchas, onGuardar }: ModalEditarSlotProps) {
+  const [fecha, setFecha] = useState('');
+  const [hora, setHora] = useState('');
+  const [canchaId, setCanchaId] = useState('');
+
+  useEffect(() => {
+    if (partido) {
+      setFecha(partido.fecha);
+      setHora(partido.horaInicio);
+      setCanchaId(partido.torneoCanchaId);
+    }
+  }, [partido]);
+
+  const handleGuardar = () => {
+    if (!partido || !fecha || !hora || !canchaId) return;
+    onGuardar(partido.partidoId, fecha, hora, canchaId);
+    onClose();
+  };
+
+  if (!isOpen || !partido) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-[#151921] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <Edit2 className="w-5 h-5 text-[#df2531]" />
+            <h2 className="text-lg font-bold text-white">Editar Slot</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Info del partido */}
+          <div className="bg-white/[0.02] rounded-xl p-3 border border-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-[10px] px-2 py-0.5 rounded border ${getColorFase(partido.fase)}`}>
+                {partido.fase}
+              </span>
+              <span className="text-xs text-neutral-500">{partido.categoriaNombre}</span>
+            </div>
+            <div className="text-sm text-white">
+              {partido.pareja1 || 'Por definir'} vs {partido.pareja2 || 'Por definir'}
+            </div>
+          </div>
+
+          {/* Formulario */}
+          <div className="space-y-3">
+            {/* Fecha */}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-neutral-400 mb-1.5">
+                <Calendar className="w-4 h-4" />
+                Fecha
+              </label>
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+              />
+            </div>
+
+            {/* Hora */}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-neutral-400 mb-1.5">
+                <Clock className="w-4 h-4" />
+                Hora de inicio
+              </label>
+              <input
+                type="time"
+                value={hora}
+                onChange={(e) => setHora(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+              />
+            </div>
+
+            {/* Cancha */}
+            <div>
+              <label className="flex items-center gap-2 text-sm text-neutral-400 mb-1.5">
+                <MapPin className="w-4 h-4" />
+                Cancha
+              </label>
+              <select
+                value={canchaId}
+                onChange={(e) => setCanchaId(e.target.value)}
+                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-[#df2531] focus:outline-none"
+              >
+                <option value="">Seleccionar cancha...</option>
+                {canchas.map(cancha => (
+                  <option key={cancha.id} value={cancha.id}>
+                    {cancha.sede} - {cancha.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleGuardar}
+              disabled={!fecha || !hora || !canchaId}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              Guardar
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
