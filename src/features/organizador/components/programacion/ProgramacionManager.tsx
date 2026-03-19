@@ -55,18 +55,29 @@ interface DistribucionDia {
 }
 
 interface Conflicto {
-  tipo: 'MISMA_PAREJA' | 'CANCHA_OCUPADA' | 'SIN_DISPONIBILIDAD' | 'ADVERTENCIA';
-  severidad: 'BLOQUEANTE' | 'ADVERTENCIA';
+  tipo: 'MISMA_PAREJA' | 'CANCHA_OCUPADA' | 'SIN_DISPONIBILIDAD' | 'ADVERTENCIA' | 'INFO';
+  severidad: 'BLOQUEANTE' | 'ADVERTENCIA' | 'INFO';
   partidoId: string;
   mensaje: string;
   sugerencia?: string;
   accion?: 'AGREGAR_DIAS' | 'EXTENDER_HORARIOS' | 'REDUCIR_PARTIDOS_DIA' | 'ACEPTAR_RIESGO';
 }
 
+interface LogAsignacion {
+  tipo: 'SALTADO' | 'ASIGNADO' | 'ADELANTADO';
+  partidoId: string;
+  categoriaNombre: string;
+  fase: string;
+  fecha: string;
+  hora: string;
+  mensaje: string;
+}
+
 interface ResultadoProgramacion {
   prediccion: Prediccion;
   distribucion: DistribucionDia[];
   conflictos: Conflicto[];
+  logs?: LogAsignacion[];
 }
 
 interface ProgramacionManagerProps {
@@ -134,6 +145,12 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
     partido: PartidoAsignado | null;
     diaFecha?: string;
   }>({ open: false, partido: null });
+  
+  // ═══════════════════════════════════════════════════════════
+  // ESTADO PARA LOGS DE ASIGNACIÓN
+  // ═══════════════════════════════════════════════════════════
+  const [logsAsignacion, setLogsAsignacion] = useState<LogAsignacion[]>([]);
+  const [mostrarLogs, setMostrarLogs] = useState(false);
   
   // ═══════════════════════════════════════════════════════════
   // ESTADO PARA VISTA DE ESTADO ACTUAL (FASE 1)
@@ -267,6 +284,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
       // Inicializar asignaciones editadas con el resultado del cálculo
       const todasLasAsignaciones = data.distribucion.flatMap((d: DistribucionDia) => d.partidos);
       setAsignacionesEditadas(todasLasAsignaciones);
+      setLogsAsignacion(data.logs || []);
       setModoEdicion(false); // Resetear modo edición
       setDiasExpandidos(new Set(data.distribucion.map((d: DistribucionDia) => d.fecha)));
       showSuccess('Programación calculada', `Se calcularon ${data.distribucion.length} días de programación`);
@@ -796,6 +814,40 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                   <p className="text-[10px] text-amber-400/50 mt-3 pt-2 border-t border-amber-500/10">
                     Puedes aplicar la programación igualmente, pero ten en cuenta estas advertencias.
                   </p>
+                </div>
+              )}
+
+              {/* Logs de Asignación */}
+              {logsAsignacion.length > 0 && (
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-blue-400 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Logs de Asignación
+                    </h3>
+                    <button
+                      onClick={() => setMostrarLogs(!mostrarLogs)}
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      {mostrarLogs ? 'Ocultar' : 'Ver'} ({logsAsignacion.length})
+                    </button>
+                  </div>
+                  {mostrarLogs && (
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {logsAsignacion.map((log, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`text-xs ${
+                            log.tipo === 'SALTADO' ? 'text-amber-400' : 
+                            log.tipo === 'ASIGNADO' ? 'text-emerald-400' : 
+                            'text-blue-400'
+                          }`}
+                        >
+                          <span className="font-medium">{log.tipo}:</span> {log.mensaje}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
