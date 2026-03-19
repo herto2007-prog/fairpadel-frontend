@@ -64,7 +64,7 @@ interface Conflicto {
 }
 
 interface LogAsignacion {
-  tipo: 'SALTADO' | 'ASIGNADO' | 'ADELANTADO';
+  tipo: 'SALTADO' | 'ASIGNADO' | 'ADELANTADO' | 'INFO';
   partidoId: string;
   categoriaNombre: string;
   fase: string;
@@ -840,6 +840,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                           className={`text-xs ${
                             log.tipo === 'SALTADO' ? 'text-amber-400' : 
                             log.tipo === 'ASIGNADO' ? 'text-emerald-400' : 
+                            log.tipo === 'INFO' ? 'text-neutral-400' :
                             'text-blue-400'
                           }`}
                         >
