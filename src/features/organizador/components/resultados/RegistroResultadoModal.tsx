@@ -30,10 +30,10 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
   
   // Formulario normal
   const [formData, setFormData] = useState<RegistrarResultadoPayload>({
-    set1Pareja1: 6,
-    set1Pareja2: 4,
-    set2Pareja1: 6,
-    set2Pareja2: 3,
+    set1Pareja1: 0,
+    set1Pareja2: 0,
+    set2Pareja1: 0,
+    set2Pareja2: 0,
     formatoSet3: 'SET_COMPLETO',
   });
   
@@ -70,12 +70,12 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
           formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
         });
       } else {
-        // Resetear a valores por defecto si no hay resultado
+        // Resetear a 0 si no hay resultado (evita confusiones)
         setFormData({
-          set1Pareja1: 6,
-          set1Pareja2: 4,
-          set2Pareja1: 6,
-          set2Pareja2: 3,
+          set1Pareja1: 0,
+          set1Pareja2: 0,
+          set2Pareja1: 0,
+          set2Pareja2: 0,
           formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
         });
       }
