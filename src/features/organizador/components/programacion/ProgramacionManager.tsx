@@ -262,6 +262,32 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
   const fasesDisponibles = [...new Set(partidos.map(p => p.fase))].sort();
 
+  // ═══════════════════════════════════════════════════════════
+  // LÓGICA DE ESTADO DE PROGRAMACIÓN POR CATEGORÍA
+  // ═══════════════════════════════════════════════════════════
+  
+  // Determinar qué categorías tienen partidos pendientes de programar
+  const categoriasConPartidosPendientes = categorias.filter(cat => {
+    const partidosDeCategoria = partidos.filter(p => p.categoriaId === cat.id);
+    const pendientesDeCategoria = partidosDeCategoria.filter(p => !p.fechaProgramada || !p.horaProgramada);
+    return pendientesDeCategoria.length > 0;
+  });
+
+  // Determinar si hay categorías sorteadas pero sin partidos cargados aún
+  const categoriasSinPartidos = categorias.filter(cat => {
+    const partidosDeCategoria = partidos.filter(p => p.categoriaId === cat.id);
+    return partidosDeCategoria.length === 0;
+  });
+
+  // Estados del sistema de programación
+  const todasLasCategoriasProgramadas = categorias.length > 0 && 
+    categoriasConPartidosPendientes.length === 0 && 
+    categoriasSinPartidos.length === 0;
+  
+  const hayCategoriasPendientes = categoriasConPartidosPendientes.length > 0 || categoriasSinPartidos.length > 0;
+  
+  // Nota: hayCategoriasSinSortear = categorias.length === 0 (ya cubierto arriba)
+
   const calcularProgramacion = async () => {
     if (categorias.length === 0) {
       showError('Sin categorías', 'No hay categorías sorteadas para programar');
@@ -436,7 +462,12 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
 
   // getColorFase se importa desde utils/faseColors
 
-  if (categoriasSorteadas.length === 0) {
+  // ═══════════════════════════════════════════════════════════
+  // ESTADOS ESPECIALES DEL SISTEMA
+  // ═══════════════════════════════════════════════════════════
+  
+  // 1. Sin categorías sorteadas
+  if (categorias.length === 0) {
     return (
       <div className="bg-white/[0.02] rounded-xl p-8 text-center">
         <Calendar className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
@@ -448,6 +479,142 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
     );
   }
 
+  // 2. Todas las categorías están completamente programadas
+  if (todasLasCategoriasProgramadas && !resultado) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-white/5">
+          <div>
+            <h2 className="text-xl font-light text-white tracking-tight">Programación</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              {partidosProgramados.length} programados • {categorias.length} categorías
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm text-emerald-400">Programación completa</span>
+          </div>
+        </div>
+
+        {/* Mensaje informativo */}
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-6 text-center">
+          <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">¡Todas las categorías están programadas!</h3>
+          <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+            Todas las categorías sorteadas tienen sus partidos asignados a fechas, horas y canchas.
+            Puedes usar las pestañas de Lista, Calendario o Arrastrar para ver y editar manualmente si es necesario.
+          </p>
+        </div>
+
+        {/* Tabs de navegación (solo vistas de visualización/edición) */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setVistaActiva('actual')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              vistaActiva === 'actual'
+                ? 'bg-[#df2531] text-white'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            <Eye className="w-4 h-4" />
+            Lista
+          </button>
+          <button
+            onClick={() => setVistaActiva('calendario')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              vistaActiva === 'calendario'
+                ? 'bg-[#df2531] text-white'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Calendario
+          </button>
+          <button
+            onClick={() => setVistaActiva('dragdrop')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              vistaActiva === 'dragdrop'
+                ? 'bg-[#df2531] text-white'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Arrastrar
+          </button>
+        </div>
+
+        {/* Vistas disponibles */}
+        {vistaActiva === 'actual' && (
+          <VistaActual 
+            partidos={partidos}
+            partidosFiltrados={partidosFiltrados}
+            partidosProgramados={partidosProgramados}
+            partidosPendientes={partidosPendientes}
+            cargando={cargandoPartidos}
+            filtroCategoria={filtroCategoria}
+            setFiltroCategoria={setFiltroCategoria}
+            filtroFase={filtroFase}
+            setFiltroFase={setFiltroFase}
+            filtroEstado={filtroEstado}
+            setFiltroEstado={setFiltroEstado}
+            busqueda={busqueda}
+            setBusqueda={setBusqueda}
+            fasesDisponibles={fasesDisponibles}
+            categoriasSorteadas={categorias}
+            onRecargar={cargarPartidos}
+            onEditar={(partido) => setModalEditar({ open: true, partido })}
+          />
+        )}
+
+        {vistaActiva === 'calendario' && (
+          <VistaCalendario
+            partidos={partidos}
+            canchas={canchas}
+            cargando={cargandoPartidos || cargandoCanchas}
+            onEditar={(partido) => setModalEditar({ open: true, partido })}
+            onProgramarNuevo={(fecha, hora, canchaId) => {
+              setModalEditar({ 
+                open: true, 
+                partido: {
+                  id: '',
+                  fase: '',
+                  categoriaNombre: '',
+                  esBye: false,
+                  fechaProgramada: fecha,
+                  horaProgramada: hora,
+                  torneoCanchaId: canchaId,
+                } as PartidoReal
+              });
+            }}
+          />
+        )}
+
+        {vistaActiva === 'dragdrop' && (
+          <VistaDragDrop
+            partidos={partidos}
+            canchas={canchas}
+            cargando={cargandoPartidos || cargandoCanchas}
+            onActualizar={cargarPartidos}
+          />
+        )}
+
+        {/* Modal de Edición */}
+        <ModalEditarProgramacion
+          isOpen={modalEditar.open}
+          onClose={() => setModalEditar({ open: false, partido: null })}
+          partido={modalEditar.partido}
+          tournamentId={tournamentId}
+          onSuccess={() => {
+            cargarPartidos();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -455,28 +622,52 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
         <div>
           <h2 className="text-xl font-light text-white tracking-tight">Programación</h2>
           <p className="text-sm text-neutral-500 mt-1">
-            {partidosProgramados.length} programados • {partidosPendientes.length} pendientes • {categoriasSorteadas.length} categorías
+            {partidosProgramados.length} programados • {partidosPendientes.length} pendientes • {categorias.length} categorías
+            {todasLasCategoriasProgramadas && (
+              <span className="ml-2 text-emerald-400">✓ Todas programadas</span>
+            )}
+            {categoriasConPartidosPendientes.length > 0 && (
+              <span className="ml-2 text-amber-400">
+                • {categoriasConPartidosPendientes.length} categoría{categoriasConPartidosPendientes.length > 1 ? 's' : ''} con partidos pendientes
+              </span>
+            )}
+            {categoriasSinPartidos.length > 0 && (
+              <span className="ml-2 text-blue-400">
+                • {categoriasSinPartidos.length} categoría{categoriasSinPartidos.length > 1 ? 's' : ''} sin cargar
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Mensaje cuando todo está programado */}
+          {todasLasCategoriasProgramadas && !resultado && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm text-emerald-400">Programación completa</span>
+            </div>
+          )}
+          
           {!resultado ? (
-            <button
-              onClick={calcularProgramacion}
-              disabled={calculando}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
-            >
-              {calculando ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                  Calculando...
-                </>
-              ) : (
-                <>
-                  <Calculator className="w-4 h-4" />
-                  Calcular Automáticamente
-                </>
-              )}
-            </button>
+            // Mostrar botón solo si hay categorías pendientes
+            hayCategoriasPendientes ? (
+              <button
+                onClick={calcularProgramacion}
+                disabled={calculando}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
+              >
+                {calculando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    Calculando...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-4 h-4" />
+                    Calcular Automáticamente
+                  </>
+                )}
+              </button>
+            ) : null
           ) : (
             <>
               {!modoEdicion ? (
