@@ -829,7 +829,7 @@ export function ProgramacionManager({ tournamentId, categoriasSorteadas }: Progr
                       onClick={() => setMostrarLogs(!mostrarLogs)}
                       className="text-xs text-blue-400 hover:text-blue-300"
                     >
-                      {mostrarLogs ? 'Ocultar' : 'Ver'} ({logsAsignacion.length})
+                      {mostrarLogs ? 'Ocultar' : 'Ver'} ({logsAsignacion.filter(l => l.tipo !== 'ASIGNADO').length})
                     </button>
                   </div>
                   {mostrarLogs && (
