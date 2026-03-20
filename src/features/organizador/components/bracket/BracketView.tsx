@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight, AlertCircle } from 'lucide-react';
+import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
@@ -89,15 +89,6 @@ export function BracketView({
   // Fases disponibles = las que tienen partidos, en el orden correcto
   const fasesDisponibles = FASES_ORDENADAS.filter(fase => partidosPorFase[fase].length > 0);
 
-  // Calcular partidos sin programar (sin cancha/fecha/hora asignadas)
-  const partidosSinProgramar = partidos.filter(p => 
-    !p.esBye && 
-    !p.ganador && 
-    p.inscripcion1 && 
-    p.inscripcion2 &&
-    (!p.torneoCanchaId || !p.fechaProgramada || !p.horaProgramada)
-  );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -139,23 +130,7 @@ export function BracketView({
           {faseActiva}
         </h3>
 
-        {/* Banner de partidos sin programar */}
-        {partidosSinProgramar.length > 0 && (
-          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-amber-400 font-medium text-sm">
-                  {partidosSinProgramar.length} partido{partidosSinProgramar.length > 1 ? 's' : ''} sin programar
-                </p>
-                <p className="text-amber-400/70 text-xs mt-1">
-                  Los partidos deben tener fecha, hora y cancha asignadas antes de cargar resultados. 
-                  Ve al tab <span className="font-semibold">Programación</span> para asignarlos.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* MVP: Información simplificada - ya no se requiere programación previa */}
 
         <div className="grid gap-3">
           {partidosPorFase[faseActiva as keyof typeof partidosPorFase]?.map((partido, index) => (
@@ -214,9 +189,8 @@ function PartidoCard({
   onMarcadorVivo: () => void;
 }) {
   const isFinalizado = !!partido.ganador;
-  const estaProgramado = !!partido.torneoCanchaId && !!partido.fechaProgramada && !!partido.horaProgramada;
-  const puedeJugar = partido.inscripcion1 && partido.inscripcion2 && !partido.esBye && !isFinalizado && estaProgramado;
-  const pendienteProgramacion = partido.inscripcion1 && partido.inscripcion2 && !partido.esBye && !isFinalizado && !estaProgramado;
+  // MVP: No requerir programación previa para cargar resultados
+  const puedeJugar = partido.inscripcion1 && partido.inscripcion2 && !partido.esBye && !isFinalizado;
   
   return (
     <motion.div
@@ -332,18 +306,7 @@ function PartidoCard({
         </div>
       )}
 
-      {/* Pendiente de programación */}
-      {pendienteProgramacion && (
-        <div className="mt-3 pt-3 border-t border-white/5">
-          <div className="flex items-center gap-2 text-amber-400/80 text-sm">
-            <AlertCircle className="w-4 h-4" />
-            <span>Pendiente de programación</span>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Asigna fecha, hora y cancha en el tab Programación
-          </p>
-        </div>
-      )}
+      {/* MVP: Eliminada sección de pendiente de programación */}
 
       {/* Info adicional */}
       {(partido.fecha || partido.cancha) && (
