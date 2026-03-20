@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronDown, ChevronUp, Trophy, Calendar, 
-  CheckCircle2, MapPin, Plus, X,
+  CheckCircle2, MapPin, Plus, X, Trash2,
   Calculator, Shuffle, AlertTriangle, Info
 } from 'lucide-react';
 import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
@@ -216,6 +216,26 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Error agregando día';
       showError('Error al agregar día', msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================
+  // PASO 1.b: Eliminar día
+  // ============================================
+  const eliminarDia = async (diaId: string, fecha: string) => {
+    if (!confirm(`¿Eliminar el día ${fecha}?\n\nSe eliminarán todos los slots configurados para ese día.`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await api.delete(`/admin/canchas-sorteo/dias/${diaId}`);
+      showSuccess('Día eliminado', `El día ${fecha} y sus slots han sido eliminados`);
+      await loadDiasConfigurados();
+    } catch (err: any) {
+      showError('Error al eliminar', err.response?.data?.message || 'No se pudo eliminar el día');
     } finally {
       setLoading(false);
     }
@@ -524,6 +544,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                             <span className="text-gray-500 text-sm">
                               {dia.canchas} canchas
                             </span>
+                            <button
+                              onClick={() => eliminarDia(dia.id, dia.fecha)}
+                              disabled={loading}
+                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                              title="Eliminar día"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       ))}
