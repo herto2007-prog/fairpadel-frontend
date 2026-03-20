@@ -785,7 +785,7 @@ function ModalSedes({
               <h4 className="text-white font-medium text-lg">{sedeAsignada.nombre}</h4>
               <p className="text-gray-400 text-sm">{sedeAsignada.ciudad}</p>
               <p className="text-emerald-400 text-sm mt-2">
-                {sedeAsignada.canchas} canchas disponibles
+                {typeof sedeAsignada.canchas === 'number' ? sedeAsignada.canchas : Array.isArray(sedeAsignada.canchas) ? sedeAsignada.canchas.length : 0} canchas disponibles
               </p>
               <div className="flex gap-3 justify-center mt-6">
                 <button
@@ -825,7 +825,7 @@ function ModalSedes({
                         <p className="text-white font-medium">{sede.nombre}</p>
                         <p className="text-sm text-gray-500">{sede.ciudad}</p>
                         <p className="text-xs text-emerald-400 mt-1">
-                          {sede.canchas?.length || 0} canchas
+                          {Array.isArray(sede.canchas) ? sede.canchas.length : 0} canchas
                         </p>
                       </div>
                       {loading ? (
