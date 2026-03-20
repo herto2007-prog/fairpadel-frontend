@@ -835,8 +835,6 @@ function ModalSedes({
   const [loading, setLoading] = useState(false);
   const [sedesDisponibles, setSedesDisponibles] = useState<any[]>([]);
   const [sedesAsignadas, setSedesAsignadas] = useState<any[]>([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [torneoInfo, setTorneoInfo] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -846,39 +844,12 @@ function ModalSedes({
 
   const loadSedes = async () => {
     try {
-      // Cargar info del torneo para obtener sede principal
-      const { data: torneoData } = await api.get(`/admin/torneos/${tournamentId}`);
-      const torneo = torneoData.torneo || torneoData;
-      setTorneoInfo(torneo);
-      
-      // Cargar sedes disponibles (todas del sistema)
-      const { data: dispData } = await api.get('/admin/sedes?activas=true');
-      const todasSedes = dispData.sedes || [];
-      
-      // Cargar sedes asignadas al torneo (tabla torneo_sedes)
-      const { data: asigData } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
-      const asignadas = asigData.sedes || [];
-      
-      // Si el torneo tiene sede principal pero no está en la lista de asignadas,
-      // agregarla manualmente
-      let sedesAsignadasFinal = [...asignadas];
-      
-      if (torneo?.sedeId) {
-        const sedePrincipalEnAsignadas = asignadas.find((s: any) => s.id === torneo.sedeId);
-        if (!sedePrincipalEnAsignadas) {
-          const sedePrincipalData = todasSedes.find((s: any) => s.id === torneo.sedeId);
-          if (sedePrincipalData) {
-            sedesAsignadasFinal.unshift({ ...sedePrincipalData, esPrincipal: true });
-          }
-        } else {
-          sedesAsignadasFinal = sedesAsignadasFinal.map((s: any) => 
-            s.id === torneo.sedeId ? { ...s, esPrincipal: true } : s
-          );
-        }
-      }
-      
-      setSedesDisponibles(todasSedes);
-      setSedesAsignadas(sedesAsignadasFinal);
+      const [disp, asig] = await Promise.all([
+        api.get('/admin/sedes?activas=true'),
+        api.get(`/admin/torneos/${tournamentId}/sedes`),
+      ]);
+      setSedesDisponibles(disp.data.sedes || []);
+      setSedesAsignadas(asig.data.sedes || []);
     } catch (err) {
       showError('Error cargando sedes');
     }
@@ -899,12 +870,6 @@ function ModalSedes({
   };
 
   const removerSede = async (sedeId: string) => {
-    // No permitir remover la sede principal
-    if (sedeId === torneoInfo?.sedeId) {
-      showError('No puedes remover la sede principal del torneo');
-      return;
-    }
-    
     setLoading(true);
     try {
       await api.delete(`/admin/torneos/${tournamentId}/sedes/${sedeId}`);
@@ -918,20 +883,6 @@ function ModalSedes({
     }
   };
 
-  // Filtrar sedes por búsqueda
-  const sedesFiltradas = sedesDisponibles.filter((sede) => {
-    const termino = busqueda.toLowerCase();
-    return (
-      sede.nombre?.toLowerCase().includes(termino) ||
-      sede.ciudad?.toLowerCase().includes(termino) ||
-      sede.direccion?.toLowerCase().includes(termino)
-    );
-  });
-
-  // Separar en asignadas y disponibles
-  const idsAsignados = new Set(sedesAsignadas.map(s => s.id));
-  const sedesDisponiblesFiltradas = sedesFiltradas.filter(s => !idsAsignados.has(s.id));
-
   if (!isOpen) return null;
 
   return (
@@ -940,7 +891,7 @@ function ModalSedes({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden"
+        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden"
       >
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -952,68 +903,27 @@ function ModalSedes({
           </button>
         </div>
 
-        <div className="p-4 space-y-4 overflow-y-auto max-h-[70vh]">
-          {/* Buscador */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar sede por nombre o ciudad..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-3 pl-10 text-white placeholder-gray-500 focus:outline-none focus:border-[#df2531]/50"
-            />
-            <svg className="w-5 h-5 text-gray-500 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {busqueda && (
-              <button
-                onClick={() => setBusqueda('')}
-                className="absolute right-3 top-3.5 text-gray-500 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
+        <div className="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
           {/* Sedes asignadas */}
           <div>
-            <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center justify-between">
-              <span>Sedes asignadas al torneo:</span>
-              <span className="text-xs bg-[#df2531]/20 text-[#df2531] px-2 py-0.5 rounded-full">
-                {sedesAsignadas.length}
-              </span>
-            </h4>
+            <h4 className="text-sm font-medium text-gray-400 mb-2">Sedes asignadas al torneo:</h4>
             {sedesAsignadas.length === 0 ? (
               <p className="text-sm text-gray-500 italic">No hay sedes asignadas</p>
             ) : (
               <div className="space-y-2">
                 {sedesAsignadas.map((sede) => (
-                  <div key={sede.id} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${sede.esPrincipal ? 'bg-[#df2531]/20' : 'bg-white/5'}`}>
-                        <MapPin className={`w-5 h-5 ${sede.esPrincipal ? 'text-[#df2531]' : 'text-gray-400'}`} />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium flex items-center gap-2">
-                          {sede.nombre}
-                          {sede.esPrincipal && (
-                            <span className="text-[10px] bg-[#df2531]/20 text-[#df2531] px-1.5 py-0.5 rounded">
-                              PRINCIPAL
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">{sede.ciudad} • {sede.canchas || 0} canchas</p>
-                      </div>
+                  <div key={sede.id} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg">
+                    <div>
+                      <p className="text-white font-medium">{sede.nombre}</p>
+                      <p className="text-xs text-gray-500">{sede.ciudad}</p>
                     </div>
-                    {!sede.esPrincipal && (
-                      <button
-                        onClick={() => removerSede(sede.id)}
-                        disabled={loading}
-                        className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      >
-                        Remover
-                      </button>
-                    )}
+                    <button
+                      onClick={() => removerSede(sede.id)}
+                      disabled={loading}
+                      className="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      Remover
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1022,29 +932,15 @@ function ModalSedes({
 
           {/* Sedes disponibles */}
           <div className="border-t border-white/10 pt-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-2 flex items-center justify-between">
-              <span>Sedes disponibles:</span>
-              <span className="text-xs bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">
-                {sedesDisponiblesFiltradas.length}
-              </span>
-            </h4>
-            
-            {sedesDisponiblesFiltradas.length === 0 ? (
-              <p className="text-sm text-gray-500 italic text-center py-4">
-                {busqueda ? 'No se encontraron sedes con ese término' : 'No hay más sedes disponibles'}
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {sedesDisponiblesFiltradas.map((sede) => (
+            <h4 className="text-sm font-medium text-gray-400 mb-2">Sedes disponibles:</h4>
+            <div className="space-y-2">
+              {sedesDisponibles
+                .filter((s) => !sedesAsignadas.some((sa) => sa.id === s.id))
+                .map((sede) => (
                   <div key={sede.id} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{sede.nombre}</p>
-                        <p className="text-xs text-gray-500">{sede.ciudad} • {sede.canchas?.length || 0} canchas</p>
-                      </div>
+                    <div>
+                      <p className="text-white font-medium">{sede.nombre}</p>
+                      <p className="text-xs text-gray-500">{sede.ciudad} • {sede.canchas?.length || 0} canchas</p>
                     </div>
                     <button
                       onClick={() => asignarSede(sede.id)}
@@ -1055,8 +951,7 @@ function ModalSedes({
                     </button>
                   </div>
                 ))}
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </motion.div>
