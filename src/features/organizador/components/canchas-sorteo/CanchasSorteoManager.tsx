@@ -28,6 +28,12 @@ interface DiaConfigurado {
   canchas: number;
 }
 
+interface Cancha {
+  id: string;
+  nombre: string;
+  sede: string;
+}
+
 export function CanchasSorteoManager({ tournamentId }: Props) {
   // Estados de pasos (colapsables)
   const [paso1aAbierto, setPaso1aAbierto] = useState(true);
@@ -41,8 +47,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     canchasFinalesIds: [] as string[],
   });
 
-  // Estado Paso 1.b: Días
+  // Estado Paso 1.b: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [nuevoDia, setNuevoDia] = useState({
     fecha: '',
     horaInicio: '18:00',
@@ -66,6 +73,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   useEffect(() => {
     loadCategorias();
     loadDiasConfigurados();
+    loadCanchas();
   }, [tournamentId]);
 
   const loadCategorias = async () => {
@@ -81,9 +89,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
 
   const loadDiasConfigurados = async () => {
     try {
-      const { data } = await api.get(`/admin/torneos/${tournamentId}/disponibilidad`);
-      if (data.success && data.dias) {
-        setDias(data.dias.map((d: any) => ({
+      const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/configuracion`);
+      if (data.success && data.data?.dias) {
+        setDias(data.data.dias.map((d: any) => ({
           id: d.id,
           fecha: d.fecha,
           horaInicio: d.horaInicio,
@@ -95,6 +103,17 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       }
     } catch (err) {
       console.error('Error cargando días:', err);
+    }
+  };
+
+  const loadCanchas = async () => {
+    try {
+      const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/canchas`);
+      if (data.success) {
+        setCanchas(data.canchas || []);
+      }
+    } catch (err) {
+      console.error('Error cargando canchas:', err);
     }
   };
 
@@ -379,9 +398,58 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                       className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
                     />
                   </div>
+
+                  {/* Selector de canchas */}
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Canchas disponibles</label>
+                    {canchas.length === 0 ? (
+                      <p className="text-sm text-yellow-500/80">
+                        No hay canchas asignadas a este torneo. Asigne canchas desde la pestaña "Canchas".
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {canchas.map((cancha) => (
+                          <label
+                            key={cancha.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                              nuevoDia.canchasIds.includes(cancha.id)
+                                ? 'bg-[#df2531]/10 border-[#df2531]/30'
+                                : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={nuevoDia.canchasIds.includes(cancha.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNuevoDia({ ...nuevoDia, canchasIds: [...nuevoDia.canchasIds, cancha.id] });
+                                } else {
+                                  setNuevoDia({ ...nuevoDia, canchasIds: nuevoDia.canchasIds.filter(id => id !== cancha.id) });
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              nuevoDia.canchasIds.includes(cancha.id)
+                                ? 'bg-[#df2531] border-[#df2531]'
+                                : 'border-gray-500'
+                            }`}>
+                              {nuevoDia.canchasIds.includes(cancha.id) && (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="text-sm text-white">{cancha.nombre}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={agregarDia}
-                    disabled={loading}
+                    disabled={loading || nuevoDia.canchasIds.length === 0}
                     className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg font-medium disabled:opacity-50"
                   >
                     {loading ? 'Agregando...' : 'Agregar Día'}
