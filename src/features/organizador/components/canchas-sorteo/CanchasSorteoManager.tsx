@@ -52,12 +52,22 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   const [paso1bAbierto, setPaso1bAbierto] = useState(false);
   const [paso2Abierto, setPaso2Abierto] = useState(false);
 
-  // Estado Paso 1.a: Finales
-  const [finales, setFinales] = useState({
-    horaInicio: '09:00',
-    horaFin: '14:00',
-    canchasFinalesIds: [] as string[],
+  // Estado Paso 1.a: Semifinales y Finales
+  const [configFinales, setConfigFinales] = useState({
+    semifinales: {
+      horaInicio: '14:00',
+      horaFin: '16:00',
+      canchasIds: [] as string[],
+    },
+    finales: {
+      horaInicio: '16:00',
+      horaFin: '18:00',
+      canchasIds: [] as string[],
+    },
   });
+  
+  // Tab activo en Paso 1.a (semifinales | finales)
+  const [tabFinales, setTabFinales] = useState<'semifinales' | 'finales'>('semifinales');
 
   // Estado Paso 1.b: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
@@ -143,10 +153,17 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     try {
       const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/configuracion`);
       if (data.success && data.data?.finales) {
-        setFinales({
-          horaInicio: data.data.finales.horaInicio || '09:00',
-          horaFin: data.data.finales.horaFin || '14:00',
-          canchasFinalesIds: data.data.finales.canchasIds || [],
+        setConfigFinales({
+          semifinales: {
+            horaInicio: data.data.semifinales?.horaInicio || '14:00',
+            horaFin: data.data.semifinales?.horaFin || '16:00',
+            canchasIds: data.data.semifinales?.canchasIds || [],
+          },
+          finales: {
+            horaInicio: data.data.finales.horaInicio || '16:00',
+            horaFin: data.data.finales.horaFin || '18:00',
+            canchasIds: data.data.finales.canchasIds || [],
+          },
         });
       }
     } catch (err) {
@@ -158,25 +175,37 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // PASO 1.a: Guardar configuración de finales
   // ============================================
   const guardarFinales = async () => {
-    if (finales.canchasFinalesIds.length === 0) {
+    // Validar que ambas fases tengan canchas
+    if (configFinales.semifinales.canchasIds.length === 0) {
+      showError('Selecciona al menos una cancha para las semifinales');
+      return;
+    }
+    if (configFinales.finales.canchasIds.length === 0) {
       showError('Selecciona al menos una cancha para las finales');
       return;
     }
     
     setLoading(true);
     try {
-      await canchasSorteoService.configurarFinales({
+      const response = await canchasSorteoService.configurarFinales({
         tournamentId,
-        ...finales,
+        horaInicioSemifinales: configFinales.semifinales.horaInicio,
+        horaFinSemifinales: configFinales.semifinales.horaFin,
+        canchasSemifinalesIds: configFinales.semifinales.canchasIds,
+        horaInicioFinales: configFinales.finales.horaInicio,
+        horaFinFinales: configFinales.finales.horaFin,
+        canchasFinalesIds: configFinales.finales.canchasIds,
       });
+      
       showSuccess(
-        'Configuración de finales guardada', 
-        `${finales.canchasFinalesIds.length} cancha(s) seleccionada(s) • ${finales.horaInicio} a ${finales.horaFin}`
+        'Configuración guardada', 
+        `Semifinales: ${response.data.semifinales.slotsGenerados} slots • Finales: ${response.data.finales.slotsGenerados} slots`
       );
+      await loadDiasConfigurados(); // Recargar para ver el día creado
       setPaso1aAbierto(false);
       setPaso1bAbierto(true);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Error guardando finales';
+      const msg = err.response?.data?.message || 'Error guardando configuración';
       showError('Error al guardar', msg);
     } finally {
       setLoading(false);
@@ -351,7 +380,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       </div>
 
       {/* ============================================
-          PASO 1.a: CONFIGURAR FINALES
+          PASO 1.a: CONFIGURAR SEMIFINALES Y FINALES
       ============================================ */}
       <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
         <button
@@ -360,18 +389,18 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         >
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              finales.canchasFinalesIds.length > 0 ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
+              configFinales.finales.canchasIds.length > 0 ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
             }`}>
               <span className={`font-bold text-sm ${
-                finales.canchasFinalesIds.length > 0 ? 'text-emerald-400' : 'text-[#df2531]'
+                configFinales.finales.canchasIds.length > 0 ? 'text-emerald-400' : 'text-[#df2531]'
               }`}>1.a</span>
             </div>
             <div className="text-left">
-              <h3 className="font-medium text-white">Configurar Finales</h3>
+              <h3 className="font-medium text-white">Configurar Semifinales y Finales</h3>
               <p className="text-sm text-gray-500">
-                {finales.canchasFinalesIds.length > 0 
-                  ? `${finales.canchasFinalesIds.length} cancha(s) • ${finales.horaInicio} a ${finales.horaFin}`
-                  : 'Horario y canchas para la final'}
+                {configFinales.semifinales.canchasIds.length > 0 || configFinales.finales.canchasIds.length > 0
+                  ? `Semis: ${configFinales.semifinales.canchasIds.length} canchas • Finales: ${configFinales.finales.canchasIds.length} canchas`
+                  : 'Horarios y canchas para el día de finales'}
               </p>
             </div>
           </div>
@@ -388,94 +417,211 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               className="border-t border-white/10"
             >
               <div className="p-6 space-y-4">
-                {/* Horarios */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
-                    <input
-                      type="time"
-                      value={finales.horaInicio}
-                      onChange={(e) => setFinales({ ...finales, horaInicio: e.target.value })}
-                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
-                    <input
-                      type="time"
-                      value={finales.horaFin}
-                      onChange={(e) => setFinales({ ...finales, horaFin: e.target.value })}
-                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                    />
-                  </div>
+                {/* Tabs Semifinales / Finales */}
+                <div className="flex bg-[#0B0E14] rounded-lg p-1">
+                  <button
+                    onClick={() => setTabFinales('semifinales')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      tabFinales === 'semifinales'
+                        ? 'bg-[#df2531] text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Semifinales
+                  </button>
+                  <button
+                    onClick={() => setTabFinales('finales')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      tabFinales === 'finales'
+                        ? 'bg-[#df2531] text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Finales
+                  </button>
                 </div>
 
-                {/* Selector de canchas para finales */}
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">
-                    Canchas para las finales <span className="text-[#df2531]">*</span>
-                  </label>
-                  {canchas.length === 0 ? (
-                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-sm text-yellow-400 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        No hay canchas asignadas a este torneo.
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Primero asigne canchas desde la pestaña "Canchas"
+                {/* Contenido según tab */}
+                {tabFinales === 'semifinales' ? (
+                  <>
+                    <p className="text-sm text-gray-400">Configura las semifinales (primera mitad del día)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
+                        <input
+                          type="time"
+                          value={configFinales.semifinales.horaInicio}
+                          onChange={(e) => setConfigFinales({
+                            ...configFinales,
+                            semifinales: { ...configFinales.semifinales, horaInicio: e.target.value }
+                          })}
+                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
+                        <input
+                          type="time"
+                          value={configFinales.semifinales.horaFin}
+                          onChange={(e) => setConfigFinales({
+                            ...configFinales,
+                            semifinales: { ...configFinales.semifinales, horaFin: e.target.value }
+                          })}
+                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Selector de canchas para semifinales */}
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-2">
+                        Canchas para semifinales <span className="text-[#df2531]">*</span>
+                      </label>
+                      {canchas.length === 0 ? (
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-sm text-yellow-400">No hay canchas asignadas</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {canchas.map((cancha) => (
+                            <label
+                              key={cancha.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                configFinales.semifinales.canchasIds.includes(cancha.id)
+                                  ? 'bg-[#df2531]/10 border-[#df2531]/50'
+                                  : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={configFinales.semifinales.canchasIds.includes(cancha.id)}
+                                onChange={(e) => {
+                                  const newIds = e.target.checked
+                                    ? [...configFinales.semifinales.canchasIds, cancha.id]
+                                    : configFinales.semifinales.canchasIds.filter(id => id !== cancha.id);
+                                  setConfigFinales({
+                                    ...configFinales,
+                                    semifinales: { ...configFinales.semifinales, canchasIds: newIds }
+                                  });
+                                }}
+                                className="sr-only"
+                              />
+                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                                configFinales.semifinales.canchasIds.includes(cancha.id)
+                                  ? 'bg-[#df2531] border-[#df2531]'
+                                  : 'border-gray-500'
+                              }`}>
+                                {configFinales.semifinales.canchasIds.includes(cancha.id) && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate">{cancha.nombre}</p>
+                                <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        {configFinales.semifinales.canchasIds.length} cancha(s) seleccionada(s)
                       </p>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {canchas.map((cancha) => (
-                        <label
-                          key={cancha.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                            finales.canchasFinalesIds.includes(cancha.id)
-                              ? 'bg-[#df2531]/10 border-[#df2531]/50'
-                              : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={finales.canchasFinalesIds.includes(cancha.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFinales({ ...finales, canchasFinalesIds: [...finales.canchasFinalesIds, cancha.id] });
-                              } else {
-                                setFinales({ ...finales, canchasFinalesIds: finales.canchasFinalesIds.filter(id => id !== cancha.id) });
-                              }
-                            }}
-                            className="sr-only"
-                          />
-                          <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                            finales.canchasFinalesIds.includes(cancha.id)
-                              ? 'bg-[#df2531] border-[#df2531]'
-                              : 'border-gray-500'
-                          }`}>
-                            {finales.canchasFinalesIds.includes(cancha.id) && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{cancha.nombre}</p>
-                            <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
-                          </div>
-                        </label>
-                      ))}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-400">Configura las finales (segunda mitad del día)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
+                        <input
+                          type="time"
+                          value={configFinales.finales.horaInicio}
+                          onChange={(e) => setConfigFinales({
+                            ...configFinales,
+                            finales: { ...configFinales.finales, horaInicio: e.target.value }
+                          })}
+                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
+                        <input
+                          type="time"
+                          value={configFinales.finales.horaFin}
+                          onChange={(e) => setConfigFinales({
+                            ...configFinales,
+                            finales: { ...configFinales.finales, horaFin: e.target.value }
+                          })}
+                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        />
+                      </div>
                     </div>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2">
-                    {finales.canchasFinalesIds.length} cancha(s) seleccionada(s)
-                  </p>
-                </div>
+
+                    {/* Selector de canchas para finales */}
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-2">
+                        Canchas para finales <span className="text-[#df2531]">*</span>
+                      </label>
+                      {canchas.length === 0 ? (
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-sm text-yellow-400">No hay canchas asignadas</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {canchas.map((cancha) => (
+                            <label
+                              key={cancha.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                configFinales.finales.canchasIds.includes(cancha.id)
+                                  ? 'bg-[#df2531]/10 border-[#df2531]/50'
+                                  : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={configFinales.finales.canchasIds.includes(cancha.id)}
+                                onChange={(e) => {
+                                  const newIds = e.target.checked
+                                    ? [...configFinales.finales.canchasIds, cancha.id]
+                                    : configFinales.finales.canchasIds.filter(id => id !== cancha.id);
+                                  setConfigFinales({
+                                    ...configFinales,
+                                    finales: { ...configFinales.finales, canchasIds: newIds }
+                                  });
+                                }}
+                                className="sr-only"
+                              />
+                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                                configFinales.finales.canchasIds.includes(cancha.id)
+                                  ? 'bg-[#df2531] border-[#df2531]'
+                                  : 'border-gray-500'
+                              }`}>
+                                {configFinales.finales.canchasIds.includes(cancha.id) && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate">{cancha.nombre}</p>
+                                <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        {configFinales.finales.canchasIds.length} cancha(s) seleccionada(s)
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <button
                   onClick={guardarFinales}
-                  disabled={loading || finales.canchasFinalesIds.length === 0}
+                  disabled={loading || configFinales.semifinales.canchasIds.length === 0 || configFinales.finales.canchasIds.length === 0}
                   className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
                 >
-                  {loading ? 'Guardando...' : 'Guardar Configuración de Finales'}
+                  {loading ? 'Guardando...' : 'Guardar Configuración'}
                 </button>
               </div>
             </motion.div>

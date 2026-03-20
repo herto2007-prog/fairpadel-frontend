@@ -2,8 +2,13 @@ import { api } from '../../../services/api';
 
 export interface ConfigurarFinalesPayload {
   tournamentId: string;
-  horaInicio: string;
-  horaFin: string;
+  // Semifinales
+  horaInicioSemifinales: string;
+  horaFinSemifinales: string;
+  canchasSemifinalesIds: string[];
+  // Finales
+  horaInicioFinales: string;
+  horaFinFinales: string;
   canchasFinalesIds: string[];
 }
 
