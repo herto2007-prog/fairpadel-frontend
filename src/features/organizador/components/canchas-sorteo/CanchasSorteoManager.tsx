@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
+import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Props {
   tournamentId: string;
@@ -35,6 +36,8 @@ interface Cancha {
 }
 
 export function CanchasSorteoManager({ tournamentId }: Props) {
+  const { showSuccess, showError } = useToast();
+  
   // Estados de pasos (colapsables)
   const [paso1aAbierto, setPaso1aAbierto] = useState(true);
   const [paso1bAbierto, setPaso1bAbierto] = useState(false);
@@ -119,6 +122,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
 
   // PASO 1.a: Guardar configuración de finales
   const guardarFinales = async () => {
+    if (finales.canchasFinalesIds.length === 0) {
+      showError('Selecciona al menos una cancha para las finales');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -126,11 +134,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         tournamentId,
         ...finales,
       });
+      showSuccess('Configuración de finales guardada', `${finales.canchasFinalesIds.length} cancha(s) seleccionada(s)`);
       setSuccess('Configuración de finales guardada');
       setPaso1aAbierto(false);
       setPaso1bAbierto(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error guardando finales');
+      const msg = err.response?.data?.message || 'Error guardando finales';
+      setError(msg);
+      showError('Error al guardar', msg);
     } finally {
       setLoading(false);
     }
@@ -139,7 +150,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // PASO 1.b: Agregar día
   const agregarDia = async () => {
     if (!nuevoDia.fecha || nuevoDia.canchasIds.length === 0) {
-      setError('Selecciona fecha y al menos una cancha');
+      showError('Datos incompletos', 'Selecciona fecha y al menos una cancha');
       return;
     }
 
@@ -152,7 +163,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       });
       
       if (response.success) {
-        setSuccess(`Día agregado con ${response.data.slotsGenerados} slots`);
+        const msg = `Día agregado con ${response.data.slotsGenerados} slots`;
+        showSuccess('Día configurado', msg);
+        setSuccess(msg);
         await loadDiasConfigurados();
         setNuevoDia({
           fecha: '',
@@ -167,7 +180,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         }
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error agregando día');
+      const msg = err.response?.data?.message || 'Error agregando día';
+      setError(msg);
+      showError('Error al agregar día', msg);
     } finally {
       setLoading(false);
     }
@@ -311,12 +326,66 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     />
                   </div>
                 </div>
+
+                {/* Selector de canchas para finales */}
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Canchas para las finales *</label>
+                  {canchas.length === 0 ? (
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-sm text-yellow-400">
+                        ⚠️ No hay canchas asignadas a este torneo. Asigne canchas desde la pestaña "Canchas" primero.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {canchas.map((cancha) => (
+                        <label
+                          key={cancha.id}
+                          className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                            finales.canchasFinalesIds.includes(cancha.id)
+                              ? 'bg-[#df2531]/10 border-[#df2531]/30'
+                              : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={finales.canchasFinalesIds.includes(cancha.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFinales({ ...finales, canchasFinalesIds: [...finales.canchasFinalesIds, cancha.id] });
+                              } else {
+                                setFinales({ ...finales, canchasFinalesIds: finales.canchasFinalesIds.filter(id => id !== cancha.id) });
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            finales.canchasFinalesIds.includes(cancha.id)
+                              ? 'bg-[#df2531] border-[#df2531]'
+                              : 'border-gray-500'
+                          }`}>
+                            {finales.canchasFinalesIds.includes(cancha.id) && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-sm text-white">{cancha.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {finales.canchasFinalesIds.length} cancha(s) seleccionada(s)
+                  </p>
+                </div>
+
                 <button
                   onClick={guardarFinales}
-                  disabled={loading}
-                  className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium disabled:opacity-50"
+                  disabled={loading || finales.canchasFinalesIds.length === 0}
+                  className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Guardando...' : 'Guardar'}
+                  {loading ? 'Guardando...' : 'Guardar Configuración de Finales'}
                 </button>
               </div>
             </motion.div>
