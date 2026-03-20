@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronDown, ChevronUp, Trophy, Calendar, 
   CheckCircle2, MapPin, Plus, X, Trash2,
-  Calculator, Shuffle, AlertTriangle, Info
+  Shuffle
 } from 'lucide-react';
-import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
+import { canchasSorteoService } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -69,16 +69,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Estado Paso 3: Categorías
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([]);
-  const [calculoSlots, setCalculoSlots] = useState<CalculoSlotsResponse | null>(null);
+  // MVP: Eliminado calculoSlots - sorteo directo sin validación previa compleja
   
   // Modales
   const [mostrarModalSedes, setMostrarModalSedes] = useState(false);
-  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
-  const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(false);
+  // MVP: Eliminados modales complejos de confirmación - uso confirm() simple
 
   // Estados de carga
   const [loading, setLoading] = useState(false);
-  const [loadingCalculo, setLoadingCalculo] = useState(false);
+  // MVP: Eliminado loadingCalculo - sorteo directo
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -226,41 +225,40 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 3: Calcular slots necesarios
+  // PASO 3: Sortear Directo (MVP Simplificado)
   // ============================================
-  const calcularSlots = async () => {
+  const MINIMO_PAREJAS_MVP = 8; // MVP: Mínimo 8 parejas para sortear
+
+  const sortearDirecto = async () => {
     if (categoriasSeleccionadas.length === 0) {
       showError('Selecciona al menos una categoría');
       return;
     }
 
-    setLoadingCalculo(true);
-    try {
-      const resultado = await canchasSorteoService.calcularSlotsNecesarios(
-        tournamentId,
-        categoriasSeleccionadas
-      );
-      setCalculoSlots(resultado);
-      
-      if (resultado.valido) {
-        setMostrarModalConfirmacion(true);
-      } else {
-        setMostrarModalAdvertencia(true);
-      }
-    } catch (err: any) {
-      showError('Error en cálculo', err.response?.data?.message || 'Error desconocido');
-    } finally {
-      setLoadingCalculo(false);
-    }
-  };
-
-  // ============================================
-  // PASO 3: Cerrar inscripciones y sortear
-  // ============================================
-  const ejecutarCierreYSorteo = async () => {
-    setLoading(true);
-    setMostrarModalConfirmacion(false);
+    // Validación simple MVP: mínimo 8 parejas por categoría
+    const categoriasInvalidas = categorias
+      .filter(c => categoriasSeleccionadas.includes(c.id))
+      .filter(c => c.parejas < MINIMO_PAREJAS_MVP);
     
+    if (categoriasInvalidas.length > 0) {
+      showError(
+        'No se puede sortear',
+        `${categoriasInvalidas.map(c => c.nombre).join(', ')}: necesita al menos ${MINIMO_PAREJAS_MVP} parejas`
+      );
+      return;
+    }
+
+    // Confirmación simple
+    const confirmed = await confirm({
+      title: '¿Sortear ahora?',
+      message: `Se sortearán ${categoriasSeleccionadas.length} categoría(s). Las inscripciones se cerrarán.`,
+      variant: 'danger',
+      confirmText: 'Sortear',
+    });
+
+    if (!confirmed) return;
+
+    setLoading(true);
     try {
       const resultado = await canchasSorteoService.cerrarInscripcionesYsortear({
         tournamentId,
@@ -269,14 +267,12 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       
       showSuccess(
         '¡Sorteo completado!',
-        `${resultado.categoriasSorteadas.length} categorías sorteadas • ${resultado.slotsTotalesReservados} slots reservados`
+        `${resultado.categoriasSorteadas.length} categorías sorteadas`
       );
       
       // Recargar datos
       await loadCategorias();
-      await loadDiasConfigurados();
       setCategoriasSeleccionadas([]);
-      setCalculoSlots(null);
       
     } catch (err: any) {
       showError('Error en sorteo', err.response?.data?.message || 'Error desconocido');
@@ -295,18 +291,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   const seleccionarTodas = () => {
+    // MVP: Mínimo 8 parejas para sortear
     const disponibles = categorias
-      .filter(c => c.parejas >= c.minimoParejas && c.estado !== 'CERRADA')
+      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && c.estado !== 'CERRADA')
       .map(c => c.id);
     setCategoriasSeleccionadas(disponibles);
   };
 
-  const irAPaso2 = () => {
-    setMostrarModalAdvertencia(false);
-    setPaso3Abierto(false);
-    setPaso2Abierto(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // MVP: Eliminada función irAPaso2 - no se necesita con sorteo directo
 
   // ============================================
   // RENDER
@@ -597,7 +589,8 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   ) : (
                     <div className="grid gap-2">
                       {categorias.map((cat) => {
-                        const puedeSortear = cat.parejas >= cat.minimoParejas && cat.estado !== 'CERRADA';
+                        // MVP: Mínimo 8 parejas para poder sortear
+                        const puedeSortear = cat.parejas >= MINIMO_PAREJAS_MVP && cat.estado !== 'CERRADA';
                         const isSeleccionada = categoriasSeleccionadas.includes(cat.id);
                         
                         return (
@@ -628,15 +621,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                                 <div>
                                   <p className="text-white font-medium">{cat.nombre}</p>
                                   <p className="text-xs text-gray-500">
-                                    {cat.parejas} parejas (mín: {cat.minimoParejas})
+                                    {cat.parejas} parejas (mín: {MINIMO_PAREJAS_MVP})
                                   </p>
                                 </div>
                               </div>
                               <div className="text-right">
                                 {cat.estado === 'CERRADA' ? (
                                   <span className="text-xs text-emerald-400 font-medium">Sorteada</span>
-                                ) : cat.parejas < cat.minimoParejas ? (
-                                  <span className="text-xs text-red-400">No alcanza mínimo</span>
+                                ) : cat.parejas < MINIMO_PAREJAS_MVP ? (
+                                  <span className="text-xs text-red-400">Necesita {MINIMO_PAREJAS_MVP} parejas</span>
                                 ) : (
                                   <span className="text-xs text-gray-500">Disponible</span>
                                 )}
@@ -649,21 +642,21 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   )}
                 </div>
 
-                {/* Botón de sorteo */}
+                {/* Botón de sorteo MVP - Directo sin verificación compleja */}
                 <button
-                  onClick={calcularSlots}
-                  disabled={loadingCalculo || categoriasSeleccionadas.length === 0}
+                  onClick={sortearDirecto}
+                  disabled={loading || categoriasSeleccionadas.length === 0}
                   className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  {loadingCalculo ? (
+                  {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Calculando...
+                      Sorteando...
                     </>
                   ) : (
                     <>
-                      <Calculator className="w-4 h-4" />
-                      Verificar y Sortear {categoriasSeleccionadas.length > 0 && `(${categoriasSeleccionadas.length})`}
+                      <Shuffle className="w-4 h-4" />
+                      Sortear Ahora {categoriasSeleccionadas.length > 0 && `(${categoriasSeleccionadas.length})`}
                     </>
                   )}
                 </button>
@@ -696,27 +689,6 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         cancelText={confirmState.cancelText}
         variant={confirmState.variant}
       />
-
-      {/* Modal de confirmación de sorteo */}
-      {mostrarModalConfirmacion && calculoSlots && (
-        <ModalConfirmacionSorteo
-          isOpen={mostrarModalConfirmacion}
-          onClose={() => setMostrarModalConfirmacion(false)}
-          calculo={calculoSlots}
-          onConfirm={ejecutarCierreYSorteo}
-          loading={loading}
-        />
-      )}
-
-      {/* Modal de advertencia de slots insuficientes */}
-      {mostrarModalAdvertencia && calculoSlots && (
-        <ModalAdvertenciaSlots
-          isOpen={mostrarModalAdvertencia}
-          onClose={() => setMostrarModalAdvertencia(false)}
-          calculo={calculoSlots}
-          onIrAPaso2={irAPaso2}
-        />
-      )}
     </div>
   );
 }
@@ -857,171 +829,5 @@ function ModalSedes({
   );
 }
 
-// ============================================
-// MODAL: CONFIRMACIÓN DE SORTEO
-// ============================================
-function ModalConfirmacionSorteo({
-  isOpen,
-  onClose,
-  calculo,
-  onConfirm,
-  loading,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  calculo: CalculoSlotsResponse;
-  onConfirm: () => void;
-  loading: boolean;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg overflow-hidden"
-      >
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Todo listo para sortear</h3>
-              <p className="text-sm text-gray-400">
-                Hay suficientes slots para todas las categorías seleccionadas
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/[0.03] rounded-lg p-4 space-y-2 mb-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Slots disponibles:</span>
-              <span className="text-emerald-400 font-medium">{calculo.slotsDisponibles}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Slots necesarios:</span>
-              <span className="text-white font-medium">{calculo.totalSlotsNecesarios}</span>
-            </div>
-            <div className="border-t border-white/10 pt-2 flex justify-between text-sm">
-              <span className="text-gray-400">Categorías a sortear:</span>
-              <span className="text-white font-medium">{calculo.detallePorCategoria?.length || 0}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={loading}
-              className="flex-1 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Sorteando...
-                </>
-              ) : (
-                <>
-                  <Shuffle className="w-4 h-4" />
-                  Confirmar Sorteo
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-// ============================================
-// MODAL: ADVERTENCIA DE SLOTS INSUFICIENTES
-// ============================================
-function ModalAdvertenciaSlots({
-  isOpen,
-  onClose,
-  calculo,
-  onIrAPaso2,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  calculo: CalculoSlotsResponse;
-  onIrAPaso2: () => void;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg overflow-hidden"
-      >
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Slots insuficientes</h3>
-              <p className="text-sm text-gray-400">
-                No hay suficientes slots para sortear todas las categorías
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/[0.03] rounded-lg p-4 space-y-2 mb-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Slots disponibles:</span>
-              <span className="text-red-400 font-medium">{calculo.slotsDisponibles}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Slots necesarios:</span>
-              <span className="text-white font-medium">{calculo.totalSlotsNecesarios}</span>
-            </div>
-            <div className="border-t border-white/10 pt-2 flex justify-between text-sm">
-              <span className="text-gray-400">Faltan:</span>
-              <span className="text-red-400 font-medium">
-                {calculo.totalSlotsNecesarios - calculo.slotsDisponibles} slots
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-6">
-            <div className="flex gap-2">
-              <Info className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-400">
-                Agrega más días de juego o aumenta el horario de los días existentes para generar más slots.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={onIrAPaso2}
-              className="flex-1 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium transition-colors"
-            >
-              Agregar Días
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+// MVP: Eliminados ModalConfirmacionSorteo y ModalAdvertenciaSlots
+// Ahora se usa confirm() simple del sistema para confirmación
