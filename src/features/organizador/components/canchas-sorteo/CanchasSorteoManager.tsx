@@ -40,36 +40,22 @@ interface Cancha {
 }
 
 // ============================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL - MVP SIMPLIFICADO
 // ============================================
 export function CanchasSorteoManager({ tournamentId }: Props) {
   const { showSuccess, showError } = useToast();
   const confirmState = useConfirm();
   const { confirm } = confirmState;
   
-  // Estados de pasos (colapsables)
-  const [paso1aAbierto, setPaso1aAbierto] = useState(true);
-  const [paso1bAbierto, setPaso1bAbierto] = useState(false);
-  const [paso2Abierto, setPaso2Abierto] = useState(false);
+  // Estados de pasos (colapsables) - MVP simplificado
+  const [paso1Abierto, setPaso1Abierto] = useState(true);  // Asignar Sede
+  const [paso2Abierto, setPaso2Abierto] = useState(false); // Agregar Días
+  const [paso3Abierto, setPaso3Abierto] = useState(false); // Sortear
 
-  // Estado Paso 1.a: Semifinales y Finales
-  const [configFinales, setConfigFinales] = useState({
-    semifinales: {
-      horaInicio: '14:00',
-      horaFin: '16:00',
-      canchasIds: [] as string[],
-    },
-    finales: {
-      horaInicio: '16:00',
-      horaFin: '18:00',
-      canchasIds: [] as string[],
-    },
-  });
-  
-  // Tab activo en Paso 1.a (semifinales | finales)
-  const [tabFinales, setTabFinales] = useState<'semifinales' | 'finales'>('semifinales');
+  // Estado Paso 1: Sede Asignada
+  const [sedeAsignada, setSedeAsignada] = useState<{ id: string; nombre: string; ciudad: string; canchas: number } | null>(null);
 
-  // Estado Paso 1.b: Días y Canchas
+  // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [nuevoDia, setNuevoDia] = useState({
@@ -80,7 +66,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     canchasIds: [] as string[],
   });
 
-  // Estado Paso 2: Categorías
+  // Estado Paso 3: Categorías
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([]);
   const [calculoSlots, setCalculoSlots] = useState<CalculoSlotsResponse | null>(null);
@@ -101,11 +87,28 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
 
   const loadDatosIniciales = async () => {
     await Promise.all([
+      loadSedeAsignada(),
       loadCategorias(),
       loadDiasConfigurados(),
       loadCanchas(),
-      loadConfiguracionFinales(),
     ]);
+  };
+
+  const loadSedeAsignada = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
+      if (data.sedes?.length > 0) {
+        const sede = data.sedes[0];
+        setSedeAsignada({
+          id: sede.id,
+          nombre: sede.nombre,
+          ciudad: sede.ciudad,
+          canchas: sede._count?.canchas || 0,
+        });
+      }
+    } catch (err) {
+      console.error('Error cargando sede asignada:', err);
+    }
   };
 
   const loadCategorias = async () => {
@@ -149,71 +152,8 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     }
   };
 
-  const loadConfiguracionFinales = async () => {
-    try {
-      const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/configuracion`);
-      if (data.success && data.data?.finales) {
-        setConfigFinales({
-          semifinales: {
-            horaInicio: data.data.semifinales?.horaInicio || '14:00',
-            horaFin: data.data.semifinales?.horaFin || '16:00',
-            canchasIds: data.data.semifinales?.canchasIds || [],
-          },
-          finales: {
-            horaInicio: data.data.finales.horaInicio || '16:00',
-            horaFin: data.data.finales.horaFin || '18:00',
-            canchasIds: data.data.finales.canchasIds || [],
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Error cargando configuración de finales:', err);
-    }
-  };
-
   // ============================================
-  // PASO 1.a: Guardar configuración de finales
-  // ============================================
-  const guardarFinales = async () => {
-    // Validar que ambas fases tengan canchas
-    if (configFinales.semifinales.canchasIds.length === 0) {
-      showError('Selecciona al menos una cancha para las semifinales');
-      return;
-    }
-    if (configFinales.finales.canchasIds.length === 0) {
-      showError('Selecciona al menos una cancha para las finales');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const response = await canchasSorteoService.configurarFinales({
-        tournamentId,
-        horaInicioSemifinales: configFinales.semifinales.horaInicio,
-        horaFinSemifinales: configFinales.semifinales.horaFin,
-        canchasSemifinalesIds: configFinales.semifinales.canchasIds,
-        horaInicioFinales: configFinales.finales.horaInicio,
-        horaFinFinales: configFinales.finales.horaFin,
-        canchasFinalesIds: configFinales.finales.canchasIds,
-      });
-      
-      showSuccess(
-        'Configuración guardada', 
-        `Semifinales: ${response.data.semifinales.slotsGenerados} slots • Finales: ${response.data.finales.slotsGenerados} slots`
-      );
-      await loadDiasConfigurados(); // Recargar para ver el día creado
-      setPaso1aAbierto(false);
-      setPaso1bAbierto(true);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Error guardando configuración';
-      showError('Error al guardar', msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================================
-  // PASO 1.b: Agregar día
+  // PASO 2: Agregar día
   // ============================================
   const agregarDia = async () => {
     if (!nuevoDia.fecha) {
@@ -255,7 +195,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 1.b: Eliminar día
+  // PASO 2: Eliminar día
   // ============================================
   const eliminarDia = async (diaId: string, fecha: string) => {
     const confirmed = await confirm({
@@ -281,7 +221,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 2: Calcular slots necesarios
+  // PASO 3: Calcular slots necesarios
   // ============================================
   const calcularSlots = async () => {
     if (categoriasSeleccionadas.length === 0) {
@@ -310,7 +250,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 2: Cerrar inscripciones y sortear
+  // PASO 3: Cerrar inscripciones y sortear
   // ============================================
   const ejecutarCierreYSorteo = async () => {
     setLoading(true);
@@ -356,10 +296,10 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     setCategoriasSeleccionadas(disponibles);
   };
 
-  const irAPaso1b = () => {
+  const irAPaso2 = () => {
     setMostrarModalAdvertencia(false);
-    setPaso2Abierto(false);
-    setPaso1bAbierto(true);
+    setPaso3Abierto(false);
+    setPaso2Abierto(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -375,40 +315,40 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           Canchas y Sorteo
         </h2>
         <p className="text-gray-400 text-sm">
-          Configura canchas, cierra inscripciones y sortea en un solo lugar
+          MVP: Asigna sede, agrega días y sortea
         </p>
       </div>
 
       {/* ============================================
-          PASO 1.a: CONFIGURAR SEMIFINALES Y FINALES
+          PASO 1: ASIGNAR SEDE (MVP)
       ============================================ */}
       <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
         <button
-          onClick={() => setPaso1aAbierto(!paso1aAbierto)}
+          onClick={() => setPaso1Abierto(!paso1Abierto)}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              configFinales.finales.canchasIds.length > 0 ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
+              sedeAsignada ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
             }`}>
               <span className={`font-bold text-sm ${
-                configFinales.finales.canchasIds.length > 0 ? 'text-emerald-400' : 'text-[#df2531]'
-              }`}>1.a</span>
+                sedeAsignada ? 'text-emerald-400' : 'text-[#df2531]'
+              }`}>1</span>
             </div>
             <div className="text-left">
-              <h3 className="font-medium text-white">Configurar Semifinales y Finales</h3>
+              <h3 className="font-medium text-white">Asignar Sede</h3>
               <p className="text-sm text-gray-500">
-                {configFinales.semifinales.canchasIds.length > 0 || configFinales.finales.canchasIds.length > 0
-                  ? `Semis: ${configFinales.semifinales.canchasIds.length} canchas • Finales: ${configFinales.finales.canchasIds.length} canchas`
-                  : 'Horarios y canchas para el día de finales'}
+                {sedeAsignada 
+                  ? `${sedeAsignada.nombre} • ${sedeAsignada.canchas} canchas`
+                  : 'Selecciona la sede donde se jugará el torneo'}
               </p>
             </div>
           </div>
-          {paso1aAbierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+          {paso1Abierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
         </button>
 
         <AnimatePresence>
-          {paso1aAbierto && (
+          {paso1Abierto && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -416,213 +356,43 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               transition={{ duration: 0.2 }}
               className="border-t border-white/10"
             >
-              <div className="p-6 space-y-4">
-                {/* Tabs Semifinales / Finales */}
-                <div className="flex bg-[#0B0E14] rounded-lg p-1">
-                  <button
-                    onClick={() => setTabFinales('semifinales')}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                      tabFinales === 'semifinales'
-                        ? 'bg-[#df2531] text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    Semifinales
-                  </button>
-                  <button
-                    onClick={() => setTabFinales('finales')}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                      tabFinales === 'finales'
-                        ? 'bg-[#df2531] text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    Finales
-                  </button>
-                </div>
-
-                {/* Contenido según tab */}
-                {tabFinales === 'semifinales' ? (
-                  <>
-                    <p className="text-sm text-gray-400">Configura las semifinales (primera mitad del día)</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
-                        <input
-                          type="time"
-                          value={configFinales.semifinales.horaInicio}
-                          onChange={(e) => setConfigFinales({
-                            ...configFinales,
-                            semifinales: { ...configFinales.semifinales, horaInicio: e.target.value }
-                          })}
-                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                        />
+              <div className="p-6">
+                {sedeAsignada ? (
+                  <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-emerald-400" />
                       </div>
                       <div>
-                        <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
-                        <input
-                          type="time"
-                          value={configFinales.semifinales.horaFin}
-                          onChange={(e) => setConfigFinales({
-                            ...configFinales,
-                            semifinales: { ...configFinales.semifinales, horaFin: e.target.value }
-                          })}
-                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                        />
+                        <h4 className="text-white font-medium">{sedeAsignada.nombre}</h4>
+                        <p className="text-sm text-gray-400">{sedeAsignada.ciudad}</p>
+                        <p className="text-xs text-emerald-400 mt-1">{sedeAsignada.canchas} canchas disponibles</p>
                       </div>
                     </div>
-
-                    {/* Selector de canchas para semifinales */}
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">
-                        Canchas para semifinales <span className="text-[#df2531]">*</span>
-                      </label>
-                      {canchas.length === 0 ? (
-                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                          <p className="text-sm text-yellow-400">No hay canchas asignadas</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          {canchas.map((cancha) => (
-                            <label
-                              key={cancha.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                configFinales.semifinales.canchasIds.includes(cancha.id)
-                                  ? 'bg-[#df2531]/10 border-[#df2531]/50'
-                                  : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={configFinales.semifinales.canchasIds.includes(cancha.id)}
-                                onChange={(e) => {
-                                  const newIds = e.target.checked
-                                    ? [...configFinales.semifinales.canchasIds, cancha.id]
-                                    : configFinales.semifinales.canchasIds.filter(id => id !== cancha.id);
-                                  setConfigFinales({
-                                    ...configFinales,
-                                    semifinales: { ...configFinales.semifinales, canchasIds: newIds }
-                                  });
-                                }}
-                                className="sr-only"
-                              />
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                configFinales.semifinales.canchasIds.includes(cancha.id)
-                                  ? 'bg-[#df2531] border-[#df2531]'
-                                  : 'border-gray-500'
-                              }`}>
-                                {configFinales.semifinales.canchasIds.includes(cancha.id) && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white truncate">{cancha.nombre}</p>
-                                <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        {configFinales.semifinales.canchasIds.length} cancha(s) seleccionada(s)
-                      </p>
-                    </div>
-                  </>
+                    <button
+                      onClick={() => setMostrarModalSedes(true)}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <p className="text-sm text-gray-400">Configura las finales (segunda mitad del día)</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
-                        <input
-                          type="time"
-                          value={configFinales.finales.horaInicio}
-                          onChange={(e) => setConfigFinales({
-                            ...configFinales,
-                            finales: { ...configFinales.finales, horaInicio: e.target.value }
-                          })}
-                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
-                        <input
-                          type="time"
-                          value={configFinales.finales.horaFin}
-                          onChange={(e) => setConfigFinales({
-                            ...configFinales,
-                            finales: { ...configFinales.finales, horaFin: e.target.value }
-                          })}
-                          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                        />
-                      </div>
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MapPin className="w-8 h-8 text-gray-500" />
                     </div>
-
-                    {/* Selector de canchas para finales */}
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">
-                        Canchas para finales <span className="text-[#df2531]">*</span>
-                      </label>
-                      {canchas.length === 0 ? (
-                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                          <p className="text-sm text-yellow-400">No hay canchas asignadas</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          {canchas.map((cancha) => (
-                            <label
-                              key={cancha.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                configFinales.finales.canchasIds.includes(cancha.id)
-                                  ? 'bg-[#df2531]/10 border-[#df2531]/50'
-                                  : 'bg-[#0B0E14] border-white/10 hover:border-white/20'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={configFinales.finales.canchasIds.includes(cancha.id)}
-                                onChange={(e) => {
-                                  const newIds = e.target.checked
-                                    ? [...configFinales.finales.canchasIds, cancha.id]
-                                    : configFinales.finales.canchasIds.filter(id => id !== cancha.id);
-                                  setConfigFinales({
-                                    ...configFinales,
-                                    finales: { ...configFinales.finales, canchasIds: newIds }
-                                  });
-                                }}
-                                className="sr-only"
-                              />
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                configFinales.finales.canchasIds.includes(cancha.id)
-                                  ? 'bg-[#df2531] border-[#df2531]'
-                                  : 'border-gray-500'
-                              }`}>
-                                {configFinales.finales.canchasIds.includes(cancha.id) && (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white truncate">{cancha.nombre}</p>
-                                <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        {configFinales.finales.canchasIds.length} cancha(s) seleccionada(s)
-                      </p>
-                    </div>
-                  </>
+                    <h4 className="text-white font-medium mb-2">No hay sede asignada</h4>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Selecciona la sede para copiar automáticamente todas sus canchas
+                    </p>
+                    <button
+                      onClick={() => setMostrarModalSedes(true)}
+                      className="px-6 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Seleccionar Sede
+                    </button>
+                  </div>
                 )}
-
-                <button
-                  onClick={guardarFinales}
-                  disabled={loading || configFinales.semifinales.canchasIds.length === 0 || configFinales.finales.canchasIds.length === 0}
-                  className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-                >
-                  {loading ? 'Guardando...' : 'Guardar Configuración'}
-                </button>
               </div>
             </motion.div>
           )}
@@ -630,11 +400,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       </div>
 
       {/* ============================================
-          PASO 1.b: CONFIGURAR DÍAS
+          PASO 2: CONFIGURAR DÍAS (MVP)
       ============================================ */}
       <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
         <button
-          onClick={() => setPaso1bAbierto(!paso1bAbierto)}
+          onClick={() => setPaso2Abierto(!paso2Abierto)}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -643,34 +413,22 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
             }`}>
               <span className={`font-bold text-sm ${
                 dias.length > 0 ? 'text-emerald-400' : 'text-[#df2531]'
-              }`}>1.b</span>
+              }`}>2</span>
             </div>
             <div className="text-left">
               <h3 className="font-medium text-white">Configurar Días de Juego</h3>
               <p className="text-sm text-gray-500">
                 {dias.length > 0 
-                  ? `${dias.length} día(s) configurado(s) • ${dias.reduce((acc, d) => acc + d.slotsLibres, 0)} slots`
+                  ? `${dias.length} día(s) • ${dias.reduce((acc, d) => acc + d.slotsLibres, 0)} slots libres`
                   : 'Agrega días disponibles para el torneo'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setMostrarModalSedes(true);
-              }}
-              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors"
-            >
-              <MapPin className="w-4 h-4 inline mr-1" />
-              Gestionar Sedes
-            </button>
-            {paso1bAbierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-          </div>
+          {paso2Abierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
         </button>
 
         <AnimatePresence>
-          {paso1bAbierto && (
+          {paso2Abierto && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -697,13 +455,10 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                             <span className="text-emerald-400 text-sm">
                               {dia.slotsLibres} slots
                             </span>
-                            <span className="text-gray-500 text-sm">
-                              {dia.canchas} canchas
-                            </span>
                             <button
                               onClick={() => eliminarDia(dia.id, dia.fecha)}
                               disabled={loading}
-                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                              className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
                               title="Eliminar día"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -715,14 +470,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   </div>
                 )}
 
-                {/* Formulario nuevo día */}
-                <div className="border-t border-white/10 pt-4 space-y-4">
+                {/* Formulario para agregar día */}
+                <div className="bg-[#0B0E14] rounded-lg p-4 space-y-4">
                   <h4 className="text-sm font-medium text-white flex items-center gap-2">
                     <Plus className="w-4 h-4 text-[#df2531]" />
                     Agregar nuevo día
                   </h4>
                   
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm text-gray-400 block mb-2">Fecha</label>
                       <input
@@ -732,6 +487,21 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
                       />
                     </div>
+                    <div>
+                      <label className="text-sm text-gray-400 block mb-2">Duración slot (min)</label>
+                      <select
+                        value={nuevoDia.minutosSlot}
+                        onChange={(e) => setNuevoDia({ ...nuevoDia, minutosSlot: Number(e.target.value) })}
+                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                      >
+                        <option value={60}>60 minutos</option>
+                        <option value={90}>90 minutos</option>
+                        <option value={120}>120 minutos</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
                       <input
@@ -752,31 +522,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">Duración por slot</label>
-                      <select
-                        value={nuevoDia.minutosSlot}
-                        onChange={(e) => setNuevoDia({ ...nuevoDia, minutosSlot: Number(e.target.value) })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                      >
-                        <option value={60}>60 minutos</option>
-                        <option value={90}>90 minutos</option>
-                        <option value={120}>120 minutos</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Selector de canchas para el día */}
+                  {/* Selector de canchas */}
                   <div>
                     <label className="text-sm text-gray-400 block mb-2">
-                      Canchas disponibles este día <span className="text-[#df2531]">*</span>
+                      Canchas disponibles <span className="text-[#df2531]">*</span>
                     </label>
                     {canchas.length === 0 ? (
                       <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                        <p className="text-sm text-yellow-400 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" />
-                          No hay canchas asignadas
+                        <p className="text-sm text-yellow-400">
+                          No hay canchas disponibles. Asigna una sede primero.
                         </p>
                       </div>
                     ) : (
@@ -794,11 +548,10 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                               type="checkbox"
                               checked={nuevoDia.canchasIds.includes(cancha.id)}
                               onChange={(e) => {
-                                if (e.target.checked) {
-                                  setNuevoDia({ ...nuevoDia, canchasIds: [...nuevoDia.canchasIds, cancha.id] });
-                                } else {
-                                  setNuevoDia({ ...nuevoDia, canchasIds: nuevoDia.canchasIds.filter(id => id !== cancha.id) });
-                                }
+                                const newIds = e.target.checked
+                                  ? [...nuevoDia.canchasIds, cancha.id]
+                                  : nuevoDia.canchasIds.filter(id => id !== cancha.id);
+                                setNuevoDia({ ...nuevoDia, canchasIds: newIds });
                               }}
                               className="sr-only"
                             />
@@ -813,19 +566,22 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-white truncate">{cancha.nombre}</p>
-                              <p className="text-xs text-gray-500">{cancha.sede?.nombre}</p>
                             </div>
                           </label>
                         ))}
                       </div>
                     )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      {nuevoDia.canchasIds.length} cancha(s) seleccionada(s)
+                    </p>
                   </div>
 
                   <button
                     onClick={agregarDia}
-                    disabled={loading || nuevoDia.canchasIds.length === 0 || !nuevoDia.fecha}
-                    className="w-full py-3 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 text-white rounded-lg font-medium transition-colors"
+                    disabled={loading || canchas.length === 0}
+                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
+                    <Plus className="w-4 h-4" />
                     {loading ? 'Agregando...' : 'Agregar Día'}
                   </button>
                 </div>
@@ -836,11 +592,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       </div>
 
       {/* ============================================
-          PASO 2: CERRAR Y SORTEAR
+          PASO 3: SORTEAR (MVP)
       ============================================ */}
       <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
         <button
-          onClick={() => setPaso2Abierto(!paso2Abierto)}
+          onClick={() => setPaso3Abierto(!paso3Abierto)}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -849,22 +605,22 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
             }`}>
               <span className={`font-bold text-sm ${
                 categorias.some(c => c.estado === 'CERRADA') ? 'text-emerald-400' : 'text-[#df2531]'
-              }`}>2</span>
+              }`}>3</span>
             </div>
             <div className="text-left">
               <h3 className="font-medium text-white">Cerrar Inscripciones y Sortear</h3>
               <p className="text-sm text-gray-500">
-                {categoriasSeleccionadas.length > 0 
-                  ? `${categoriasSeleccionadas.length} categoría(s) seleccionada(s)`
+                {categorias.filter(c => c.estado === 'CERRADA').length > 0
+                  ? `${categorias.filter(c => c.estado === 'CERRADA').length} categoría(s) sorteada(s)`
                   : 'Selecciona categorías y ejecuta el sorteo'}
               </p>
             </div>
           </div>
-          {paso2Abierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+          {paso3Abierto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
         </button>
 
         <AnimatePresence>
-          {paso2Abierto && (
+          {paso3Abierto && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -872,97 +628,94 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               transition={{ duration: 0.2 }}
               className="border-t border-white/10"
             >
-              <div className="p-6 space-y-6">
-                {/* Categorías disponibles */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
+              <div className="p-6 space-y-4">
+                {/* Lista de categorías */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <h4 className="text-sm font-medium text-gray-400">Categorías disponibles:</h4>
                     <button
                       onClick={seleccionarTodas}
-                      className="text-xs text-[#df2531] hover:text-[#df2531]/80 transition-colors"
+                      className="text-xs text-[#df2531] hover:underline"
                     >
                       Seleccionar todas las válidas
                     </button>
                   </div>
 
-                  <div className="space-y-2">
-                    {categorias.map((cat) => {
-                      const puedeSortear = cat.parejas >= cat.minimoParejas && cat.estado !== 'CERRADA';
-                      const seleccionada = categoriasSeleccionadas.includes(cat.id);
-                      
-                      return (
-                        <button
-                          key={cat.id}
-                          onClick={() => puedeSortear && toggleCategoria(cat.id)}
-                          disabled={!puedeSortear}
-                          className={`w-full p-4 rounded-lg border transition-all flex items-center justify-between ${
-                            seleccionada
-                              ? 'bg-[#df2531]/10 border-[#df2531]/50'
-                              : puedeSortear
-                              ? 'bg-white/[0.02] border-white/10 hover:bg-white/[0.04]'
-                              : 'opacity-50 cursor-not-allowed bg-white/[0.01] border-white/5'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${
-                              seleccionada ? 'bg-[#df2531] border-[#df2531]' : 'border-gray-500'
-                            }`}>
-                              {seleccionada && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-white font-medium">{cat.nombre}</p>
-                              <p className="text-sm text-gray-500">
-                                {cat.parejas} parejas inscriptas
-                                {cat.estado === 'CERRADA' && (
-                                  <span className="text-emerald-400 ml-2">• Sorteo completado</span>
+                  {categorias.length === 0 ? (
+                    <p className="text-sm text-gray-500">No hay categorías configuradas</p>
+                  ) : (
+                    <div className="grid gap-2">
+                      {categorias.map((cat) => {
+                        const puedeSortear = cat.parejas >= cat.minimoParejas && cat.estado !== 'CERRADA';
+                        const isSeleccionada = categoriasSeleccionadas.includes(cat.id);
+                        
+                        return (
+                          <div
+                            key={cat.id}
+                            onClick={() => puedeSortear && toggleCategoria(cat.id)}
+                            className={`p-3 rounded-lg border transition-all ${
+                              cat.estado === 'CERRADA'
+                                ? 'bg-emerald-500/10 border-emerald-500/30 cursor-default'
+                                : puedeSortear
+                                  ? isSeleccionada
+                                    ? 'bg-[#df2531]/10 border-[#df2531]/50 cursor-pointer'
+                                    : 'bg-white/[0.03] border-white/10 hover:border-white/20 cursor-pointer'
+                                  : 'bg-white/[0.02] border-white/5 opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {cat.estado === 'CERRADA' ? (
+                                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                ) : (
+                                  <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                                    isSeleccionada ? 'bg-[#df2531] border-[#df2531]' : 'border-gray-500'
+                                  }`}>
+                                    {isSeleccionada && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                  </div>
                                 )}
-                              </p>
+                                <div>
+                                  <p className="text-white font-medium">{cat.nombre}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {cat.parejas} parejas (mín: {cat.minimoParejas})
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                {cat.estado === 'CERRADA' ? (
+                                  <span className="text-xs text-emerald-400 font-medium">Sorteada</span>
+                                ) : cat.parejas < cat.minimoParejas ? (
+                                  <span className="text-xs text-red-400">No alcanza mínimo</span>
+                                ) : (
+                                  <span className="text-xs text-gray-500">Disponible</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {!puedeSortear && cat.estado !== 'CERRADA' && (
-                              <span className="text-xs text-yellow-500">
-                                Mínimo {cat.minimoParejas} parejas
-                              </span>
-                            )}
-                            {cat.estado === 'CERRADA' && (
-                              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
-                {/* Botón calcular y sortear */}
-                {categoriasSeleccionadas.length > 0 && (
-                  <div className="pt-4 border-t border-white/10">
-                    <button
-                      onClick={calcularSlots}
-                      disabled={loadingCalculo}
-                      className="w-full py-4 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {loadingCalculo ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Calculando...
-                        </>
-                      ) : (
-                        <>
-                          <Calculator className="w-5 h-5" />
-                          Calcular necesidad y preparar sorteo
-                          <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
-                            {categoriasSeleccionadas.length}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                      Se calcularán los slots necesarios para todas las fases (Zona a Final)
-                    </p>
-                  </div>
-                )}
+                {/* Botón de sorteo */}
+                <button
+                  onClick={calcularSlots}
+                  disabled={loadingCalculo || categoriasSeleccionadas.length === 0}
+                  className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {loadingCalculo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Calculando...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="w-4 h-4" />
+                      Verificar y Sortear {categoriasSeleccionadas.length > 0 && `(${categoriasSeleccionadas.length})`}
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
           )}
@@ -972,34 +725,17 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       {/* ============================================
           MODALES
       ============================================ */}
-      
-      {/* Modal: Gestionar Sedes */}
-      <ModalSedes 
+      <ModalSedes
         isOpen={mostrarModalSedes}
         onClose={() => setMostrarModalSedes(false)}
         tournamentId={tournamentId}
-        onSedesUpdated={loadCanchas}
+        onSedesUpdated={() => {
+          loadSedeAsignada();
+          loadCanchas();
+        }}
       />
 
-      {/* Modal: Confirmación de Sorteo */}
-      <ModalConfirmacionSorteo
-        isOpen={mostrarModalConfirmacion}
-        onClose={() => setMostrarModalConfirmacion(false)}
-        calculo={calculoSlots}
-        onConfirm={ejecutarCierreYSorteo}
-        loading={loading}
-      />
-
-      {/* Modal: Advertencia - Faltan Canchas */}
-      <ModalAdvertenciaCanchas
-        isOpen={mostrarModalAdvertencia}
-        onClose={() => setMostrarModalAdvertencia(false)}
-        calculo={calculoSlots}
-        onAgregarDias={irAPaso1b}
-      />
-
-      {/* ConfirmModal para eliminar día */}
-      <ConfirmModal
+      <ConfirmModal 
         isOpen={confirmState.isOpen}
         onClose={confirmState.close}
         onConfirm={confirmState.handleConfirm}
@@ -1009,12 +745,33 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         cancelText={confirmState.cancelText}
         variant={confirmState.variant}
       />
+
+      {/* Modal de confirmación de sorteo */}
+      {mostrarModalConfirmacion && calculoSlots && (
+        <ModalConfirmacionSorteo
+          isOpen={mostrarModalConfirmacion}
+          onClose={() => setMostrarModalConfirmacion(false)}
+          calculo={calculoSlots}
+          onConfirm={ejecutarCierreYSorteo}
+          loading={loading}
+        />
+      )}
+
+      {/* Modal de advertencia de slots insuficientes */}
+      {mostrarModalAdvertencia && calculoSlots && (
+        <ModalAdvertenciaSlots
+          isOpen={mostrarModalAdvertencia}
+          onClose={() => setMostrarModalAdvertencia(false)}
+          calculo={calculoSlots}
+          onIrAPaso2={irAPaso2}
+        />
+      )}
     </div>
   );
 }
 
 // ============================================
-// MODAL: GESTIONAR SEDES
+// MODAL: ASIGNAR SEDE (MVP - Simplificado)
 // ============================================
 function ModalSedes({ 
   isOpen, 
@@ -1029,95 +786,39 @@ function ModalSedes({
 }) {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
-  const [sedesDisponibles, setSedesDisponibles] = useState<any[]>([]);
-  const [sedesAsignadas, setSedesAsignadas] = useState<any[]>([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [torneoSedeId, setTorneoSedeId] = useState<string | null>(null);
+  const [sedes, setSedes] = useState<any[]>([]);
+  const [sedeAsignada, setSedeAsignada] = useState<any>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      loadSedes();
-    }
+    if (isOpen) loadSedes();
   }, [isOpen]);
 
   const loadSedes = async () => {
     try {
-      // Obtener info del torneo para saber su sede principal
-      const { data: torneoData } = await api.get(`/admin/torneos/${tournamentId}`);
-      const torneo = torneoData.torneo || torneoData;
-      const principalId = torneo?.sedeId || null;
-      setTorneoSedeId(principalId);
-      
-      // Cargar todas las sedes disponibles
+      // Cargar sedes disponibles
       const { data: dispData } = await api.get('/admin/sedes?activas=true');
-      const todasSedes = dispData.sedes || [];
+      setSedes(dispData.sedes || []);
       
-      // Cargar sedes asignadas al torneo
+      // Verificar si ya hay sede asignada
       const { data: asigData } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
-      const asignadas = asigData.sedes || [];
-      
-      // Si la sede principal no está en asignadas, agregarla
-      let todasAsignadas = [...asignadas];
-      if (principalId && !asignadas.find((s: any) => s.id === principalId)) {
-        const principal = todasSedes.find((s: any) => s.id === principalId);
-        if (principal) {
-          todasAsignadas.unshift({ ...principal, esPrincipal: true });
-        }
-      } else if (principalId) {
-        // Marcar la sede principal en la lista
-        todasAsignadas = todasAsignadas.map((s: any) => 
-          s.id === principalId ? { ...s, esPrincipal: true } : s
-        );
+      if (asigData.sedes?.length > 0) {
+        setSedeAsignada(asigData.sedes[0]);
       }
-      
-      setSedesDisponibles(todasSedes);
-      setSedesAsignadas(todasAsignadas);
     } catch (err) {
       showError('Error cargando sedes');
     }
   };
 
-  const sedesFiltradas = sedesDisponibles.filter((sede: any) => {
-    if (!busqueda) return true;
-    const term = busqueda.toLowerCase();
-    return (
-      (sede.nombre && sede.nombre.toLowerCase().includes(term)) ||
-      (sede.ciudad && sede.ciudad.toLowerCase().includes(term))
-    );
-  });
-
-  const idsAsignados = new Set(sedesAsignadas.map(s => s.id));
-  const disponiblesParaAgregar = sedesFiltradas.filter(s => !idsAsignados.has(s.id));
-
-  const asignarSede = async (sedeId: string) => {
+  const asignarSede = async (sede: any) => {
     setLoading(true);
     try {
-      await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId });
-      showSuccess('Sede asignada');
-      await loadSedes();
+      await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: sede.id });
+      showSuccess('Sede asignada', `Se asignó ${sede.nombre} con ${sede.canchas?.length || 0} canchas`);
+      setSedeAsignada(sede);
       onSedesUpdated();
+      onClose();
     } catch (err: any) {
       showError(err.response?.data?.message || 'Error asignando sede');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removerSede = async (sedeId: string) => {
-    // No permitir remover la sede principal
-    if (sedeId === torneoSedeId) {
-      showError('No se puede remover la sede principal del torneo');
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      await api.delete(`/admin/torneos/${tournamentId}/sedes/${sedeId}`);
-      showSuccess('Sede removida');
-      await loadSedes();
-      onSedesUpdated();
-    } catch (err: any) {
-      showError(err.response?.data?.message || 'Error removiendo sede');
     } finally {
       setLoading(false);
     }
@@ -1131,90 +832,74 @@ function ModalSedes({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-md overflow-hidden"
       >
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <MapPin className="w-5 h-5 text-[#df2531]" />
-            Gestionar Sedes
+            {sedeAsignada ? 'Sede Asignada' : 'Seleccionar Sede'}
           </h3>
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
-        <div className="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
-          {/* Buscador */}
-          <div>
-            <input
-              type="text"
-              placeholder="Buscar sede..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-[#df2531]/50"
-            />
-          </div>
-
-          {/* Sedes asignadas */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-400 mb-2">Sedes asignadas:</h4>
-            {sedesAsignadas.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No hay sedes asignadas</p>
-            ) : (
-              <div className="space-y-2 max-h-[150px] overflow-y-auto">
-                {sedesAsignadas.map((sede: any) => (
-                  <div key={sede.id} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">
-                        {sede.nombre}
-                        {sede.esPrincipal && (
-                          <span className="ml-2 text-[10px] bg-[#df2531]/20 text-[#df2531] px-1.5 py-0.5 rounded">PRINCIPAL</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500">{sede.ciudad || 'Sin ciudad'}</p>
-                    </div>
-                    {!sede.esPrincipal && (
-                      <button
-                        onClick={() => removerSede(sede.id)}
-                        disabled={loading}
-                        className="px-2 py-1 text-xs text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                ))}
+        <div className="p-4">
+          {sedeAsignada ? (
+            // Ya hay sede asignada - mostrar info
+            <div className="text-center py-6">
+              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               </div>
-            )}
-          </div>
-
-          {/* Sedes disponibles */}
-          <div className="border-t border-white/10 pt-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-2">Disponibles para agregar:</h4>
-            <div className="space-y-2 max-h-[200px] overflow-y-auto">
-              {disponiblesParaAgregar.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">
-                  {busqueda ? 'No se encontraron sedes' : 'No hay más sedes disponibles'}
+              <h4 className="text-white font-medium text-lg">{sedeAsignada.nombre}</h4>
+              <p className="text-gray-400 text-sm">{sedeAsignada.ciudad}</p>
+              <p className="text-emerald-400 text-sm mt-2">
+                {sedeAsignada.canchas} canchas disponibles
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : (
+            // Seleccionar sede - lista simple
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <p className="text-sm text-gray-400 mb-3">
+                Selecciona la sede donde se jugará el torneo:
+              </p>
+              {sedes.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No hay sedes disponibles
                 </p>
               ) : (
-                disponiblesParaAgregar.map((sede: any) => (
-                  <div key={sede.id} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">{sede.nombre}</p>
-                      <p className="text-xs text-gray-500">{sede.ciudad || 'Sin ciudad'}</p>
+                sedes.map((sede: any) => (
+                  <button
+                    key={sede.id}
+                    onClick={() => asignarSede(sede)}
+                    disabled={loading}
+                    className="w-full p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{sede.nombre}</p>
+                        <p className="text-sm text-gray-500">{sede.ciudad}</p>
+                        <p className="text-xs text-emerald-400 mt-1">
+                          {sede.canchas?.length || 0} canchas
+                        </p>
+                      </div>
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-sm text-[#df2531]">Usar esta sede →</span>
+                      )}
                     </div>
-                    <button
-                      onClick={() => asignarSede(sede.id)}
-                      disabled={loading}
-                      className="px-2 py-1 text-xs bg-[#df2531]/20 text-[#df2531] hover:bg-[#df2531]/30 rounded transition-colors"
-                    >
-                      Agregar
-                    </button>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
-          </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -1233,11 +918,11 @@ function ModalConfirmacionSorteo({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  calculo: CalculoSlotsResponse | null;
+  calculo: CalculoSlotsResponse;
   onConfirm: () => void;
   loading: boolean;
 }) {
-  if (!isOpen || !calculo) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -1245,96 +930,62 @@ function ModalConfirmacionSorteo({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-hidden"
+        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg overflow-hidden"
       >
-        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-emerald-500/10">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            Todo listo para el sorteo
-          </h3>
-          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
-          {/* Resumen */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/[0.03] rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-white">{calculo.totalSlotsNecesarios}</p>
-              <p className="text-xs text-gray-500">Slots necesarios</p>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             </div>
-            <div className="bg-white/[0.03] rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-400">{calculo.slotsDisponibles}</p>
-              <p className="text-xs text-gray-500">Slots disponibles</p>
-            </div>
-            <div className="bg-white/[0.03] rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-[#df2531]">{calculo.horasNecesarias}h</p>
-              <p className="text-xs text-gray-500">Tiempo total</p>
-            </div>
-          </div>
-
-          {/* Detalle por categoría */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-400 mb-3">Detalle por categoría:</h4>
-            <div className="space-y-3">
-              {calculo.detallePorCategoria.map((cat) => (
-                <div key={cat.categoriaId} className="bg-white/[0.03] rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-white font-medium">{cat.nombre}</p>
-                    <p className="text-sm text-gray-400">{cat.parejas} parejas</p>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-gray-500">{cat.slotsNecesarios} slots totales</span>
-                    <span className="text-gray-600">|</span>
-                    <span className="text-gray-500">
-                      {cat.partidosPorFase.map(f => `${f.fase}: ${f.partidos}`).join(' • ')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-blue-300 font-medium">¿Qué sucederá al confirmar?</p>
-              <ul className="text-sm text-blue-300/80 mt-1 space-y-1 list-disc list-inside">
-                <li>Se cerrarán las inscripciones de las categorías seleccionadas</li>
-                <li>Se sortearán las parejas en sus zonas (aleatorio)</li>
-                <li>Se reservarán slots para TODAS las fases (Zona → Final)</li>
-                <li>Se generará el bracket completo listo para jugar</li>
-              </ul>
+              <h3 className="text-lg font-semibold text-white">Todo listo para sortear</h3>
+              <p className="text-sm text-gray-400">
+                Hay suficientes slots para todas las categorías seleccionadas
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="p-4 border-t border-white/10 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Sorteando...
-              </>
-            ) : (
-              <>
-                <Shuffle className="w-5 h-5" />
-                Confirmar y Sortear
-              </>
-            )}
-          </button>
+          <div className="bg-white/[0.03] rounded-lg p-4 space-y-2 mb-6">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Slots disponibles:</span>
+              <span className="text-emerald-400 font-medium">{calculo.slotsDisponibles}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Slots necesarios:</span>
+              <span className="text-white font-medium">{calculo.totalSlotsNecesarios}</span>
+            </div>
+            <div className="border-t border-white/10 pt-2 flex justify-between text-sm">
+              <span className="text-gray-400">Categorías a sortear:</span>
+              <span className="text-white font-medium">{calculo.detallePorCategoria?.length || 0}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Sorteando...
+                </>
+              ) : (
+                <>
+                  <Shuffle className="w-4 h-4" />
+                  Confirmar Sorteo
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -1342,22 +993,20 @@ function ModalConfirmacionSorteo({
 }
 
 // ============================================
-// MODAL: ADVERTENCIA - FALTAN CANCHAS
+// MODAL: ADVERTENCIA DE SLOTS INSUFICIENTES
 // ============================================
-function ModalAdvertenciaCanchas({
+function ModalAdvertenciaSlots({
   isOpen,
   onClose,
   calculo,
-  onAgregarDias,
+  onIrAPaso2,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  calculo: CalculoSlotsResponse | null;
-  onAgregarDias: () => void;
+  calculo: CalculoSlotsResponse;
+  onIrAPaso2: () => void;
 }) {
-  if (!isOpen || !calculo) return null;
-
-  const horasFaltantes = Math.ceil((calculo.slotsFaltantes * calculo.duracionPromedioMinutos) / 60);
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -1365,54 +1014,61 @@ function ModalAdvertenciaCanchas({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-[#0B0E14] border border-amber-500/30 rounded-xl w-full max-w-lg"
+        className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-lg overflow-hidden"
       >
-        <div className="p-4 border-b border-amber-500/30 flex items-center gap-3 bg-amber-500/10">
-          <AlertTriangle className="w-6 h-6 text-amber-400" />
-          <h3 className="text-lg font-semibold text-white">Faltan canchas disponibles</h3>
-        </div>
-
-        <div className="p-6 space-y-4">
-          <p className="text-gray-300">
-            Para sortear las categorías seleccionadas necesitas más días de juego configurados.
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
-              <p className="text-xl font-bold text-white">{calculo.totalSlotsNecesarios}</p>
-              <p className="text-xs text-gray-500">Slots necesarios</p>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-yellow-400" />
             </div>
-            <div className="bg-white/[0.03] rounded-lg p-3 text-center">
-              <p className="text-xl font-bold text-amber-400">{calculo.slotsFaltantes}</p>
-              <p className="text-xs text-gray-500">Slots faltantes</p>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Slots insuficientes</h3>
+              <p className="text-sm text-gray-400">
+                No hay suficientes slots para sortear todas las categorías
+              </p>
             </div>
           </div>
 
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-            <p className="text-amber-300 font-medium text-center">
-              Faltan aproximadamente {horasFaltantes} horas de canchas
-            </p>
+          <div className="bg-white/[0.03] rounded-lg p-4 space-y-2 mb-6">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Slots disponibles:</span>
+              <span className="text-red-400 font-medium">{calculo.slotsDisponibles}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Slots necesarios:</span>
+              <span className="text-white font-medium">{calculo.totalSlotsNecesarios}</span>
+            </div>
+            <div className="border-t border-white/10 pt-2 flex justify-between text-sm">
+              <span className="text-gray-400">Faltan:</span>
+              <span className="text-red-400 font-medium">
+                {calculo.totalSlotsNecesarios - calculo.slotsDisponibles} slots
+              </span>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-500">
-            Tip: Agrega más días en el Paso 1.b o aumenta el horario de los días existentes.
-          </p>
-        </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-6">
+            <div className="flex gap-2">
+              <Info className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-yellow-400">
+                Agrega más días de juego o aumenta el horario de los días existentes para generar más slots.
+              </p>
+            </div>
+          </div>
 
-        <div className="p-4 border-t border-white/10 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg font-medium transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onAgregarDias}
-            className="flex-1 py-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Agregar más días
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onIrAPaso2}
+              className="flex-1 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium transition-colors"
+            >
+              Agregar Días
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
