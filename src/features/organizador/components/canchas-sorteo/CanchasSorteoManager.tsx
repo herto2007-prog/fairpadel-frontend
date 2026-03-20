@@ -98,18 +98,20 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
       if (data.sedes?.length > 0) {
         const sede = data.sedes[0];
-        // Cargar canchas del torneo para contar las activas
-        const { data: canchasData } = await api.get(`/admin/canchas-sorteo/${tournamentId}/canchas`);
-        const canchasActivas = canchasData.canchas?.length || 0;
+        // El backend ya devuelve el conteo de canchas activas del torneo
         setSedeAsignada({
           id: sede.id,
           nombre: sede.nombre,
           ciudad: sede.ciudad,
-          canchas: canchasActivas,
+          canchas: sede.canchas || 0,
         });
+      } else {
+        // No hay sede asignada
+        setSedeAsignada(null);
       }
     } catch (err) {
       console.error('Error cargando sede asignada:', err);
+      setSedeAsignada(null);
     }
   };
 
@@ -739,9 +741,14 @@ function ModalSedes({
   const asignarSede = async (sede: any) => {
     setLoading(true);
     try {
-      await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: sede.id });
-      showSuccess('Sede asignada', `Se asignó ${sede.nombre} con ${sede.canchas?.length || 0} canchas`);
-      setSedeAsignada(sede);
+      const { data: result } = await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: sede.id });
+      // Usar el conteo de canchas que devuelve el backend (canchas activas del torneo)
+      const canchasAgregadas = result.canchasAgregadas || result.sede?.canchas || sede.canchas?.length || 0;
+      showSuccess('Sede asignada', `Se asignó ${sede.nombre} con ${canchasAgregadas} canchas`);
+      setSedeAsignada({
+        ...sede,
+        canchas: canchasAgregadas,
+      });
       setMostrarSelector(false);
       onSedesUpdated();
       onClose();
