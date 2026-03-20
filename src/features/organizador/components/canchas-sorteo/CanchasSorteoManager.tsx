@@ -8,6 +8,8 @@ import {
 import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 interface Props {
   tournamentId: string;
@@ -42,6 +44,8 @@ interface Cancha {
 // ============================================
 export function CanchasSorteoManager({ tournamentId }: Props) {
   const { showSuccess, showError } = useToast();
+  const confirmState = useConfirm();
+  const { confirm } = confirmState;
   
   // Estados de pasos (colapsables)
   const [paso1aAbierto, setPaso1aAbierto] = useState(true);
@@ -225,9 +229,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // PASO 1.b: Eliminar día
   // ============================================
   const eliminarDia = async (diaId: string, fecha: string) => {
-    if (!confirm(`¿Eliminar el día ${fecha}?\n\nSe eliminarán todos los slots configurados para ese día.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: '¿Eliminar día?',
+      message: `Se eliminará el día ${fecha} y todos sus slots. Esta acción no se puede deshacer.`,
+      variant: 'danger',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+    });
+
+    if (!confirmed) return;
     
     setLoading(true);
     try {
@@ -840,6 +850,18 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         onClose={() => setMostrarModalAdvertencia(false)}
         calculo={calculoSlots}
         onAgregarDias={irAPaso1b}
+      />
+
+      {/* ConfirmModal para eliminar día */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
       />
     </div>
   );
