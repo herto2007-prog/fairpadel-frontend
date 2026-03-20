@@ -711,6 +711,7 @@ function ModalSedes({
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<any[]>([]);
   const [sedeAsignada, setSedeAsignada] = useState<any>(null);
+  const [mostrarSelector, setMostrarSelector] = useState(false);
 
   useEffect(() => {
     if (isOpen) loadSedes();
@@ -738,6 +739,7 @@ function ModalSedes({
       await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: sede.id });
       showSuccess('Sede asignada', `Se asignó ${sede.nombre} con ${sede.canchas?.length || 0} canchas`);
       setSedeAsignada(sede);
+      setMostrarSelector(false);
       onSedesUpdated();
       onClose();
     } catch (err: any) {
@@ -745,6 +747,12 @@ function ModalSedes({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Resetear mostrarSelector cuando se cierra el modal
+  const handleClose = () => {
+    setMostrarSelector(false);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -762,14 +770,14 @@ function ModalSedes({
             <MapPin className="w-5 h-5 text-[#df2531]" />
             {sedeAsignada ? 'Sede Asignada' : 'Seleccionar Sede'}
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+          <button onClick={handleClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         <div className="p-4">
-          {sedeAsignada ? (
-            // Ya hay sede asignada - mostrar info
+          {sedeAsignada && !mostrarSelector ? (
+            // Ya hay sede asignada - mostrar info con opción de cambiar
             <div className="text-center py-6">
               <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400" />
@@ -779,12 +787,20 @@ function ModalSedes({
               <p className="text-emerald-400 text-sm mt-2">
                 {sedeAsignada.canchas} canchas disponibles
               </p>
-              <button
-                onClick={onClose}
-                className="mt-6 px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              >
-                Cerrar
-              </button>
+              <div className="flex gap-3 justify-center mt-6">
+                <button
+                  onClick={handleClose}
+                  className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => setMostrarSelector(true)}
+                  className="px-6 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg transition-colors"
+                >
+                  Cambiar Sede
+                </button>
+              </div>
             </div>
           ) : (
             // Seleccionar sede - lista simple
