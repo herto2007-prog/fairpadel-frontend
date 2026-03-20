@@ -98,11 +98,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
       if (data.sedes?.length > 0) {
         const sede = data.sedes[0];
+        // Cargar canchas del torneo para contar las activas
+        const { data: canchasData } = await api.get(`/admin/canchas-sorteo/${tournamentId}/canchas`);
+        const canchasActivas = canchasData.canchas?.length || 0;
         setSedeAsignada({
           id: sede.id,
           nombre: sede.nombre,
           ciudad: sede.ciudad,
-          canchas: sede._count?.canchas || 0,
+          canchas: canchasActivas,
         });
       }
     } catch (err) {
