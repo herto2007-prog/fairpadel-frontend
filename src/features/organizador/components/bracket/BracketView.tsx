@@ -4,7 +4,7 @@ import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight } from 'lucide-reac
 import { api } from '../../../../services/api';
 import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
-import { FASES_ORDENADAS } from '../../utils/faseColors';
+import { FASES_ORDENADAS, FaseType } from '../../utils/faseColors';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -54,7 +54,7 @@ export function BracketView({
 }: BracketViewProps) {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [faseActiva, setFaseActiva] = useState<string>('ZONA');
+  const [faseActiva, setFaseActiva] = useState<FaseType>('ZONA');
   const [modalResultado, setModalResultado] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
   const [modalVivo, setModalVivo] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
 
@@ -91,7 +91,7 @@ export function BracketView({
 
   // MVP FIX: Si la fase activa no está disponible, seleccionar la primera disponible
   useEffect(() => {
-    if (fasesDisponibles.length > 0 && !fasesDisponibles.includes(faseActiva as typeof fasesDisponibles[number])) {
+    if (fasesDisponibles.length > 0 && !fasesDisponibles.includes(faseActiva)) {
       setFaseActiva(fasesDisponibles[0]);
     }
   }, [fasesDisponibles, faseActiva]);
