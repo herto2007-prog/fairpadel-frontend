@@ -53,6 +53,11 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     try {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
       if (data.success) {
+        console.log('[BracketManager] Categorías recibidas:', data.categorias.map((c: any) => ({
+          id: c.id,
+          estado: c.estado,
+          fixtureVersionId: c.fixtureVersionId,
+        })));
         setCategorias(data.categorias);
       }
     } catch (error) {

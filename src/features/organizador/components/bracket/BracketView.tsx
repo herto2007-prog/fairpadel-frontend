@@ -89,6 +89,13 @@ export function BracketView({
   // Fases disponibles = las que tienen partidos, en el orden correcto
   const fasesDisponibles = FASES_ORDENADAS.filter(fase => partidosPorFase[fase].length > 0);
 
+  // MVP FIX: Si la fase activa no está disponible, seleccionar la primera disponible
+  useEffect(() => {
+    if (fasesDisponibles.length > 0 && !fasesDisponibles.includes(faseActiva)) {
+      setFaseActiva(fasesDisponibles[0]);
+    }
+  }, [fasesDisponibles, faseActiva]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
