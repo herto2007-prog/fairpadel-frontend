@@ -448,14 +448,16 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         <div key={dia.id} className="bg-white/[0.03] rounded-lg p-3 flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Calendar className="w-4 h-4 text-[#df2531]" />
-                            <span className="text-white font-medium">{dia.fecha}</span>
+                            <span className="text-white font-medium">
+                              {new Date(dia.fecha).toLocaleDateString('es-PY')}
+                            </span>
                             <span className="text-gray-500 text-sm">
                               {dia.horaInicio} - {dia.horaFin}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-emerald-400 text-sm">
-                              {dia.slotsLibres} slots
+                            <span className={`text-sm ${dia.slotsLibres === 0 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                              {dia.slotsLibres === 0 ? 'Sin slots - elimina y vuelve a agregar' : `${dia.slotsLibres} slots`}
                             </span>
                             <button
                               onClick={() => eliminarDia(dia.id, dia.fecha)}
