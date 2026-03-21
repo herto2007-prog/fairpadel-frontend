@@ -597,7 +597,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     <div className="grid gap-2">
                       {categorias.map((cat) => {
                         // MVP: Mínimo 8 parejas para poder sortear
-                        const puedeSortear = cat.parejas >= MINIMO_PAREJAS_MVP && cat.estado !== 'CERRADA';
+                        // Estados que indican que ya fue sorteada: CERRADA o INSCRIPCIONES_CERRADAS
+                        const estaSorteada = cat.estado === 'CERRADA' || cat.estado === 'INSCRIPCIONES_CERRADAS';
+                        const puedeSortear = cat.parejas >= MINIMO_PAREJAS_MVP && !estaSorteada;
                         const isSeleccionada = categoriasSeleccionadas.includes(cat.id);
                         
                         return (
@@ -605,7 +607,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                             key={cat.id}
                             onClick={() => puedeSortear && toggleCategoria(cat.id)}
                             className={`p-3 rounded-lg border transition-all ${
-                              cat.estado === 'CERRADA'
+                              estaSorteada
                                 ? 'bg-emerald-500/10 border-emerald-500/30 cursor-default'
                                 : puedeSortear
                                   ? isSeleccionada
@@ -616,7 +618,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                {cat.estado === 'CERRADA' ? (
+                                {estaSorteada ? (
                                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                                 ) : (
                                   <div className={`w-5 h-5 rounded border flex items-center justify-center ${
@@ -633,7 +635,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                                 </div>
                               </div>
                               <div className="text-right">
-                                {cat.estado === 'CERRADA' ? (
+                                {estaSorteada ? (
                                   <span className="text-xs text-emerald-400 font-medium">Sorteada</span>
                                 ) : cat.parejas < MINIMO_PAREJAS_MVP ? (
                                   <span className="text-xs text-red-400">Necesita {MINIMO_PAREJAS_MVP} parejas</span>
