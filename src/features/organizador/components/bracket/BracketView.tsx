@@ -91,7 +91,7 @@ export function BracketView({
 
   // MVP FIX: Si la fase activa no está disponible, seleccionar la primera disponible
   useEffect(() => {
-    if (fasesDisponibles.length > 0 && !fasesDisponibles.includes(faseActiva)) {
+    if (fasesDisponibles.length > 0 && !fasesDisponibles.includes(faseActiva as typeof fasesDisponibles[number])) {
       setFaseActiva(fasesDisponibles[0]);
     }
   }, [fasesDisponibles, faseActiva]);
