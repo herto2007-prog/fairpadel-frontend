@@ -94,11 +94,7 @@ export function TorneoPublicDetailPage() {
   };
 
   const formatFecha = (fecha: string) => {
-    return formatDatePY(fecha) {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    return formatDatePY(fecha);
   };
 
   const formatPrecio = (precio: number) => {

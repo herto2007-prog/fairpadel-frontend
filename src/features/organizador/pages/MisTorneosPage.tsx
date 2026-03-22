@@ -253,11 +253,7 @@ export function MisTorneosPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Calendar className="w-4 h-4" />
-                        {formatDatePY(torneo.fechaInicio) { 
-                          day: 'numeric', month: 'short' 
-                        })} - {formatDatePY(torneo.fechaFin) { 
-                          day: 'numeric', month: 'short' 
-                        })}
+                        {formatDatePY(torneo.fechaInicio)} - {formatDatePY(torneo.fechaFin)}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Users className="w-4 h-4" />
