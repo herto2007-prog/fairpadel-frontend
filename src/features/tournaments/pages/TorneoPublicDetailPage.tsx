@@ -6,6 +6,7 @@ import {
   CheckCircle, AlertCircle, Sparkles, Medal, Target
 } from 'lucide-react';
 import { api } from '../../../services/api';
+import { formatDatePY } from '../../../utils/date';
 import { useAuth } from '../../auth/context/AuthContext';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
@@ -93,7 +94,7 @@ export function TorneoPublicDetailPage() {
   };
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-PY', {
+    return formatDatePY(fecha) {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Calendar, MapPin, Play, Edit3, ChevronRight } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { formatDatePY } from '../../../../utils/date';
 import { RegistroResultadoModal, MarcadorEnVivo } from '../resultados';
 import { ParejaAvatar } from '../../../../components/ui/ParejaAvatar';
 import { FASES_ORDENADAS, FaseType } from '../../utils/faseColors';
@@ -321,7 +322,7 @@ function PartidoCard({
           {partido.fecha && (
             <span className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
-              {new Date(partido.fecha).toLocaleDateString('es-PY')}
+              {formatDatePY(partido.fecha)}
               {partido.hora && ` ${partido.hora}`}
             </span>
           )}

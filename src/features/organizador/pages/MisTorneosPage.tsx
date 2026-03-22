@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { TorneoWizard } from '../components/TorneoWizard';
 import { api } from '../../../services/api';
+import { formatDatePY } from '../../../utils/date';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 interface Tournament {
   id: string;
@@ -252,9 +253,9 @@ export function MisTorneosPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Calendar className="w-4 h-4" />
-                        {new Date(torneo.fechaInicio).toLocaleDateString('es-PY', { 
+                        {formatDatePY(torneo.fechaInicio) { 
                           day: 'numeric', month: 'short' 
-                        })} - {new Date(torneo.fechaFin).toLocaleDateString('es-PY', { 
+                        })} - {formatDatePY(torneo.fechaFin) { 
                           day: 'numeric', month: 'short' 
                         })}
                       </div>
