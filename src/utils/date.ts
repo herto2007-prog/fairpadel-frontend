@@ -33,24 +33,22 @@ export function parseDatePY(dateString: string): Date {
 /**
  * Formatea una fecha al formato Paraguay (dd/mm/yyyy)
  * Maneja correctamente el timezone de Paraguay
+ * 
+ * SOLUCIÓN DEFINITIVA: Si es YYYY-MM-DD, formatear manualmente sin Date
+ * para evitar TODOS los problemas de timezone.
  */
 export function formatDatePY(dateString: string | Date): string {
   if (!dateString) return '-';
   
-  // Si es string YYYY-MM-DD, usar parseDatePY para evitar problemas de timezone
-  // Si es Date o ISO string, usar directamente
-  let date: Date;
-  if (typeof dateString === 'string') {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      // Formato YYYY-MM-DD: parsear como fecha Paraguay
-      date = parseDatePY(dateString);
-    } else {
-      // ISO string u otro formato
-      date = new Date(dateString);
-    }
-  } else {
-    date = dateString;
+  // Si es string YYYY-MM-DD, formatear manualmente (sin crear Date)
+  // Esto evita completamente los bugs de timezone
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
   }
+  
+  // Para otros formatos (Date objects, ISO strings con hora, etc.)
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
   
   return date.toLocaleDateString(LOCALE, {
     timeZone: TIMEZONE,
