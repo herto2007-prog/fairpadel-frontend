@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { alquileresService, Reserva } from '../../../services/alquileresService';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { formatDatePY } from '../../../utils/date';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { Calendar, Clock, MapPin, CheckCircle, XCircle, Clock3 } from 'lucide-react';
@@ -78,7 +79,7 @@ export default function MisReservasPage() {
 
                     <div className="flex items-center gap-2 text-gray-400">
                       <Calendar size={16} />
-                      <span>{new Date(reserva.fecha).toLocaleDateString('es-PY')}</span>
+                      <span>{formatDatePY(reserva.fecha)}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-gray-400">
