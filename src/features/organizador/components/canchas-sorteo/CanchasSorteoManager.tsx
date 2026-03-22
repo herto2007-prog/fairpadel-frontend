@@ -503,7 +503,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         type="date"
                         value={nuevoDia.fecha}
                         onChange={(e) => setNuevoDia({ ...nuevoDia, fecha: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
                       />
                     </div>
                     <div>
@@ -512,7 +512,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         type="time"
                         value={nuevoDia.horaInicio}
                         onChange={(e) => setNuevoDia({ ...nuevoDia, horaInicio: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
+                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
                       />
                     </div>
                     <div>
@@ -521,8 +521,8 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         type="time"
                         value={nuevoDia.horaFin}
                         onChange={(e) => setNuevoDia({ ...nuevoDia, horaFin: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white"
-                      />
+                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+      />
                     </div>
                   </div>
 
@@ -542,7 +542,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         </span>
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {canchas.map((cancha) => (
+                        {[...canchas].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((cancha) => (
                           <label
                             key={cancha.id}
                             className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
