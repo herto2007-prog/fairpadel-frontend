@@ -10,6 +10,7 @@ import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
+import { formatDatePY } from '../../../../utils/date';
 
 interface Props {
   tournamentId: string;
@@ -449,7 +450,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                           <div className="flex items-center gap-3">
                             <Calendar className="w-4 h-4 text-[#df2531]" />
                             <span className="text-white font-medium">
-                              {new Date(dia.fecha).toLocaleDateString('es-PY')}
+                              {formatDatePY(dia.fecha)}
                             </span>
                             <span className="text-gray-500 text-sm">
                               {dia.horaInicio} - {dia.horaFin}
