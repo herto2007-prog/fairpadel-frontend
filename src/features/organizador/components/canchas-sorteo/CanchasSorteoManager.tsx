@@ -59,6 +59,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [canchasInicializadas, setCanchasInicializadas] = useState(false);
   const [nuevoDia, setNuevoDia] = useState({
     fecha: '',
     horaInicio: '18:00',
@@ -66,6 +67,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     minutosSlot: 90,
     canchasIds: [] as string[],
   });
+
+  // Inicializar canchasIds UNA SOLA VEZ cuando se cargan las canchas
+  useEffect(() => {
+    if (canchas.length > 0 && !canchasInicializadas) {
+      setNuevoDia(prev => ({ ...prev, canchasIds: canchas.map(c => c.id) }));
+      setCanchasInicializadas(true);
+    }
+  }, [canchas, canchasInicializadas]);
 
   // Estado Paso 3: Categorías
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -158,7 +167,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 2: Agregar día (MVP Simplificado)
+  // PASO 2: Agregar día con selección de canchas
   // ============================================
   const agregarDia = async () => {
     if (!nuevoDia.fecha) {
@@ -169,17 +178,21 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       showError('Sin canchas', 'No hay canchas disponibles. Asigna una sede primero.');
       return;
     }
+    if (nuevoDia.canchasIds.length === 0) {
+      showError('Sin canchas seleccionadas', 'Selecciona al menos una cancha para este día');
+      return;
+    }
 
     setLoading(true);
     try {
-      // MVP: Usar todas las canchas automáticamente + 90 min fijo
+      // Usar solo las canchas seleccionadas para este día
       const response = await canchasSorteoService.configurarDiaJuego({
         tournamentId,
         fecha: nuevoDia.fecha,
         horaInicio: nuevoDia.horaInicio,
         horaFin: nuevoDia.horaFin,
-        minutosSlot: 90, // MVP: 90 minutos fijo
-        canchasIds: canchas.map(c => c.id), // MVP: Todas las canchas
+        minutosSlot: 90,
+        canchasIds: nuevoDia.canchasIds, // Solo las seleccionadas
       });
       
       if (response.success) {
@@ -188,12 +201,13 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           `${nuevoDia.fecha} • ${response.data.slotsGenerados} slots generados`
         );
         await loadDiasConfigurados();
+        // Resetear formulario con todas las canchas seleccionadas por defecto
         setNuevoDia({
           fecha: '',
           horaInicio: '18:00',
           horaFin: '23:00',
           minutosSlot: 90,
-          canchasIds: [],
+          canchasIds: canchas.map(c => c.id),
         });
       }
     } catch (err: any) {
@@ -512,7 +526,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     </div>
                   </div>
 
-                  {/* Info MVP: Usa todas las canchas automáticamente */}
+                  {/* Selector de canchas para este día */}
                   {canchas.length === 0 ? (
                     <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                       <p className="text-sm text-yellow-400">
@@ -520,9 +534,56 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                       </p>
                     </div>
                   ) : (
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                      <p className="text-sm text-emerald-400">
-                        Se usarán <strong>{canchas.length} canchas</strong> disponibles • Slots de <strong>90 min</strong>
+                    <div className="space-y-3">
+                      <label className="text-sm text-gray-400 block">
+                        Canchas disponibles este día 
+                        <span className="text-gray-600 ml-1">
+                          (desmarca las que estén en mantenimiento)
+                        </span>
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {canchas.map((cancha) => (
+                          <label
+                            key={cancha.id}
+                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              nuevoDia.canchasIds.includes(cancha.id)
+                                ? 'bg-[#df2531]/10 border-[#df2531]/30'
+                                : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={nuevoDia.canchasIds.includes(cancha.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNuevoDia(prev => ({
+                                    ...prev,
+                                    canchasIds: [...prev.canchasIds, cancha.id]
+                                  }));
+                                } else {
+                                  setNuevoDia(prev => ({
+                                    ...prev,
+                                    canchasIds: prev.canchasIds.filter(id => id !== cancha.id)
+                                  }));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-white/20 bg-[#0B0E14] text-[#df2531] focus:ring-[#df2531]/50"
+                            />
+                            <span className={`text-sm ${
+                              nuevoDia.canchasIds.includes(cancha.id) ? 'text-white' : 'text-gray-400'
+                            }`}>
+                              {cancha.nombre}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      {nuevoDia.canchasIds.length === 0 && (
+                        <p className="text-sm text-yellow-400">
+                          Selecciona al menos una cancha
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {nuevoDia.canchasIds.length} de {canchas.length} canchas seleccionadas • Slots de 90 min
                       </p>
                     </div>
                   )}
