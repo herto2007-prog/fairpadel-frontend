@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { tournamentService, Tournament } from '../../../services/tournamentService';
 import { Calendar, MapPin, ChevronRight } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { formatDatePY } from '../../../utils/date';
 
 export default function TournamentsListPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -43,7 +44,7 @@ export default function TournamentsListPage() {
               <div className="space-y-2 text-gray-400 text-sm mb-4">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} />
-                  <span>{new Date(tournament.fechaInicio).toLocaleDateString('es-PY')}</span>
+                  <span>{formatDatePY(tournament.fechaInicio)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin size={16} />

@@ -9,6 +9,7 @@ import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
+import { formatDatePYLong } from '../../../../utils/date';
 
 interface Sede {
   id: string;
@@ -485,11 +486,7 @@ export function DisponibilidadConfig({ tournamentId }: DisponibilidadConfigProps
                         </div>
                         <div>
                           <h4 className="font-semibold text-white">
-                            {new Date(dia.fecha).toLocaleDateString('es-PY', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long',
-                            })}
+                            {formatDatePYLong(dia.fecha)}
                           </h4>
                           <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
                             <span className="flex items-center gap-1">

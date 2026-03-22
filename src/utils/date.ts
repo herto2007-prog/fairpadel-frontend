@@ -259,3 +259,72 @@ export function compareDatesPY(date1: Date | string, date2: Date | string): numb
   if (str1 > str2) return 1;
   return 0;
 }
+
+/**
+ * Formatea una fecha con nombres de días y meses en español (formato largo)
+ * Ejemplo: "lunes, 27 de marzo"
+ * Trabaja directamente con strings YYYY-MM-DD para evitar bugs de timezone
+ */
+export function formatDatePYLong(dateString: string): string {
+  if (!dateString) return '-';
+  
+  // Parsear YYYY-MM-DD manualmente
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    // Fallback: si no es formato YYYY-MM-DD, usar toLocaleDateString
+    const date = new Date(dateString);
+    return date.toLocaleDateString(LOCALE, {
+      timeZone: TIMEZONE,
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }
+  
+  const [, year, month, day] = match;
+  const monthIndex = parseInt(month, 10) - 1;
+  
+  // Crear fecha a mediodía de Paraguay para obtener el día de la semana correcto
+  const date = new Date(`${year}-${month}-${day}T12:00:00-03:00`);
+  const dayOfWeek = date.getDay();
+  
+  const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
+                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  
+  return `${diasSemana[dayOfWeek]}, ${parseInt(day, 10)} de ${meses[monthIndex]}`;
+}
+
+/**
+ * Formatea una fecha con nombre de mes corto
+ * Ejemplo: "27 Mar" o "27 Mar, 2025"
+ * Trabaja directamente con strings YYYY-MM-DD para evitar bugs de timezone
+ */
+export function formatDatePYShort(dateString: string, includeYear = false): string {
+  if (!dateString) return '-';
+  
+  // Parsear YYYY-MM-DD manualmente
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    // Fallback
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = {
+      timeZone: TIMEZONE,
+      day: 'numeric',
+      month: 'short',
+    };
+    if (includeYear) options.year = 'numeric';
+    return date.toLocaleDateString(LOCALE, options);
+  }
+  
+  const [, year, month, day] = match;
+  const monthIndex = parseInt(month, 10) - 1;
+  
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
+                 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  
+  if (includeYear) {
+    return `${parseInt(day, 10)} ${meses[monthIndex]}, ${year}`;
+  }
+  return `${parseInt(day, 10)} ${meses[monthIndex]}`;
+}

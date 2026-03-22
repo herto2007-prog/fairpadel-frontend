@@ -15,6 +15,7 @@ import { ModalCancelar } from './ModalCancelar';
 import { ModalInscripcionManual } from './ModalInscripcionManual';
 import { ModalEditarInscripcion } from './ModalEditarInscripcion';
 import { ModalCambiarCategoria } from './ModalCambiarCategoria';
+import { formatDatePY } from '../../../../utils/date';
 
 // ═══════════════════════════════════════════════════════════
 // TIPOS
@@ -203,7 +204,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                      'Jugador 2', 'Telefono 2', 'Email 2', 'Estado', 'Monto'];
     
     const rows = inscripcionesFiltradas.map(i => [
-      new Date(i.createdAt).toLocaleDateString('es-AR'),
+      formatDatePY(i.createdAt),
       i.categoriaNombre,
       `${i.jugador1.nombre} ${i.jugador1.apellido}`,
       i.jugador1.telefono || '',
@@ -593,7 +594,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                       </button>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-400">
-                      {new Date(insc.createdAt).toLocaleDateString('es-AR')}
+                      {formatDatePY(insc.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-sm text-white">
                       {insc.categoriaNombre}

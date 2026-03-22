@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
+import { formatDatePYLong } from '../../../../utils/date';
 
 
 // TEMPLATES PREDEFINIDOS
@@ -555,11 +556,7 @@ export function DisponibilidadWizard({ tournamentId, fechaInicio, fechaFin }: Di
                     </div>
                     <div>
                       <p className="font-medium text-white">
-                        {new Date(dia.fecha).toLocaleDateString('es-PY', {
-                          weekday: 'long',
-                          day: 'numeric',
-                          month: 'long',
-                        })}
+                        {formatDatePYLong(dia.fecha)}
                       </p>
                       <p className="text-sm text-gray-400">
                         <Clock className="w-3 h-3 inline mr-1" />

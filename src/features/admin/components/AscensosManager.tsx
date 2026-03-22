@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, CheckCircle, XCircle, Loader2, ArrowUp, Calendar } from 'lucide-react';
 import { rankingsService } from '../../rankings/rankingsService';
+import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
 
@@ -197,7 +198,7 @@ export function AscensosManager() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {new Date(ascenso.fechaCalculo).toLocaleDateString('es-PY')}
+                        {formatDatePY(ascenso.fechaCalculo)}
                       </span>
                     </div>
                   </div>

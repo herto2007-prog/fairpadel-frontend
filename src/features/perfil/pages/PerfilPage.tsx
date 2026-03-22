@@ -11,6 +11,7 @@ import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { perfilService, PerfilJugador } from '../perfilService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { EditarPerfilModal } from '../components/EditarPerfilModal';
+import { formatDatePY } from '../../../utils/date';
 
 export function PerfilPage() {
   const { id } = useParams<{ id: string }>();
@@ -330,7 +331,7 @@ export function PerfilPage() {
                       <div className="text-right">
                         <p className="text-[#df2531] font-bold">+{h.puntos} pts</p>
                         <p className="text-xs text-white/40">
-                          {new Date(h.fecha).toLocaleDateString('es-PY')}
+                          {formatDatePY(h.fecha)}
                         </p>
                       </div>
                     </div>
@@ -406,7 +407,7 @@ export function PerfilPage() {
                           <p className="text-sm text-white/40">{actividad.detalle}</p>
                         </div>
                         <p className="text-xs text-white/30">
-                          {new Date(actividad.fecha).toLocaleDateString('es-PY')}
+                          {formatDatePY(actividad.fecha)}
                         </p>
                       </motion.div>
                     );

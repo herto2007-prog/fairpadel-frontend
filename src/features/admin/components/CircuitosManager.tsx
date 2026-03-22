@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, Upload, Image as ImageIcon } from 'lucide-react';
 import { circuitosService } from '../../circuitos/circuitosService';
+import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
@@ -228,7 +229,7 @@ export function CircuitosManager() {
                       Organizador: {sol.torneo.organizador.apellido}, {sol.torneo.organizador.nombre}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {sol.torneo.ciudad} • {new Date(sol.torneo.fechaInicio).toLocaleDateString('es-PY')}
+                      {sol.torneo.ciudad} • {formatDatePY(sol.torneo.fechaInicio)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { formatDatePYShort } from '../../../utils/date';
 
 interface Torneo {
   id: string;
@@ -123,11 +124,7 @@ export function TorneosPublicListPage() {
   const hayFiltrosActivos = filtros.q || filtros.ciudad || filtros.categoria;
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-PY', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    return formatDatePYShort(fecha, true);
   };
 
   const formatPrecio = (precio: number) => {

@@ -7,6 +7,7 @@ import {
   Info, Copy, Check
 } from 'lucide-react';
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
+import { formatDatePY } from '../../../../utils/date';
 
 interface OverviewTabProps {
   tournamentId: string;
@@ -134,7 +135,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {new Date(torneo.fechaInicio).toLocaleDateString('es-AR')}
+                {formatDatePY(torneo.fechaInicio)}
               </span>
             </div>
           </div>

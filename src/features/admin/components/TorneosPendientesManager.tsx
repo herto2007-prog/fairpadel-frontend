@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Calendar, MapPin, User, CheckCircle, XCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { api } from '../../../services/api';
+import { formatDatePY } from '../../../utils/date';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -111,11 +112,7 @@ export function TorneosPendientesManager() {
   };
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-PY', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    return formatDatePY(fecha);
   };
 
   if (loading) {
@@ -234,7 +231,7 @@ export function TorneosPendientesManager() {
                         {torneo.estado === 'BORRADOR' ? 'Borrador' : 'Pendiente Aprobación'}
                       </span>
                       <span className="text-gray-500 text-sm">
-                        Creado {new Date(torneo.createdAt).toLocaleDateString('es-PY')}
+                        Creado {formatDatePY(torneo.createdAt)}
                       </span>
                     </div>
                     

@@ -3,6 +3,7 @@ import {
   Phone, CheckCircle2, Clock, AlertCircle, XCircle,
   UserPlus, CreditCard, Edit2, ArrowRightLeft
 } from 'lucide-react';
+import { formatDatePY } from '../../../../utils/date';
 
 interface Jugador {
   id: string;
@@ -241,11 +242,7 @@ export function InscripcionCard({ inscripcion, index, onConfirmar, onCancelar, o
 
       {/* Fecha de inscripción */}
       <div className="mt-3 pt-3 border-t border-[#232838] text-xs text-gray-500">
-        Inscrito el {new Date(inscripcion.createdAt).toLocaleDateString('es-PY', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })}
+        Inscrito el {formatDatePY(inscripcion.createdAt)}
       </div>
     </motion.div>
   );

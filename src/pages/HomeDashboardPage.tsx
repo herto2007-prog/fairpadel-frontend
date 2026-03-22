@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
 import { torneoService } from '../services/torneoService';
+import { formatDatePY } from '../utils/date';
 
 
 // ═══════════════════════════════════════════════════════
@@ -631,7 +632,7 @@ function TorneosRecomendados({ torneos }: { torneos: TorneoConUrgencia[] }) {
               </h4>
               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                 <Calendar size={12} />
-                <span>{new Date(torneo.fechaInicio).toLocaleDateString('es-AR')}</span>
+                <span>{formatDatePY(torneo.fechaInicio)}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                 <MapPin size={12} />

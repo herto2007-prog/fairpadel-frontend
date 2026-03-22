@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { tournamentService, Tournament } from '../../../services/tournamentService';
 import { Calendar, MapPin, User, Trophy } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { formatDatePY } from '../../../utils/date';
 
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,11 +44,11 @@ export default function TournamentDetailPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-gray-300">
                 <Calendar size={20} className="text-[#df2531]" />
-                <span>Inicio: {new Date(tournament.fechaInicio).toLocaleDateString('es-PY')}</span>
+                <span>Inicio: {formatDatePY(tournament.fechaInicio)}</span>
               </div>
               <div className="flex items-center gap-3 text-gray-300">
                 <Calendar size={20} className="text-[#df2531]" />
-                <span>Fin: {new Date(tournament.fechaFin).toLocaleDateString('es-PY')}</span>
+                <span>Fin: {formatDatePY(tournament.fechaFin)}</span>
               </div>
               <div className="flex items-center gap-3 text-gray-300">
                 <MapPin size={20} className="text-[#df2531]" />

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, MapPin, Calendar, ChevronRight, Star } from 'lucide-react';
 import { PageLayout } from '../../../components/layout';
 import { circuitosService } from '../circuitosService';
+import { formatDatePY } from '../../../utils/date';
 import { Link } from 'react-router-dom';
 
 interface Circuito {
@@ -45,10 +46,7 @@ export default function CircuitosListPage() {
   };
 
   const formatFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-PY', {
-      month: 'short',
-      year: 'numeric',
-    });
+    return formatDatePY(fecha);
   };
 
   return (
