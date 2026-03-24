@@ -19,6 +19,7 @@ export interface ConfigurarDiaJuegoPayload {
   horaFin: string;
   minutosSlot: number;
   canchasIds: string[];
+  fasesPermitidas?: string[]; // NUEVO: ['ZONA', 'REPECHAJE'] - Si no se envía, se calcula automáticamente
 }
 
 export interface CerrarInscripcionesPayload {
