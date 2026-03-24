@@ -311,9 +311,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   const seleccionarTodas = () => {
-    // MVP: Mínimo 8 parejas para sortear
+    // MVP: Mínimo 8 parejas para sortear y que no esté ya sorteada
     const disponibles = categorias
-      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && c.estado !== 'CERRADA')
+      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && c.estado !== 'CERRADA' && c.estado !== 'INSCRIPCIONES_CERRADAS')
       .map(c => c.id);
     setCategoriasSeleccionadas(disponibles);
   };
