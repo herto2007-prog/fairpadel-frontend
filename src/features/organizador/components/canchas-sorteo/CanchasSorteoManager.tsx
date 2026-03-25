@@ -22,6 +22,7 @@ interface Categoria {
   parejas: number;
   minimoParejas: number;
   estado: string;
+  fixtureVersionId?: string | null; // NUEVO: Si tiene fixture, ya fue sorteada
 }
 
 interface DiaConfigurado {
@@ -311,9 +312,10 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   const seleccionarTodas = () => {
-    // MVP: Mínimo 8 parejas para sortear y que no esté ya sorteada
+    // FIX: Mínimo 8 parejas y que no esté ya sorteada (por fixtureVersionId o estado)
+    const estadosSorteados = ['CERRADA', 'INSCRIPCIONES_CERRADAS', 'FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'];
     const disponibles = categorias
-      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && c.estado !== 'CERRADA' && c.estado !== 'INSCRIPCIONES_CERRADAS')
+      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && !c.fixtureVersionId && !estadosSorteados.includes(c.estado))
       .map(c => c.id);
     setCategoriasSeleccionadas(disponibles);
   };
@@ -659,8 +661,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     <div className="grid gap-2">
                       {categorias.map((cat) => {
                         // MVP: Mínimo 8 parejas para poder sortear
-                        // Estados que indican que ya fue sorteada: CERRADA o INSCRIPCIONES_CERRADAS
-                        const estaSorteada = cat.estado === 'CERRADA' || cat.estado === 'INSCRIPCIONES_CERRADAS';
+                        // FIX: Una categoría está sorteada si tiene fixtureVersionId O está en estado sorteado
+                        const estadosSorteados = ['CERRADA', 'INSCRIPCIONES_CERRADAS', 'FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'];
+                        const estaSorteada = !!cat.fixtureVersionId || estadosSorteados.includes(cat.estado);
                         const puedeSortear = cat.parejas >= MINIMO_PAREJAS_MVP && !estaSorteada;
                         const isSeleccionada = categoriasSeleccionadas.includes(cat.id);
                         
