@@ -737,7 +737,12 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         </span>
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {[...canchas].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((cancha) => (
+                        {[...canchas].sort((a, b) => {
+                          // Primero ordenar por sede, luego por nombre de cancha
+                          const sedeCompare = a.sede.nombre.localeCompare(b.sede.nombre);
+                          if (sedeCompare !== 0) return sedeCompare;
+                          return a.nombre.localeCompare(b.nombre);
+                        }).map((cancha) => (
                           <label
                             key={cancha.id}
                             className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
