@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronDown, ChevronUp, Trophy, Calendar, 
   CheckCircle2, MapPin, Plus, X, Trash2,
-  Shuffle
+  Shuffle, ArrowUp, ArrowDown, GripVertical
 } from 'lucide-react';
 import { canchasSorteoService } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
@@ -54,8 +54,8 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   const [paso2Abierto, setPaso2Abierto] = useState(false); // Agregar Días
   const [paso3Abierto, setPaso3Abierto] = useState(false); // Sortear
 
-  // Estado Paso 1: Sede Asignada
-  const [sedeAsignada, setSedeAsignada] = useState<{ id: string; nombre: string; ciudad: string; canchas: number } | null>(null);
+  // Estado Paso 1: Sedes Asignadas (múltiples con orden)
+  const [sedesAsignadas, setSedesAsignadas] = useState<{ id: string; nombre: string; ciudad: string; canchas: number; orden: number }[]>([]);
 
   // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
@@ -97,32 +97,35 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
 
   const loadDatosIniciales = async () => {
     await Promise.all([
-      loadSedeAsignada(),
+      loadSedesAsignadas(),
       loadCategorias(),
       loadDiasConfigurados(),
       loadCanchas(),
     ]);
   };
 
-  const loadSedeAsignada = async () => {
+  const loadSedesAsignadas = async () => {
     try {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
       if (data.sedes?.length > 0) {
-        const sede = data.sedes[0];
-        // El backend ya devuelve el conteo de canchas activas del torneo
-        setSedeAsignada({
-          id: sede.id,
-          nombre: sede.nombre,
-          ciudad: sede.ciudad,
-          canchas: sede.canchas || 0,
-        });
+        // Ordenar por orden ascendente
+        const sedesOrdenadas = data.sedes
+          .map((s: any) => ({
+            id: s.id,
+            nombre: s.nombre,
+            ciudad: s.ciudad,
+            canchas: s.canchas || 0,
+            orden: s.orden ?? 0,
+          }))
+          .sort((a: any, b: any) => a.orden - b.orden);
+        setSedesAsignadas(sedesOrdenadas);
       } else {
-        // No hay sede asignada
-        setSedeAsignada(null);
+        // No hay sedes asignadas
+        setSedesAsignadas([]);
       }
     } catch (err) {
-      console.error('Error cargando sede asignada:', err);
-      setSedeAsignada(null);
+      console.error('Error cargando sedes asignadas:', err);
+      setSedesAsignadas([]);
     }
   };
 
@@ -323,6 +326,40 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // MVP: Eliminada función irAPaso2 - no se necesita con sorteo directo
 
   // ============================================
+  // PASO 1: Reordenar sedes
+  // ============================================
+  const moverSede = async (sedeId: string, direccion: 'arriba' | 'abajo') => {
+    try {
+      const sedesOrdenadas = [...sedesAsignadas].sort((a, b) => a.orden - b.orden);
+      const indexActual = sedesOrdenadas.findIndex(s => s.id === sedeId);
+      if (indexActual === -1) return;
+
+      const nuevoIndex = direccion === 'arriba' ? indexActual - 1 : indexActual + 1;
+      if (nuevoIndex < 0 || nuevoIndex >= sedesOrdenadas.length) return;
+
+      // Intercambiar orden
+      const sedeActual = sedesOrdenadas[indexActual];
+      const sedeSwap = sedesOrdenadas[nuevoIndex];
+      const ordenActual = sedeActual.orden;
+      const ordenSwap = sedeSwap.orden;
+
+      // Preparar array con nuevo orden
+      const ordenSedes = sedesOrdenadas.map(s => {
+        if (s.id === sedeId) return { sedeId: s.id, orden: ordenSwap };
+        if (s.id === sedeSwap.id) return { sedeId: s.id, orden: ordenActual };
+        return { sedeId: s.id, orden: s.orden };
+      });
+
+      await api.put(`/admin/torneos/${tournamentId}/sedes/reordenar`, { ordenSedes });
+      await loadSedesAsignadas();
+      showSuccess('Orden actualizado', 'La prioridad de sedes se ha actualizado');
+    } catch (err) {
+      console.error('Error reordenando sede:', err);
+      showError('Error', 'No se pudo actualizar el orden');
+    }
+  };
+
+  // ============================================
   // RENDER
   // ============================================
   return (
@@ -339,7 +376,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       </div>
 
       {/* ============================================
-          PASO 1: ASIGNAR SEDE (MVP)
+          PASO 1: ASIGNAR SEDES (Múltiples con orden)
       ============================================ */}
       <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
         <button
@@ -348,18 +385,18 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         >
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              sedeAsignada ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
+              sedesAsignadas.length > 0 ? 'bg-emerald-500/20' : 'bg-[#df2531]/20'
             }`}>
               <span className={`font-bold text-sm ${
-                sedeAsignada ? 'text-emerald-400' : 'text-[#df2531]'
+                sedesAsignadas.length > 0 ? 'text-emerald-400' : 'text-[#df2531]'
               }`}>1</span>
             </div>
             <div className="text-left">
-              <h3 className="font-medium text-white">Asignar Sede</h3>
+              <h3 className="font-medium text-white">Asignar Sedes</h3>
               <p className="text-sm text-gray-500">
-                {sedeAsignada 
-                  ? `${sedeAsignada.nombre} • ${sedeAsignada.canchas} canchas`
-                  : 'Selecciona la sede donde se jugará el torneo'}
+                {sedesAsignadas.length > 0 
+                  ? `${sedesAsignadas.length} sede(s) • ${sedesAsignadas.reduce((acc, s) => acc + s.canchas, 0)} canchas total`
+                  : 'Selecciona las sedes donde se jugará el torneo'}
               </p>
             </div>
           </div>
@@ -375,43 +412,103 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               transition={{ duration: 0.2 }}
               className="border-t border-white/10"
             >
-              <div className="p-6">
-                {sedeAsignada ? (
-                  <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-emerald-400" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium">{sedeAsignada.nombre}</h4>
-                        <p className="text-sm text-gray-400">{sedeAsignada.ciudad}</p>
-                        <p className="text-xs text-emerald-400 mt-1">{sedeAsignada.canchas} canchas disponibles</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setMostrarModalSedes(true)}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors"
-                    >
-                      Cambiar
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MapPin className="w-8 h-8 text-gray-500" />
-                    </div>
-                    <h4 className="text-white font-medium mb-2">No hay sede asignada</h4>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Selecciona la sede para copiar automáticamente todas sus canchas
+              <div className="p-6 space-y-4">
+                {/* Info de prioridad */}
+                {sedesAsignadas.length > 1 && (
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                    <p className="text-xs text-blue-400 flex items-center gap-2">
+                      <GripVertical className="w-4 h-4" />
+                      Usa las flechas para reordenar. La sede #1 se llenará primero durante el sorteo.
                     </p>
-                    <button
-                      onClick={() => setMostrarModalSedes(true)}
-                      className="px-6 py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium transition-colors"
-                    >
-                      Seleccionar Sede
-                    </button>
                   </div>
                 )}
+
+                {/* Lista de sedes ordenadas */}
+                {sedesAsignadas.length > 0 && (
+                  <div className="space-y-2">
+                    {sedesAsignadas.map((sede, index) => {
+                      const isFirst = index === 0;
+                      const isLast = index === sedesAsignadas.length - 1;
+                      
+                      return (
+                        <motion.div
+                          key={sede.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`p-4 border rounded-lg transition-all ${
+                            isFirst ? 'bg-[#df2531]/5 border-[#df2531]/30' : 'bg-white/[0.02] border-white/10'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Número de orden */}
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm ${
+                              isFirst ? 'bg-[#df2531] text-white' : 'bg-white/10 text-gray-400'
+                            }`}>
+                              {index + 1}
+                            </div>
+
+                            {/* Icono sede */}
+                            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                              <MapPin className="w-5 h-5 text-emerald-400" />
+                            </div>
+
+                            {/* Info sede */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-white font-medium">{sede.nombre}</h4>
+                              <p className="text-sm text-gray-400">{sede.ciudad}</p>
+                              <p className="text-xs text-emerald-400 mt-0.5">{sede.canchas} canchas</p>
+                            </div>
+
+                            {/* Controles de orden */}
+                            {sedesAsignadas.length > 1 && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => moverSede(sede.id, 'arriba')}
+                                  disabled={isFirst}
+                                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                  title="Mover arriba"
+                                >
+                                  <ArrowUp className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => moverSede(sede.id, 'abajo')}
+                                  disabled={isLast}
+                                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                  title="Mover abajo"
+                                >
+                                  <ArrowDown className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Badge de prioridad */}
+                          {isFirst && (
+                            <div className="mt-2 flex items-center gap-1 text-[10px] text-[#df2531]">
+                              <span className="w-1.5 h-1.5 bg-[#df2531] rounded-full animate-pulse" />
+                              Prioridad alta - Se llena primero en el sorteo
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Botón agregar/cambiar sede */}
+                <button
+                  onClick={() => setMostrarModalSedes(true)}
+                  className={`w-full p-4 border-2 border-dashed rounded-lg flex items-center justify-center gap-2 transition-all ${
+                    sedesAsignadas.length > 0 
+                      ? 'border-[#df2531]/40 text-[#df2531] hover:bg-[#df2531]/5' 
+                      : 'border-white/20 text-gray-400 hover:border-[#df2531]/40 hover:text-[#df2531]'
+                  }`}
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="font-medium">
+                    {sedesAsignadas.length > 0 ? 'Agregar Otra Sede' : 'Seleccionar Sede'}
+                  </span>
+                </button>
               </div>
             </motion.div>
           )}
@@ -748,7 +845,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         onClose={() => setMostrarModalSedes(false)}
         tournamentId={tournamentId}
         onSedesUpdated={() => {
-          loadSedeAsignada();
+          loadSedesAsignadas();
           loadCanchas();
         }}
       />
@@ -784,8 +881,7 @@ function ModalSedes({
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<any[]>([]);
-  const [sedeAsignada, setSedeAsignada] = useState<any>(null);
-  const [mostrarSelector, setMostrarSelector] = useState(false);
+  const [sedesAsignadas, setSedesAsignadas] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) loadSedes();
@@ -797,10 +893,12 @@ function ModalSedes({
       const { data: dispData } = await api.get('/admin/sedes?activas=true');
       setSedes(dispData.sedes || []);
       
-      // Verificar si ya hay sede asignada
+      // Cargar sedes ya asignadas
       const { data: asigData } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
       if (asigData.sedes?.length > 0) {
-        setSedeAsignada(asigData.sedes[0]);
+        setSedesAsignadas(asigData.sedes);
+      } else {
+        setSedesAsignadas([]);
       }
     } catch (err) {
       showError('Error cargando sedes');
@@ -813,24 +911,48 @@ function ModalSedes({
       const { data: result } = await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: sede.id });
       // Usar el conteo de canchas que devuelve el backend (canchas activas del torneo)
       const canchasAgregadas = result.canchasAgregadas || result.sede?.canchas || sede.canchas?.length || 0;
-      showSuccess('Sede asignada', `Se asignó ${sede.nombre} con ${canchasAgregadas} canchas`);
-      setSedeAsignada({
-        ...sede,
-        canchas: canchasAgregadas,
-      });
-      setMostrarSelector(false);
+      showSuccess('Sede agregada', `Se agregó ${sede.nombre} con ${canchasAgregadas} canchas`);
+      
+      // Recargar sedes para obtener el nuevo orden
+      const { data: sedesData } = await api.get(`/admin/torneos/${tournamentId}/sedes`);
+      if (sedesData.sedes?.length > 0) {
+        const sedesOrdenadas = sedesData.sedes
+          .map((s: any) => ({
+            id: s.id,
+            nombre: s.nombre,
+            ciudad: s.ciudad,
+            canchas: s.canchas || 0,
+            orden: s.orden ?? 0,
+          }))
+          .sort((a: any, b: any) => a.orden - b.orden);
+        setSedesAsignadas(sedesOrdenadas);
+      }
+      
       onSedesUpdated();
-      onClose();
+      // No cerramos el modal para permitir agregar más sedes
     } catch (err: any) {
-      showError(err.response?.data?.message || 'Error asignando sede');
+      showError(err.response?.data?.message || 'Error agregando sede');
     } finally {
       setLoading(false);
     }
   };
 
-  // Resetear mostrarSelector cuando se cierra el modal
+  const quitarSede = async (sedeId: string) => {
+    if (!confirm('¿Eliminar esta sede del torneo?')) return;
+    
+    try {
+      await api.delete(`/admin/torneos/${tournamentId}/sedes/${sedeId}`);
+      showSuccess('Sede eliminada');
+      
+      // Actualizar lista local
+      setSedesAsignadas(prev => prev.filter(s => s.id !== sedeId));
+      onSedesUpdated();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error eliminando sede');
+    }
+  };
+
   const handleClose = () => {
-    setMostrarSelector(false);
     onClose();
   };
 
@@ -847,7 +969,7 @@ function ModalSedes({
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <MapPin className="w-5 h-5 text-[#df2531]" />
-            {sedeAsignada ? 'Sede Asignada' : 'Seleccionar Sede'}
+            Gestionar Sedes
           </h3>
           <button onClick={handleClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-400" />
@@ -855,69 +977,96 @@ function ModalSedes({
         </div>
 
         <div className="p-4">
-          {sedeAsignada && !mostrarSelector ? (
-            // Ya hay sede asignada - mostrar info con opción de cambiar
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-              </div>
-              <h4 className="text-white font-medium text-lg">{sedeAsignada.nombre}</h4>
-              <p className="text-gray-400 text-sm">{sedeAsignada.ciudad}</p>
-              <p className="text-emerald-400 text-sm mt-2">
-                {typeof sedeAsignada.canchas === 'number' ? sedeAsignada.canchas : Array.isArray(sedeAsignada.canchas) ? sedeAsignada.canchas.length : 0} canchas disponibles
-              </p>
-              <div className="flex gap-3 justify-center mt-6">
-                <button
-                  onClick={handleClose}
-                  className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-                >
-                  Cerrar
-                </button>
-                <button
-                  onClick={() => setMostrarSelector(true)}
-                  className="px-6 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg transition-colors"
-                >
-                  Cambiar Sede
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Seleccionar sede - lista simple
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              <p className="text-sm text-gray-400 mb-3">
-                Selecciona la sede donde se jugará el torneo:
-              </p>
-              {sedes.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No hay sedes disponibles
-                </p>
-              ) : (
-                sedes.map((sede: any) => (
-                  <button
+          {/* Sedes ya asignadas */}
+          {sedesAsignadas.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                Sedes asignadas ({sedesAsignadas.length})
+              </h4>
+              <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                {sedesAsignadas.map((sede, idx) => (
+                  <div
                     key={sede.id}
-                    onClick={() => asignarSede(sede)}
-                    disabled={loading}
-                    className="w-full p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
+                    className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 bg-emerald-500/20 rounded flex items-center justify-center text-xs text-emerald-400 font-bold">
+                        {idx + 1}
+                      </span>
                       <div>
-                        <p className="text-white font-medium">{sede.nombre}</p>
-                        <p className="text-sm text-gray-500">{sede.ciudad}</p>
-                        <p className="text-xs text-emerald-400 mt-1">
-                          {Array.isArray(sede.canchas) ? sede.canchas.length : 0} canchas
-                        </p>
+                        <p className="text-white text-sm font-medium">{sede.nombre}</p>
+                        <p className="text-xs text-gray-400">{sede.canchas} canchas</p>
                       </div>
-                      {loading ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <span className="text-sm text-[#df2531]">Usar esta sede →</span>
-                      )}
                     </div>
-                  </button>
-                ))
-              )}
+                    <button
+                      onClick={() => quitarSede(sede.id)}
+                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                      title="Quitar sede"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Separador */}
+          {sedesAsignadas.length > 0 && (
+            <div className="border-t border-white/10 my-4" />
+          )}
+
+          {/* Agregar nueva sede */}
+          <div>
+            <h4 className="text-sm font-medium text-white mb-3">
+              {sedesAsignadas.length > 0 ? 'Agregar otra sede:' : 'Selecciona una sede:'}
+            </h4>
+            
+            {sedes.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No hay más sedes disponibles
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                {sedes
+                  .filter((s: any) => !sedesAsignadas.some(sa => sa.id === s.id))
+                  .map((sede: any) => (
+                    <button
+                      key={sede.id}
+                      onClick={() => asignarSede(sede)}
+                      disabled={loading}
+                      className="w-full p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-medium">{sede.nombre}</p>
+                          <p className="text-sm text-gray-500">{sede.ciudad}</p>
+                          <p className="text-xs text-emerald-400 mt-1">
+                            {Array.isArray(sede.canchas) ? sede.canchas.length : 0} canchas
+                          </p>
+                        </div>
+                        {loading ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <span className="text-sm text-[#df2531]">Agregar →</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          {/* Botón cerrar */}
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <button
+              onClick={handleClose}
+              className="w-full px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+            >
+              {sedesAsignadas.length > 0 ? 'Listo' : 'Cerrar'}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
