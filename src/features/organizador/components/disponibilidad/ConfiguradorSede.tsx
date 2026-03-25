@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Building2, Check, ChevronLeft,
-  Save, Plus, MousePointer2, X
+  Save, Plus, MousePointer2, X,
+  ArrowUp, ArrowDown, GripVertical
 } from 'lucide-react';
 import { disponibilidadService } from '../../../../services/disponibilidad.service';
 import { sedesService } from '../../../../services/sedesService';
@@ -210,6 +211,49 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
     }
   };
 
+  const moverSede = async (sedeId: string, direccion: 'arriba' | 'abajo') => {
+    try {
+      // Ordenar sedes por orden actual
+      const sedesOrdenadas = [...sedes].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+      
+      // Encontrar índice actual
+      const indexActual = sedesOrdenadas.findIndex((s: any) => s.id === sedeId);
+      if (indexActual === -1) return;
+
+      // Calcular nuevo índice
+      const nuevoIndex = direccion === 'arriba' ? indexActual - 1 : indexActual + 1;
+      if (nuevoIndex < 0 || nuevoIndex >= sedesOrdenadas.length) return;
+
+      // Intercambiar orden
+      const sedeActual = sedesOrdenadas[indexActual];
+      const sedeSwap = sedesOrdenadas[nuevoIndex];
+
+      const ordenActual = sedeActual.orden ?? indexActual;
+      const ordenSwap = sedeSwap.orden ?? nuevoIndex;
+
+      // Preparar array con el nuevo orden
+      const ordenSedes = sedesOrdenadas.map((s: any, idx: number) => {
+        if (s.id === sedeId) {
+          return { sedeId: s.id, orden: ordenSwap };
+        }
+        if (s.id === sedeSwap.id) {
+          return { sedeId: s.id, orden: ordenActual };
+        }
+        return { sedeId: s.id, orden: s.orden ?? idx };
+      });
+
+      // Llamar al backend
+      await disponibilidadService.reordenarSedes(tournamentId, ordenSedes);
+      
+      // Recargar datos
+      await loadData();
+      showSuccess('Orden actualizado', 'La prioridad de sedes se ha actualizado');
+    } catch (error) {
+      console.error('Error reordenando sede:', error);
+      showError('Error', 'No se pudo actualizar el orden');
+    }
+  };
+
   const sedesDisponibles = todasSedes.filter(
     s => !sedes.some((st: any) => st.id === s.id)
   );
@@ -292,51 +336,126 @@ export function ConfiguradorSede({ tournamentId, fechaInicio, fechaFin, onSave }
       </div>
 
       <div className="p-4">
-        {/* PASO 1: SEDES */}
+        {/* PASO 1: SEDES - CON ORDENAMIENTO */}
         {step === 'sedes' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              {sedes.map((sede: any) => {
-                const canchasCount = canchas.filter((c: any) => c.sedeId === sede.id).length;
-                return (
-                  <motion.button
-                    key={sede.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setSedeSeleccionada(sede);
-                      setStep('canchas');
-                    }}
-                    className="p-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#df2531]/20 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="w-4 h-4 text-[#df2531]" />
+            {/* Info de prioridad */}
+            {sedes.length > 1 && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-400 flex items-center gap-2">
+                  <GripVertical className="w-4 h-4" />
+                  Usa las flechas para reordenar. La sede #1 se llenará primero durante el sorteo.
+                </p>
+              </div>
+            )}
+
+            {/* Lista de sedes ordenadas */}
+            <div className="space-y-2">
+              {sedes
+                .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0))
+                .map((sede: any, index: number) => {
+                  const canchasCount = canchas.filter((c: any) => c.sedeId === sede.id).length;
+                  const isFirst = index === 0;
+                  const isLast = index === sedes.length - 1;
+                  
+                  return (
+                    <motion.div
+                      key={sede.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-3 bg-white/[0.02] border rounded-lg transition-all ${
+                        isFirst ? 'border-[#df2531]/30 bg-[#df2531]/5' : 'border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Número de orden */}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm ${
+                          isFirst 
+                            ? 'bg-[#df2531] text-white' 
+                            : 'bg-white/10 text-gray-400'
+                        }`}>
+                          {index + 1}
+                        </div>
+
+                        {/* Icono sede */}
+                        <div className="w-10 h-10 rounded-lg bg-[#df2531]/20 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="w-5 h-5 text-[#df2531]" />
+                        </div>
+
+                        {/* Info sede */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{sede.nombre}</p>
+                          <p className="text-[10px] text-gray-500">{canchasCount} canchas disponibles</p>
+                        </div>
+
+                        {/* Controles de orden */}
+                        {sedes.length > 1 && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => moverSede(sede.id, 'arriba')}
+                              disabled={isFirst}
+                              className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Mover arriba"
+                            >
+                              <ArrowUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => moverSede(sede.id, 'abajo')}
+                              disabled={isLast}
+                              className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Mover abajo"
+                            >
+                              <ArrowDown className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Botón configurar (opcional - solo si quieren configurar canchas por sede) */}
+                        <button
+                          onClick={() => {
+                            setSedeSeleccionada(sede);
+                            setStep('canchas');
+                          }}
+                          className="px-3 py-1.5 text-xs text-[#df2531] hover:bg-[#df2531]/10 rounded-lg transition-colors"
+                        >
+                          Configurar
+                        </button>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{sede.nombre}</p>
-                        <p className="text-[10px] text-gray-500">{canchasCount} canchas</p>
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-              
-              {sedesDisponibles.length > 0 && (
-                <button
-                  onClick={() => setShowModalSedes(true)}
-                  className="p-3 border-2 border-dashed border-[#df2531]/40 rounded-lg text-[#df2531] flex items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-xs font-medium">Agregar Sede</span>
-                </button>
-              )}
+
+                      {/* Badge de prioridad */}
+                      {isFirst && (
+                        <div className="mt-2 flex items-center gap-1 text-[10px] text-[#df2531]">
+                          <span className="w-1.5 h-1.5 bg-[#df2531] rounded-full animate-pulse" />
+                          Prioridad alta - Se usa primero en el sorteo
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
             </div>
+            
+            {/* Botón agregar sede */}
+            {sedesDisponibles.length > 0 && (
+              <button
+                onClick={() => setShowModalSedes(true)}
+                className="w-full p-3 border-2 border-dashed border-[#df2531]/40 rounded-lg text-[#df2531] flex items-center justify-center gap-2 hover:bg-[#df2531]/5 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-xs font-medium">Agregar Otra Sede</span>
+              </button>
+            )}
 
             {sedes.length === 0 && (
               <div className="text-center py-8">
                 <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">No hay sedes</p>
+                <p className="text-gray-400 text-sm mb-4">No hay sedes configuradas</p>
+                <button
+                  onClick={() => setShowModalSedes(true)}
+                  className="px-4 py-2 bg-[#df2531] text-white rounded-lg text-sm font-medium flex items-center gap-2 mx-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar Sede
+                </button>
               </div>
             )}
           </div>

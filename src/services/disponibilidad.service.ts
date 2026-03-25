@@ -24,7 +24,7 @@ export const disponibilidadService = {
   // Agregar sede al torneo
   agregarSede: async (tournamentId: string, sedeId: string) => {
     const { data } = await api.post(
-      `/admin/torneos/${tournamentId}/disponibilidad/sedes`,
+      `/admin/torneos/${tournamentId}/sedes`,
       { sedeId }
     );
     return data;
@@ -33,7 +33,19 @@ export const disponibilidadService = {
   // Quitar sede del torneo
   quitarSede: async (tournamentId: string, sedeId: string) => {
     const { data } = await api.delete(
-      `/admin/torneos/${tournamentId}/disponibilidad/sedes/${sedeId}`
+      `/admin/torneos/${tournamentId}/sedes/${sedeId}`
+    );
+    return data;
+  },
+
+  // Reordenar sedes del torneo
+  reordenarSedes: async (
+    tournamentId: string,
+    ordenSedes: { sedeId: string; orden: number }[]
+  ) => {
+    const { data } = await api.put(
+      `/admin/torneos/${tournamentId}/sedes/reordenar`,
+      { ordenSedes }
     );
     return data;
   },
