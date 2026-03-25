@@ -764,11 +764,18 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                               }}
                               className="w-4 h-4 rounded border-white/20 bg-[#0B0E14] text-[#df2531] focus:ring-[#df2531]/50"
                             />
-                            <span className={`text-sm ${
-                              nuevoDia.canchasIds.includes(cancha.id) ? 'text-white' : 'text-gray-400'
-                            }`}>
-                              {cancha.nombre}
-                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <span className={`text-sm truncate ${
+                                nuevoDia.canchasIds.includes(cancha.id) ? 'text-white' : 'text-gray-400'
+                              }`}>
+                                {cancha.nombre}
+                              </span>
+                              <span className={`text-[10px] truncate ${
+                                nuevoDia.canchasIds.includes(cancha.id) ? 'text-[#df2531]/70' : 'text-gray-600'
+                              }`}>
+                                {cancha.sede.nombre}
+                              </span>
+                            </div>
                           </label>
                         ))}
                       </div>
