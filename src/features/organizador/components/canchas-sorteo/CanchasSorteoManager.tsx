@@ -84,11 +84,24 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   
   // Modales
   const [mostrarModalSedes, setMostrarModalSedes] = useState(false);
-  // MVP: Eliminados modales complejos de confirmación - uso confirm() simple
+  
+  // Modal confirmación eliminar sede
+  const [modalEliminar, setModalEliminar] = useState<{
+    isOpen: boolean;
+    sede: { id: string; nombre: string } | null;
+    isLoading: boolean;
+  }>({ isOpen: false, sede: null, isLoading: false });
+  
+  // Modal cambiar sede
+  const [modalCambiar, setModalCambiar] = useState<{
+    isOpen: boolean;
+    sedeActual: { id: string; nombre: string } | null;
+    sedesDisponibles: any[];
+    isLoading: boolean;
+  }>({ isOpen: false, sedeActual: null, sedesDisponibles: [], isLoading: false });
 
   // Estados de carga
   const [loading, setLoading] = useState(false);
-  // MVP: Eliminado loadingCalculo - sorteo directo
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -331,7 +344,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   const moverSede = async (sedeId: string, direccion: 'arriba' | 'abajo') => {
     try {
       const sedesOrdenadas = [...sedesAsignadas].sort((a, b) => a.orden - b.orden);
-      const indexActual = sedesOrdenadas.findIndex(s => s.id === sedeId);
+      const indexActual = sedesOrdenadas.findIndex((s: any) => s.id === sedeId);
       if (indexActual === -1) return;
 
       const nuevoIndex = direccion === 'arriba' ? indexActual - 1 : indexActual + 1;
@@ -356,6 +369,66 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     } catch (err) {
       console.error('Error reordenando sede:', err);
       showError('Error', 'No se pudo actualizar el orden');
+    }
+  };
+
+  // ============================================
+  // PASO 1: Confirmar y eliminar sede
+  // ============================================
+  const confirmarEliminarSede = (sede: { id: string; nombre: string }) => {
+    setModalEliminar({ isOpen: true, sede, isLoading: false });
+  };
+
+  const ejecutarEliminarSede = async () => {
+    if (!modalEliminar.sede) return;
+    
+    setModalEliminar(prev => ({ ...prev, isLoading: true }));
+    try {
+      await api.delete(`/admin/torneos/${tournamentId}/sedes/${modalEliminar.sede.id}`);
+      showSuccess('Sede eliminada', `La sede ${modalEliminar.sede.nombre} ha sido removida`);
+      await loadSedesAsignadas();
+      await loadCanchas();
+      setModalEliminar({ isOpen: false, sede: null, isLoading: false });
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo eliminar la sede');
+      setModalEliminar(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  // ============================================
+  // PASO 1: Cambiar sede
+  // ============================================
+  const iniciarCambioSede = async (sede: { id: string; nombre: string }) => {
+    setModalCambiar({ isOpen: true, sedeActual: sede, sedesDisponibles: [], isLoading: true });
+    try {
+      // Cargar sedes disponibles
+      const { data } = await api.get('/admin/sedes?activas=true');
+      // Filtrar las que ya están asignadas (excepto la actual)
+      const disponibles = (data.sedes || []).filter(
+        (s: any) => !sedesAsignadas.some(sa => sa.id === s.id) || s.id === sede.id
+      );
+      setModalCambiar(prev => ({ ...prev, sedesDisponibles: disponibles, isLoading: false }));
+    } catch (err) {
+      showError('Error', 'No se pudieron cargar las sedes disponibles');
+      setModalCambiar({ isOpen: false, sedeActual: null, sedesDisponibles: [], isLoading: false });
+    }
+  };
+
+  const ejecutarCambioSede = async (nuevaSedeId: string) => {
+    if (!modalCambiar.sedeActual) return;
+    
+    setModalCambiar(prev => ({ ...prev, isLoading: true }));
+    try {
+      await api.put(`/admin/torneos/${tournamentId}/sedes/${modalCambiar.sedeActual.id}/cambiar`, {
+        nuevaSedeId,
+      });
+      showSuccess('Sede cambiada', 'La sede ha sido reemplazada exitosamente');
+      await loadSedesAsignadas();
+      await loadCanchas();
+      setModalCambiar({ isOpen: false, sedeActual: null, sedesDisponibles: [], isLoading: false });
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo cambiar la sede');
+      setModalCambiar(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -459,27 +532,50 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                               <p className="text-xs text-emerald-400 mt-0.5">{sede.canchas} canchas</p>
                             </div>
 
-                            {/* Controles de orden */}
-                            {sedesAsignadas.length > 1 && (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => moverSede(sede.id, 'arriba')}
-                                  disabled={isFirst}
-                                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                  title="Mover arriba"
-                                >
-                                  <ArrowUp className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => moverSede(sede.id, 'abajo')}
-                                  disabled={isLast}
-                                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                  title="Mover abajo"
-                                >
-                                  <ArrowDown className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
+                            {/* Controles: Orden + Acciones */}
+                            <div className="flex items-center gap-1">
+                              {/* Reordenar (solo si hay múltiples) */}
+                              {sedesAsignadas.length > 1 && (
+                                <>
+                                  <button
+                                    onClick={() => moverSede(sede.id, 'arriba')}
+                                    disabled={isFirst}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Mover arriba"
+                                  >
+                                    <ArrowUp className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => moverSede(sede.id, 'abajo')}
+                                    disabled={isLast}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Mover abajo"
+                                  >
+                                    <ArrowDown className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+
+                              {/* Cambiar sede */}
+                              <button
+                                onClick={() => iniciarCambioSede(sede)}
+                                className="p-1.5 hover:bg-white/10 rounded-lg text-blue-400 hover:text-blue-300 transition-colors"
+                                title="Cambiar por otra sede"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                              </button>
+
+                              {/* Eliminar sede */}
+                              <button
+                                onClick={() => confirmarEliminarSede(sede)}
+                                className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+                                title="Eliminar sede"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Badge de prioridad */}
@@ -860,6 +956,96 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         cancelText={confirmState.cancelText}
         variant={confirmState.variant}
       />
+
+      {/* ============================================
+          MODAL: CONFIRMAR ELIMINAR SEDE
+      ============================================ */}
+      <ConfirmModal
+        isOpen={modalEliminar.isOpen}
+        onClose={() => setModalEliminar({ isOpen: false, sede: null, isLoading: false })}
+        onConfirm={ejecutarEliminarSede}
+        title="¿Eliminar sede?"
+        message={modalEliminar.sede 
+          ? `Se eliminará la sede "${modalEliminar.sede.nombre}" y todas sus canchas configuradas. Los días de juego que usen estas canchas perderán sus slots. Esta acción no se puede deshacer.`
+          : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={modalEliminar.isLoading}
+      />
+
+      {/* ============================================
+          MODAL: CAMBIAR SEDE
+      ============================================ */}
+      {modalCambiar.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[#0B0E14] border border-white/10 rounded-xl w-full max-w-md overflow-hidden"
+          >
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Cambiar Sede
+              </h3>
+              <button 
+                onClick={() => setModalCambiar({ isOpen: false, sedeActual: null, sedesDisponibles: [], isLoading: false })}
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {modalCambiar.isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Sede actual: <span className="text-white font-medium">{modalCambiar.sedeActual?.nombre}</span>
+                  </p>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Selecciona la nueva sede:
+                  </p>
+                  
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {modalCambiar.sedesDisponibles
+                      .filter((s: any) => s.id !== modalCambiar.sedeActual?.id)
+                      .map((sede: any) => (
+                        <button
+                          key={sede.id}
+                          onClick={() => ejecutarCambioSede(sede.id)}
+                          disabled={modalCambiar.isLoading}
+                          className="w-full p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#df2531]/30 rounded-lg text-left transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-white font-medium">{sede.nombre}</p>
+                              <p className="text-sm text-gray-500">{sede.ciudad}</p>
+                              <p className="text-xs text-emerald-400 mt-1">
+                                {Array.isArray(sede.canchas) ? sede.canchas.length : 0} canchas
+                              </p>
+                            </div>
+                            <span className="text-sm text-[#df2531]">Seleccionar →</span>
+                          </div>
+                        </button>
+                      ))}
+                    
+                    {modalCambiar.sedesDisponibles.filter((s: any) => s.id !== modalCambiar.sedeActual?.id).length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        No hay otras sedes disponibles
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
