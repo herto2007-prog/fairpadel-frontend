@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, DollarSign, Image as ImageIcon, 
   Award, ChevronRight, ChevronLeft, Check, Upload,
-  Sparkles, Users, Clock, Info, Building2
+  Sparkles, Users, Info, Building2
 } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { SedeAutocomplete } from './SedeAutocomplete';
@@ -24,7 +24,6 @@ interface TorneoFormData {
   fechaInicio: string;
   fechaFin: string;
   costoInscripcion: number;
-  minutosPorPartido: number;
   flyerUrl: string;
   flyerPublicId: string;
   categoriaIds: string[];
@@ -70,7 +69,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     fechaInicio: '',
     fechaFin: '',
     costoInscripcion: 0,
-    minutosPorPartido: 120,
     flyerUrl: '',
     flyerPublicId: '',
     categoriaIds: [],
@@ -563,30 +561,7 @@ function Step2Inversion({
         </p>
       </div>
 
-      {/* Duración */}
-      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-        <label className="block text-xs text-white/60 mb-3 flex items-center gap-2">
-          <Clock className="w-3 h-3" />
-          Duración por partido
-        </label>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-xs text-white/30">60min</span>
-          <input
-            type="range"
-            min={60}
-            max={180}
-            step={15}
-            value={formData.minutosPorPartido}
-            onChange={(e) => updateField('minutosPorPartido', parseInt(e.target.value))}
-            className="flex-1 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
-          />
-          <span className="text-xs text-white/30">180min</span>
-        </div>
-        <div className="text-center">
-          <span className="text-2xl font-medium text-primary">{formData.minutosPorPartido}</span>
-          <span className="text-white/40 text-sm ml-1">min</span>
-        </div>
-      </div>
+
     </div>
   );
 }
@@ -887,15 +862,11 @@ function Step5Confirmar({
             {formData.fechaFin ? formatDatePY(formData.fechaFin) : '-'}
           </span>
         </div>
-        <div className="flex justify-between py-1.5 border-b border-white/5">
+        <div className="flex justify-between py-1.5">
           <span className="text-white/40 text-xs">Inscripción</span>
           <span className="text-emerald-400 text-xs font-medium">
             Gs. {formData.costoInscripcion.toLocaleString('es-PY')}
           </span>
-        </div>
-        <div className="flex justify-between py-1.5">
-          <span className="text-white/40 text-xs">Duración</span>
-          <span className="text-white text-xs">{formData.minutosPorPartido} min</span>
         </div>
 
         {/* Categorías */}
