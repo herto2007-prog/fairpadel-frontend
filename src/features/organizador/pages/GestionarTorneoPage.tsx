@@ -10,7 +10,7 @@ import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
 import { ProgramacionManager } from '../components/programacion/ProgramacionManager';
-import { CanchasManager } from '../components/disponibilidad/CanchasManager';
+
 import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
 import { VistaDemo } from '../components/vista-demo';
 import { api } from '../../../services/api';
@@ -24,7 +24,7 @@ interface Torneo {
   fechaFin?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'disponibilidad' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'vistaDemo' | 'canchasSorteo';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'vistaDemo' | 'canchasSorteo';
 
 interface TabConfig {
   id: TabType;
@@ -120,7 +120,6 @@ export function GestionarTorneoPage() {
       badge: stats.inscripcionesPendientes > 0 ? stats.inscripcionesPendientes : undefined,
     },
     { id: 'canchasSorteo', label: 'Canchas y Sorteo', icon: Trophy },
-    { id: 'disponibilidad', label: 'Canchas', icon: Calendar },
     { id: 'bracket', label: 'Fixture', icon: GitBranch },
     { id: 'programacion', label: 'Programacion', icon: Calendar },
     { id: 'comision', label: 'Comision', icon: DollarSign },
@@ -216,14 +215,6 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'canchasSorteo' && id && (
           <CanchasSorteoManager tournamentId={id} />
-        )}
-
-        {activeTab === 'disponibilidad' && id && (
-          <CanchasManager
-            tournamentId={id}
-            fechaInicio={torneo?.fechaInicio}
-            fechaFin={torneo?.fechaFin}
-          />
         )}
 
         {activeTab === 'bracket' && id && (
