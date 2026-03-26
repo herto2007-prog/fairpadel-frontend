@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Users, CheckCircle2, Search, Plus, Download, Filter, ChevronDown, ChevronUp,
-  Trash2, CheckSquare, Square, Phone, Mail
+  Users, CheckCircle2, Search, Plus, Download, 
+  Trash2, CheckSquare, Square, Phone, Mail, DollarSign
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { ResumenStats } from './ResumenStats';
-import { InscripcionCard } from './InscripcionCard';
+import { ControlPagosManager } from './ControlPagosManager';
 import { ModalConfirmar } from './ModalConfirmar';
 import { ModalCancelar } from './ModalCancelar';
 import { ModalInscripcionManual } from './ModalInscripcionManual';
@@ -60,9 +60,7 @@ interface Stats {
   ingresos: number;
 }
 
-type FiltroEstado = 'todos' | 'confirmadas' | 'pendientes' | 'incompletas' | 'canceladas';
-type OrdenarPor = 'fecha' | 'nombre' | 'estado' | 'monto';
-type VistaTipo = 'cards' | 'tabla';
+type FiltroEstado = 'todos' | 'pendientes' | 'confirmadas';
 
 interface InscripcionesManagerProps {
   tournamentId: string;
@@ -79,13 +77,8 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
-  const [ordenarPor, setOrdenarPor] = useState<OrdenarPor>('fecha');
-  const [ordenAscendente, setOrdenAscendente] = useState(false);
-  const [vista, setVista] = useState<VistaTipo>('cards');
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
+  const [vistaActiva, setVistaActiva] = useState<'inscripciones' | 'pagos'>('inscripciones');
   
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<Inscripcion | null>(null);
   const [modalConfirmar, setModalConfirmar] = useState(false);
@@ -153,50 +146,20 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       });
     }
 
-    // Filtro por estado
+    // Filtro por estado (simplificado)
     if (filtroEstado !== 'todos') {
       resultado = resultado.filter(insc => {
         if (filtroEstado === 'confirmadas') return insc.estado === 'CONFIRMADA';
         if (filtroEstado === 'pendientes') return insc.estado === 'PENDIENTE_PAGO' || insc.estado === 'PENDIENTE_CONFIRMACION';
-        if (filtroEstado === 'incompletas') return !insc.jugador2;
-        if (filtroEstado === 'canceladas') return insc.estado === 'CANCELADA';
         return true;
       });
     }
 
-    // Filtro por fecha
-    if (fechaDesde) {
-      resultado = resultado.filter(i => new Date(i.createdAt) >= new Date(fechaDesde));
-    }
-    if (fechaHasta) {
-      resultado = resultado.filter(i => new Date(i.createdAt) <= new Date(fechaHasta));
-    }
-
-    // Ordenamiento
-    resultado.sort((a, b) => {
-      let comparacion = 0;
-      switch (ordenarPor) {
-        case 'fecha':
-          comparacion = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case 'nombre':
-          comparacion = `${a.jugador1.nombre} ${a.jugador1.apellido}`.localeCompare(`${b.jugador1.nombre} ${b.jugador1.apellido}`);
-          break;
-        case 'estado':
-          comparacion = a.estado.localeCompare(b.estado);
-          break;
-        case 'monto':
-          const montoA = a.pagos.reduce((s, p) => s + p.monto, 0);
-          const montoB = b.pagos.reduce((s, p) => s + p.monto, 0);
-          comparacion = montoA - montoB;
-          break;
-      }
-      return ordenAscendente ? comparacion : -comparacion;
-    });
+    // Ordenamiento por fecha descendente (más reciente primero)
+    resultado.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return resultado;
-  }, [todasLasInscripciones, categoriaActiva, filtroBusqueda, filtroEstado, 
-      fechaDesde, fechaHasta, ordenarPor, ordenAscendente]);
+  }, [todasLasInscripciones, categoriaActiva, filtroBusqueda, filtroEstado]);
 
   // Exportar a CSV
   const exportarCSV = () => {
@@ -325,150 +288,94 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       {/* Stats */}
       <ResumenStats stats={data.stats} />
 
-      {/* Barra de herramientas */}
-      <div className="bg-[#151921] border border-[#232838] rounded-2xl p-4 space-y-4">
-        {/* Fila 1: Búsqueda y acciones principales */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, telefono o email..."
-              value={filtroBusqueda}
-              onChange={(e) => setFiltroBusqueda(e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors"
-            />
-          </div>
+      {/* Tabs: Inscripciones vs Control de Pagos */}
+      <div className="flex bg-[#151921] border border-[#232838] rounded-2xl p-1">
+        <button
+          onClick={() => setVistaActiva('inscripciones')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors ${
+            vistaActiva === 'inscripciones'
+              ? 'bg-[#df2531] text-white'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Inscripciones
+        </button>
+        <button
+          onClick={() => setVistaActiva('pagos')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-colors ${
+            vistaActiva === 'pagos'
+              ? 'bg-[#df2531] text-white'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          Control de Cobranza
+        </button>
+      </div>
 
-          <div className="flex gap-2 flex-wrap">
-            {/* Selector de categoría */}
-            <select
-              value={categoriaActiva}
-              onChange={(e) => setCategoriaActiva(e.target.value)}
-              className="px-4 py-2 bg-[#0B0E14] border border-[#232838] rounded-xl text-white text-sm focus:outline-none focus:border-[#df2531]"
-            >
-              <option value="todas">Todas las categorias</option>
-              {data.porCategoria.map(cat => (
-                <option key={cat.categoriaId} value={cat.categoriaId}>
-                  {cat.categoriaNombre} ({cat.total})
-                </option>
-              ))}
-            </select>
+      {vistaActiva === 'pagos' ? (
+        <ControlPagosManager 
+          tournamentId={tournamentId}
+          categorias={data.porCategoria.map(c => ({ categoriaId: c.categoriaId, categoriaNombre: c.categoriaNombre }))}
+          costoInscripcion={0}
+        />
+      ) : (
+        <>
+          {/* Barra de herramientas */}
+          <div className="bg-[#151921] border border-[#232838] rounded-2xl p-4 space-y-4">
+            {/* Fila 1: Búsqueda y acciones principales */}
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, telefono o email..."
+                  value={filtroBusqueda}
+                  onChange={(e) => setFiltroBusqueda(e.target.value)}
+                  className="w-full bg-[#0B0E14] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#df2531] transition-colors"
+                />
+              </div>
 
-            {/* Toggle vista */}
-            <div className="flex bg-[#0B0E14] rounded-xl border border-[#232838] overflow-hidden">
-              <button
-                onClick={() => setVista('cards')}
-                className={`px-4 py-2 text-sm ${vista === 'cards' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                Cards
-              </button>
-              <button
-                onClick={() => setVista('tabla')}
-                className={`px-4 py-2 text-sm ${vista === 'tabla' ? 'bg-[#df2531] text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                Tabla
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                {/* Selector de categoría */}
+                <select
+                  value={categoriaActiva}
+                  onChange={(e) => setCategoriaActiva(e.target.value)}
+                  className="px-4 py-2 bg-[#0B0E14] border border-[#232838] rounded-xl text-white text-sm focus:outline-none focus:border-[#df2531]"
+                >
+                  <option value="todas">Todas las categorias</option>
+                  {data.porCategoria.map(cat => (
+                    <option key={cat.categoriaId} value={cat.categoriaId}>
+                      {cat.categoriaNombre} ({cat.total})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Exportar */}
+                <button
+                  onClick={exportarCSV}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-[#232838] text-white rounded-xl text-sm transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar
+                </button>
+
+                {/* Filtro estado rápido */}
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => setFiltroEstado(e.target.value as FiltroEstado)}
+                  className="px-4 py-2 bg-[#0B0E14] border border-[#232838] rounded-xl text-white text-sm focus:outline-none focus:border-[#df2531]"
+                >
+                  <option value="todos">Todos los estados</option>
+                  <option value="pendientes">Pendientes</option>
+                  <option value="confirmadas">Confirmadas</option>
+                </select>
+              </div>
             </div>
 
-            {/* Exportar */}
-            <button
-              onClick={exportarCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-[#232838] text-white rounded-xl text-sm transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Exportar
-            </button>
 
-            {/* Filtros avanzados */}
-            <button
-              onClick={() => setMostrarFiltros(!mostrarFiltros)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-colors ${
-                mostrarFiltros ? 'bg-[#df2531] text-white' : 'bg-[#0B0E14] border border-[#232838] text-gray-400 hover:text-white'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              Filtros
-              {mostrarFiltros ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
           </div>
-        </div>
-
-        {/* Fila 2: Filtros avanzados expandibles */}
-        <AnimatePresence>
-          {mostrarFiltros && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="pt-4 border-t border-[#232838] grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Filtro estado */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Estado</label>
-                  <select
-                    value={filtroEstado}
-                    onChange={(e) => setFiltroEstado(e.target.value as FiltroEstado)}
-                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
-                  >
-                    <option value="todos">Todos</option>
-                    <option value="confirmadas">Confirmadas</option>
-                    <option value="pendientes">Pendientes</option>
-                    <option value="incompletas">Sin pareja</option>
-                    <option value="canceladas">Canceladas</option>
-                  </select>
-                </div>
-
-                {/* Ordenar por */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Ordenar por</label>
-                  <div className="flex">
-                    <select
-                      value={ordenarPor}
-                      onChange={(e) => setOrdenarPor(e.target.value as OrdenarPor)}
-                      className="flex-1 px-3 py-2 bg-[#0B0E14] border border-r-0 border-[#232838] rounded-l-lg text-white text-sm"
-                    >
-                      <option value="fecha">Fecha</option>
-                      <option value="nombre">Nombre</option>
-                      <option value="estado">Estado</option>
-                      <option value="monto">Monto</option>
-                    </select>
-                    <button
-                      onClick={() => setOrdenAscendente(!ordenAscendente)}
-                      className="px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-r-lg text-gray-400 hover:text-white"
-                    >
-                      {ordenAscendente ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Fecha desde */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Desde</label>
-                  <input
-                    type="date"
-                    value={fechaDesde}
-                    onChange={(e) => setFechaDesde(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
-                  />
-                </div>
-
-                {/* Fecha hasta */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Hasta</label>
-                  <input
-                    type="date"
-                    value={fechaHasta}
-                    onChange={(e) => setFechaHasta(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg text-white text-sm"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
 
       {/* Acciones masivas */}
       {seleccionados.size > 0 && (
@@ -511,50 +418,8 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         )}
       </div>
 
-      {/* Lista/Tabla de inscripciones */}
-      {vista === 'cards' ? (
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {inscripcionesFiltradas.map((inscripcion, index) => (
-              <div key={inscripcion.id} className="flex items-center gap-3">
-                <button
-                  onClick={() => toggleSeleccionar(inscripcion.id)}
-                  className="text-gray-400 hover:text-[#df2531]"
-                >
-                  {seleccionados.has(inscripcion.id) ? 
-                    <CheckSquare className="w-5 h-5 text-[#df2531]" /> : 
-                    <Square className="w-5 h-5" />
-                  }
-                </button>
-                <div className="flex-1">
-                  <InscripcionCard
-                    inscripcion={inscripcion}
-                    index={index}
-                    onConfirmar={() => {
-                      setInscripcionSeleccionada(inscripcion);
-                      setModalConfirmar(true);
-                    }}
-                    onCancelar={() => {
-                      setInscripcionSeleccionada(inscripcion);
-                      setModalCancelar(true);
-                    }}
-                    onEditar={() => {
-                      setInscripcionSeleccionada(inscripcion);
-                      setModalEditar(true);
-                    }}
-                    onCambiarCategoria={() => {
-                      setInscripcionSeleccionada(inscripcion);
-                      setModalCambiarCategoria(true);
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </AnimatePresence>
-        </div>
-      ) : (
-        /* Vista tabla */
-        <div className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
+      {/* Tabla de inscripciones */}
+      <div className="bg-[#151921] border border-[#232838] rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -658,8 +523,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+      </div>
 
       {inscripcionesFiltradas.length === 0 && (
         <div className="glass rounded-2xl p-12 text-center">
@@ -670,8 +534,6 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
               setFiltroBusqueda('');
               setFiltroEstado('todos');
               setCategoriaActiva('todas');
-              setFechaDesde('');
-              setFechaHasta('');
             }}
             className="mt-4 text-[#df2531] hover:underline"
           >
@@ -731,6 +593,8 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
         inscripcion={inscripcionSeleccionada}
         categorias={data?.porCategoria || []}
       />
+        </>
+      )}
     </div>
   );
 }
