@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Settings, Eye, CheckSquare, Square, X } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
@@ -224,11 +224,6 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     }
   };
 
-  const handleConfigurar = (categoria: Categoria) => {
-    setCategoriaSeleccionada(categoria);
-    setShowConfigModal(true);
-  };
-
   const getEstadoInfo = (estado: string) => {
     switch (estado) {
       case 'INSCRIPCIONES_ABIERTAS':
@@ -421,9 +416,6 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                   // Acciones disponibles
                   const puedeCerrar = categoria.estado === 'INSCRIPCIONES_ABIERTAS' && categoria.inscripcionesCount >= MINIMO_PARA_SORTEAR;
                   const puedeAbrir = categoria.estado === 'INSCRIPCIONES_CERRADAS' && !categoria.fixtureVersionId;
-                  const puedeSortear = (categoria.estado === 'INSCRIPCIONES_CERRADAS') && 
-                                       categoria.inscripcionesCount >= MINIMO_PARA_SORTEAR && 
-                                       !categoria.fixtureVersionId;
                   const yaSorteado = !!categoria.fixtureVersionId;
 
                   return (
@@ -512,21 +504,13 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                               <Eye className="w-3.5 h-3.5" />
                               Ver
                             </button>
-                          ) : puedeSortear ? (
-                            <button
-                              onClick={() => handleConfigurar(categoria)}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-white text-black text-sm font-medium rounded-lg hover:bg-neutral-200 transition-colors"
-                            >
-                              <Settings className="w-3.5 h-3.5" />
-                              Sortear
-                            </button>
                           ) : (
                             <div className="flex items-center gap-1 text-neutral-600">
                               <AlertCircle className="w-4 h-4" />
                               <span className="text-xs">
                                 {faltanParaMinimo > 0 
                                   ? `Faltan ${faltanParaMinimo}` 
-                                  : 'Cerrar inscripciones'}
+                                  : 'Sortear desde Canchas y Sorteo'}
                               </span>
                             </div>
                           )}
