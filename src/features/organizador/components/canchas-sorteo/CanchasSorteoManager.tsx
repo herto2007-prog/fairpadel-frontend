@@ -319,9 +319,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         categoriasIds: categoriasSeleccionadas,
       });
       
+      // NUEVO: Mostrar mensaje incluyendo categorías ignoradas (ya sorteadas)
+      const msgBase = `${resultado.categoriasSorteadas.length} categorías sorteadas`;
+      const msgIgnoradas = resultado.categoriasIgnoradas?.length 
+        ? ` (${resultado.categoriasIgnoradas.length} ya sorteadas ignoradas)` 
+        : '';
+      
       showSuccess(
         '¡Sorteo completado!',
-        `${resultado.categoriasSorteadas.length} categorías sorteadas`
+        `${msgBase}${msgIgnoradas}`
       );
       
       // Recargar datos
