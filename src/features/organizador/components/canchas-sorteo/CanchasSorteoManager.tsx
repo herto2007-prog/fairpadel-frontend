@@ -347,30 +347,19 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       setCategoriasSeleccionadas([]);
       
     } catch (err: any) {
-      // Verificar si es error de slots faltantes
+      // Verificar si es error de slots faltantes (nuevo formato simple)
       const errorData = err.response?.data;
-      if (errorData?.detalle?.slotsFaltantes > 0 || 
-          errorData?.detalle?.fasesFaltantesPorCategoria ||
-          errorData?.message?.includes('slots')) {
-        
-        // Transformar la respuesta del backend al formato esperado por el modal
-        const detalle = errorData.detalle || {};
-        const categoriasAfectadas = detalle.fasesFaltantesPorCategoria?.map((cat: any) => ({
-          nombre: cat.categoria,
-          fasesFaltantes: cat.fasesFaltantes,
-          slotsFaltantes: cat.slotsFaltantes,
-        })) || detalle.categoriasAfectadas;
-        
+      if (errorData?.detalle?.porFase || errorData?.message?.includes('partidos sin cancha')) {
+        // Nuevo formato: mensaje simple con partidos por fase
         setModalSlotsFaltantes({
           isOpen: true,
-          mensaje: errorData.message || 'No hay suficientes slots disponibles',
-          detalle: {
-            ...detalle,
-            categoriasAfectadas,
-          },
+          mensaje: errorData.message || 'Hay partidos sin cancha asignada',
+          detalle: errorData.detalle || {},
         });
+      } else if (errorData?.message) {
+        showError('Error en sorteo', errorData.message);
       } else {
-        showError('Error en sorteo', errorData?.message || 'Error desconocido');
+        showError('Error en sorteo', 'Error desconocido');
       }
     } finally {
       setLoading(false);
@@ -1180,7 +1169,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white pr-8">No hay suficientes slots</h3>
+                  <h3 className="text-lg font-bold text-white pr-8">Faltan canchas</h3>
                   <p className="text-gray-400 text-sm mt-1">{modalSlotsFaltantes.mensaje}</p>
                 </div>
                 <button 
@@ -1191,50 +1180,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                 </button>
               </div>
 
-              {/* Detalle de categorías afectadas */}
-              {modalSlotsFaltantes.detalle.categoriasAfectadas && modalSlotsFaltantes.detalle.categoriasAfectadas.length > 0 && (
-                <div className="bg-white/[0.03] rounded-xl p-4 mb-4">
-                  <h4 className="text-sm font-medium text-white mb-3">Categorías con slots faltantes:</h4>
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {modalSlotsFaltantes.detalle.categoriasAfectadas.map((cat, idx) => (
-                      <div key={idx} className="bg-white/[0.02] rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-white font-medium text-sm">{cat.nombre}</span>
-                          <span className="text-[#df2531] text-xs font-medium">{cat.slotsFaltantes} slots faltantes</span>
-                        </div>
-                        <div className="text-xs text-gray-400 flex flex-wrap gap-1">
-                          Fases faltantes:
-                          {cat.fasesFaltantes.map((f, i) => (
-                            <span key={i} className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded text-[10px]">
-                              {f}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Detalle de slots (fallback para errores antiguos) */}
-              {!modalSlotsFaltantes.detalle.categoriasAfectadas && modalSlotsFaltantes.detalle.totalSlotsNecesarios && (
-                <div className="bg-white/[0.03] rounded-xl p-4 mb-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Slots necesarios:</span>
-                    <span className="text-white font-medium">{modalSlotsFaltantes.detalle.totalSlotsNecesarios}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Slots disponibles:</span>
-                    <span className="text-emerald-400 font-medium">{modalSlotsFaltantes.detalle.slotsDisponibles}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Slots faltantes:</span>
-                    <span className="text-[#df2531] font-medium">{modalSlotsFaltantes.detalle.slotsFaltantes}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Solución */}
+              {/* Solución simple */}
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
                 <div className="flex items-start gap-2 mb-2">
                   <svg className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1243,18 +1189,8 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   <span className="text-blue-300 font-medium text-sm">Solución:</span>
                 </div>
                 <p className="text-blue-400 text-sm pl-7">
-                  {modalSlotsFaltantes.detalle.sugerencia || 'Agrega más sedes o configura más días de juego en el Paso 2. Cada sede agregada aporta sus canchas disponibles.'}
+                  Agrega más días de juego o aumenta el horario de los días existentes en el Paso 2.
                 </p>
-                {modalSlotsFaltantes.detalle.fasesAfectadas && modalSlotsFaltantes.detalle.fasesAfectadas.length > 0 && (
-                  <div className="mt-3 pl-7 flex flex-wrap gap-2">
-                    <span className="text-xs text-gray-500">Fases afectadas:</span>
-                    {modalSlotsFaltantes.detalle.fasesAfectadas.map((fase, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs">
-                        {fase}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Botón */}
@@ -1262,7 +1198,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                 onClick={() => setModalSlotsFaltantes({ isOpen: false, mensaje: '', detalle: {} })}
                 className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-xl transition-all"
               >
-                Entendido, agregaré más sedes
+                Entendido
               </button>
             </div>
           </motion.div>
