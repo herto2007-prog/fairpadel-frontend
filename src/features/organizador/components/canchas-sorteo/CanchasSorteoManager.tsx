@@ -80,6 +80,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Estado Paso 3: Categorías
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([]);
+  // NUEVO: Para sorteo por lotes - definir fecha desde la cual asignar slots
+  const [usarFechaDesde, setUsarFechaDesde] = useState(false);
+  const [fechaDesde, setFechaDesde] = useState('');
   // MVP: Eliminado calculoSlots - sorteo directo sin validación previa compleja
   
   // Modales
@@ -325,6 +328,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       const resultado = await canchasSorteoService.cerrarInscripcionesYsortear({
         tournamentId,
         categoriasIds: categoriasSeleccionadas,
+        fechaDesde: usarFechaDesde && fechaDesde ? fechaDesde : undefined,
       });
       
       // NUEVO: Mostrar mensaje incluyendo categorías ignoradas (ya sorteadas)
@@ -976,10 +980,49 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   )}
                 </div>
 
+                {/* NUEVO: Opción de sorteo por lotes - definir fecha desde */}
+                {dias.length > 0 && (
+                  <div className="bg-[#0B0E14] rounded-lg p-4 space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={usarFechaDesde}
+                        onChange={(e) => {
+                          setUsarFechaDesde(e.target.checked);
+                          if (!e.target.checked) setFechaDesde('');
+                        }}
+                        className="w-4 h-4 rounded border-white/20 bg-[#0B0E14] text-[#df2531] focus:ring-[#df2531]/50"
+                      />
+                      <span className="text-sm text-gray-300">
+                        Sortear desde fecha específica
+                        <span className="text-gray-500 ml-1">(para sorteo por lotes)</span>
+                      </span>
+                    </label>
+                    
+                    {usarFechaDesde && (
+                      <div className="pl-7 space-y-2">
+                        <label className="text-xs text-gray-400 block">
+                          Asignar slots desde:
+                        </label>
+                        <input
+                          type="date"
+                          value={fechaDesde}
+                          onChange={(e) => setFechaDesde(e.target.value)}
+                          min={dias[0]?.fecha}
+                          className="w-full sm:w-auto bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2 text-white text-sm [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Se ignorarán los días anteriores a esta fecha
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Botón de sorteo MVP - Directo sin verificación compleja */}
                 <button
                   onClick={sortearDirecto}
-                  disabled={loading || categoriasSeleccionadas.length === 0}
+                  disabled={loading || categoriasSeleccionadas.length === 0 || (usarFechaDesde && !fechaDesde)}
                   className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (

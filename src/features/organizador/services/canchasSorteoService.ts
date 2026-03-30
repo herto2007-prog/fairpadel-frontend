@@ -25,6 +25,7 @@ export interface ConfigurarDiaJuegoPayload {
 export interface CerrarInscripcionesPayload {
   tournamentId: string;
   categoriasIds: string[];
+  fechaDesde?: string; // NUEVO: Para sorteo por lotes (YYYY-MM-DD)
 }
 
 export interface CalculoSlotsResponse {
