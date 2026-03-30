@@ -32,6 +32,7 @@ interface DiaConfigurado {
   horaFin: string;
   minutosSlot: number;
   slotsLibres: number;
+  slotsOcupados: number;
   canchas: number;
 }
 
@@ -192,6 +193,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           horaFin: d.horaFin,
           minutosSlot: d.minutosSlot,
           slotsLibres: d.slotsLibres || 0,
+          slotsOcupados: d.slotsOcupados || 0,
           canchas: d.canchas || 0,
         })));
       }
@@ -679,7 +681,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               <h3 className="font-medium text-white">Configurar Días de Juego</h3>
               <p className="text-sm text-gray-500">
                 {dias.length > 0 
-                  ? `${dias.length} día(s) • ${dias.reduce((acc, d) => acc + d.slotsLibres, 0)} slots libres`
+                  ? `${dias.length} día(s) • ${dias.reduce((acc, d) => acc + d.slotsLibres, 0)} libres / ${dias.reduce((acc, d) => acc + d.slotsOcupados, 0)} ocupados`
                   : 'Agrega días disponibles para el torneo'}
               </p>
             </div>
@@ -715,7 +717,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className={`text-sm ${dia.slotsLibres === 0 ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                              {dia.slotsLibres === 0 ? 'Sin slots - elimina y vuelve a agregar' : `${dia.slotsLibres} slots`}
+                              {dia.slotsLibres === 0 && dia.slotsOcupados === 0 
+                                ? 'Sin slots - elimina y vuelve a agregar' 
+                                : `${dia.slotsLibres} libres / ${dia.slotsOcupados} ocupados`}
                             </span>
                             <button
                               onClick={() => eliminarDia(dia.id, dia.fecha)}
