@@ -66,7 +66,6 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     fecha: '',
     horaInicio: '18:00',
     horaFin: '23:00',
-    minutosSlot: 90,
     canchasIds: [] as string[],
   });
 
@@ -238,7 +237,6 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         fecha: nuevoDia.fecha,
         horaInicio: nuevoDia.horaInicio,
         horaFin: nuevoDia.horaFin,
-        minutosSlot: 90,
         canchasIds: nuevoDia.canchasIds, // Solo las seleccionadas
       });
       
@@ -253,7 +251,6 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           fecha: '',
           horaInicio: '18:00',
           horaFin: '23:00',
-          minutosSlot: 90,
           canchasIds: canchas.map(c => c.id),
         });
       }
@@ -842,7 +839,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                         </p>
                       )}
                       <p className="text-xs text-gray-500">
-                        {nuevoDia.canchasIds.length} de {canchas.length} canchas seleccionadas • Slots de 90 min
+                        {nuevoDia.canchasIds.length} de {canchas.length} canchas seleccionadas • Slots de 70 min
                       </p>
                     </div>
                   )}

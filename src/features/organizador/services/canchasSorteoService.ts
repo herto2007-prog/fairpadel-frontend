@@ -17,9 +17,9 @@ export interface ConfigurarDiaJuegoPayload {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  minutosSlot: number;
   canchasIds: string[];
   fasesPermitidas?: string[]; // NUEVO: ['ZONA', 'REPECHAJE'] - Si no se envía, se calcula automáticamente
+  // minutosSlot: number; // REMOVIDO: Usar default del backend (70 min)
 }
 
 export interface CerrarInscripcionesPayload {
