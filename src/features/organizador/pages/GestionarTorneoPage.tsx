@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Trophy, LayoutDashboard, Users, Calendar, 
-  GitBranch, Settings, DollarSign, Info, Eye 
+  GitBranch, Settings, DollarSign, Info, Eye, Database 
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
@@ -13,6 +13,7 @@ import { ProgramacionManager } from '../components/programacion/ProgramacionMana
 
 import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
 import { VistaDemo } from '../components/vista-demo';
+import { AuditoriaManager } from '../components/auditoria/AuditoriaManager';
 import { api } from '../../../services/api';
 
 interface Torneo {
@@ -24,7 +25,7 @@ interface Torneo {
   fechaFin?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'vistaDemo' | 'canchasSorteo';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'vistaDemo' | 'canchasSorteo' | 'auditoria';
 
 interface TabConfig {
   id: TabType;
@@ -131,6 +132,7 @@ export function GestionarTorneoPage() {
     },
     { id: 'info', label: 'Info', icon: Info },
     { id: 'vistaDemo', label: 'Vista Publica', icon: Eye },
+    { id: 'auditoria', label: 'Auditoria', icon: Database },
   ];
 
   if (loading) {
@@ -257,6 +259,10 @@ export function GestionarTorneoPage() {
         )}
 
         {activeTab === 'vistaDemo' && <VistaDemo />}
+
+        {activeTab === 'auditoria' && id && (
+          <AuditoriaManager tournamentId={id} />
+        )}
       </div>
     </div>
   );
