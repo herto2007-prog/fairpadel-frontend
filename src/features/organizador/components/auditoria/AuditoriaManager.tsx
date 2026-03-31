@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Users, Calendar, Trophy, CheckCircle2, AlertCircle,
-  Download, RefreshCw, Database, LayoutGrid, UserX, Activity
+  Download, RefreshCw, Database, UserX
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
@@ -12,7 +12,7 @@ interface AuditoriaManagerProps {
   tournamentId: string;
 }
 
-type VistaTipo = 'inscripciones' | 'partidos' | 'slots' | 'resumen';
+type VistaTipo = 'inscripciones' | 'partidos' | 'slots' | 'sin-cancha';
 
 interface InscripcionData {
   id: string;
@@ -116,36 +116,9 @@ interface DiaSlotsData {
   slots: SlotData[];
 }
 
-interface ResumenData {
-  torneo: {
-    id: string;
-    nombre: string;
-    estado: string;
-    fechaInicio: string;
-    fechaFin: string;
-    fechaFinales: string | null;
-  };
-  estadisticas: {
-    totalInscripciones: number;
-    totalPartidos: number;
-    totalCategorias: number;
-    diasConfigurados: number;
-    totalSlots: number;
-    slotsOcupados: number;
-    partidosFinalizados: number;
-    inscripcionesPorEstado: Record<string, number>;
-  };
-  categorias: Array<{
-    id: string;
-    nombre: string;
-    estado: string;
-    inscripcionesAbiertas: boolean;
-  }>;
-}
-
 export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const { user } = useAuth();
-  const [vistaActiva, setVistaActiva] = useState<VistaTipo>('resumen');
+  const [vistaActiva, setVistaActiva] = useState<VistaTipo>('partidos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,9 +134,16 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   // Datos
   const [inscripciones, setInscripciones] = useState<InscripcionData[]>([]);
   const [partidos, setPartidos] = useState<PartidoData[]>([]);
+  const [partidosSinCancha, setPartidosSinCancha] = useState<PartidoData[]>([]);
   const [slotsData, setSlotsData] = useState<DiaSlotsData[]>([]);
-  const [resumen, setResumen] = useState<ResumenData | null>(null);
   const [stats, setStats] = useState<{ total: number; ocupados: number; libres: number; porcentajeOcupacion: number } | null>(null);
+
+  // Modal asignar cancha
+  const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false);
+  const [partidoSeleccionado, setPartidoSeleccionado] = useState<PartidoData | null>(null);
+  const [canchaSeleccionada, setCanchaSeleccionada] = useState('');
+  const [canchasDisponibles, setCanchasDisponibles] = useState<Array<{ id: string; nombre: string; sede: string }>>([]);
+  const [asignando, setAsignando] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -190,8 +170,8 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
         case 'slots':
           await loadSlots();
           break;
-        case 'resumen':
-          await loadResumen();
+        case 'sin-cancha':
+          await loadPartidosSinCancha();
           break;
       }
     } catch (err: any) {
@@ -240,10 +220,53 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
     }
   };
 
-  const loadResumen = async () => {
-    const { data } = await api.get(`/admin/auditoria/torneos/${tournamentId}/resumen`);
+  const loadPartidosSinCancha = async () => {
+    // Traer todos los partidos y filtrar los que tienen fecha pero no cancha
+    const { data } = await api.get(`/admin/auditoria/torneos/${tournamentId}/partidos`);
     if (data.success) {
-      setResumen(data.data);
+      const sinCancha = data.data.filter((p: PartidoData) => 
+        p.programacion?.fecha && !p.programacion?.cancha
+      );
+      setPartidosSinCancha(sinCancha);
+    }
+  };
+
+  const cargarCanchasDisponibles = async () => {
+    const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/canchas`);
+    if (data.success) {
+      setCanchasDisponibles(data.canchas || []);
+    }
+  };
+
+  const abrirModalAsignar = async (partido: PartidoData) => {
+    setPartidoSeleccionado(partido);
+    await cargarCanchasDisponibles();
+    setCanchaSeleccionada('');
+    setModalAsignarAbierto(true);
+  };
+
+  const asignarCancha = async () => {
+    if (!partidoSeleccionado || !canchaSeleccionada) return;
+    
+    setAsignando(true);
+    try {
+      await api.put(`/admin/auditoria/partidos/${partidoSeleccionado.id}/asignar-cancha`, {
+        torneoCanchaId: canchaSeleccionada,
+        fecha: partidoSeleccionado.programacion?.fecha,
+        hora: partidoSeleccionado.programacion?.hora,
+      });
+      
+      setModalAsignarAbierto(false);
+      setPartidoSeleccionado(null);
+      setCanchaSeleccionada('');
+      
+      // Recargar la lista
+      await loadPartidosSinCancha();
+    } catch (err: any) {
+      console.error('Error asignando cancha:', err);
+      alert(err.response?.data?.message || 'Error al asignar cancha');
+    } finally {
+      setAsignando(false);
     }
   };
 
@@ -290,9 +313,9 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   };
 
   const tabs = [
-    { id: 'resumen', label: 'Resumen', icon: Activity },
-    { id: 'inscripciones', label: 'Inscripciones', icon: Users },
     { id: 'partidos', label: 'Partidos', icon: Trophy },
+    { id: 'sin-cancha', label: 'Partidos SIN Canchas', icon: AlertCircle },
+    { id: 'inscripciones', label: 'Inscripciones', icon: Users },
     { id: 'slots', label: 'Slots', icon: Calendar },
   ] as const;
 
@@ -317,7 +340,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportar}
-            disabled={vistaActiva === 'slots' || vistaActiva === 'resumen'}
+            disabled={vistaActiva === 'slots'}
             className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
@@ -476,129 +499,76 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {/* Vista Resumen */}
-            {vistaActiva === 'resumen' && resumen && (
-              <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-400" />
-                      </div>
-                      <span className="text-white/60 text-sm">Inscripciones</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{resumen.estadisticas.totalInscripciones}</p>
-                  </div>
-
-                  <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                        <Trophy className="w-5 h-5 text-purple-400" />
-                      </div>
-                      <span className="text-white/60 text-sm">Partidos</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{resumen.estadisticas.totalPartidos}</p>
-                  </div>
-
-                  <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-5 h-5 text-green-400" />
-                      </div>
-                      <span className="text-white/60 text-sm">Finalizados</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{resumen.estadisticas.partidosFinalizados}</p>
-                  </div>
-
-                  <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-orange-400" />
-                      </div>
-                      <span className="text-white/60 text-sm">Slots Ocupados</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{resumen.estadisticas.slotsOcupados} <span className="text-sm text-white/40">/ {resumen.estadisticas.totalSlots}</span></p>
+            {/* Vista Partidos SIN Cancha */}
+            {vistaActiva === 'sin-cancha' && (
+              <div className="bg-white/[0.02] rounded-lg border border-white/5 overflow-hidden">
+                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                  <div>
+                    <span className="text-white/60 text-sm">Total: <strong className="text-white">{partidosSinCancha.length}</strong> partidos sin cancha asignada</span>
+                    <p className="text-white/40 text-xs mt-1">Estos partidos tienen fecha y hora programada pero necesitan una cancha asignada</p>
                   </div>
                 </div>
-
-                {/* Info del Torneo */}
-                <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                  <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                    <Database className="w-4 h-4 text-[#df2531]" />
-                    Información del Torneo
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-white/40">Nombre</span>
-                      <p className="text-white">{resumen.torneo.nombre}</p>
-                    </div>
-                    <div>
-                      <span className="text-white/40">Estado</span>
-                      <p className="text-white">{resumen.torneo.estado}</p>
-                    </div>
-                    <div>
-                      <span className="text-white/40">Inicio</span>
-                      <p className="text-white">{formatDatePY(resumen.torneo.fechaInicio)}</p>
-                    </div>
-                    <div>
-                      <span className="text-white/40">Finales</span>
-                      <p className="text-white">{resumen.torneo.fechaFinales ? formatDatePY(resumen.torneo.fechaFinales) : '-'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Inscripciones por Estado */}
-                <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                  <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#df2531]" />
-                    Inscripciones por Estado
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Object.entries(resumen.estadisticas.inscripcionesPorEstado).map(([estado, count]) => (
-                      <div key={estado} className="bg-white/5 rounded-lg p-3">
-                        <span className="text-white/60 text-sm">{estado.replace(/_/g, ' ')}</span>
-                        <p className="text-xl font-bold text-white">{count}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Categorías */}
-                <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                  <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4 text-[#df2531]" />
-                    Categorías ({resumen.categorias.length})
-                  </h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-white/40 border-b border-white/5">
-                          <th className="text-left py-2 px-3">Nombre</th>
-                          <th className="text-left py-2 px-3">Estado</th>
-                          <th className="text-left py-2 px-3">Inscripciones</th>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-white/40 border-b border-white/5 bg-white/[0.02]">
+                        <th className="text-left py-3 px-4">Fase</th>
+                        <th className="text-left py-3 px-4">Categoría</th>
+                        <th className="text-left py-3 px-4">Pareja 1</th>
+                        <th className="text-left py-3 px-4">Pareja 2</th>
+                        <th className="text-left py-3 px-4">Fecha y Hora</th>
+                        <th className="text-left py-3 px-4">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partidosSinCancha.map((p) => (
+                        <tr key={p.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                          <td className="py-3 px-4">
+                            <span className="text-white font-medium">{p.fase}</span>
+                            {p.esBye && (
+                              <span className="ml-2 px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded">BYE</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-white">{p.categoria.nombre}</td>
+                          <td className="py-3 px-4">
+                            <span className={p.inscripcion1Id ? 'text-white' : 'text-white/40'}>
+                              {p.pareja1}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={p.inscripcion2Id ? 'text-white' : 'text-white/40'}>
+                              {p.pareja2}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-sm">
+                              <div className="text-white">{p.programacion?.fecha ? formatDatePY(p.programacion.fecha) : ''} {p.programacion?.hora}</div>
+                              <div className="text-yellow-400 text-xs flex items-center gap-1 mt-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Sin cancha asignada
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => abrirModalAsignar(p)}
+                              className="px-3 py-1.5 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg text-xs font-medium transition-colors"
+                            >
+                              Asignar cancha
+                            </button>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {resumen.categorias.map((cat) => (
-                          <tr key={cat.id} className="border-b border-white/5 last:border-0">
-                            <td className="py-2 px-3 text-white">{cat.nombre}</td>
-                            <td className="py-2 px-3">
-                              <span className={`px-2 py-1 rounded text-xs ${getEstadoBadge(cat.estado)}`}>
-                                {cat.estado.replace(/_/g, ' ')}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3">
-                              <span className={cat.inscripcionesAbiertas ? 'text-green-400' : 'text-red-400'}>
-                                {cat.inscripcionesAbiertas ? 'Abiertas' : 'Cerradas'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                {partidosSinCancha.length === 0 && (
+                  <div className="text-center py-12">
+                    <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-white">Todos los partidos tienen cancha asignada</p>
+                    <p className="text-white/40 text-sm mt-1">No hay partidos pendientes</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -875,6 +845,66 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
             )}
           </motion.div>
         </AnimatePresence>
+      )}
+
+      {/* Modal Asignar Cancha */}
+      {modalAsignarAbierto && partidoSeleccionado && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 w-full max-w-md">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Asignar Cancha</h3>
+              <button
+                onClick={() => setModalAsignarAbierto(false)}
+                className="text-white/40 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {/* Info del partido */}
+              <div className="bg-white/5 rounded-lg p-3 text-sm">
+                <p className="text-white/60">Fase: <span className="text-white">{partidoSeleccionado.fase}</span></p>
+                <p className="text-white/60">Categoría: <span className="text-white">{partidoSeleccionado.categoria.nombre}</span></p>
+                <p className="text-white/60 mt-2">Fecha: <span className="text-white">{partidoSeleccionado.programacion?.fecha ? formatDatePY(partidoSeleccionado.programacion.fecha) : ''}</span></p>
+                <p className="text-white/60">Hora: <span className="text-white">{partidoSeleccionado.programacion?.hora}</span></p>
+              </div>
+
+              {/* Selector de cancha */}
+              <div>
+                <label className="block text-white/60 text-sm mb-2">Seleccionar Cancha</label>
+                <select
+                  value={canchaSeleccionada}
+                  onChange={(e) => setCanchaSeleccionada(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                >
+                  <option value="" className="bg-[#1a1a2e]">Seleccionar...</option>
+                  {canchasDisponibles.map((cancha) => (
+                    <option key={cancha.id} value={cancha.id} className="bg-[#1a1a2e]">
+                      {cancha.nombre} - {cancha.sede}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button
+                onClick={() => setModalAsignarAbierto(false)}
+                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={asignarCancha}
+                disabled={!canchaSeleccionada || asignando}
+                className="flex-1 px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              >
+                {asignando ? 'Asignando...' : 'Asignar Cancha'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
