@@ -45,25 +45,38 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
+  // Estado para publicación (DEBE estar antes de cualquier return condicional)
+  const [publicando, setPublicando] = useState(false);
+  const [bracketPublicado, setBracketPublicado] = useState(false);
+  const [urlPublica, setUrlPublica] = useState<string | null>(null);
+
   useEffect(() => {
     loadCategorias();
+    loadEstadoPublicacion();
   }, [tournamentId]);
 
   const loadCategorias = async () => {
     try {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
       if (data.success) {
-        console.log('[BracketManager] Categorías recibidas:', data.categorias.map((c: any) => ({
-          id: c.id,
-          estado: c.estado,
-          fixtureVersionId: c.fixtureVersionId,
-        })));
         setCategorias(data.categorias);
       }
     } catch (error) {
       console.error('Error cargando categorías:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEstadoPublicacion = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/estado-publicacion`);
+      if (data.success) {
+        setBracketPublicado(data.torneo.bracketPublicado);
+        setUrlPublica(data.urlPublica);
+      }
+    } catch (error) {
+      console.error('Error cargando estado de publicación:', error);
     }
   };
 
@@ -252,28 +265,6 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       </div>
     );
   }
-
-  // Estado para publicación
-  const [publicando, setPublicando] = useState(false);
-  const [bracketPublicado, setBracketPublicado] = useState(false);
-  const [urlPublica, setUrlPublica] = useState<string | null>(null);
-
-  // Cargar estado de publicación
-  useEffect(() => {
-    loadEstadoPublicacion();
-  }, [tournamentId]);
-
-  const loadEstadoPublicacion = async () => {
-    try {
-      const { data } = await api.get(`/admin/torneos/${tournamentId}/estado-publicacion`);
-      if (data.success) {
-        setBracketPublicado(data.torneo.bracketPublicado);
-        setUrlPublica(data.urlPublica);
-      }
-    } catch (error) {
-      console.error('Error cargando estado de publicación:', error);
-    }
-  };
 
   // Handler para publicar bracket
   const handlePublicarBracket = async () => {
