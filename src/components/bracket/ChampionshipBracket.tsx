@@ -51,7 +51,7 @@ interface ChampionshipBracketProps {
   onFullscreen?: (isFullscreen: boolean) => void;
 }
 
-const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'];
+const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIS', 'FINAL'];
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -267,7 +267,7 @@ function BracketColumn({
       case 'REPECHAJE': return 'REPECHAJE';
       case 'OCTAVOS': return 'OCTAVOS';
       case 'CUARTOS': return 'CUARTOS';
-      case 'SEMIFINAL': return 'SEMIS';
+      case 'SEMIS': return 'SEMIS';
       case 'FINAL': return 'FINAL';
       default: return f;
     }

@@ -77,9 +77,14 @@ export function CanchaSelectionModal({
   };
 
   const formatFecha = (fechaStr: string): string => {
+    // Parsear YYYY-MM-DD manualmente para evitar bugs de timezone
     const [year, month, day] = fechaStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
+    
+    // Crear fecha con hora de Paraguay (12:00 -03:00) para obtener el día correcto
+    const date = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-03:00`);
+    
     return date.toLocaleDateString('es-PY', {
+      timeZone: 'America/Asuncion',
       weekday: 'long',
       day: 'numeric',
       month: 'long',

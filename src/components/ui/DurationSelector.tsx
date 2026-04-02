@@ -6,6 +6,7 @@ interface DurationSelectorProps {
   min?: number;
   max?: number;
   step?: number;
+  compact?: boolean;
 }
 
 const OPCIONES_DURACION = [
@@ -20,6 +21,7 @@ export function DurationSelector({
   min = 60,
   max = 120,
   step = 30,
+  compact = false,
 }: DurationSelectorProps) {
   const disminuir = () => {
     if (duracionMinutos > min) {
@@ -40,6 +42,57 @@ export function DurationSelector({
     return `${horas}h ${mins}m`;
   };
 
+  // Versión compacta para la barra de filtros
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-white/40 text-xs uppercase tracking-wider hidden sm:block">Duración</span>
+        
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+          <Clock size={14} className="text-[#df2531]" />
+          
+          <button
+            onClick={disminuir}
+            disabled={duracionMinutos <= min}
+            className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Minus size={14} />
+          </button>
+          
+          <span className="text-white font-medium min-w-[55px] text-center text-sm">
+            {formatDuracion(duracionMinutos)}
+          </span>
+          
+          <button
+            onClick={aumentar}
+            disabled={duracionMinutos >= max}
+            className="p-1 rounded hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+
+        {/* Botones rápidos - más compactos */}
+        <div className="hidden md:flex items-center gap-1">
+          {OPCIONES_DURACION.map((opcion) => (
+            <button
+              key={opcion.valor}
+              onClick={() => onChange(opcion.valor)}
+              className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                duracionMinutos === opcion.valor
+                  ? 'bg-[#df2531] text-white'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {opcion.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Versión normal/expandida
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2">

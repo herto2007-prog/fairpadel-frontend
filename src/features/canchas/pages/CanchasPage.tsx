@@ -93,14 +93,25 @@ export function CanchasPage() {
           </p>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8">
-          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-            <DateCarousel selectedDate={fecha} onSelectDate={setFecha} />
-            <DurationSelector
-              duracionMinutos={duracionMinutos}
-              onChange={setDuracionMinutos}
-            />
+        {/* Filtros - Barra horizontal compacta */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-3 mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            {/* Carrusel de fechas - ocupa el espacio disponible */}
+            <div className="flex-1 w-full">
+              <DateCarousel selectedDate={fecha} onSelectDate={setFecha} />
+            </div>
+            
+            {/* Separador vertical en desktop */}
+            <div className="hidden sm:block w-px h-12 bg-white/10" />
+            
+            {/* Selector de duración - compacto */}
+            <div className="w-full sm:w-auto">
+              <DurationSelector
+                duracionMinutos={duracionMinutos}
+                onChange={setDuracionMinutos}
+                compact
+              />
+            </div>
           </div>
         </div>
 

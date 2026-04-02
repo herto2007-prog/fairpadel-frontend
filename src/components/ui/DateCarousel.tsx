@@ -14,31 +14,79 @@ interface DiaInfo {
   mes: string;
 }
 
+const TIMEZONE = 'America/Asuncion';
+
+/**
+ * Obtiene la fecha actual en Paraguay como string YYYY-MM-DD
+ * Sin usar new Date() directamente para evitar bugs de timezone
+ */
+function getHoyPY(): string {
+  return new Date().toLocaleDateString('en-CA', {
+    timeZone: TIMEZONE,
+  });
+}
+
+/**
+ * Suma días a una fecha en formato YYYY-MM-DD
+ * Trabaja con strings para evitar timezone issues
+ */
+function sumarDias(fecha: string, dias: number): string {
+  const [year, month, day] = fecha.split('-').map(Number);
+  const date = new Date(year, month - 1, day + dias);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Obtiene el día de la semana (0-6) para una fecha YYYY-MM-DD
+ * Usa mediodía de Paraguay para evitar timezone issues
+ */
+function getDiaSemanaPY(fecha: string): number {
+  const [year, month, day] = fecha.split('-').map(Number);
+  // Usar hora 12:00 con timezone Paraguay (-03:00)
+  const date = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00-03:00`);
+  return date.getDay();
+}
+
+/**
+ * Extrae día del mes de una fecha YYYY-MM-DD
+ */
+function getDiaNumero(fecha: string): number {
+  return parseInt(fecha.split('-')[2], 10);
+}
+
+/**
+ * Extrae mes (0-11) de una fecha YYYY-MM-DD
+ */
+function getMesIndex(fecha: string): number {
+  return parseInt(fecha.split('-')[1], 10) - 1;
+}
+
 export function DateCarousel({ selectedDate, onSelectDate, diasMostrar = 10 }: DateCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [dias, setDias] = useState<DiaInfo[]>([]);
 
   useEffect(() => {
     const generarDias = (): DiaInfo[] => {
-      const hoy = new Date();
       const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
       
       const resultado: DiaInfo[] = [];
+      const hoy = getHoyPY();
       
       for (let i = 0; i < diasMostrar; i++) {
-        const fecha = new Date(hoy);
-        fecha.setDate(hoy.getDate() + i);
-        
-        const year = fecha.getFullYear();
-        const month = String(fecha.getMonth() + 1).padStart(2, '0');
-        const day = String(fecha.getDate()).padStart(2, '0');
+        const fecha = sumarDias(hoy, i);
+        const diaSemana = getDiaSemanaPY(fecha);
+        const diaNumero = getDiaNumero(fecha);
+        const mesIndex = getMesIndex(fecha);
         
         resultado.push({
-          fecha: `${year}-${month}-${day}`,
-          diaNombre: diasSemana[fecha.getDay()],
-          diaNumero: fecha.getDate(),
-          mes: meses[fecha.getMonth()],
+          fecha,
+          diaNombre: diasSemana[diaSemana],
+          diaNumero,
+          mes: meses[mesIndex],
         });
       }
       
@@ -58,6 +106,9 @@ export function DateCarousel({ selectedDate, onSelectDate, diasMostrar = 10 }: D
     }
   };
 
+  // Obtener hoy como string YYYY-MM-DD en Paraguay
+  const hoyPY = getHoyPY();
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -74,7 +125,7 @@ export function DateCarousel({ selectedDate, onSelectDate, diasMostrar = 10 }: D
       >
         {dias.map((dia) => {
           const isSelected = dia.fecha === selectedDate;
-          const isToday = dia.fecha === new Date().toISOString().split('T')[0];
+          const isToday = dia.fecha === hoyPY;
 
           return (
             <button
