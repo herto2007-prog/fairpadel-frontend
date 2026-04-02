@@ -307,24 +307,6 @@ function BracketColumn({
   );
 }
 
-// Componente para mostrar los sets del resultado
-function ResultadoSets({ resultado, ganador }: { resultado: Partido['resultado']; ganador: boolean }) {
-  if (!resultado) return null;
-  
-  const colorClass = ganador ? 'text-blue-700' : 'text-gray-700';
-  const sets = [resultado.set1, resultado.set2, resultado.set3].filter(Boolean) as [number, number][];
-  
-  return (
-    <div className="flex flex-col items-end gap-0.5">
-      {sets.map((set, idx) => (
-        <span key={idx} className={`text-xs font-bold ${colorClass}`}>
-          {set[0]}-{set[1]}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function MatchCard({
   partido,
   showConnector,
@@ -438,7 +420,7 @@ function MatchCard({
               </div>
             ) : null}
           </div>
-        )
+        )}
 
         {/* Footer (zócalo): Fecha completa DD/MM/YYYY y hora */}
         {(partido.fecha || partido.hora) && (
