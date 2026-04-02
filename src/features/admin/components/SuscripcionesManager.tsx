@@ -7,6 +7,7 @@ import {
   Calendar, MapPin, Phone, Mail
 } from 'lucide-react';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { api } from '../../../services/api';
 
 // Tipos
 type TabSuscripcion = 'sedes' | 'instructores' | 'jugadores';
@@ -63,7 +64,7 @@ export function SuscripcionesManager() {
   const [totalPages, setTotalPages] = useState(1);
   const { showError } = useToast();
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 
   // Cargar suscripciones
   const cargarSuscripciones = async () => {
