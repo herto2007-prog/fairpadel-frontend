@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2 } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -117,6 +117,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                             <Calendar size={16} />
                             Mis Reservas
                           </Link>
+                          {user?.roles?.includes('dueño') && (
+                            <Link
+                              to="/mis-sedes"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#232838] transition-colors"
+                            >
+                              <Building2 size={16} />
+                              Mis Sedes
+                            </Link>
+                          )}
                           <div className="border-t border-[#232838] my-1" />
                           <button
                             onClick={() => {
@@ -206,6 +216,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     <Calendar size={20} />
                     Mis Reservas
                   </Link>
+                  {user?.roles?.includes('dueño') && (
+                    <Link
+                      to="/mis-sedes"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-[#232838]"
+                    >
+                      <Building2 size={20} />
+                      Mis Sedes
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg text-sm font-medium"

@@ -85,9 +85,11 @@ export function SedesManager() {
   const loadSedes = async () => {
     try {
       const data = await adminService.getSedes();
-      setSedes(data);
+      // Asegurar que data sea un array
+      setSedes(Array.isArray(data) ? data : []);
     } catch (error) {
       setMessage({ type: 'error', text: 'Error cargando sedes' });
+      setSedes([]);
     } finally {
       setLoading(false);
     }

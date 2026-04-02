@@ -43,6 +43,9 @@ import MisReservasPage from './features/alquileres/pages/MisReservasPage';
 import GestionDisponibilidadPage from './features/alquileres/pages/GestionDisponibilidadPage';
 import SuscripcionPage from './features/alquileres/pages/SuscripcionPage';
 
+// Dueño
+import MisSedesPage from './features/dueno/pages/MisSedesPage';
+
 // Instructores (V2)
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
 import InstructorDetailPage from './features/instructores/pages/InstructorDetailPage';
@@ -139,6 +142,9 @@ function App() {
           <Route path="/sedes" element={<CanchasPage />} />
           <Route path="/sedes/:id" element={<SedeDetailPage />} />
           
+          {/* Dueño - Mis Sedes */}
+          <Route path="/mis-sedes" element={<MisSedesPage />} />
+
           {/* Alquileres (V2) */}
           <Route path="/alquileres" element={<AlquileresPage />} />
           <Route path="/mis-reservas" element={<MisReservasPage />} />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
@@ -9,8 +9,9 @@ import { FairpadelPanel } from '../components/FairpadelPanel';
 import { TorneosPendientesManager } from '../components/TorneosPendientesManager';
 import { CircuitosManager } from '../components/CircuitosManager';
 import { AscensosManager } from '../components/AscensosManager';
+import { SedesDuenosManager } from '../components/SedesDuenosManager';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
@@ -22,6 +23,7 @@ export function AdminPage() {
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: TrendingUp, color: 'bg-amber-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Settings, color: 'bg-pink-500' },
+    { id: 'duenos' as AdminTab, label: 'Dueños', icon: Crown, color: 'bg-amber-500' },
     { id: 'roles' as AdminTab, label: 'Usuarios', icon: Shield, color: 'bg-blue-500' },
   ];
 
@@ -90,6 +92,7 @@ export function AdminPage() {
           {activeTab === 'torneos' && <TorneosPendientesManager />}
           {activeTab === 'circuitos' && <CircuitosManager />}
           {activeTab === 'ascensos' && <AscensosManager />}
+          {activeTab === 'duenos' && <SedesDuenosManager />}
         </motion.div>
       </div>
     </div>
