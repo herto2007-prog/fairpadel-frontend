@@ -239,15 +239,24 @@ export function ChampionshipBracket({
         ) : (
           <div className="flex justify-center min-w-max">
             <div className="flex items-start gap-16">
-              {fasesActivas.map((fase, faseIndex) => (
-                <BracketColumn
-                  key={fase}
-                  fase={fase}
-                  partidos={partidosPorFase[fase]}
-                  faseIndex={faseIndex}
-                  totalFases={fasesActivas.length}
-                />
-              ))}
+              {/* Encontrar el máximo de partidos en fases del bracket (para calcular offsets) */}
+              {(() => {
+                const fasesBracket = fasesActivas.filter(f => f !== 'ZONA' && f !== 'REPECHAJE');
+                const maxPartidosBracket = fasesBracket.length > 0 
+                  ? Math.max(...fasesBracket.map(f => partidosPorFase[f].length))
+                  : 0;
+                
+                return fasesActivas.map((fase, faseIndex) => (
+                  <BracketColumn
+                    key={fase}
+                    fase={fase}
+                    partidos={partidosPorFase[fase]}
+                    faseIndex={faseIndex}
+                    totalFases={fasesActivas.length}
+                    maxPartidosBracket={maxPartidosBracket}
+                  />
+                ));
+              })()}
             </div>
           </div>
         )}
@@ -260,12 +269,14 @@ function BracketColumn({
   fase, 
   partidos, 
   faseIndex,
-  totalFases
+  totalFases,
+  maxPartidosBracket
 }: { 
   fase: string; 
   partidos: Partido[];
   faseIndex: number;
   totalFases: number;
+  maxPartidosBracket: number;
 }) {
   const getFaseLabel = (f: string) => {
     switch(f) {
@@ -287,24 +298,16 @@ function BracketColumn({
   // Fases sin conectores (ZONA, REPECHAJE): sin offset
   const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
   
-  // Para fases CON conectores (bracket): offset dinámico basado en cantidad de partidos
-  // Ejemplo: 32avos (16p, offset 0) → 16avos (8p, offset X) → 8vos (4p, offset Y) → 4tos (2p, offset Z) → final (1p)
+  // Para fases CON conectores (bracket): offset basado en maxPartidosBracket
+  // Ejemplo: si bracket empieza en cuartos (4 partidos):
+  //   Cuartos (4p): offset 0
+  //   Semis (2p): offset = altura * (4-2)/2 = altura * 1
+  //   Final (1p): offset = altura * (4-1)/2 = altura * 1.5
   let offsetVertical = 0;
   
-  if (!sinConectores && partidos.length > 0) {
-    // Calcular "nivel" basado en cantidad de partidos: más partidos = nivel más alto = menos offset
-    // 16 partidos (32avos): nivel 4 → offset 0
-    // 8 partidos (16avos): nivel 3 → offset = altura * 4
-    // 4 partidos (8vos): nivel 2 → offset = altura * 6
-    // 2 partidos (4tos): nivel 1 → offset = altura * 7
-    // 1 partido (final): nivel 0 → offset = altura * 7.5
-    const nivel = Math.log2(partidos.length);
-    const maxNivel = 4; // Asumiendo máximo 32avos (16 partidos)
-    
-    if (nivel < maxNivel) {
-      // Offset = altura * (2^maxNivel - 2^nivel) / 2
-      offsetVertical = alturaTotalCard * (Math.pow(2, maxNivel - 1) - Math.pow(2, nivel - 1));
-    }
+  if (!sinConectores && partidos.length > 0 && maxPartidosBracket > 0) {
+    // Offset = altura * (max - actual) / 2
+    offsetVertical = alturaTotalCard * (maxPartidosBracket - partidos.length) / 2;
   }
 
   return (

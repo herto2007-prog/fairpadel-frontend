@@ -46,9 +46,11 @@ export function SedesDuenosManager() {
       // Usar el endpoint existente de admin para obtener usuarios
       const { adminService } = await import('../../../services/adminService');
       const data = await adminService.getUsers();
-      setUsers(data.users || []);
+      // El backend devuelve un array directo, no { users: [...] }
+      setUsers(Array.isArray(data) ? data : (data.users || []));
     } catch (error) {
       console.error('Error cargando usuarios:', error);
+      setUsers([]);
     }
   };
 
