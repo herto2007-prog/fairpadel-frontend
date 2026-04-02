@@ -67,21 +67,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {user && (
-                <div className="hidden sm:flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  {/* Avatar - Link al perfil */}
                   <Link
                     to="/perfil"
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
+                    className="relative group"
+                    title="Mi perfil"
                   >
-                    <User size={18} />
-                    <span>
-                      {user.nombre} {user.apellido}
-                    </span>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-[#df2531]/50 transition-all">
+                      {user.nombre[0]}{user.apellido[0]}
+                    </div>
                     {user.roles?.includes('admin') && (
-                      <span className="ml-1 text-xs bg-[#df2531] px-2 py-0.5 rounded">Admin</span>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#df2531] border-2 border-[#151921] rounded-full" title="Admin"></span>
                     )}
                   </Link>
+                  
+                  {/* Logout */}
                   <button
                     onClick={handleLogout}
                     className="p-2 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
@@ -128,6 +131,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               })}
               {user && (
                 <>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center text-white font-semibold">
+                      {user.nombre[0]}{user.apellido[0]}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">{user.nombre} {user.apellido}</p>
+                      {user.roles?.includes('admin') && (
+                        <span className="text-xs text-[#df2531]">Administrador</span>
+                      )}
+                    </div>
+                  </div>
                   <Link
                     to="/perfil"
                     onClick={() => setMobileMenuOpen(false)}

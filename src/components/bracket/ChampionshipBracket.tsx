@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
+import { Trophy, Calendar, Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatDatePY } from '../../utils/date';
 
@@ -347,16 +347,26 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket Container - Más compacto */}
-      <div className="flex-1 overflow-auto">
+      {/* Bracket Container - Responsive con scroll horizontal */}
+      <div 
+        className="flex-1 overflow-x-auto overflow-y-hidden relative snap-x snap-mandatory" 
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#df2531 #1a1d26' }}
+      >
+        {/* Indicador de scroll en móvil */}
+        <div className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-xs text-gray-400 pointer-events-none">
+          <ChevronLeft className="w-3 h-3" />
+          <span>Desliza</span>
+          <ChevronRight className="w-3 h-3" />
+        </div>
+
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="min-w-max p-4 flex items-center justify-center">
-            <div className="flex items-stretch gap-2">
+          <div className="min-w-max h-full flex items-center p-4 md:p-8">
+            <div className="flex items-stretch gap-2 sm:gap-3 md:gap-6">
               {fasesActivas.map((fase, faseIndex) => (
                 <FaseColumn
                   key={fase}
@@ -386,16 +396,16 @@ function FaseColumn({
   isLast: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center min-w-[200px]">
+    <div className="flex flex-col items-center min-w-[160px] md:min-w-[200px] snap-center">
       {/* Título de fase - Compacto */}
-      <div className="mb-2">
-        <span className="px-3 py-1 bg-[#df2531] text-white font-bold rounded-full text-xs uppercase">
+      <div className="mb-2 md:mb-3">
+        <span className="px-3 py-1 bg-[#df2531] text-white font-bold rounded-full text-[10px] md:text-xs uppercase">
           {fase === 'SEMIFINAL' ? 'SEMIS' : fase}
         </span>
       </div>
 
-      {/* Partidos - Espaciado mínimo */}
-      <div className="flex flex-col gap-2">
+      {/* Partidos - Espaciado adaptativo */}
+      <div className="flex flex-col gap-2 md:gap-3">
         {partidos.map((partido, index) => (
           <PartidoCard
             key={partido.id}
@@ -435,48 +445,48 @@ function PartidoCard({
         <div className="absolute -left-3 top-1/2 w-3 h-px bg-white/20" />
       )}
       
-      {/* Card según diseño de referencia */}
+      {/* Card según diseño de referencia - Responsive */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className={`
-          relative w-48 bg-[#1a1d26] border rounded-lg overflow-hidden
+          relative w-40 md:w-48 bg-[#1a1d26] border rounded-lg overflow-hidden
           ${isFinalizado ? 'border-green-500/30' : 'border-[#df2531]/30'}
         `}
       >
         {/* Header: Partido X */}
-        <div className="px-3 py-1.5 border-b border-white/5">
-          <span className="text-sm font-medium text-gray-300">
+        <div className="px-2.5 md:px-3 py-1.5 border-b border-white/5">
+          <span className="text-xs md:text-sm font-medium text-gray-300">
             Partido {index + 1}
           </span>
           {partido.cancha && (
-            <div className="text-xs text-gray-500 uppercase tracking-wider mt-0.5">
+            <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider mt-0.5 truncate">
               {partido.cancha}
             </div>
           )}
         </div>
 
         {/* Contenido */}
-        <div className="p-3 space-y-3">
+        <div className="p-2.5 md:p-3 space-y-2 md:space-y-3">
           {/* Pareja 1 */}
           <div className={`flex items-center gap-3 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
             {tienePareja1 ? (
               <>
                 {/* Avatar doble */}
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-[#df2531] flex items-center justify-center text-xs font-bold border-2 border-[#1a1d26]">
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
                     {partido.inscripcion1!.jugador1.nombre[0]}
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#df2531] flex items-center justify-center text-xs font-bold border-2 border-[#1a1d26]">
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
                     {partido.inscripcion1!.jugador2.nombre[0]}
                   </div>
                 </div>
-                {/* Nombres - ambos mismo tamaño */}
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">
+                {/* Nombres - ambos mismo tamaño y peso */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
                     {partido.inscripcion1!.jugador1.apellido}
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
                     {partido.inscripcion1!.jugador2.apellido}
                   </div>
                 </div>
@@ -487,13 +497,13 @@ function PartidoCard({
           </div>
 
           {/* VS / Resultado */}
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center py-0.5">
             {isFinalizado && partido.resultado ? (
-              <span className="text-lg font-mono text-green-400 font-bold">
+              <span className="text-base md:text-lg font-mono text-green-400 font-bold">
                 {partido.resultado.set1[0]} - {partido.resultado.set1[1]}
               </span>
             ) : (
-              <span className="text-[#df2531] text-sm font-bold">VS</span>
+              <span className="text-[#df2531] text-xs md:text-sm font-bold">VS</span>
             )}
           </div>
 
@@ -503,19 +513,19 @@ function PartidoCard({
               <>
                 {/* Avatar doble */}
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-[#df2531] flex items-center justify-center text-xs font-bold border-2 border-[#1a1d26]">
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
                     {partido.inscripcion2!.jugador1.nombre[0]}
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#df2531] flex items-center justify-center text-xs font-bold border-2 border-[#1a1d26]">
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
                     {partido.inscripcion2!.jugador2.nombre[0]}
                   </div>
                 </div>
-                {/* Nombres - ambos mismo tamaño */}
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">
+                {/* Nombres - ambos mismo tamaño y peso */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
                     {partido.inscripcion2!.jugador1.apellido}
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
                     {partido.inscripcion2!.jugador2.apellido}
                   </div>
                 </div>
@@ -528,9 +538,9 @@ function PartidoCard({
 
         {/* Fecha/hora */}
         {partido.fecha && (
-          <div className="px-3 py-2 bg-black/20 text-xs text-gray-500 flex items-center gap-2">
-            <Calendar className="w-3 h-3" />
-            {formatDatePY(partido.fecha)} {partido.hora}
+          <div className="px-2.5 md:px-3 py-1.5 md:py-2 bg-black/20 text-[10px] md:text-xs text-gray-500 flex items-center gap-1.5 md:gap-2">
+            <Calendar className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{formatDatePY(partido.fecha)} {partido.hora}</span>
           </div>
         )}
       </motion.div>
