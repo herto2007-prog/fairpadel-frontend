@@ -365,9 +365,9 @@ function MatchCard({
                   {partido.inscripcion1.jugador2.nombre}
                 </div>
               </div>
-              {/* Resultados equipo 1 (solo sus puntos) */}
+              {/* Resultados equipo 1 (horizontal) */}
               {isFinalizado && (
-                <div className="flex flex-col items-end ml-1">
+                <div className="flex items-center gap-1 ml-1">
                   {esDescalificacion && pareja1Gano ? (
                     <span className="text-[10px] font-bold text-red-600">DESC.</span>
                   ) : esAbandono && !pareja1Gano ? (
@@ -381,12 +381,7 @@ function MatchCard({
                       </span>
                       {partido.resultado.set2 && (
                         <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {partido.resultado.set2[0]}
-                        </span>
-                      )}
-                      {partido.resultado.set3 && (
-                        <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {partido.resultado.set3[0]}
+                          {'>'} {partido.resultado.set2[0]}
                         </span>
                       )}
                     </>
@@ -421,9 +416,9 @@ function MatchCard({
                   {partido.inscripcion2.jugador2.nombre}
                 </div>
               </div>
-              {/* Resultados equipo 2 (solo sus puntos) */}
+              {/* Resultados equipo 2 (horizontal) */}
               {isFinalizado && (
-                <div className="flex flex-col items-end ml-1">
+                <div className="flex items-center gap-1 ml-1">
                   {esDescalificacion && pareja2Gano ? (
                     <span className="text-[10px] font-bold text-red-600">DESC.</span>
                   ) : esAbandono && !pareja2Gano ? (
@@ -437,12 +432,7 @@ function MatchCard({
                       </span>
                       {partido.resultado.set2 && (
                         <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {partido.resultado.set2[1]}
-                        </span>
-                      )}
-                      {partido.resultado.set3 && (
-                        <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {partido.resultado.set3[1]}
+                          {'>'} {partido.resultado.set2[1]}
                         </span>
                       )}
                     </>
