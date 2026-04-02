@@ -386,10 +386,10 @@ function PartidoChampionship({
                 size="sm"
               />
               <div className="flex-1 min-w-0">
-                <div className={`font-medium text-xs truncate ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+                <div className={`font-medium text-[11px] truncate ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
                   {partido.inscripcion1!.jugador1.apellido}
                 </div>
-                <div className="text-[10px] text-gray-400 truncate">
+                <div className={`text-[11px] truncate ${pareja1Gano ? 'text-green-400/70' : 'text-gray-400'}`}>
                   {partido.inscripcion1!.jugador2.apellido}
                 </div>
               </div>
@@ -435,10 +435,10 @@ function PartidoChampionship({
                 size="sm"
               />
               <div className="flex-1 min-w-0">
-                <div className={`font-medium text-xs truncate ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+                <div className={`font-medium text-[11px] truncate ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
                   {partido.inscripcion2!.jugador1.apellido}
                 </div>
-                <div className="text-[10px] text-gray-400 truncate">
+                <div className={`text-[11px] truncate ${pareja2Gano ? 'text-green-400/70' : 'text-gray-400'}`}>
                   {partido.inscripcion2!.jugador2.apellido}
                 </div>
               </div>
