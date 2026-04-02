@@ -12,8 +12,11 @@ export interface Reserva {
 }
 
 export const alquileresService = {
-  getDisponibilidad: (sedeId: string, fecha: string, canchaId?: string) =>
-    api.get('/alquileres/disponibilidad', { params: { sedeId, fecha, canchaId } }).then(r => r.data),
+  getDisponibilidad: (sedeId: string, fecha: string, canchaId?: string, duracionMinutos?: number) =>
+    api.get('/alquileres/disponibilidad', { params: { sedeId, fecha, canchaId, duracionMinutos } }).then(r => r.data),
+  
+  getDisponibilidadGlobal: (fecha: string, duracionMinutos: number) =>
+    api.get('/alquileres/disponibilidad-global', { params: { fecha, duracionMinutos } }).then(r => r.data),
   
   crearReserva: (data: any) => api.post('/alquileres/reservas', data).then(r => r.data),
   

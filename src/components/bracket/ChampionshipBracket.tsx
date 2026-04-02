@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Maximize2, Minimize2, ChevronDown, Users } from 'lucide-react';
+import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
-
 
 
 interface Partido {
@@ -33,8 +32,6 @@ interface Partido {
   fecha?: string;
   hora?: string;
   cancha?: string;
-  categoriaNombre?: string;
-  categoriaTipo?: string;
 }
 
 interface Categoria {
@@ -49,13 +46,11 @@ interface ChampionshipBracketProps {
   onFullscreen?: (isFullscreen: boolean) => void;
 }
 
-const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'] as const;
+// Fases que NO llevan conectores (fase de grupos y repechaje)
+const FASES_SIN_CONECTORES = ['ZONA', 'REPECHAJE'];
 
-// Dimensiones
-const CARD_HEIGHT = 100;
-const CARD_WIDTH = 180;
-const CARD_GAP_Y = 24; // gap vertical entre cards
-const COLUMN_GAP_X = 60; // gap horizontal entre columnas
+// Fases del bracket eliminatorio (CON conectores)
+const FASES_BRACKET = ['OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'];
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -66,21 +61,13 @@ export function ChampionshipBracket({
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [torneoInfo, setTorneoInfo] = useState<any>(null);
-
   const [hasNewChanges, setHasNewChanges] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [mostrarSelector, setMostrarSelector] = useState(false);
 
-  useEffect(() => {
-    loadCategorias();
-  }, [tournamentId]);
-
-  useEffect(() => {
-    if (categoriaSeleccionada) {
-      loadData();
-    }
-  }, [tournamentId, categoriaSeleccionada]);
+  useEffect(() => { loadCategorias(); }, [tournamentId]);
+  useEffect(() => { if (categoriaSeleccionada) loadData(); }, [tournamentId, categoriaSeleccionada]);
 
   const loadCategorias = async () => {
     try {
@@ -106,21 +93,15 @@ export function ChampionshipBracket({
   const inferirTipo = (tipo: string, nombre: string): 'DAMAS' | 'CABALLEROS' | 'MIXTO' => {
     const tipoUpper = tipo?.toUpperCase() || '';
     const nombreUpper = nombre?.toUpperCase() || '';
-    
-    if (tipoUpper === 'FEMENINO' || nombreUpper.includes('FEMENIN') || nombreUpper.includes('DAMA')) {
-      return 'DAMAS';
-    } else if (tipoUpper === 'MASCULINO' || nombreUpper.includes('MASCULIN') || nombreUpper.includes('CABALLERO')) {
-      return 'CABALLEROS';
-    }
+    if (tipoUpper === 'FEMENINO' || nombreUpper.includes('FEMENIN') || nombreUpper.includes('DAMA')) return 'DAMAS';
+    if (tipoUpper === 'MASCULINO' || nombreUpper.includes('MASCULIN') || nombreUpper.includes('CABALLERO')) return 'CABALLEROS';
     return 'MIXTO';
   };
 
   const loadData = async (silent = false) => {
     if (!categoriaSeleccionada) return;
-    
     try {
       if (!silent) setLoading(true);
-      
       const endpoint = isPublic 
         ? `/public/torneos/${tournamentId}/bracket?categoriaId=${categoriaSeleccionada}`
         : `/admin/torneos/${tournamentId}/bracket?categoriaId=${categoriaSeleccionada}`;
@@ -128,21 +109,18 @@ export function ChampionshipBracket({
       const { data } = await api.get(endpoint);
       if (data.success) {
         const newPartidos = data.partidos || [];
-        const hasChanges = partidos.length !== newPartidos.length || 
+        // Detectar cambios
+        const hasChanges = partidos.length > 0 && (
+          partidos.length !== newPartidos.length ||
           partidos.some((p, i) => {
             const np = newPartidos[i];
-            return p.ganador?.id !== np.ganador?.id ||
-                   p.resultado?.set1?.[0] !== np.resultado?.set1?.[0] ||
-                   p.fecha !== np.fecha ||
-                   p.hora !== np.hora ||
-                   p.cancha !== np.cancha;
-          });
-        
-        if (hasChanges && partidos.length > 0) {
+            return p.ganador?.id !== np.ganador?.id || p.resultado?.set1?.[0] !== np.resultado?.set1?.[0];
+          })
+        );
+        if (hasChanges) {
           setHasNewChanges(true);
           setTimeout(() => setHasNewChanges(false), 3000);
         }
-        
         setPartidos(newPartidos);
         setTorneoInfo(data.torneo);
       }
@@ -153,47 +131,26 @@ export function ChampionshipBracket({
     }
   };
 
-  // Polling inteligente: solo cuando la pestaña está visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && categoriaSeleccionada) {
-        loadData(true);
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [tournamentId, categoriaSeleccionada]);
-
+  // Agrupar partidos por fase
   const partidosPorFase = useMemo(() => {
     const grupos: Record<string, Partido[]> = {};
-    FASES_ORDEN.forEach(fase => grupos[fase] = []);
-    
+    [...FASES_SIN_CONECTORES, ...FASES_BRACKET].forEach(fase => grupos[fase] = []);
     partidos.forEach(p => {
       const faseNormalizada = p.fase?.toUpperCase() || '';
-      if (grupos[faseNormalizada]) {
-        grupos[faseNormalizada].push(p);
-      }
+      if (grupos[faseNormalizada]) grupos[faseNormalizada].push(p);
     });
-    
-    Object.keys(grupos).forEach(fase => {
-      grupos[fase].sort((a, b) => a.orden - b.orden);
-    });
-    
+    Object.keys(grupos).forEach(fase => grupos[fase].sort((a, b) => a.orden - b.orden));
     return grupos;
   }, [partidos]);
 
-  const fasesActivas = FASES_ORDEN.filter(f => partidosPorFase[f]?.length > 0);
-
-  // Calcular altura total necesaria basada en la primera fase
-  const maxPartidosPrimeraFase = fasesActivas.length > 0 ? partidosPorFase[fasesActivas[0]].length : 0;
-  const alturaTotal = maxPartidosPrimeraFase * (CARD_HEIGHT + CARD_GAP_Y);
+  // Separar fases
+  const fasesSinConectores = FASES_SIN_CONECTORES.filter(f => partidosPorFase[f]?.length > 0);
+  const fasesBracket = FASES_BRACKET.filter(f => partidosPorFase[f]?.length > 0);
 
   const toggleFullscreen = () => {
     const newState = !isFullscreen;
     setIsFullscreen(newState);
     onFullscreen?.(newState);
-    
     if (newState && document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen();
     } else if (document.exitFullscreen) {
@@ -201,13 +158,11 @@ export function ChampionshipBracket({
     }
   };
 
-  const categoriasPorTipo = useMemo(() => {
-    return {
-      DAMAS: categorias.filter(c => c.tipo === 'DAMAS'),
-      CABALLEROS: categorias.filter(c => c.tipo === 'CABALLEROS'),
-      MIXTO: categorias.filter(c => c.tipo === 'MIXTO'),
-    };
-  }, [categorias]);
+  const categoriasPorTipo = useMemo(() => ({
+    DAMAS: categorias.filter(c => c.tipo === 'DAMAS'),
+    CABALLEROS: categorias.filter(c => c.tipo === 'CABALLEROS'),
+    MIXTO: categorias.filter(c => c.tipo === 'MIXTO'),
+  }), [categorias]);
 
   const categoriaActual = categorias.find(c => c.id === categoriaSeleccionada);
 
@@ -225,25 +180,14 @@ export function ChampionshipBracket({
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col min-h-screen`}>
-      {/* Header Sticky */}
+      {/* Header */}
       <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/95 backdrop-blur shrink-0">
-        {/* Espaciador izquierdo */}
         <div className="w-8" />
-
-        {/* Info Torneo + Selector Categoría */}
         <div className="flex-1 flex items-center justify-center gap-4">
           <div className="text-center">
-            <h2 className="text-lg font-bold text-white">
-              {torneoInfo?.nombre || 'Torneo'}
-            </h2>
-            {torneoInfo && (
-              <p className="text-xs text-gray-400">
-                {torneoInfo.ciudad}
-              </p>
-            )}
+            <h2 className="text-lg font-bold text-white">{torneoInfo?.nombre || 'Torneo'}</h2>
+            {torneoInfo && <p className="text-xs text-gray-400">{torneoInfo.ciudad}</p>}
           </div>
-
-          {/* Selector de Categoría */}
           <div className="relative">
             <button
               onClick={() => setMostrarSelector(!mostrarSelector)}
@@ -252,76 +196,37 @@ export function ChampionshipBracket({
               {categoriaActual?.nombre || 'Seleccionar'}
               <ChevronDown className="w-4 h-4" />
             </button>
-
             {mostrarSelector && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute top-full left-0 mt-2 w-56 bg-[#151921] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
-              >
-                {/* Damas */}
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                className="absolute top-full left-0 mt-2 w-56 bg-[#151921] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
                 {categoriasPorTipo.DAMAS.length > 0 && (
                   <div className="border-b border-white/5">
-                    <div className="px-3 py-2 text-xs font-medium text-pink-400 uppercase tracking-wider bg-pink-500/10">
-                      Damas
-                    </div>
+                    <div className="px-3 py-2 text-xs font-medium text-pink-400 uppercase tracking-wider bg-pink-500/10">Damas</div>
                     {categoriasPorTipo.DAMAS.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          setCategoriaSeleccionada(cat.id);
-                          setMostrarSelector(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
-                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
-                        }`}
-                      >
+                      <button key={cat.id} onClick={() => { setCategoriaSeleccionada(cat.id); setMostrarSelector(false); }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'}`}>
                         {cat.nombre}
                       </button>
                     ))}
                   </div>
                 )}
-
-                {/* Caballeros */}
                 {categoriasPorTipo.CABALLEROS.length > 0 && (
                   <div className="border-b border-white/5">
-                    <div className="px-3 py-2 text-xs font-medium text-blue-400 uppercase tracking-wider bg-blue-500/10">
-                      Caballeros
-                    </div>
+                    <div className="px-3 py-2 text-xs font-medium text-blue-400 uppercase tracking-wider bg-blue-500/10">Caballeros</div>
                     {categoriasPorTipo.CABALLEROS.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          setCategoriaSeleccionada(cat.id);
-                          setMostrarSelector(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
-                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
-                        }`}
-                      >
+                      <button key={cat.id} onClick={() => { setCategoriaSeleccionada(cat.id); setMostrarSelector(false); }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'}`}>
                         {cat.nombre}
                       </button>
                     ))}
                   </div>
                 )}
-
-                {/* Mixto */}
                 {categoriasPorTipo.MIXTO.length > 0 && (
                   <div>
-                    <div className="px-3 py-2 text-xs font-medium text-purple-400 uppercase tracking-wider bg-purple-500/10">
-                      Mixto
-                    </div>
+                    <div className="px-3 py-2 text-xs font-medium text-purple-400 uppercase tracking-wider bg-purple-500/10">Mixto</div>
                     {categoriasPorTipo.MIXTO.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          setCategoriaSeleccionada(cat.id);
-                          setMostrarSelector(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
-                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
-                        }`}
-                      >
+                      <button key={cat.id} onClick={() => { setCategoriaSeleccionada(cat.id); setMostrarSelector(false); }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'}`}>
                         {cat.nombre}
                       </button>
                     ))}
@@ -330,56 +235,37 @@ export function ChampionshipBracket({
               </motion.div>
             )}
           </div>
-
-          {/* Indicador actualización */}
           {hasNewChanges && (
-            <motion.span 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs flex items-center gap-1"
-            >
+            <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+              className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               Actualizado
             </motion.span>
           )}
         </div>
-
-        {/* Fullscreen */}
-        <button
-          onClick={toggleFullscreen}
-          className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-5 h-5 text-white" />
-          ) : (
-            <Maximize2 className="w-5 h-5 text-white" />
-          )}
+        <button onClick={toggleFullscreen} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+          {isFullscreen ? <Minimize2 className="w-5 h-5 text-white" /> : <Maximize2 className="w-5 h-5 text-white" />}
         </button>
       </div>
 
-      {/* Bracket Container */}
-      <div className="flex-1 relative bg-[#0a0b0f] overflow-auto">
+      {/* Contenido */}
+      <div className="flex-1 bg-[#0a0b0f] p-4 md:p-8">
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div 
-            className="min-w-max p-8 md:p-12"
-            style={{ minHeight: `${alturaTotal + 100}px` }}
-          >
-            <div className="flex gap-12 md:gap-16">
-              {fasesActivas.map((fase, faseIndex) => (
-                <FaseColumn
-                  key={fase}
-                  fase={fase}
-                  partidos={partidosPorFase[fase]}
-                  faseIndex={faseIndex}
-                  totalFases={fasesActivas.length}
-                />
-              ))}
-            </div>
+          <div className="space-y-8">
+            {/* FASES SIN CONECTORES (Zona, Repechaje) */}
+            {fasesSinConectores.map(fase => (
+              <FaseSinConectores key={fase} fase={fase} partidos={partidosPorFase[fase]} />
+            ))}
+
+            {/* BRACKET ELIMINATORIO (Con conectores) */}
+            {fasesBracket.length > 0 && (
+              <BracketEliminatorio partidosPorFase={partidosPorFase} fasesActivas={fasesBracket} />
+            )}
           </div>
         )}
       </div>
@@ -387,7 +273,135 @@ export function ChampionshipBracket({
   );
 }
 
-function FaseColumn({ 
+// Componente para fases sin conectores (Zona, Repechaje)
+function FaseSinConectores({ fase, partidos }: { fase: string; partidos: Partido[] }) {
+  const getFaseLabel = (f: string) => {
+    switch(f) {
+      case 'ZONA': return 'FASE DE GRUPOS';
+      case 'REPECHAJE': return 'REPECHAJE';
+      default: return f;
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4 px-4 py-2 bg-[#df2531]/20 text-[#df2531] border border-[#df2531]/30 rounded-lg inline-block">
+        <span className="text-sm font-bold uppercase tracking-wider">{getFaseLabel(fase)}</span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {partidos.map(partido => (
+          <PartidoCardSimple key={partido.id} partido={partido} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Card simple para fase de grupos/repechaje
+function PartidoCardSimple({ partido }: { partido: Partido }) {
+  const isFinalizado = !!partido.ganador;
+  const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
+  const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
+
+  return (
+    <div className={`bg-[#1a1d26] border rounded-lg overflow-hidden ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}`}>
+      <div className="px-3 py-2 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+        <span className="text-xs text-gray-400">#{partido.orden}</span>
+        {partido.cancha && <span className="text-[10px] text-gray-500">{partido.cancha}</span>}
+      </div>
+      <div className="p-3 space-y-3">
+        {/* Pareja 1 */}
+        <div className={`flex items-center justify-between ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className="flex items-center gap-2">
+            {partido.inscripcion1 ? (
+              <>
+                <div className="flex -space-x-1">
+                  <Avatar jugador={partido.inscripcion1.jugador1} small />
+                  <Avatar jugador={partido.inscripcion1.jugador2} small />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold">{partido.inscripcion1.jugador1.apellido}</div>
+                  <div className="text-xs font-semibold">{partido.inscripcion1.jugador2.apellido}</div>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-500 italic">Por definir</span>
+            )}
+          </div>
+          {isFinalizado && partido.resultado && (
+            <span className="text-sm font-mono font-bold">{partido.resultado.set1[0]}</span>
+          )}
+        </div>
+
+        {/* VS */}
+        <div className="flex items-center justify-center">
+          <span className="text-[#df2531] text-xs font-bold">VS</span>
+        </div>
+
+        {/* Pareja 2 */}
+        <div className={`flex items-center justify-between ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className="flex items-center gap-2">
+            {partido.inscripcion2 ? (
+              <>
+                <div className="flex -space-x-1">
+                  <Avatar jugador={partido.inscripcion2.jugador1} small />
+                  <Avatar jugador={partido.inscripcion2.jugador2} small />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold">{partido.inscripcion2.jugador1.apellido}</div>
+                  <div className="text-xs font-semibold">{partido.inscripcion2.jugador2.apellido}</div>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-500 italic">Por definir</span>
+            )}
+          </div>
+          {isFinalizado && partido.resultado && (
+            <span className="text-sm font-mono font-bold">{partido.resultado.set1[1]}</span>
+          )}
+        </div>
+      </div>
+      {partido.fecha && (
+        <div className="px-3 py-2 bg-black/20 text-[10px] text-gray-500">
+          {partido.fecha} {partido.hora}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Bracket eliminatorio con conectores (estructura de árbol)
+function BracketEliminatorio({ partidosPorFase, fasesActivas }: { 
+  partidosPorFase: Record<string, Partido[]>; 
+  fasesActivas: string[];
+}) {
+  
+  return (
+    <div>
+      <div className="mb-4 px-4 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg inline-block">
+        <span className="text-sm font-bold uppercase tracking-wider">🏆 ELIMINATORIAS</span>
+      </div>
+      
+      <div className="overflow-x-auto pb-4">
+        <div className="flex items-stretch gap-8 md:gap-12 min-w-max">
+          {fasesActivas.map((fase, faseIndex) => (
+            <BracketColumn
+              key={fase}
+              fase={fase}
+              partidos={partidosPorFase[fase]}
+              faseIndex={faseIndex}
+              totalFases={fasesActivas.length}
+
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Columna del bracket con conectores
+function BracketColumn({ 
   fase, 
   partidos, 
   faseIndex,
@@ -400,12 +414,10 @@ function FaseColumn({
 }) {
   const getFaseLabel = (f: string) => {
     switch(f) {
-      case 'OCTAVOS': return 'OCTAVOS DE FINAL';
-      case 'CUARTOS': return 'CUARTOS DE FINAL';
-      case 'SEMIFINAL': return 'SEMIFINALES';
+      case 'OCTAVOS': return 'OCTAVOS';
+      case 'CUARTOS': return 'CUARTOS';
+      case 'SEMIFINAL': return 'SEMIS';
       case 'FINAL': return '🏆 FINAL';
-      case 'ZONA': return 'FASE DE GRUPOS';
-      case 'REPECHAJE': return 'REPECHAJE';
       default: return f;
     }
   };
@@ -418,38 +430,31 @@ function FaseColumn({
     }
   };
 
-  const isPrimeraFase = faseIndex === 0;
-  const isUltimaFase = faseIndex === totalFases - 1;
-
-  // Calcular el espaciado vertical necesario
-  // Cada fase tiene el doble de espacio entre partidos que la anterior
+  // Calcular el espaciado basado en cuántos partidos faltan en la columna
   const nivelEnArbol = totalFases - 1 - faseIndex; // 0 = final, 1 = semis, etc.
-  const espaciadoEntrePartidos = (CARD_HEIGHT + CARD_GAP_Y) * Math.pow(2, nivelEnArbol) - CARD_HEIGHT;
+  
+  // El espaciado debe ser proporcional para que los conectores alineen bien
+  const baseSpacing = 20; // px
+  const gapBetweenCards = baseSpacing * Math.pow(2, nivelEnArbol + 1);
 
   return (
-    <div className="flex flex-col" style={{ width: CARD_WIDTH }}>
-      {/* Etiqueta de Fase */}
-      <div className={`mb-6 px-3 py-2 rounded-lg border ${getFaseColor(fase)} text-center`}>
-        <span className="text-xs font-bold uppercase tracking-wider">
-          {getFaseLabel(fase)}
-        </span>
+    <div className="flex flex-col">
+      {/* Etiqueta de fase */}
+      <div className={`mb-4 px-3 py-2 rounded-lg border ${getFaseColor(fase)} text-center`}>
+        <span className="text-xs font-bold uppercase tracking-wider">{getFaseLabel(fase)}</span>
       </div>
 
-      {/* Contenedor de partidos - centrado verticalmente */}
-      <div 
-        className="flex flex-col"
-        style={{ 
-          gap: `${espaciadoEntrePartidos}px`,
-          paddingTop: faseIndex === 0 ? 0 : (espaciadoEntrePartidos / 2)
-        }}
-      >
-        {partidos.map((partido) => (
-          <PartidoNode
+      {/* Contenedor de partidos con espaciado dinámico */}
+      <div className="flex flex-col flex-1 justify-center" style={{ gap: `${gapBetweenCards}px` }}>
+        {partidos.map((partido, index) => (
+          <BracketMatchCard
             key={partido.id}
             partido={partido}
-            showLineLeft={!isPrimeraFase}
-            showLineRight={!isUltimaFase}
-            lineOffset={espaciadoEntrePartidos / 2 + CARD_HEIGHT / 2}
+            showConnectorLeft={faseIndex > 0}
+            showConnectorRight={faseIndex < totalFases - 1}
+            gapBetweenCards={gapBetweenCards}
+            isFirstInColumn={index === 0}
+            isLastInColumn={index === partidos.length - 1}
           />
         ))}
       </div>
@@ -457,204 +462,147 @@ function FaseColumn({
   );
 }
 
-function PartidoNode({
+// Card de partido con conectores
+function BracketMatchCard({
   partido,
-  showLineLeft,
-  showLineRight,
-  lineOffset
+  showConnectorLeft,
+  showConnectorRight,
+  gapBetweenCards,
 }: {
   partido: Partido;
-  showLineLeft: boolean;
-  showLineRight: boolean;
-  lineOffset: number;
+  showConnectorLeft: boolean;
+  showConnectorRight: boolean;
+  gapBetweenCards: number;
+  isFirstInColumn: boolean;
+  isLastInColumn: boolean;
 }) {
   const isFinalizado = !!partido.ganador;
-  const tienePareja1 = !!partido.inscripcion1;
-  const tienePareja2 = !!partido.inscripcion2;
-  
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
+  
+  // Altura de la línea vertical del conector
+  const connectorHeight = gapBetweenCards / 2 + 40; // 40 es la mitad aprox de la altura de la card
 
   return (
-    <div className="relative" style={{ height: CARD_HEIGHT }}>
-      {/* Línea de entrada izquierda */}
-      {showLineLeft && (
+    <div className="relative flex items-center">
+      {/* Línea de entrada izquierda (desde fase anterior) */}
+      {showConnectorLeft && (
         <>
           {/* Horizontal */}
+          <div className="absolute left-0 top-1/2 w-6 h-px bg-white/30 -translate-x-full" />
+          {/* Vertical superior */}
           <div 
-            className="absolute bg-white/20"
-            style={{ 
-              width: `${COLUMN_GAP_X / 2}px`, 
-              height: '1px',
-              left: `-${COLUMN_GAP_X / 2}px`,
-              top: '50%'
-            }}
-          />
-          {/* Vertical que conecta arriba */}
-          <div 
-            className="absolute bg-white/20"
+            className="absolute bg-white/30 left-0 -translate-x-full"
             style={{ 
               width: '1px', 
-              height: `${lineOffset}px`,
-              left: `-${COLUMN_GAP_X / 2}px`,
+              height: `${connectorHeight}px`,
               top: '50%',
-              transform: 'translateY(-100%)'
+              transform: 'translate(-24px, -100%)'
             }}
           />
-          {/* Vertical que conecta abajo */}
+          {/* Vertical inferior */}
           <div 
-            className="absolute bg-white/20"
+            className="absolute bg-white/30 left-0 -translate-x-full"
             style={{ 
               width: '1px', 
-              height: `${lineOffset}px`,
-              left: `-${COLUMN_GAP_X / 2}px`,
-              top: '50%'
+              height: `${connectorHeight}px`,
+              top: '50%',
+              transform: 'translateX(-24px)'
             }}
           />
         </>
       )}
 
       {/* Card del partido */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`
-          absolute inset-0 bg-[#1a1d26] border rounded-lg overflow-hidden
-          ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}
-          hover:border-white/20 transition-colors
-        `}
-      >
+      <div className={`w-44 md:w-52 bg-[#1a1d26] border rounded-lg overflow-hidden shrink-0 ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}`}>
         {/* Header */}
-        <div className="px-2.5 py-1 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-          <span className="text-[10px] font-medium text-gray-400">
-            #{partido.orden}
-          </span>
-          {partido.cancha && (
-            <span className="text-[9px] text-gray-500 truncate max-w-[70px]">
-              {partido.cancha}
+        <div className="px-2.5 py-1 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+          <span className="text-[10px] text-gray-400">#{partido.orden}</span>
+          {partido.cancha && <span className="text-[9px] text-gray-500 truncate max-w-[60px]">{partido.cancha}</span>}
+        </div>
+
+        {/* Equipo 1 */}
+        <div className={`px-3 py-2 flex items-center justify-between border-b border-white/5 ${pareja1Gano ? 'bg-green-500/5' : ''}`}>
+          <div className="flex items-center gap-2">
+            {partido.inscripcion1 ? (
+              <>
+                <div className="flex -space-x-1">
+                  <Avatar jugador={partido.inscripcion1.jugador1} small />
+                  <Avatar jugador={partido.inscripcion1.jugador2} small />
+                </div>
+                <div className={`text-xs font-semibold ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+                  {partido.inscripcion1.jugador1.apellido} / {partido.inscripcion1.jugador2.apellido}
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-500 italic">Por definir</span>
+            )}
+          </div>
+          {isFinalizado && partido.resultado && (
+            <span className={`text-sm font-mono font-bold ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+              {partido.resultado.set1[0]}
             </span>
           )}
         </div>
 
-        {/* Contenido - Layout horizontal compacto */}
-        <div className="p-2 flex items-center justify-between h-[calc(100%-24px)]">
-          {/* Pareja 1 */}
-          <div className={`flex flex-col items-center gap-0.5 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
-            {tienePareja1 ? (
+        {/* Equipo 2 */}
+        <div className={`px-3 py-2 flex items-center justify-between ${pareja2Gano ? 'bg-green-500/5' : ''}`}>
+          <div className="flex items-center gap-2">
+            {partido.inscripcion2 ? (
               <>
                 <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion1!.jugador1} />
-                  <Avatar jugador={partido.inscripcion1!.jugador2} />
+                  <Avatar jugador={partido.inscripcion2.jugador1} small />
+                  <Avatar jugador={partido.inscripcion2.jugador2} small />
                 </div>
-                <div className="text-center leading-tight">
-                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
-                    {partido.inscripcion1!.jugador1.apellido}
-                  </div>
-                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
-                    {partido.inscripcion1!.jugador2.apellido}
-                  </div>
+                <div className={`text-xs font-semibold ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+                  {partido.inscripcion2.jugador1.apellido} / {partido.inscripcion2.jugador2.apellido}
                 </div>
               </>
             ) : (
-              <PorDefinir />
+              <span className="text-xs text-gray-500 italic">Por definir</span>
             )}
           </div>
-
-          {/* VS / Resultado */}
-          <div className="flex flex-col items-center px-1">
-            {isFinalizado && partido.resultado ? (
-              <span className="text-xs font-mono text-green-400 font-bold">
-                {partido.resultado.set1[0]}:{partido.resultado.set1[1]}
-              </span>
-            ) : (
-              <span className="text-[#df2531] text-[10px] font-bold">VS</span>
-            )}
-            {partido.fecha && (
-              <span className="text-[8px] text-gray-500 mt-0.5">
-                {partido.fecha.slice(5).replace('-', '/')}
-              </span>
-            )}
-          </div>
-
-          {/* Pareja 2 */}
-          <div className={`flex flex-col items-center gap-0.5 ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
-            {tienePareja2 ? (
-              <>
-                <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion2!.jugador1} />
-                  <Avatar jugador={partido.inscripcion2!.jugador2} />
-                </div>
-                <div className="text-center leading-tight">
-                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
-                    {partido.inscripcion2!.jugador1.apellido}
-                  </div>
-                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
-                    {partido.inscripcion2!.jugador2.apellido}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <PorDefinir />
-            )}
-          </div>
+          {isFinalizado && partido.resultado && (
+            <span className={`text-sm font-mono font-bold ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+              {partido.resultado.set1[1]}
+            </span>
+          )}
         </div>
 
-        {/* Indicador de ganador */}
-        {isFinalizado && (
-          <div className="absolute top-1 right-1">
-            <Trophy className="w-2.5 h-2.5 text-yellow-500" />
+        {/* Fecha/hora */}
+        {partido.fecha && (
+          <div className="px-3 py-1.5 bg-black/20 text-[9px] text-gray-500 text-center">
+            {partido.fecha.slice(5)} {partido.hora}
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* Línea de salida derecha */}
-      {showLineRight && (
-        <div 
-          className="absolute bg-white/20"
-          style={{ 
-            width: `${COLUMN_GAP_X / 2}px`, 
-            height: '1px',
-            right: `-${COLUMN_GAP_X / 2}px`,
-            top: '50%'
-          }}
-        />
+      {/* Línea de salida derecha (hacia siguiente fase) */}
+      {showConnectorRight && (
+        <div className="absolute right-0 top-1/2 w-6 h-px bg-white/30 translate-x-full" />
       )}
     </div>
   );
 }
 
-function Avatar({ jugador }: { jugador: { nombre: string; fotoUrl?: string | null } }) {
+// Avatar component
+function Avatar({ jugador, small = false }: { jugador: { nombre: string; fotoUrl?: string | null }; small?: boolean }) {
   const initial = jugador.nombre ? jugador.nombre[0].toUpperCase() : '?';
+  const size = small ? 'w-5 h-5 text-[8px]' : 'w-6 h-6 text-[10px]';
   
   if (jugador.fotoUrl) {
     return (
       <img 
         src={jugador.fotoUrl} 
         alt={jugador.nombre}
-        className="w-6 h-6 rounded-full object-cover border border-[#1a1d26]"
+        className={`${size} rounded-full object-cover border border-[#1a1d26]`}
       />
     );
   }
   
   return (
-    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center text-[9px] font-bold border border-[#1a1d26]">
+    <div className={`${size} rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center font-bold border border-[#1a1d26]`}>
       {initial}
     </div>
-  );
-}
-
-function PorDefinir() {
-  return (
-    <>
-      <div className="flex -space-x-1">
-        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center border border-[#1a1d26]">
-          <Users className="w-2.5 h-2.5 text-gray-500" />
-        </div>
-        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center border border-[#1a1d26]">
-          <Users className="w-2.5 h-2.5 text-gray-500" />
-        </div>
-      </div>
-      <div className="text-[8px] text-gray-500 italic">Por definir</div>
-    </>
   );
 }

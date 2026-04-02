@@ -33,8 +33,8 @@ import { CircuitosListPage, CircuitoDetailPage } from './features/circuitos';
 import { PerfilMockupPage } from './features/perfil/pages/PerfilMockupPage';
 import { PerfilPage } from './features/perfil/pages/PerfilPage';
 
-// Sedes (V2)
-import SedesListPage from './features/sedes/pages/SedesListPage';
+// Canchas/Reservas (V2)
+import { CanchasPage } from './features/canchas/pages/CanchasPage';
 import SedeDetailPage from './features/sedes/pages/SedeDetailPage';
 
 // Alquileres (V2)
@@ -133,8 +133,8 @@ function App() {
           <Route path="/circuitos" element={<CircuitosListPage />} />
           <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
           
-          {/* Sedes (V2) */}
-          <Route path="/sedes" element={<SedesListPage />} />
+          {/* Canchas/Reservas (V2) */}
+          <Route path="/sedes" element={<CanchasPage />} />
           <Route path="/sedes/:id" element={<SedeDetailPage />} />
           
           {/* Alquileres (V2) */}

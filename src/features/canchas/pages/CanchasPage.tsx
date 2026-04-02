@@ -1,0 +1,247 @@
+import { useState, useEffect } from 'react';
+import { MapPin, ChevronRight, Clock } from 'lucide-react';
+import { api } from '../../../services/api';
+import { DateCarousel } from '../../../components/ui/DateCarousel';
+import { DurationSelector } from '../../../components/ui/DurationSelector';
+import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { formatDatePYLong } from '../../../utils/date';
+import { CanchaSelectionModal } from '../components/CanchaSelectionModal';
+
+interface SedeDisponibilidad {
+  sede: {
+    id: string;
+    nombre: string;
+    ciudad: string;
+    logoUrl?: string;
+    direccion?: string;
+  };
+  canchasDisponibles: number;
+  totalCanchas: number;
+  horarios: string[];
+  totalHorarios: number;
+  canchas: Array<{
+    cancha: {
+      id: string;
+      nombre: string;
+      tipo: string;
+      tieneLuz: boolean;
+    };
+    slots: Array<{
+      horaInicio: string;
+      horaFin: string;
+      disponible: boolean;
+    }>;
+  }>;
+}
+
+export function CanchasPage() {
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
+  const [duracionMinutos, setDuracionMinutos] = useState(90);
+  const [loading, setLoading] = useState(false);
+  const [sedes, setSedes] = useState<SedeDisponibilidad[]>([]);
+  const [sedeSeleccionada, setSedeSeleccionada] = useState<SedeDisponibilidad | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    cargarDisponibilidad();
+  }, [fecha, duracionMinutos]);
+
+  const cargarDisponibilidad = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const { data } = await api.get('/alquileres/disponibilidad-global', {
+        params: {
+          fecha,
+          duracionMinutos,
+        },
+      });
+      setSedes(data.sedes || []);
+    } catch (err) {
+      setError('Error al cargar disponibilidad');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReservar = (sede: SedeDisponibilidad) => {
+    setSedeSeleccionada(sede);
+    setModalOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-dark relative overflow-hidden">
+      <BackgroundEffects variant="subtle" showGrid={true} />
+
+      <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Reservar Cancha</h1>
+          <p className="text-white/60">
+            {formatDatePYLong(fecha)}
+          </p>
+        </div>
+
+        {/* Filtros */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8">
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+            <DateCarousel selectedDate={fecha} onSelectDate={setFecha} />
+            <DurationSelector
+              duracionMinutos={duracionMinutos}
+              onChange={setDuracionMinutos}
+            />
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-white/60">Buscando canchas disponibles...</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="text-center py-12">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={cargarDisponibilidad}
+              className="px-4 py-2 bg-[#df2531] text-white rounded-lg hover:bg-[#df2531]/80 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
+        {/* Sin resultados */}
+        {!loading && !error && sedes.length === 0 && (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock className="w-10 h-10 text-white/30" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              No hay canchas disponibles
+            </h3>
+            <p className="text-white/50">
+              Intenta con otra fecha o duración
+            </p>
+          </div>
+        )}
+
+        {/* Grid de Sedes */}
+        {!loading && !error && sedes.length > 0 && (
+          <>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Selecciona un complejo
+              <span className="text-white/40 text-base font-normal ml-2">
+                ({sedes.length} disponibles)
+              </span>
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sedes.map((item) => (
+                <div
+                  key={item.sede.id}
+                  className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden hover:border-[#df2531]/30 hover:bg-white/[0.05] transition-all group"
+                >
+                  {/* Logo/Header */}
+                  <div className="h-32 bg-white/5 flex items-center justify-center p-6 relative">
+                    {item.sede.logoUrl ? (
+                      <img
+                        src={item.sede.logoUrl}
+                        alt={item.sede.nombre}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center">
+                        <span className="text-2xl font-bold text-white">
+                          {item.sede.nombre.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold text-white mb-1">
+                      {item.sede.nombre}
+                    </h3>
+                    <div className="flex items-center gap-1 text-white/50 text-sm mb-4">
+                      <MapPin size={14} />
+                      <span>{item.sede.ciudad}</span>
+                      {item.sede.direccion && (
+                        <span className="text-white/30">- {item.sede.direccion}</span>
+                      )}
+                    </div>
+
+                    {/* Canchas disponibles */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-green-400 text-sm font-medium">
+                        {item.canchasDisponibles} cancha{item.canchasDisponibles !== 1 ? 's' : ''} disponible{item.canchasDisponibles !== 1 ? 's' : ''}
+                      </span>
+                      <span className="text-white/30 text-sm">
+                        de {item.totalCanchas}
+                      </span>
+                    </div>
+
+                    {/* Horarios */}
+                    {item.horarios.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-white/40 text-xs mb-2 flex items-center gap-1">
+                          <Clock size={12} />
+                          Horarios disponibles:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.horarios.map((hora) => (
+                            <span
+                              key={hora}
+                              className="px-2 py-0.5 bg-white/5 text-white/70 text-xs rounded-md"
+                            >
+                              {hora}
+                            </span>
+                          ))}
+                          {item.totalHorarios > item.horarios.length && (
+                            <span className="px-2 py-0.5 bg-white/5 text-white/40 text-xs rounded-md">
+                              +{item.totalHorarios - item.horarios.length} más
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Botón */}
+                    <button
+                      onClick={() => handleReservar(item)}
+                      className="flex items-center justify-center gap-2 w-full py-2.5 bg-white/5 hover:bg-[#df2531] border border-white/10 hover:border-[#df2531] rounded-xl text-white/80 hover:text-white transition-all group/btn"
+                    >
+                      <span>Ver canchas</span>
+                      <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Modal de selección de cancha */}
+      {sedeSeleccionada && (
+        <CanchaSelectionModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          sede={sedeSeleccionada.sede}
+          canchas={sedeSeleccionada.canchas}
+          fecha={fecha}
+          duracionMinutos={duracionMinutos}
+          onReservaSuccess={() => {
+            cargarDisponibilidad();
+          }}
+        />
+      )}
+    </div>
+  );
+}
