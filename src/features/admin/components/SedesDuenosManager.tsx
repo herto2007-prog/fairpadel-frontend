@@ -74,8 +74,10 @@ export function SedesDuenosManager() {
     sede.ciudad.toLowerCase().includes(searchSede.toLowerCase())
   );
 
+  const normalizeCI = (ci: string) => ci.replace(/\./g, '').replace(/-/g, '');
+  
   const filteredUsers = users.filter(user =>
-    user.documento.includes(searchUser.replace(/\./g, '').replace(/-/g, ''))
+    normalizeCI(user.documento).includes(normalizeCI(searchUser))
   );
 
   if (loading) {

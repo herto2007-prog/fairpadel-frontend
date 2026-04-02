@@ -281,6 +281,12 @@ function BracketColumn({
 
   // Gap vertical entre partidos: 20px para todas las fases
   const gapEntrePartidos = 20;
+  const alturaCard = 140; // altura aproximada de cada card
+  
+  // Calcular offset vertical para centrar partidos del bracket
+  // Cada fase siguiente debe estar centrada entre los partidos de la fase anterior
+  const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
+  const offsetVertical = sinConectores ? 0 : (alturaCard + gapEntrePartidos) * (Math.pow(2, faseIndex - 1) - 0.5);
 
   return (
     <div className="flex flex-col min-w-[220px]">
@@ -289,8 +295,14 @@ function BracketColumn({
         <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{getFaseLabel(fase)}</span>
       </div>
 
-      {/* Partidos */}
-      <div className="flex flex-col" style={{ gap: `${gapEntrePartidos}px` }}>
+      {/* Partidos con offset para centrar en el bracket */}
+      <div 
+        className="flex flex-col" 
+        style={{ 
+          gap: `${gapEntrePartidos}px`,
+          paddingTop: `${offsetVertical}px`
+        }}
+      >
         {partidos.map((partido, index) => (
           <MatchCard
             key={partido.id}
