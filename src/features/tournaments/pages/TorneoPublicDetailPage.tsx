@@ -256,22 +256,62 @@ export function TorneoPublicDetailPage() {
                   <Trophy className="w-5 h-5 text-yellow-400" />
                   Categorías
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {torneo.categorias.map(cat => (
-                    <div key={cat.id} className={`flex items-center justify-between p-4 rounded-xl border ${
-                      cat.tipo === 'FEMENINO' ? 'bg-pink-500/10 border-pink-500/30' : 'bg-blue-500/10 border-blue-500/30'
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <span className={`w-2 h-2 rounded-full ${cat.tipo === 'FEMENINO' ? 'bg-pink-400' : 'bg-blue-400'}`} />
-                        <span className="font-medium text-white">{cat.nombre}</span>
+                <div className="space-y-6">
+                  {/* Masculinas */}
+                  {torneo.categorias.some(cat => cat.tipo !== 'FEMENINO') && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-400" />
+                        Caballeros
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {torneo.categorias
+                          .filter(cat => cat.tipo !== 'FEMENINO')
+                          .sort((a, b) => a.orden - b.orden)
+                          .map(cat => (
+                            <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border bg-blue-500/10 border-blue-500/30">
+                              <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                                <span className="font-medium text-white">{cat.nombre}</span>
+                              </div>
+                              {cat.inscripcionAbierta ? (
+                                <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
+                              ) : (
+                                <span className="text-xs text-red-400">Cerrada</span>
+                              )}
+                            </div>
+                          ))}
                       </div>
-                      {cat.inscripcionAbierta ? (
-                        <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
-                      ) : (
-                        <span className="text-xs text-red-400">Cerrada</span>
-                      )}
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* Femeninas */}
+                  {torneo.categorias.some(cat => cat.tipo === 'FEMENINO') && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-pink-400 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-pink-400" />
+                        Damas
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {torneo.categorias
+                          .filter(cat => cat.tipo === 'FEMENINO')
+                          .sort((a, b) => a.orden - b.orden)
+                          .map(cat => (
+                            <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border bg-pink-500/10 border-pink-500/30">
+                              <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-pink-400" />
+                                <span className="font-medium text-white">{cat.nombre}</span>
+                              </div>
+                              {cat.inscripcionAbierta ? (
+                                <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
+                              ) : (
+                                <span className="text-xs text-red-400">Cerrada</span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -313,46 +353,108 @@ export function TorneoPublicDetailPage() {
                             <p>Aún no hay inscripciones confirmadas</p>
                           </div>
                         ) : (
-                          <div className="space-y-6 pt-6">
-                            {inscritos.map((cat) => (
-                              <div key={cat.categoriaId} className="space-y-3">
-                                <h3 className={`text-sm font-bold uppercase tracking-wider ${
-                                  cat.categoriaTipo === 'FEMENINO' ? 'text-pink-400' : 'text-blue-400'
-                                }`}>
-                                  {cat.categoriaNombre}
-                                  <span className="ml-2 text-white/40">({cat.parejas.length})</span>
+                          <div className="space-y-8 pt-6">
+                            {/* Inscritos Masculinos */}
+                            {inscritos.some(cat => cat.categoriaTipo !== 'FEMENINO') && (
+                              <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                                  Caballeros
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  {cat.parejas.map((pareja) => (
-                                    <div
-                                      key={pareja.id}
-                                      className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-colors"
-                                    >
-                                      <div className="flex -space-x-2">
-                                        <img
-                                          src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
-                                          alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
-                                          className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                        />
-                                        <img
-                                          src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
-                                          alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
-                                          className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                        />
+                                <div className="space-y-4">
+                                  {inscritos
+                                    .filter(cat => cat.categoriaTipo !== 'FEMENINO')
+                                    .map((cat) => (
+                                      <div key={cat.categoriaId} className="space-y-2">
+                                        <h4 className="text-xs font-semibold text-blue-300/80">
+                                          {cat.categoriaNombre}
+                                          <span className="ml-2 text-white/40">({cat.parejas.length})</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {cat.parejas.map((pareja) => (
+                                            <div
+                                              key={pareja.id}
+                                              className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-colors"
+                                            >
+                                              <div className="flex -space-x-2">
+                                                <img
+                                                  src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
+                                                  alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
+                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                                />
+                                                <img
+                                                  src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
+                                                  alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
+                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                                />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-white truncate">
+                                                  {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
+                                                </p>
+                                                <p className="text-xs text-white/50 truncate">
+                                                  {pareja.jugador1.nombre} & {pareja.jugador2.nombre}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">
-                                          {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
-                                        </p>
-                                        <p className="text-xs text-white/50 truncate">
-                                          {pareja.jugador1.nombre} & {pareja.jugador2.nombre}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               </div>
-                            ))}
+                            )}
+                            
+                            {/* Inscritos Femeninos */}
+                            {inscritos.some(cat => cat.categoriaTipo === 'FEMENINO') && (
+                              <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-pink-400" />
+                                  Damas
+                                </h3>
+                                <div className="space-y-4">
+                                  {inscritos
+                                    .filter(cat => cat.categoriaTipo === 'FEMENINO')
+                                    .map((cat) => (
+                                      <div key={cat.categoriaId} className="space-y-2">
+                                        <h4 className="text-xs font-semibold text-pink-300/80">
+                                          {cat.categoriaNombre}
+                                          <span className="ml-2 text-white/40">({cat.parejas.length})</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {cat.parejas.map((pareja) => (
+                                            <div
+                                              key={pareja.id}
+                                              className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-500/10 hover:border-pink-500/30 transition-colors"
+                                            >
+                                              <div className="flex -space-x-2">
+                                                <img
+                                                  src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
+                                                  alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
+                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                                />
+                                                <img
+                                                  src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
+                                                  alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
+                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                                />
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-white truncate">
+                                                  {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
+                                                </p>
+                                                <p className="text-xs text-white/50 truncate">
+                                                  {pareja.jugador1.nombre} & {pareja.jugador2.nombre}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
