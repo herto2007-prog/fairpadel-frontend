@@ -45,6 +45,7 @@ import SuscripcionPage from './features/alquileres/pages/SuscripcionPage';
 
 // Dueño
 import MisSedesPage from './features/dueno/pages/MisSedesPage';
+import ReservasSedePage from './features/alquileres/pages/ReservasSedePage';
 
 // Instructores (V2)
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
@@ -144,6 +145,7 @@ function App() {
           
           {/* Dueño - Mis Sedes */}
           <Route path="/mis-sedes" element={<MisSedesPage />} />
+          <Route path="/sede/:sedeId/reservas" element={<ReservasSedePage />} />
 
           {/* Alquileres (V2) */}
           <Route path="/alquileres" element={<AlquileresPage />} />

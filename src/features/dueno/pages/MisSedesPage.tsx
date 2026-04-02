@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Building2, CreditCard, CheckCircle, AlertCircle, 
-  ChevronRight, Settings, MapPin 
+  ChevronRight, Settings, MapPin, Calendar
 } from 'lucide-react';
 import { duenoService, SedeDelDueno } from '../../../services/duenoService';
 import { useToast } from '../../../components/ui/ToastProvider';
@@ -135,13 +135,21 @@ export default function MisSedesPage() {
                 )}
 
                 {/* Acciones */}
-                <div className="flex gap-3 mt-4">
+                <div className="flex flex-wrap gap-3 mt-4">
                   <button
                     onClick={() => navigate(`/sede/${sede.id}/suscripcion`)}
                     className="flex items-center gap-2 px-4 py-2 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg transition-colors"
                   >
                     <CreditCard className="w-4 h-4" />
                     {sede.alquilerConfig?.suscripcionActiva ? 'Gestionar Suscripción' : 'Suscribirse'}
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate(`/sede/${sede.id}/reservas`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Ver Reservas
                   </button>
                   
                   <button
