@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Trophy, Maximize2, Minimize2, ChevronDown, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatDatePY } from '../../utils/date';
 
@@ -218,9 +218,9 @@ export function ChampionshipBracket({
   }
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col h-screen`}>
-      {/* Header Compacto */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur shrink-0">
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col min-h-screen`}>
+      {/* Header Sticky */}
+      <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/95 backdrop-blur shrink-0">
         {/* Espaciador izquierdo */}
         <div className="w-8" />
 
@@ -351,20 +351,10 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket Container - Tree Layout */}
-      <div 
-        className="flex-1 overflow-auto relative bg-[#0a0b0f]" 
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#df2531 #1a1d26' }}
-      >
-        {/* Indicador de scroll en móvil */}
-        <div className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-xs text-gray-400 pointer-events-none">
-          <ChevronLeft className="w-3 h-3" />
-          <span>Desliza</span>
-          <ChevronRight className="w-3 h-3" />
-        </div>
-
+      {/* Bracket Container - Tree Layout (scroll natural del navegador) */}
+      <div className="flex-1 relative bg-[#0a0b0f]">
         {partidos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center py-20">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
