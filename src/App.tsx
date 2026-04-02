@@ -26,6 +26,7 @@ import TournamentDetailPage from './features/tournaments/pages/TournamentDetailP
 import { TorneosPublicListPage } from './features/tournaments/pages/TorneosPublicListPage';
 import { TorneoPublicDetailPage } from './features/tournaments/pages/TorneoPublicDetailPage';
 import { InscripcionWizardPage } from './features/inscripciones/pages/InscripcionWizardPage';
+import { PublicBracketPage } from './pages/PublicBracketPage';
 
 // Inscripciones (V1)
 import MisInscripcionesPage from './features/inscripciones/pages/MisInscripcionesPage';
@@ -98,6 +99,7 @@ function App() {
         {/* Torneos Públicos - V2 */}
         <Route path="/torneos" element={<TorneosPublicListPage />} />
         <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
+        <Route path="/torneo/:id/fixture" element={<PublicBracketPage />} />
         
         {/* Mockup Perfil - Temporal */}
         <Route path="/perfil-mockup" element={<PerfilMockupPage />} />

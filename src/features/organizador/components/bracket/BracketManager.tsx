@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
@@ -253,6 +253,89 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     );
   }
 
+  // Estado para publicación
+  const [publicando, setPublicando] = useState(false);
+  const [bracketPublicado, setBracketPublicado] = useState(false);
+  const [urlPublica, setUrlPublica] = useState<string | null>(null);
+
+  // Cargar estado de publicación
+  useEffect(() => {
+    loadEstadoPublicacion();
+  }, [tournamentId]);
+
+  const loadEstadoPublicacion = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/estado-publicacion`);
+      if (data.success) {
+        setBracketPublicado(data.torneo.bracketPublicado);
+        setUrlPublica(data.urlPublica);
+      }
+    } catch (error) {
+      console.error('Error cargando estado de publicación:', error);
+    }
+  };
+
+  // Handler para publicar bracket
+  const handlePublicarBracket = async () => {
+    setPublicando(true);
+    try {
+      const { data } = await api.post(`/admin/torneos/${tournamentId}/publicar-bracket`);
+      
+      if (data.success) {
+        setBracketPublicado(true);
+        setUrlPublica(data.urlPublica);
+        showSuccess('Bracket publicado', `URL pública: ${window.location.origin}${data.urlPublica}`);
+      } else if (data.requiereConfirmacion && data.auditoria) {
+        // Hay problemas críticos, mostrar advertencia fuerte
+        const confirmar = await confirm({
+          title: '⚠️ Problemas detectados',
+          message: `Hay ${data.auditoria.criticos} problemas críticos que pueden afectar el bracket:\n\n${data.auditoria.problemas.map((p: any) => `• ${p.mensaje}`).join('\n')}\n\n¿Deseas publicar de todos modos?`,
+          variant: 'danger',
+          confirmText: 'Publicar de todos modos',
+          cancelText: 'Cancelar',
+        });
+        
+        if (confirmar) {
+          // Forzar publicación (endpoint adicional o con flag)
+          const { data: forceData } = await api.post(`/admin/torneos/${tournamentId}/publicar-bracket?force=true`);
+          if (forceData.success) {
+            setBracketPublicado(true);
+            setUrlPublica(forceData.urlPublica);
+            showSuccess('Bracket publicado', 'Se publicó con advertencias');
+          }
+        }
+      } else {
+        showError('Error', data.message || 'No se pudo publicar el bracket');
+      }
+    } catch (error: any) {
+      console.error('Error publicando bracket:', error);
+      showError('Error', error.response?.data?.message || 'Error al publicar');
+    } finally {
+      setPublicando(false);
+    }
+  };
+
+  // Handler para despublicar bracket
+  const handleDespublicarBracket = async () => {
+    const confirmar = await confirm({
+      title: '¿Despublicar bracket?',
+      message: 'Los jugadores ya no podrán ver el fixture públicamente.',
+      variant: 'warning',
+    });
+    
+    if (!confirmar) return;
+    
+    try {
+      const { data } = await api.post(`/admin/torneos/${tournamentId}/despublicar-bracket`);
+      if (data.success) {
+        setBracketPublicado(false);
+        showSuccess('Bracket despublicado', data.message);
+      }
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'Error al despublicar');
+    }
+  };
+
   // Handler para re-sortear bracket
   const handleReSortear = async () => {
     console.log('[Re-Sortear] Handler llamado');
@@ -322,6 +405,17 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             ← Volver a categorías
           </button>
           <div className="flex items-center gap-2">
+            {bracketPublicado && urlPublica && (
+              <a
+                href={urlPublica}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-sm font-medium transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ver público
+              </a>
+            )}
             <button
               onClick={() => {
                 console.log('[Re-Sortear] Botón clickeado');
@@ -332,9 +426,32 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             >
               {reSorteando ? 'Sorteando...' : 'Re-Sortear'}
             </button>
-            <button className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors">
-              Publicar Bracket
-            </button>
+            {bracketPublicado ? (
+              <button
+                onClick={handleDespublicarBracket}
+                className="px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
+              >
+                Despublicar
+              </button>
+            ) : (
+              <button
+                onClick={handlePublicarBracket}
+                disabled={publicando}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
+              >
+                {publicando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    Publicando...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4" />
+                    Publicar Bracket
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
         <BracketView 
