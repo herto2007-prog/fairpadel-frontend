@@ -1,1 +1,0 @@
-export { VistaDemo } from './VistaDemo';
