@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  ChevronLeft, Trophy, LayoutDashboard, Users, Calendar, 
+  ChevronLeft, Trophy, LayoutDashboard, Users, 
   GitBranch, Settings, DollarSign, Info, Database 
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
 import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
-import { ProgramacionManager } from '../components/programacion/ProgramacionManager';
+
 
 import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
 
@@ -25,7 +25,7 @@ interface Torneo {
   fechaFin?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'programacion' | 'comision' | 'checklist' | 'info' | 'canchasSorteo' | 'auditoria';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'comision' | 'checklist' | 'info' | 'canchasSorteo' | 'auditoria';
 
 interface TabConfig {
   id: TabType;
@@ -40,7 +40,6 @@ export function GestionarTorneoPage() {
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [categoriasSorteadas, setCategoriasSorteadas] = useState<any[]>([]);
   const [stats, setStats] = useState({
     inscripcionesPendientes: 0,
     tareasChecklist: 0,
@@ -52,12 +51,6 @@ export function GestionarTorneoPage() {
       loadStats();
     }
   }, [id]);
-
-  useEffect(() => {
-    if (activeTab === 'programacion' && id) {
-      loadCategoriasSorteadas();
-    }
-  }, [activeTab, id]);
 
   const loadStats = async () => {
     if (!id) return;
@@ -87,18 +80,6 @@ export function GestionarTorneoPage() {
     }
   };
 
-  const loadCategoriasSorteadas = async () => {
-    try {
-      const { data } = await api.get(`/admin/torneos/${id}/categorias`);
-      if (data.success) {
-        const sorteadas = data.categorias.filter((c: any) => c.fixtureVersionId);
-        setCategoriasSorteadas(sorteadas);
-      }
-    } catch (error) {
-      console.error('Error cargando categorias:', error);
-    }
-  };
-
   const loadTorneo = async () => {
     try {
       const { data } = await api.get(`/admin/torneos/${id}`);
@@ -122,7 +103,7 @@ export function GestionarTorneoPage() {
     },
     { id: 'canchasSorteo', label: 'Canchas y Sorteo', icon: Trophy },
     { id: 'bracket', label: 'Fixture', icon: GitBranch },
-    { id: 'programacion', label: 'Programacion', icon: Calendar },
+
     { id: 'comision', label: 'Comision', icon: DollarSign },
     { 
       id: 'checklist', 
@@ -222,12 +203,7 @@ export function GestionarTorneoPage() {
           <BracketManager tournamentId={id} />
         )}
 
-        {activeTab === 'programacion' && id && (
-          <ProgramacionManager 
-            tournamentId={id} 
-            categoriasSorteadas={categoriasSorteadas}
-          />
-        )}
+
 
         {activeTab === 'comision' && (
           <div className="glass rounded-2xl p-8 text-center">
