@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Users, Calendar, Trophy, CheckCircle2, AlertCircle,
-  Download, RefreshCw, Database, UserX
+  Download, RefreshCw, Database, UserX, Shield, Wrench, AlertTriangle, Info
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
@@ -12,7 +12,30 @@ interface AuditoriaManagerProps {
   tournamentId: string;
 }
 
-type VistaTipo = 'inscripciones' | 'partidos' | 'slots' | 'sin-cancha';
+type VistaTipo = 'validacion' | 'inscripciones' | 'partidos' | 'slots' | 'sin-cancha';
+
+interface ProblemaData {
+  id: string;
+  tipo: 'CRITICO' | 'ADVERTENCIA' | 'INFO';
+  categoria: string;
+  categoriaId: string;
+  mensaje: string;
+  detalle: string;
+  accionRecomendada: string;
+  partidoId?: string;
+  datos?: any;
+}
+
+interface ValidacionData {
+  resumen: {
+    totalCategorias: number;
+    totalProblemas: number;
+    criticos: number;
+    advertencias: number;
+    info: number;
+  };
+  problemas: ProblemaData[];
+}
 
 interface InscripcionData {
   id: string;
@@ -118,7 +141,7 @@ interface DiaSlotsData {
 
 export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const { user } = useAuth();
-  const [vistaActiva, setVistaActiva] = useState<VistaTipo>('partidos');
+  const [vistaActiva, setVistaActiva] = useState<VistaTipo>('validacion');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,6 +160,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [partidosSinCancha, setPartidosSinCancha] = useState<PartidoData[]>([]);
   const [slotsData, setSlotsData] = useState<DiaSlotsData[]>([]);
   const [stats, setStats] = useState<{ total: number; ocupados: number; libres: number; porcentajeOcupacion: number } | null>(null);
+  const [validacionData, setValidacionData] = useState<ValidacionData | null>(null);
 
   // Modal asignar cancha
   const [modalAsignarAbierto, setModalAsignarAbierto] = useState(false);
@@ -161,6 +185,9 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       setError(null);
 
       switch (vistaActiva) {
+        case 'validacion':
+          await loadValidacion();
+          break;
         case 'inscripciones':
           await loadInscripciones();
           break;
@@ -228,6 +255,13 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
         p.programacion?.fecha && !p.programacion?.cancha
       );
       setPartidosSinCancha(sinCancha);
+    }
+  };
+
+  const loadValidacion = async () => {
+    const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/auditar`);
+    if (data.success) {
+      setValidacionData(data.data);
     }
   };
 
@@ -313,6 +347,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   };
 
   const tabs = [
+    { id: 'validacion', label: 'Validación', icon: Shield },
     { id: 'partidos', label: 'Partidos', icon: Trophy },
     { id: 'sin-cancha', label: 'Partidos SIN Canchas', icon: AlertCircle },
     { id: 'inscripciones', label: 'Inscripciones', icon: Users },
@@ -499,6 +534,105 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
+            {/* Vista Validación */}
+            {vistaActiva === 'validacion' && (
+              <div className="space-y-4">
+                {/* Resumen de problemas */}
+                {validacionData && (
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5 text-center">
+                      <div className="text-white/40 text-sm mb-1">Total Problemas</div>
+                      <div className="text-2xl font-bold text-white">{validacionData.resumen.totalProblemas}</div>
+                    </div>
+                    <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20 text-center">
+                      <div className="text-red-400 text-sm mb-1">Críticos</div>
+                      <div className="text-2xl font-bold text-red-500">{validacionData.resumen.criticos}</div>
+                    </div>
+                    <div className="bg-yellow-500/10 rounded-lg p-4 border border-yellow-500/20 text-center">
+                      <div className="text-yellow-400 text-sm mb-1">Advertencias</div>
+                      <div className="text-2xl font-bold text-yellow-500">{validacionData.resumen.advertencias}</div>
+                    </div>
+                    <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20 text-center">
+                      <div className="text-blue-400 text-sm mb-1">Categorías</div>
+                      <div className="text-2xl font-bold text-blue-500">{validacionData.resumen.totalCategorias}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de problemas */}
+                {validacionData?.problemas.length === 0 ? (
+                  <div className="bg-green-500/10 rounded-lg border border-green-500/20 p-8 text-center">
+                    <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">¡Todo está correcto!</h3>
+                    <p className="text-white/60">No se encontraron problemas en el fixture.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {validacionData?.problemas.map((problema) => (
+                      <div 
+                        key={problema.id}
+                        className={`bg-white/[0.02] rounded-lg border p-4 ${
+                          problema.tipo === 'CRITICO' ? 'border-red-500/30' : 
+                          problema.tipo === 'ADVERTENCIA' ? 'border-yellow-500/30' : 
+                          'border-blue-500/30'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Icono de severidad */}
+                          <div className={`p-2 rounded-lg ${
+                            problema.tipo === 'CRITICO' ? 'bg-red-500/20' : 
+                            problema.tipo === 'ADVERTENCIA' ? 'bg-yellow-500/20' : 
+                            'bg-blue-500/20'
+                          }`}>
+                            {problema.tipo === 'CRITICO' ? (
+                              <AlertTriangle className="w-5 h-5 text-red-400" />
+                            ) : problema.tipo === 'ADVERTENCIA' ? (
+                              <AlertCircle className="w-5 h-5 text-yellow-400" />
+                            ) : (
+                              <Info className="w-5 h-5 text-blue-400" />
+                            )}
+                          </div>
+
+                          {/* Contenido */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                problema.tipo === 'CRITICO' ? 'bg-red-500/20 text-red-400' : 
+                                problema.tipo === 'ADVERTENCIA' ? 'bg-yellow-500/20 text-yellow-400' : 
+                                'bg-blue-500/20 text-blue-400'
+                              }`}>
+                                {problema.tipo}
+                              </span>
+                              <span className="text-white/40 text-sm">{problema.categoria}</span>
+                            </div>
+                            <h4 className="text-white font-medium mb-1">{problema.mensaje}</h4>
+                            <p className="text-white/60 text-sm mb-2">{problema.detalle}</p>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Wrench className="w-4 h-4 text-[#df2531]" />
+                              <span className="text-white/80">{problema.accionRecomendada}</span>
+                            </div>
+                          </div>
+
+                          {/* Botón de acción */}
+                          {problema.tipo === 'CRITICO' && (
+                            <button
+                              onClick={() => {
+                                // Navegar a la categoría para re-sortear
+                                alert(`Re-sortear categoría: ${problema.categoria}`);
+                              }}
+                              className="px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                            >
+                              Re-sortear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Vista Partidos SIN Cancha */}
             {vistaActiva === 'sin-cancha' && (
               <div className="bg-white/[0.02] rounded-lg border border-white/5 overflow-hidden">
