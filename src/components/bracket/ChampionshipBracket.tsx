@@ -283,7 +283,7 @@ function BracketColumn({
   // Resto: espaciado dinámico para conectores
   const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
   const nivelEnArbol = totalFases - 1 - faseIndex;
-  const gapEntrePartidos = sinConectores ? 8 : 16 * Math.pow(2, nivelEnArbol);
+  const gapEntrePartidos = sinConectores ? 4 : 16 * Math.pow(2, nivelEnArbol);
 
   return (
     <div className="flex flex-col min-w-[220px]">
