@@ -54,31 +54,62 @@ export function ChampionshipBracket({
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [torneoInfo, setTorneoInfo] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [hasNewChanges, setHasNewChanges] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [tournamentId, categoriaId]);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      
       const endpoint = isPublic 
         ? `/public/torneos/${tournamentId}/bracket${categoriaId ? `?categoriaId=${categoriaId}` : ''}`
         : `/admin/torneos/${tournamentId}/bracket${categoriaId ? `?categoriaId=${categoriaId}` : ''}`;
       
       const { data } = await api.get(endpoint);
       if (data.success) {
-        setPartidos(data.partidos);
+        // Detectar si hay cambios comparando resultados
+        const newPartidos = data.partidos;
+        const hasChanges = partidos.length !== newPartidos.length || 
+          partidos.some((p, i) => {
+            const np = newPartidos[i];
+            return p.ganador?.id !== np.ganador?.id ||
+                   p.resultado?.set1?.[0] !== np.resultado?.set1?.[0] ||
+                   p.fecha !== np.fecha ||
+                   p.hora !== np.hora ||
+                   p.cancha !== np.cancha;
+          });
+        
+        if (hasChanges && partidos.length > 0) {
+          setHasNewChanges(true);
+          setTimeout(() => setHasNewChanges(false), 3000);
+        }
+        
+        setPartidos(newPartidos);
         setTorneoInfo(data.torneo);
+        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error('Error cargando bracket:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  // NOTA: Eliminado auto-refresh. Para actualizar, el usuario recarga la página.
+  // Polling inteligente: solo cuando la pestaña está visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [tournamentId, categoriaId]);
 
   const partidosPorFase = useMemo(() => {
     const grupos: Record<string, Partido[]> = {};
@@ -152,6 +183,25 @@ export function ChampionshipBracket({
               {torneoInfo.ciudad} • {formatDatePY(torneoInfo.fechaInicio)}
             </p>
           )}
+          {/* Indicador de actualización */}
+          <div className="h-6 mt-2">
+            {hasNewChanges && (
+              <motion.span 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs"
+              >
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                Actualizado
+              </motion.span>
+            )}
+            {lastUpdated && !hasNewChanges && (
+              <span className="text-xs text-gray-500">
+                Última actualización: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
         </div>
         
         <button
