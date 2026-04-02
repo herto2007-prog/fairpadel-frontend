@@ -292,7 +292,7 @@ function BracketColumn({
           <MatchCard
             key={partido.id}
             partido={partido}
-            showConnector={faseIndex < totalFases - 1}
+            showConnector={faseIndex < totalFases - 1 && fase !== 'ZONA' && fase !== 'REPECHAJE'}
             isLast={index === partidos.length - 1}
           />
         ))}
