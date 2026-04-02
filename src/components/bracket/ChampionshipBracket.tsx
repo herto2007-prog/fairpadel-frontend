@@ -231,37 +231,39 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket */}
+      {/* Bracket - Centrado */}
       <div className="flex-1 bg-[#0a0b0f] p-4 md:p-6 overflow-auto">
         {partidos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="flex gap-8 min-w-max">
-            {/* ZONA y REPECHAJE - Columnas simples */}
-            {tieneZonaRepechaje && (
-              <div className="flex gap-6">
-                {fasesActivas.filter(f => f === 'ZONA' || f === 'REPECHAJE').map(fase => (
-                  <FaseColumnSimple
-                    key={fase}
-                    fase={fase}
-                    partidos={partidosPorFase[fase]}
+          <div className="flex justify-center items-center min-h-full">
+            <div className="flex gap-8">
+              {/* ZONA y REPECHAJE - Columnas simples */}
+              {tieneZonaRepechaje && (
+                <div className="flex gap-6">
+                  {fasesActivas.filter(f => f === 'ZONA' || f === 'REPECHAJE').map(fase => (
+                    <FaseColumnSimple
+                      key={fase}
+                      fase={fase}
+                      partidos={partidosPorFase[fase]}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              {/* BRACKET CON POSICIONAMIENTO ABSOLUTO */}
+              {fasesBracket.length > 0 && (
+                <div className="relative">
+                  <BracketTree 
+                    fases={fasesBracket}
+                    partidosPorFase={partidosPorFase}
                   />
-                ))}
-              </div>
-            )}
-            
-            {/* BRACKET CON POSICIONAMIENTO ABSOLUTO */}
-            {fasesBracket.length > 0 && (
-              <div className="relative">
-                <BracketTree 
-                  fases={fasesBracket}
-                  partidosPorFase={partidosPorFase}
-                />
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -274,8 +276,8 @@ function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[
   return (
     <div className="flex flex-col w-[200px]">
       {/* Título */}
-      <div className="mb-3 pb-2 border-b border-white/20">
-        <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{fase}</span>
+      <div className="mb-3 pb-2 border-b-2 border-[#df2531]">
+        <span className="text-xs font-bold text-[#df2531] uppercase tracking-wider">{fase}</span>
       </div>
       {/* Cards */}
       <div className="flex flex-col gap-3">
@@ -341,8 +343,8 @@ function BracketTree({
             width: cardWidth,
           }}
         >
-          <div className="pb-2 border-b border-white/20">
-            <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{fase}</span>
+          <div className="pb-2 border-b-2 border-[#df2531]">
+            <span className="text-xs font-bold text-[#df2531] uppercase tracking-wider">{fase}</span>
           </div>
         </div>
       ))}
@@ -423,7 +425,7 @@ function ConnectorLine({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number;
         y1={y1 <= y2 ? 0 : Math.abs(y2 - y1)}
         x2={x1 <= x2 ? Math.abs(x2 - x1) : 0}
         y2={y1 <= y2 ? Math.abs(y2 - y1) : 0}
-        stroke="#6b7280"
+        stroke="#df2531"
         strokeWidth="1.5"
       />
     </svg>
@@ -448,9 +450,9 @@ function MatchCard({ partido }: { partido: Partido }) {
   return (
     <div className="w-full h-full bg-white rounded overflow-hidden shadow-lg flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 bg-gray-100 border-b border-gray-200 shrink-0">
-        <span className="text-[9px] font-bold text-gray-600">{codigoPartido}</span>
-        <span className="text-[8px] text-gray-600 truncate max-w-[110px]">{headerText}</span>
+      <div className="flex items-center justify-between px-2 py-1 bg-[#151921] border-b border-[#df2531]/30 shrink-0">
+        <span className="text-[9px] font-bold text-[#df2531]">{codigoPartido}</span>
+        <span className="text-[8px] text-white/70 truncate max-w-[110px]">{headerText}</span>
       </div>
 
       {/* Equipo 1 */}
@@ -555,8 +557,8 @@ function MatchCard({ partido }: { partido: Partido }) {
 
       {/* Footer */}
       {(partido.fecha || partido.hora) && (
-        <div className="px-2 py-0.5 bg-gray-100 border-t border-gray-200 flex items-center justify-center shrink-0">
-          <span className="text-[8px] text-gray-500">
+        <div className="px-2 py-0.5 bg-[#151921] border-t border-[#df2531]/30 flex items-center justify-center shrink-0">
+          <span className="text-[8px] text-white/60">
             {partido.fecha?.split('-').reverse().join('/')} {partido.hora}
           </span>
         </div>
@@ -573,13 +575,13 @@ function FotoJugador({ jugador }: { jugador: Jugador }) {
       <img 
         src={jugador.fotoUrl} 
         alt={jugador.nombre}
-        className="w-5 h-5 rounded-full object-cover border border-white bg-gray-200"
+        className="w-5 h-5 rounded-full object-cover border border-[#df2531]/50 bg-[#151921]"
       />
     );
   }
   
   return (
-    <div className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-[7px] font-bold text-gray-600 border border-white">
+    <div className="w-5 h-5 rounded-full bg-[#df2531] flex items-center justify-center text-[7px] font-bold text-white border border-white/20">
       {initial}
     </div>
   );
