@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+
 import { 
-  Building2, Users, Crown, TrendingUp, 
-  AlertCircle, CheckCircle, Clock, CreditCard,
+  Building2, Users, Crown,
+  AlertCircle, CheckCircle, Clock,
   ChevronLeft, ChevronRight, Filter, DollarSign,
   Calendar, MapPin, Phone, Mail
 } from 'lucide-react';
