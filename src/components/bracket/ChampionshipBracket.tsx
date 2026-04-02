@@ -290,24 +290,31 @@ function BracketColumn({
     }
   };
 
-  // Gap vertical entre partidos
-  const gapEntrePartidos = 20;
+  // Gap vertical entre partidos (base)
+  const gapBase = 20;
   const alturaCard = 140;
-  const alturaTotalCard = alturaCard + gapEntrePartidos;
   
-  // Fases sin conectores (ZONA, REPECHAJE): sin offset
+  // Fases sin conectores (ZONA, REPECHAJE): gap fijo, sin offset
   const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
   
-  // Para fases CON conectores (bracket): offset basado en maxPartidosBracket
-  // Ejemplo: si bracket empieza en cuartos (4 partidos):
-  //   Cuartos (4p): offset 0
-  //   Semis (2p): offset = altura * (4-2)/2 = altura * 1
-  //   Final (1p): offset = altura * (4-1)/2 = altura * 1.5
+  // Para fases CON conectores: gap dinámico y offset para centrar
+  // Ejemplo: Cuartos (4p, gap 20, offset 0) → Semis (2p, gap X, offset Y)
+  //   S1 debe quedar centrado entre C1 y C2
+  //   S2 debe quedar centrado entre C3 y C4
+  let gapEntrePartidos = gapBase;
   let offsetVertical = 0;
   
   if (!sinConectores && partidos.length > 0 && maxPartidosBracket > 0) {
-    // Offset = altura * (max - actual) / 2
-    offsetVertical = alturaTotalCard * (maxPartidosBracket - partidos.length) / 2;
+    // Calcular cuántos niveles bajamos desde la primera fase del bracket
+    const niveles = Math.log2(maxPartidosBracket / partidos.length); // ej: 4→2 = 1 nivel
+    
+    // El gap aumenta: 20px, 60px, 140px, etc. (20 * (2^nivel + 1))
+    gapEntrePartidos = gapBase * (Math.pow(2, niveles + 1) - 1);
+    
+    // Offset para centrar: altura/2 + gap/2 de la fase anterior
+    offsetVertical = (alturaCard + gapEntrePartidos) / 2 - alturaCard / 2;
+  } else {
+    gapEntrePartidos = gapBase;
   }
 
   return (

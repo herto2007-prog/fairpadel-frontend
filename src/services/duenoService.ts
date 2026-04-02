@@ -17,5 +17,5 @@ export interface SedeDelDueno {
 export const duenoService = {
   // Obtener mis sedes como dueño
   getMisSedes: (): Promise<SedeDelDueno[]> =>
-    api.get('/admin/sedes/mis-sedes/dueno').then(r => r.data),
+    api.get('/dueno/mis-sedes').then(r => r.data),
 };
