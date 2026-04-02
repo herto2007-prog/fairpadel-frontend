@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, Maximize2, Minimize2 } from 'lucide-react';
+import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatDatePY } from '../../utils/date';
-import { ParejaAvatar } from '../ui/ParejaAvatar';
+
 
 interface Partido {
   id: string;
@@ -33,11 +33,18 @@ interface Partido {
   fecha?: string;
   hora?: string;
   cancha?: string;
+  categoriaNombre?: string;
+  categoriaTipo?: string;
+}
+
+interface Categoria {
+  id: string;
+  nombre: string;
+  tipo: 'DAMAS' | 'CABALLEROS' | 'MIXTO';
 }
 
 interface ChampionshipBracketProps {
   tournamentId: string;
-  categoriaId?: string;
   isPublic?: boolean;
   onFullscreen?: (isFullscreen: boolean) => void;
 }
@@ -46,7 +53,6 @@ const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FI
 
 export function ChampionshipBracket({ 
   tournamentId, 
-  categoriaId,
   isPublic = false,
   onFullscreen 
 }: ChampionshipBracketProps) {
@@ -54,26 +60,68 @@ export function ChampionshipBracket({
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [torneoInfo, setTorneoInfo] = useState<any>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   const [hasNewChanges, setHasNewChanges] = useState(false);
-  const [categoriasNombres, setCategoriasNombres] = useState<string[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
+  const [mostrarSelector, setMostrarSelector] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, [tournamentId, categoriaId]);
+    loadCategorias();
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (categoriaSeleccionada) {
+      loadData();
+    }
+  }, [tournamentId, categoriaSeleccionada]);
+
+  const loadCategorias = async () => {
+    try {
+      const endpoint = isPublic 
+        ? `/public/torneos/${tournamentId}/categorias`
+        : `/admin/torneos/${tournamentId}/categorias`;
+      
+      const { data } = await api.get(endpoint);
+      if (data.success && data.categorias?.length > 0) {
+        const cats = data.categorias.map((c: any) => ({
+          id: c.categoryId || c.id,
+          nombre: c.category?.nombre || c.nombre,
+          tipo: inferirTipo(c.category?.tipo || c.tipo, c.category?.nombre || c.nombre),
+        }));
+        setCategorias(cats);
+        setCategoriaSeleccionada(cats[0].id);
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
+
+  const inferirTipo = (tipo: string, nombre: string): 'DAMAS' | 'CABALLEROS' | 'MIXTO' => {
+    const tipoUpper = tipo?.toUpperCase() || '';
+    const nombreUpper = nombre?.toUpperCase() || '';
+    
+    if (tipoUpper === 'FEMENINO' || nombreUpper.includes('FEMENIN') || nombreUpper.includes('DAMA')) {
+      return 'DAMAS';
+    } else if (tipoUpper === 'MASCULINO' || nombreUpper.includes('MASCULIN') || nombreUpper.includes('CABALLERO')) {
+      return 'CABALLEROS';
+    }
+    return 'MIXTO';
+  };
 
   const loadData = async (silent = false) => {
+    if (!categoriaSeleccionada) return;
+    
     try {
       if (!silent) setLoading(true);
       
       const endpoint = isPublic 
-        ? `/public/torneos/${tournamentId}/bracket${categoriaId ? `?categoriaId=${categoriaId}` : ''}`
-        : `/admin/torneos/${tournamentId}/bracket${categoriaId ? `?categoriaId=${categoriaId}` : ''}`;
+        ? `/public/torneos/${tournamentId}/bracket?categoriaId=${categoriaSeleccionada}`
+        : `/admin/torneos/${tournamentId}/bracket?categoriaId=${categoriaSeleccionada}`;
       
       const { data } = await api.get(endpoint);
       if (data.success) {
-        // Detectar si hay cambios comparando resultados
-        const newPartidos = data.partidos;
+        const newPartidos = data.partidos || [];
         const hasChanges = partidos.length !== newPartidos.length || 
           partidos.some((p, i) => {
             const np = newPartidos[i];
@@ -91,11 +139,6 @@ export function ChampionshipBracket({
         
         setPartidos(newPartidos);
         setTorneoInfo(data.torneo);
-        setLastUpdated(new Date());
-        
-        // Extraer categorías únicas
-        const categoriasUnicas = [...new Set(newPartidos.map((p: any) => p.categoriaNombre).filter(Boolean))] as string[];
-        setCategoriasNombres(categoriasUnicas);
       }
     } catch (error) {
       console.error('Error cargando bracket:', error);
@@ -107,27 +150,26 @@ export function ChampionshipBracket({
   // Polling inteligente: solo cuando la pestaña está visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadData();
+      if (document.visibilityState === 'visible' && categoriaSeleccionada) {
+        loadData(true);
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [tournamentId, categoriaId]);
+  }, [tournamentId, categoriaSeleccionada]);
 
   const partidosPorFase = useMemo(() => {
     const grupos: Record<string, Partido[]> = {};
     FASES_ORDEN.forEach(fase => grupos[fase] = []);
     
     partidos.forEach(p => {
-      const faseNormalizada = p.fase.toUpperCase();
+      const faseNormalizada = p.fase?.toUpperCase() || '';
       if (grupos[faseNormalizada]) {
         grupos[faseNormalizada].push(p);
       }
     });
     
-    // Ordenar por orden dentro de cada fase
     Object.keys(grupos).forEach(fase => {
       grupos[fase].sort((a, b) => a.orden - b.orden);
     });
@@ -149,7 +191,17 @@ export function ChampionshipBracket({
     }
   };
 
-  if (loading) {
+  const categoriasPorTipo = useMemo(() => {
+    return {
+      DAMAS: categorias.filter(c => c.tipo === 'DAMAS'),
+      CABALLEROS: categorias.filter(c => c.tipo === 'CABALLEROS'),
+      MIXTO: categorias.filter(c => c.tipo === 'MIXTO'),
+    };
+  }, [categorias]);
+
+  const categoriaActual = categorias.find(c => c.id === categoriaSeleccionada);
+
+  if (loading && partidos.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <motion.div
@@ -161,109 +213,164 @@ export function ChampionshipBracket({
     );
   }
 
-  if (partidos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 text-center">
-        <Trophy className="w-20 h-20 text-gray-600 mb-4" />
-        <h3 className="text-2xl font-bold text-white mb-2">Bracket no disponible</h3>
-        <p className="text-gray-400">El fixture aún no ha sido generado</p>
-      </div>
-    );
-  }
-
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 px-4">
-        <div className="text-center flex-1">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Trophy className="w-8 h-8 text-[#df2531]" />
-            <h2 className="text-3xl font-bold text-white tracking-wide">
-              {torneoInfo?.nombre || 'TORNEO'}
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col h-screen`}>
+      {/* Header Compacto */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <img src="/logos/logo.png" alt="FairPadel" className="h-8" />
+        </div>
+
+        {/* Info Torneo + Selector Categoría */}
+        <div className="flex-1 flex items-center justify-center gap-4">
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-white">
+              {torneoInfo?.nombre || 'Torneo'}
             </h2>
-            <Trophy className="w-8 h-8 text-[#df2531]" />
+            {torneoInfo && (
+              <p className="text-xs text-gray-400">
+                {torneoInfo.ciudad}
+              </p>
+            )}
           </div>
-          {torneoInfo && (
-            <p className="text-gray-400">
-              {torneoInfo.ciudad} • {formatDatePY(torneoInfo.fechaInicio)}
-            </p>
-          )}
-          {/* Categoría */}
-          {categoriasNombres.length > 0 && (
-            <div className="mt-2">
-              <span className="px-4 py-1 bg-[#df2531]/20 border border-[#df2531]/30 rounded-full text-[#df2531] text-sm font-medium">
-                {categoriasNombres.length === 1 
-                  ? categoriasNombres[0] 
-                  : `${categoriasNombres.length} categorías`}
-              </span>
-            </div>
-          )}
-          {/* Indicador de actualización */}
-          <div className="h-6 mt-2">
-            {hasNewChanges && (
-              <motion.span 
+
+          {/* Selector de Categoría */}
+          <div className="relative">
+            <button
+              onClick={() => setMostrarSelector(!mostrarSelector)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#df2531] hover:bg-[#b91c22] text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {categoriaActual?.nombre || 'Seleccionar'}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {mostrarSelector && (
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs"
+                className="absolute top-full left-0 mt-2 w-56 bg-[#151921] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
               >
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                Actualizado
-              </motion.span>
-            )}
-            {lastUpdated && !hasNewChanges && (
-              <span className="text-xs text-gray-500">
-                Última actualización: {lastUpdated.toLocaleTimeString()}
-              </span>
+                {/* Damas */}
+                {categoriasPorTipo.DAMAS.length > 0 && (
+                  <div className="border-b border-white/5">
+                    <div className="px-3 py-2 text-xs font-medium text-pink-400 uppercase tracking-wider bg-pink-500/10">
+                      Damas
+                    </div>
+                    {categoriasPorTipo.DAMAS.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setCategoriaSeleccionada(cat.id);
+                          setMostrarSelector(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
+                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
+                        }`}
+                      >
+                        {cat.nombre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Caballeros */}
+                {categoriasPorTipo.CABALLEROS.length > 0 && (
+                  <div className="border-b border-white/5">
+                    <div className="px-3 py-2 text-xs font-medium text-blue-400 uppercase tracking-wider bg-blue-500/10">
+                      Caballeros
+                    </div>
+                    {categoriasPorTipo.CABALLEROS.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setCategoriaSeleccionada(cat.id);
+                          setMostrarSelector(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
+                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
+                        }`}
+                      >
+                        {cat.nombre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mixto */}
+                {categoriasPorTipo.MIXTO.length > 0 && (
+                  <div>
+                    <div className="px-3 py-2 text-xs font-medium text-purple-400 uppercase tracking-wider bg-purple-500/10">
+                      Mixto
+                    </div>
+                    {categoriasPorTipo.MIXTO.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          setCategoriaSeleccionada(cat.id);
+                          setMostrarSelector(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-white/5 transition-colors ${
+                          categoriaSeleccionada === cat.id ? 'text-[#df2531] bg-[#df2531]/10' : 'text-white'
+                        }`}
+                      >
+                        {cat.nombre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
             )}
           </div>
+
+          {/* Indicador actualización */}
+          {hasNewChanges && (
+            <motion.span 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs flex items-center gap-1"
+            >
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              Actualizado
+            </motion.span>
+          )}
         </div>
-        
+
+        {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
-          title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+          className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
         >
           {isFullscreen ? (
-            <Minimize2 className="w-6 h-6 text-white" />
+            <Minimize2 className="w-5 h-5 text-white" />
           ) : (
-            <Maximize2 className="w-6 h-6 text-white" />
+            <Maximize2 className="w-5 h-5 text-white" />
           )}
         </button>
       </div>
 
-      {/* Bracket Container */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[1200px] p-8">
-          <div className="flex items-center justify-center gap-4">
-            {fasesActivas.map((fase, faseIndex) => (
-              <FaseColumn
-                key={fase}
-                fase={fase}
-                partidos={partidosPorFase[fase]}
-                isFirst={faseIndex === 0}
-                isLast={faseIndex === fasesActivas.length - 1}
-                isFinal={fase === 'FINAL'}
-              />
-            ))}
+      {/* Bracket Container - Más compacto */}
+      <div className="flex-1 overflow-auto">
+        {partidos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <Trophy className="w-16 h-16 text-gray-600 mb-4" />
+            <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
-        </div>
-      </div>
-
-      {/* Leyenda */}
-      <div className="flex items-center justify-center gap-6 mt-8 text-sm text-gray-400">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500/20 border border-green-500/50 rounded" />
-          <span>Ganador</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-[#df2531]/20 border border-[#df2531]/50 rounded" />
-          <span>Por jugar</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-white/5 border border-white/10 rounded" />
-          <span>Por definir</span>
-        </div>
+        ) : (
+          <div className="min-w-max p-4 flex items-center justify-center">
+            <div className="flex items-stretch gap-2">
+              {fasesActivas.map((fase, faseIndex) => (
+                <FaseColumn
+                  key={fase}
+                  fase={fase}
+                  partidos={partidosPorFase[fase]}
+                  isFirst={faseIndex === 0}
+                  isLast={faseIndex === fasesActivas.length - 1}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -273,41 +380,26 @@ function FaseColumn({
   fase, 
   partidos, 
   isFirst, 
-  isLast,
-  isFinal 
+  isLast
 }: { 
   fase: string; 
   partidos: Partido[];
   isFirst: boolean;
   isLast: boolean;
-  isFinal: boolean;
 }) {
-  // Calcular espaciado basado en la fase
-  const getSpacing = () => {
-    switch (fase) {
-      case 'ZONA': return 'gap-4';
-      case 'REPECHAJE': return 'gap-6';
-      case 'OCTAVOS': return 'gap-8';
-      case 'CUARTOS': return 'gap-12';
-      case 'SEMIFINAL': return 'gap-20';
-      case 'FINAL': return 'gap-32';
-      default: return 'gap-4';
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center min-w-[280px]">
-      {/* Título de fase */}
-      <div className="mb-8">
-        <span className="px-6 py-2 bg-gradient-to-r from-[#df2531] to-[#b91c22] text-white font-bold rounded-full text-sm uppercase tracking-wider shadow-lg shadow-[#df2531]/20">
+    <div className="flex flex-col items-center min-w-[200px]">
+      {/* Título de fase - Compacto */}
+      <div className="mb-2">
+        <span className="px-3 py-1 bg-[#df2531] text-white font-bold rounded-full text-xs uppercase">
           {fase === 'SEMIFINAL' ? 'SEMIS' : fase}
         </span>
       </div>
 
-      {/* Partidos con espaciado dinámico */}
-      <div className={`flex flex-col ${getSpacing()} ${isFinal ? 'justify-center' : ''}`}>
+      {/* Partidos - Espaciado mínimo */}
+      <div className="flex flex-col gap-2">
         {partidos.map((partido, index) => (
-          <PartidoChampionship
+          <PartidoCard
             key={partido.id}
             partido={partido}
             index={index}
@@ -320,7 +412,7 @@ function FaseColumn({
   );
 }
 
-function PartidoChampionship({ 
+function PartidoCard({ 
   partido, 
   index,
   isFirst,
@@ -340,131 +432,106 @@ function PartidoChampionship({
 
   return (
     <div className="relative flex items-center">
-      {/* Línea de entrada (desde la izquierda) - simplificada */}
+      {/* Línea entrada */}
       {!isFirst && (
-        <div className="absolute -left-4 top-1/2 w-4 h-px bg-gradient-to-l from-white/30 to-white/10" />
+        <div className="absolute -left-2 top-1/2 w-2 h-px bg-white/20" />
       )}
       
-      {/* Card del partido - DISEÑO COMPACTO */}
+      {/* Card ultra-compacta */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: index * 0.1 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className={`
-          relative w-56 bg-gradient-to-b from-white/[0.08] to-white/[0.02] 
-          border rounded-lg overflow-hidden
-          ${isFinalizado ? 'border-green-500/30' : 'border-[#df2531]/30'}
-          shadow-lg shadow-black/50
+          relative w-44 bg-white/[0.03] border rounded overflow-hidden
+          ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}
         `}
       >
-        {/* Header con número de partido y cancha */}
-        <div className="flex items-center justify-between px-2 py-1.5 bg-white/5 border-b border-white/5">
-          <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
-            Partido {index + 1}
+        {/* Header: Partido # + Cancha */}
+        <div className="flex items-center justify-between px-2 py-0.5 bg-white/5">
+          <span className="text-[9px] text-gray-500 uppercase">
+            P{index + 1}
           </span>
-          {partido.cancha ? (
-            <span className="text-[10px] text-[#df2531] font-medium truncate max-w-[100px]">
-              {partido.cancha.toUpperCase()}
+          {partido.cancha && (
+            <span className="text-[9px] text-[#df2531] truncate max-w-[80px]">
+              {partido.cancha}
             </span>
-          ) : partido.esBye ? (
-            <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 text-[10px] rounded">
-              BYE
-            </span>
-          ) : null}
+          )}
+          {partido.esBye && (
+            <span className="text-[9px] text-yellow-500">BYE</span>
+          )}
         </div>
 
         {/* Pareja 1 */}
         <div className={`
-          flex items-center gap-2 px-2 py-1.5 border-b border-white/5
+          flex items-center gap-1.5 px-2 py-1 border-b border-white/5
           ${pareja1Gano ? 'bg-green-500/10' : ''}
         `}>
           {tienePareja1 ? (
             <>
-              <ParejaAvatar 
-                jugador1={partido.inscripcion1!.jugador1}
-                jugador2={partido.inscripcion1!.jugador2}
-                size="sm"
-              />
+              <div className="w-5 h-5 rounded-full bg-[#df2531]/20 flex items-center justify-center text-[8px] text-[#df2531] font-bold">
+                {partido.inscripcion1!.jugador1.nombre[0]}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className={`font-medium text-[11px] truncate ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+                <div className={`text-[10px] font-medium truncate ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
                   {partido.inscripcion1!.jugador1.apellido}
                 </div>
-                <div className={`text-[11px] truncate ${pareja1Gano ? 'text-green-400/70' : 'text-gray-400'}`}>
-                  {partido.inscripcion1!.jugador2.apellido}
-                </div>
               </div>
+              {isFinalizado && partido.resultado && (
+                <span className="text-[10px] font-bold text-white">{partido.resultado.set1[0]}</span>
+              )}
             </>
           ) : (
-            <div className="flex items-center gap-2 w-full">
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
-                <span className="text-gray-500 text-[10px]">?</span>
-              </div>
-              <span className="text-gray-500 text-xs italic">Por definir</span>
-            </div>
+            <span className="text-[10px] text-gray-500 italic">Por definir</span>
           )}
         </div>
 
-        {/* VS / Resultado - Más compacto */}
-        <div className="flex items-center justify-center py-1 bg-black/20">
+        {/* VS / Resultado */}
+        <div className="flex items-center justify-center py-0.5 bg-black/20">
           {isFinalizado && partido.resultado ? (
-            <div className="flex items-center gap-1.5 text-xs font-mono">
-              <span className="text-green-400">
-                {partido.resultado.set1[0]}-{partido.resultado.set1[1]}
-              </span>
-              {partido.resultado.set2 && (
-                <span className="text-gray-400">
-                  | {partido.resultado.set2[0]}-{partido.resultado.set2[1]}
-                </span>
-              )}
-            </div>
+            <span className="text-[9px] font-mono text-green-400">
+              {partido.resultado.set1[0]}-{partido.resultado.set1[1]}
+              {partido.resultado.set2 && ` | ${partido.resultado.set2[0]}-${partido.resultado.set2[1]}`}
+            </span>
           ) : (
-            <span className="text-[#df2531] font-bold text-[10px]">VS</span>
+            <span className="text-[#df2531] text-[8px] font-bold">VS</span>
           )}
         </div>
 
         {/* Pareja 2 */}
         <div className={`
-          flex items-center gap-2 px-2 py-1.5
+          flex items-center gap-1.5 px-2 py-1
           ${pareja2Gano ? 'bg-green-500/10' : ''}
         `}>
           {tienePareja2 ? (
             <>
-              <ParejaAvatar 
-                jugador1={partido.inscripcion2!.jugador1}
-                jugador2={partido.inscripcion2!.jugador2}
-                size="sm"
-              />
+              <div className="w-5 h-5 rounded-full bg-[#df2531]/20 flex items-center justify-center text-[8px] text-[#df2531] font-bold">
+                {partido.inscripcion2!.jugador2.nombre[0]}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className={`font-medium text-[11px] truncate ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
-                  {partido.inscripcion2!.jugador1.apellido}
-                </div>
-                <div className={`text-[11px] truncate ${pareja2Gano ? 'text-green-400/70' : 'text-gray-400'}`}>
+                <div className={`text-[10px] font-medium truncate ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
                   {partido.inscripcion2!.jugador2.apellido}
                 </div>
               </div>
+              {isFinalizado && partido.resultado && (
+                <span className="text-[10px] font-bold text-white">{partido.resultado.set1[1]}</span>
+              )}
             </>
           ) : (
-            <div className="flex items-center gap-2 w-full">
-              <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
-                <span className="text-gray-500 text-[10px]">?</span>
-              </div>
-              <span className="text-gray-500 text-xs italic">Por definir</span>
-            </div>
+            <span className="text-[10px] text-gray-500 italic">Por definir</span>
           )}
         </div>
 
-        {/* Fecha/hora abajo - solo si existe */}
+        {/* Fecha/hora */}
         {partido.fecha && (
-          <div className="flex items-center justify-center gap-2 px-2 py-1 bg-white/[0.02] text-[10px] text-gray-500 border-t border-white/5">
-            <Calendar className="w-3 h-3" />
+          <div className="px-2 py-0.5 text-[8px] text-gray-500 border-t border-white/5">
             {formatDatePY(partido.fecha)} {partido.hora}
           </div>
         )}
       </motion.div>
 
-      {/* Línea de salida (hacia la derecha) - simplificada */}
+      {/* Línea salida */}
       {!isLast && (
-        <div className="absolute -right-4 top-1/2 w-4 h-px bg-gradient-to-r from-white/30 to-white/10" />
+        <div className="absolute -right-2 top-1/2 w-2 h-px bg-white/20" />
       )}
     </div>
   );

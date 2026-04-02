@@ -18,10 +18,6 @@ import { ForgotPasswordPage } from './features/auth/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 
 
-// Torneos (V1)
-import TournamentsListPage from './features/tournaments/pages/TournamentsListPage';
-import TournamentDetailPage from './features/tournaments/pages/TournamentDetailPage';
-
 // Torneos Público V2 - Inscripciones
 import { TorneosPublicListPage } from './features/tournaments/pages/TorneosPublicListPage';
 import { TorneoPublicDetailPage } from './features/tournaments/pages/TorneoPublicDetailPage';
@@ -122,7 +118,7 @@ function App() {
           
           {/* Torneos - V2 Público */}
           <Route path="/tournaments" element={<TorneosPublicListPage />} />
-          <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+          <Route path="/tournaments/:id" element={<TorneoPublicDetailPage />} />
           
           {/* Inscripciones (V1) */}
           <Route path="/inscripciones/my" element={<MisInscripcionesPage />} />
@@ -164,7 +160,7 @@ function App() {
           </Route>
           
           {/* Alias de rutas para navegación */}
-          <Route path="/torneos" element={<TournamentsListPage />} />
+          <Route path="/torneos" element={<TorneosPublicListPage />} />
           <Route path="/jugadores" element={<HomeDashboardPage />} /> {/* Temporal - redirige al dashboard */}
         </Route>
       </Routes>

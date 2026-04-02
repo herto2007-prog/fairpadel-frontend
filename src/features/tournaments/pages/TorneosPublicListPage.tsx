@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
-import { formatDatePYShort } from '../../../utils/date';
+import { formatDatePYShort, getDiasRestantes } from '../../../utils/date';
 
 interface Torneo {
   id: string;
@@ -327,7 +327,7 @@ export function TorneosPublicListPage() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent" />
                         
-                        {new Date(torneo.fechaLimiteInscr) > new Date() && (
+                        {getDiasRestantes(torneo.fechaLimiteInscr) >= 0 && (
                           <div className="absolute top-3 right-3 px-3 py-1 bg-green-500/90 text-white text-xs font-medium rounded-full flex items-center gap-1">
                             <Sparkles className="w-3 h-3" />
                             Inscripciones abiertas

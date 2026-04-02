@@ -6,7 +6,7 @@ import {
   CheckCircle, AlertCircle, Sparkles, Medal, Target
 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { formatDatePY } from '../../../utils/date';
+import { formatDatePY, getDiasRestantes } from '../../../utils/date';
 import { useAuth } from '../../auth/context/AuthContext';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
@@ -139,9 +139,7 @@ export function TorneoPublicDetailPage() {
     );
   }
 
-  const diasHastaCierre = Math.ceil(
-    (new Date(torneo.fechaLimiteInscr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const diasHastaCierre = getDiasRestantes(torneo.fechaLimiteInscr);
 
   return (
     <div className="min-h-screen bg-dark relative overflow-hidden">
