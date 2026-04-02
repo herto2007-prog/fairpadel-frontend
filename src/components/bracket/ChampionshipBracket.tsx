@@ -279,14 +279,33 @@ function BracketColumn({
     }
   };
 
-  // Gap vertical entre partidos: 20px para todas las fases
+  // Gap vertical entre partidos
   const gapEntrePartidos = 20;
-  const alturaCard = 140; // altura aproximada de cada card
+  const alturaCard = 140;
+  const alturaTotalCard = alturaCard + gapEntrePartidos;
   
-  // Calcular offset vertical para centrar partidos del bracket
-  // Cada fase siguiente debe estar centrada entre los partidos de la fase anterior
+  // Fases sin conectores (ZONA, REPECHAJE): sin offset
   const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
-  const offsetVertical = sinConectores ? 0 : (alturaCard + gapEntrePartidos) * (Math.pow(2, faseIndex - 1) - 0.5);
+  
+  // Para fases CON conectores (bracket): offset dinámico basado en cantidad de partidos
+  // Ejemplo: 32avos (16p, offset 0) → 16avos (8p, offset X) → 8vos (4p, offset Y) → 4tos (2p, offset Z) → final (1p)
+  let offsetVertical = 0;
+  
+  if (!sinConectores && partidos.length > 0) {
+    // Calcular "nivel" basado en cantidad de partidos: más partidos = nivel más alto = menos offset
+    // 16 partidos (32avos): nivel 4 → offset 0
+    // 8 partidos (16avos): nivel 3 → offset = altura * 4
+    // 4 partidos (8vos): nivel 2 → offset = altura * 6
+    // 2 partidos (4tos): nivel 1 → offset = altura * 7
+    // 1 partido (final): nivel 0 → offset = altura * 7.5
+    const nivel = Math.log2(partidos.length);
+    const maxNivel = 4; // Asumiendo máximo 32avos (16 partidos)
+    
+    if (nivel < maxNivel) {
+      // Offset = altura * (2^maxNivel - 2^nivel) / 2
+      offsetVertical = alturaTotalCard * (Math.pow(2, maxNivel - 1) - Math.pow(2, nivel - 1));
+    }
+  }
 
   return (
     <div className="flex flex-col min-w-[220px]">
