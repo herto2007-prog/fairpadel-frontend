@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
@@ -69,7 +69,6 @@ export function ChampionshipBracket({
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [mostrarSelector, setMostrarSelector] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadCategorias(); }, [tournamentId]);
   useEffect(() => { if (categoriaSeleccionada) loadData(); }, [tournamentId, categoriaSeleccionada]);
@@ -136,6 +135,7 @@ export function ChampionshipBracket({
 
   const fasesActivas = FASES_ORDEN.filter(f => partidosPorFase[f]?.length > 0);
   const fasesBracket = fasesActivas.filter(f => f !== 'ZONA' && f !== 'REPECHAJE');
+  const tieneZonaRepechaje = fasesActivas.some(f => f === 'ZONA' || f === 'REPECHAJE');
 
   const toggleFullscreen = () => {
     const newState = !isFullscreen;
@@ -231,19 +231,37 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket con posiciones absolutas */}
-      <div ref={containerRef} className="flex-1 bg-[#0a0b0f] p-4 md:p-6 overflow-x-auto overflow-y-auto">
+      {/* Bracket */}
+      <div className="flex-1 bg-[#0a0b0f] p-4 md:p-6 overflow-auto">
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="relative min-w-max min-h-max">
-            <BracketTree 
-              fases={fasesBracket}
-              partidosPorFase={partidosPorFase}
-            />
+          <div className="flex gap-8 min-w-max">
+            {/* ZONA y REPECHAJE - Columnas simples */}
+            {tieneZonaRepechaje && (
+              <div className="flex gap-6">
+                {fasesActivas.filter(f => f === 'ZONA' || f === 'REPECHAJE').map(fase => (
+                  <FaseColumnSimple
+                    key={fase}
+                    fase={fase}
+                    partidos={partidosPorFase[fase]}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* BRACKET CON POSICIONAMIENTO ABSOLUTO */}
+            {fasesBracket.length > 0 && (
+              <div className="relative">
+                <BracketTree 
+                  fases={fasesBracket}
+                  partidosPorFase={partidosPorFase}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -251,7 +269,27 @@ export function ChampionshipBracket({
   );
 }
 
-// Componente principal del árbol del bracket
+// Columna simple para ZONA y REPECHAJE
+function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[] }) {
+  return (
+    <div className="flex flex-col w-[200px]">
+      {/* Título */}
+      <div className="mb-3 pb-2 border-b border-white/20">
+        <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{fase}</span>
+      </div>
+      {/* Cards */}
+      <div className="flex flex-col gap-3">
+        {partidos.map(partido => (
+          <div key={partido.id} className="h-[140px]">
+            <MatchCard partido={partido} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Bracket principal con posicionamiento absoluto
 function BracketTree({ 
   fases, 
   partidosPorFase 
@@ -270,96 +308,84 @@ function BracketTree({
   // Dimensiones
   const cardWidth = 200;
   const cardHeight = 140;
-  const gapX = 48; // espacio horizontal entre fases (para líneas)
-  const gapY = 20; // espacio vertical mínimo entre cards
+  const headerHeight = 40; // espacio para título
+  const gapX = 48;
+  const gapY = 20;
   
-  // Calcular la altura necesaria basada en la fase inicial
-  // La fase inicial ocupa: maxPartidos * cardHeight + (maxPartidos - 1) * gapY
-  const totalHeight = maxPartidos * cardHeight + (maxPartidos - 1) * gapY;
-  
-  // Ancho total
+  // Altura total = header + cards
+  const contentHeight = maxPartidos * cardHeight + (maxPartidos - 1) * gapY;
+  const totalHeight = headerHeight + contentHeight;
   const totalWidth = fases.length * cardWidth + (fases.length - 1) * gapX;
 
-  // Función para calcular posición Y de una card
   const getCardY = (fase: string, index: number) => {
     const numPartidos = partidosPorFase[fase].length;
     const span = maxPartidos / numPartidos;
-    
-    // Centro del espacio que ocupa esta card
-    // Ej: si maxPartidos=8 y numPartidos=4 (cuartos), span=2
-    // C1 ocupa filas 0-1, centro en 1
-    // C2 ocupa filas 2-3, centro en 3
-    // C3 ocupa filas 4-5, centro en 5
-    // C4 ocupa filas 6-7, centro en 7
     const filaCentro = index * span + (span - 1) / 2;
-    const y = filaCentro * (cardHeight + gapY);
-    return y;
+    return headerHeight + filaCentro * (cardHeight + gapY);
   };
 
-  // Función para calcular posición X de una fase
   const getCardX = (faseIndex: number) => {
     return faseIndex * (cardWidth + gapX);
   };
 
   return (
     <div style={{ width: totalWidth, height: totalHeight }} className="relative">
-      {/* Renderizar conectores primero (detrás de las cards) */}
+      {/* Títulos de fases */}
+      {fases.map((fase, faseIndex) => (
+        <div
+          key={`title-${fase}`}
+          className="absolute"
+          style={{
+            left: getCardX(faseIndex),
+            top: 0,
+            width: cardWidth,
+          }}
+        >
+          <div className="pb-2 border-b border-white/20">
+            <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{fase}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* Conectores */}
       {fases.map((fase, faseIndex) => {
-        if (faseIndex === 0) return null; // Primera fase no tiene conectores de entrada
+        if (faseIndex === 0) return null;
         
         const prevFase = fases[faseIndex - 1];
         const currPartidos = partidosPorFase[fase];
         const prevPartidos = partidosPorFase[prevFase];
         
         return currPartidos.map((partido, idx) => {
-          // Cada partido actual recibe de 2 partidos de la fase anterior
           const prevIdx1 = idx * 2;
           const prevIdx2 = idx * 2 + 1;
           
           if (prevIdx1 >= prevPartidos.length) return null;
           
-          const x1 = getCardX(faseIndex - 1) + cardWidth; // borde derecho fase anterior
-          const x2 = getCardX(faseIndex); // borde izquierdo fase actual
-          const yTarget = getCardY(fase, idx) + cardHeight / 2; // centro de card destino
+          const x1 = getCardX(faseIndex - 1) + cardWidth;
+          const x2 = getCardX(faseIndex);
+          const yTarget = getCardY(fase, idx) + cardHeight / 2;
           
           const ySource1 = getCardY(prevFase, prevIdx1) + cardHeight / 2;
           const ySource2 = prevIdx2 < prevPartidos.length 
             ? getCardY(prevFase, prevIdx2) + cardHeight / 2
             : ySource1;
           
-          // Punto medio X donde se juntan las líneas
           const midX = x1 + (x2 - x1) / 2;
           
           return (
             <g key={`connector-${fase}-${partido.id}`}>
-              {/* Línea desde origen 1 al punto medio */}
-              <ConnectorLine 
-                x1={x1} y1={ySource1}
-                x2={midX} y2={ySource1}
-              />
-              {/* Línea desde origen 2 al punto medio (si existe) */}
+              <ConnectorLine x1={x1} y1={ySource1} x2={midX} y2={ySource1} />
               {prevIdx2 < prevPartidos.length && (
-                <ConnectorLine 
-                  x1={x1} y1={ySource2}
-                  x2={midX} y2={ySource2}
-                />
+                <ConnectorLine x1={x1} y1={ySource2} x2={midX} y2={ySource2} />
               )}
-              {/* Línea vertical conectando ambas */}
-              <ConnectorLine 
-                x1={midX} y1={Math.min(ySource1, ySource2)}
-                x2={midX} y2={Math.max(ySource1, ySource2)}
-              />
-              {/* Línea horizontal al destino */}
-              <ConnectorLine 
-                x1={midX} y1={yTarget}
-                x2={x2} y2={yTarget}
-              />
+              <ConnectorLine x1={midX} y1={Math.min(ySource1, ySource2)} x2={midX} y2={Math.max(ySource1, ySource2)} />
+              <ConnectorLine x1={midX} y1={yTarget} x2={x2} y2={yTarget} />
             </g>
           );
         });
       })}
 
-      {/* Renderizar cards */}
+      {/* Cards */}
       {fases.map((fase, faseIndex) => (
         partidosPorFase[fase].map((partido, idx) => {
           const x = getCardX(faseIndex);
@@ -369,12 +395,7 @@ function BracketTree({
             <div
               key={partido.id}
               className="absolute"
-              style={{
-                left: x,
-                top: y,
-                width: cardWidth,
-                height: cardHeight,
-              }}
+              style={{ left: x, top: y, width: cardWidth, height: cardHeight }}
             >
               <MatchCard partido={partido} />
             </div>
@@ -385,7 +406,7 @@ function BracketTree({
   );
 }
 
-// Línea conectora simple
+// Línea conectora
 function ConnectorLine({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: number }) {
   return (
     <svg 
@@ -409,7 +430,7 @@ function ConnectorLine({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number;
   );
 }
 
-// Match Card component
+// Match Card
 function MatchCard({ partido }: { partido: Partido }) {
   const isFinalizado = !!partido.ganador;
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
