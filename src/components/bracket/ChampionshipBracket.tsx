@@ -56,6 +56,7 @@ export function ChampionshipBracket({
   const [torneoInfo, setTorneoInfo] = useState<any>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hasNewChanges, setHasNewChanges] = useState(false);
+  const [categoriasNombres, setCategoriasNombres] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
@@ -91,6 +92,10 @@ export function ChampionshipBracket({
         setPartidos(newPartidos);
         setTorneoInfo(data.torneo);
         setLastUpdated(new Date());
+        
+        // Extraer categorías únicas
+        const categoriasUnicas = [...new Set(newPartidos.map((p: any) => p.categoriaNombre).filter(Boolean))] as string[];
+        setCategoriasNombres(categoriasUnicas);
       }
     } catch (error) {
       console.error('Error cargando bracket:', error);
@@ -235,8 +240,19 @@ export function ChampionshipBracket({
         </div>
       </div>
 
+      {/* Categoría */}
+      {categoriasNombres.length > 0 && (
+        <div className="text-center mt-8">
+          <span className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-gray-300 text-sm">
+            {categoriasNombres.length === 1 
+              ? categoriasNombres[0] 
+              : `${categoriasNombres.length} categorías`}
+          </span>
+        </div>
+      )}
+
       {/* Leyenda */}
-      <div className="flex items-center justify-center gap-6 mt-8 text-sm text-gray-400">
+      <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-400">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-green-500/20 border border-green-500/50 rounded" />
           <span>Ganador</span>

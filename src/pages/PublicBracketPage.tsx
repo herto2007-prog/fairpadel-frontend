@@ -67,13 +67,13 @@ export function PublicBracketPage() {
       <div className="relative z-10 py-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <motion.h1 
+          <motion.img 
+            src="/logos/logo.png"
+            alt="FairPadel"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold text-white"
-          >
-            <span className="text-[#df2531]">Fair</span>Padel
-          </motion.h1>
+            className="h-16 mx-auto"
+          />
           <p className="text-gray-400 mt-2">Bracket Oficial</p>
         </div>
 
