@@ -12,6 +12,7 @@ interface User {
   nombre: string;
   apellido: string;
   email: string;
+  documento: string;
 }
 
 export function SedesDuenosManager() {
@@ -31,9 +32,10 @@ export function SedesDuenosManager() {
   const loadSedes = async () => {
     try {
       const data = await sedesAdminService.getSedesConDuenos();
-      setSedes(data);
+      setSedes(Array.isArray(data) ? data : []);
     } catch (error) {
       showError('Error', 'No se pudieron cargar las sedes');
+      setSedes([]);
     } finally {
       setLoading(false);
     }
@@ -73,8 +75,7 @@ export function SedesDuenosManager() {
   );
 
   const filteredUsers = users.filter(user =>
-    `${user.nombre} ${user.apellido}`.toLowerCase().includes(searchUser.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchUser.toLowerCase())
+    user.documento.includes(searchUser.replace(/\./g, '').replace(/-/g, ''))
   );
 
   if (loading) {
@@ -259,7 +260,7 @@ export function SedesDuenosManager() {
                       type="text"
                       value={searchUser}
                       onChange={(e) => setSearchUser(e.target.value)}
-                      placeholder="Buscar usuario..."
+                      placeholder="Buscar por CI..."
                       className="w-full bg-[#151921] border border-[#232838] rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary text-sm"
                     />
                   </div>
@@ -278,7 +279,7 @@ export function SedesDuenosManager() {
                           <p className="text-white text-sm font-medium">
                             {user.nombre} {user.apellido}
                           </p>
-                          <p className="text-gray-500 text-xs">{user.email}</p>
+                          <p className="text-gray-500 text-xs">CI: {user.documento}</p>
                         </div>
                         <Check className="w-4 h-4 text-primary opacity-0 hover:opacity-100" />
                       </button>

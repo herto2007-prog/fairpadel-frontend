@@ -238,7 +238,7 @@ export function ChampionshipBracket({
           </div>
         ) : (
           <div className="flex justify-center min-w-max">
-            <div className="flex items-start gap-6">
+            <div className="flex items-start gap-16">
               {fasesActivas.map((fase, faseIndex) => (
                 <BracketColumn
                   key={fase}
@@ -279,11 +279,8 @@ function BracketColumn({
     }
   };
 
-  // ZONA y REPECHAJE: gap mínimo (son aleatorios)
-  // Resto: espaciado dinámico para conectores
-  const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
-  const nivelEnArbol = totalFases - 1 - faseIndex;
-  const gapEntrePartidos = sinConectores ? 4 : 16 * Math.pow(2, nivelEnArbol);
+  // Gap vertical entre partidos: 20px para todas las fases
+  const gapEntrePartidos = 20;
 
   return (
     <div className="flex flex-col min-w-[220px]">
@@ -381,7 +378,7 @@ function MatchCard({
                       </span>
                       {partido.resultado.set2 && (
                         <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {'>'} {partido.resultado.set2[0]}
+                          '-' {partido.resultado.set2[0]}
                         </span>
                       )}
                     </>
@@ -432,7 +429,7 @@ function MatchCard({
                       </span>
                       {partido.resultado.set2 && (
                         <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                          {'>'} {partido.resultado.set2[1]}
+                          '-' {partido.resultado.set2[1]}
                         </span>
                       )}
                     </>
