@@ -42,7 +42,7 @@ interface ChampionshipBracketProps {
   onFullscreen?: (isFullscreen: boolean) => void;
 }
 
-const FASES_ORDEN = ['OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'] as const;
+const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'] as const;
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -78,13 +78,7 @@ export function ChampionshipBracket({
     }
   };
 
-  // Auto-refresh cada 30 segundos para resultados en vivo
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading) loadData();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [tournamentId, categoriaId, loading]);
+  // NOTA: Eliminado auto-refresh. Para actualizar, el usuario recarga la página.
 
   const partidosPorFase = useMemo(() => {
     const grupos: Record<string, Partido[]> = {};
@@ -176,7 +170,7 @@ export function ChampionshipBracket({
       {/* Bracket Container */}
       <div className="overflow-x-auto">
         <div className="min-w-[1200px] p-8">
-          <div className="flex items-center justify-center gap-8">
+          <div className="flex items-center justify-center gap-4">
             {fasesActivas.map((fase, faseIndex) => (
               <FaseColumn
                 key={fase}
@@ -223,17 +217,30 @@ function FaseColumn({
   isLast: boolean;
   isFinal: boolean;
 }) {
+  // Calcular espaciado basado en la fase
+  const getSpacing = () => {
+    switch (fase) {
+      case 'ZONA': return 'gap-4';
+      case 'REPECHAJE': return 'gap-6';
+      case 'OCTAVOS': return 'gap-8';
+      case 'CUARTOS': return 'gap-12';
+      case 'SEMIFINAL': return 'gap-20';
+      case 'FINAL': return 'gap-32';
+      default: return 'gap-4';
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center min-w-[280px]">
       {/* Título de fase */}
-      <div className="mb-6">
-        <span className="px-6 py-2 bg-[#df2531] text-white font-bold rounded-full text-sm uppercase tracking-wider">
+      <div className="mb-8">
+        <span className="px-6 py-2 bg-gradient-to-r from-[#df2531] to-[#b91c22] text-white font-bold rounded-full text-sm uppercase tracking-wider shadow-lg shadow-[#df2531]/20">
           {fase === 'SEMIFINAL' ? 'SEMIS' : fase}
         </span>
       </div>
 
-      {/* Partidos */}
-      <div className={`flex flex-col ${isFinal ? 'justify-center' : 'justify-around'} h-[600px]`}>
+      {/* Partidos con espaciado dinámico */}
+      <div className={`flex flex-col ${getSpacing()} ${isFinal ? 'justify-center' : ''}`}>
         {partidos.map((partido, index) => (
           <PartidoChampionship
             key={partido.id}
@@ -241,7 +248,6 @@ function FaseColumn({
             index={index}
             isFirst={isFirst}
             isLast={isLast}
-            totalPartidos={partidos.length}
           />
         ))}
       </div>
@@ -253,14 +259,12 @@ function PartidoChampionship({
   partido, 
   index,
   isFirst,
-  isLast,
-  totalPartidos 
+  isLast
 }: { 
   partido: Partido;
   index: number;
   isFirst: boolean;
   isLast: boolean;
-  totalPartidos: number;
 }) {
   const isFinalizado = !!partido.ganador;
   const tienePareja1 = !!partido.inscripcion1;
@@ -271,9 +275,9 @@ function PartidoChampionship({
 
   return (
     <div className="relative flex items-center">
-      {/* Línea de entrada (desde la izquierda) */}
+      {/* Línea de entrada (desde la izquierda) - simplificada */}
       {!isFirst && (
-        <div className="absolute -left-8 top-1/2 w-8 h-px bg-white/20" />
+        <div className="absolute -left-4 top-1/2 w-4 h-px bg-gradient-to-l from-white/30 to-white/10" />
       )}
       
       {/* Card del partido */}
@@ -407,23 +411,9 @@ function PartidoChampionship({
         )}
       </motion.div>
 
-      {/* Línea de salida (hacia la derecha) */}
+      {/* Línea de salida (hacia la derecha) - simplificada */}
       {!isLast && (
-        <div className="absolute -right-8 top-1/2 w-8 h-px bg-white/20" />
-      )}
-
-      {/* Conector vertical para siguiente ronda */}
-      {!isLast && totalPartidos > 1 && index % 2 === 0 && (
-        <>
-          {/* Línea vertical hacia abajo */}
-          <div 
-            className="absolute -right-8 w-px bg-white/20"
-            style={{
-              top: '50%',
-              height: `${100 * (totalPartidos / (index + 1))}px`
-            }}
-          />
-        </>
+        <div className="absolute -right-4 top-1/2 w-4 h-px bg-gradient-to-r from-white/30 to-white/10" />
       )}
     </div>
   );
