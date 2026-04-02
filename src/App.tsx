@@ -160,7 +160,6 @@ function App() {
           </Route>
           
           {/* Alias de rutas para navegación */}
-          <Route path="/torneos" element={<TorneosPublicListPage />} />
           <Route path="/jugadores" element={<HomeDashboardPage />} /> {/* Temporal - redirige al dashboard */}
         </Route>
       </Routes>
