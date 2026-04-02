@@ -72,23 +72,14 @@ export function SuscripcionesManager() {
     
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${API_URL}/admin/suscripciones/sedes?filtro=${filtro}&page=${page}&limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await api.get(
+        `/admin/suscripciones/sedes?filtro=${filtro}&page=${page}&limit=10`
       );
 
-      if (!response.ok) throw new Error('Error al cargar suscripciones');
-
-      const data = await response.json();
-      setSuscripciones(data.data);
-      setTotalPages(data.meta.totalPages);
+      setSuscripciones(response.data.data);
+      setTotalPages(response.data.meta.totalPages);
     } catch (err: any) {
-      showError('Error', err.message);
+      showError('Error', err.response?.data?.message || 'Error al cargar suscripciones');
     } finally {
       setLoading(false);
     }
@@ -99,20 +90,8 @@ export function SuscripcionesManager() {
     if (activeTab !== 'sedes') return;
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${API_URL}/admin/suscripciones/estadisticas`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error('Error al cargar estadísticas');
-
-      const data = await response.json();
-      setEstadisticas(data);
+      const response = await api.get('/admin/suscripciones/estadisticas');
+      setEstadisticas(response.data);
     } catch (err: any) {
       console.error('Error cargando estadísticas:', err);
     }
