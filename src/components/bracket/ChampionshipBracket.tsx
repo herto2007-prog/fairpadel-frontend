@@ -233,16 +233,18 @@ export function ChampionshipBracket({
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="flex items-start gap-6 min-w-max">
-            {fasesActivas.map((fase, faseIndex) => (
-              <BracketColumn
-                key={fase}
-                fase={fase}
-                partidos={partidosPorFase[fase]}
-                faseIndex={faseIndex}
-                totalFases={fasesActivas.length}
-              />
-            ))}
+          <div className="flex justify-center min-w-max">
+            <div className="flex items-start gap-6">
+              {fasesActivas.map((fase, faseIndex) => (
+                <BracketColumn
+                  key={fase}
+                  fase={fase}
+                  partidos={partidosPorFase[fase]}
+                  faseIndex={faseIndex}
+                  totalFases={fasesActivas.length}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
