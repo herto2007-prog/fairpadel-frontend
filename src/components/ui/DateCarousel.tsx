@@ -80,7 +80,7 @@ export function DateCarousel({ selectedDate, onSelectDate, diasMostrar = 10 }: D
             <button
               key={dia.fecha}
               onClick={() => onSelectDate(dia.fecha)}
-              className={`flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-xl border transition-all ${
+              className={`relative flex flex-col items-center justify-center min-w-[70px] h-[70px] rounded-xl border transition-all ${
                 isSelected
                   ? 'bg-[#df2531] border-[#df2531] text-white'
                   : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'

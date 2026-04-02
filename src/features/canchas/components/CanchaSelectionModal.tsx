@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MapPin, Clock, Sun, DollarSign, ChevronRight, Check } from 'lucide-react';
 import { useToast } from '../../../components/ui/ToastProvider';
@@ -31,7 +31,7 @@ interface SedeInfo {
 interface CanchaSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sede: SedeInfo;
+  sede: SedeInfo | { id: string; nombre: string; ciudad: string; logoUrl?: string; direccion?: string };
   canchas: Cancha[];
   fecha: string;
   duracionMinutos: number;
@@ -58,6 +58,16 @@ export function CanchaSelectionModal({
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'selection' | 'confirmation'>('selection');
+
+  // Resetear estado cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCancha(null);
+      setSelectedSlot(null);
+      setStep('selection');
+      setLoading(false);
+    }
+  }, [isOpen]);
 
   const formatDuracion = (minutos: number): string => {
     const horas = Math.floor(minutos / 60);

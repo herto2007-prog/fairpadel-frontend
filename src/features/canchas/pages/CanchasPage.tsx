@@ -4,7 +4,7 @@ import { api } from '../../../services/api';
 import { DateCarousel } from '../../../components/ui/DateCarousel';
 import { DurationSelector } from '../../../components/ui/DurationSelector';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
-import { formatDatePYLong } from '../../../utils/date';
+import { formatDatePYLong, getDateOnlyPY } from '../../../utils/date';
 import { CanchaSelectionModal } from '../components/CanchaSelectionModal';
 
 interface SedeDisponibilidad {
@@ -35,7 +35,7 @@ interface SedeDisponibilidad {
 }
 
 export function CanchasPage() {
-  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
+  const [fecha, setFecha] = useState(() => getDateOnlyPY());
   const [duracionMinutos, setDuracionMinutos] = useState(90);
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<SedeDisponibilidad[]>([]);
@@ -44,10 +44,15 @@ export function CanchasPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    cargarDisponibilidad();
+    const abortController = new AbortController();
+    cargarDisponibilidad(abortController.signal);
+    
+    return () => {
+      abortController.abort();
+    };
   }, [fecha, duracionMinutos]);
 
-  const cargarDisponibilidad = async () => {
+  const cargarDisponibilidad = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setError('');
@@ -56,9 +61,13 @@ export function CanchasPage() {
           fecha,
           duracionMinutos,
         },
+        signal,
       });
       setSedes(data.sedes || []);
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return; // Ignorar errores de cancelación
+      }
       setError('Error al cargar disponibilidad');
       console.error(err);
     } finally {
@@ -108,7 +117,7 @@ export function CanchasPage() {
           <div className="text-center py-12">
             <p className="text-red-400 mb-4">{error}</p>
             <button
-              onClick={cargarDisponibilidad}
+              onClick={() => cargarDisponibilidad()}
               className="px-4 py-2 bg-[#df2531] text-white rounded-lg hover:bg-[#df2531]/80 transition-colors"
             >
               Reintentar
@@ -228,20 +237,18 @@ export function CanchasPage() {
         )}
       </div>
 
-      {/* Modal de selección de cancha */}
-      {sedeSeleccionada && (
-        <CanchaSelectionModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          sede={sedeSeleccionada.sede}
-          canchas={sedeSeleccionada.canchas}
-          fecha={fecha}
-          duracionMinutos={duracionMinutos}
-          onReservaSuccess={() => {
-            cargarDisponibilidad();
-          }}
-        />
-      )}
+      {/* Modal de selección de cancha - siempre renderizado para animación de salida */}
+      <CanchaSelectionModal
+        isOpen={modalOpen && !!sedeSeleccionada}
+        onClose={() => setModalOpen(false)}
+        sede={sedeSeleccionada?.sede || { id: '', nombre: '', ciudad: '' }}
+        canchas={sedeSeleccionada?.canchas || []}
+        fecha={fecha}
+        duracionMinutos={duracionMinutos}
+        onReservaSuccess={() => {
+          cargarDisponibilidad();
+        }}
+      />
     </div>
   );
 }

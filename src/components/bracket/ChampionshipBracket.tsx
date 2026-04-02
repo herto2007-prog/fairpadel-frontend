@@ -3,6 +3,11 @@ import { motion } from 'framer-motion';
 import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 
+interface Jugador {
+  nombre: string;
+  apellido: string;
+  fotoUrl?: string | null;
+}
 
 interface Partido {
   id: string;
@@ -11,22 +16,22 @@ interface Partido {
   esBye: boolean;
   inscripcion1?: {
     id: string;
-    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
-    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador1: Jugador;
+    jugador2: Jugador;
   };
   inscripcion2?: {
     id: string;
-    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
-    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador1: Jugador;
+    jugador2: Jugador;
   };
   ganador?: {
     id: string;
-    jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
-    jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
+    jugador1: Jugador;
+    jugador2: Jugador;
   };
   resultado?: {
     set1: [number, number];
-    set2: [number, number];
+    set2?: [number, number];
     set3?: [number, number];
   };
   fecha?: string;
@@ -46,11 +51,7 @@ interface ChampionshipBracketProps {
   onFullscreen?: (isFullscreen: boolean) => void;
 }
 
-// Fases que NO llevan conectores (fase de grupos y repechaje)
-const FASES_SIN_CONECTORES = ['ZONA', 'REPECHAJE'];
-
-// Fases del bracket eliminatorio (CON conectores)
-const FASES_BRACKET = ['OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'];
+const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'];
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -61,7 +62,6 @@ export function ChampionshipBracket({
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [torneoInfo, setTorneoInfo] = useState<any>(null);
-  const [hasNewChanges, setHasNewChanges] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [mostrarSelector, setMostrarSelector] = useState(false);
@@ -108,20 +108,7 @@ export function ChampionshipBracket({
       
       const { data } = await api.get(endpoint);
       if (data.success) {
-        const newPartidos = data.partidos || [];
-        // Detectar cambios
-        const hasChanges = partidos.length > 0 && (
-          partidos.length !== newPartidos.length ||
-          partidos.some((p, i) => {
-            const np = newPartidos[i];
-            return p.ganador?.id !== np.ganador?.id || p.resultado?.set1?.[0] !== np.resultado?.set1?.[0];
-          })
-        );
-        if (hasChanges) {
-          setHasNewChanges(true);
-          setTimeout(() => setHasNewChanges(false), 3000);
-        }
-        setPartidos(newPartidos);
+        setPartidos(data.partidos || []);
         setTorneoInfo(data.torneo);
       }
     } catch (error) {
@@ -131,10 +118,9 @@ export function ChampionshipBracket({
     }
   };
 
-  // Agrupar partidos por fase
   const partidosPorFase = useMemo(() => {
     const grupos: Record<string, Partido[]> = {};
-    [...FASES_SIN_CONECTORES, ...FASES_BRACKET].forEach(fase => grupos[fase] = []);
+    FASES_ORDEN.forEach(fase => grupos[fase] = []);
     partidos.forEach(p => {
       const faseNormalizada = p.fase?.toUpperCase() || '';
       if (grupos[faseNormalizada]) grupos[faseNormalizada].push(p);
@@ -143,9 +129,7 @@ export function ChampionshipBracket({
     return grupos;
   }, [partidos]);
 
-  // Separar fases
-  const fasesSinConectores = FASES_SIN_CONECTORES.filter(f => partidosPorFase[f]?.length > 0);
-  const fasesBracket = FASES_BRACKET.filter(f => partidosPorFase[f]?.length > 0);
+  const fasesActivas = FASES_ORDEN.filter(f => partidosPorFase[f]?.length > 0);
 
   const toggleFullscreen = () => {
     const newState = !isFullscreen;
@@ -235,37 +219,30 @@ export function ChampionshipBracket({
               </motion.div>
             )}
           </div>
-          {hasNewChanges && (
-            <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-              className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              Actualizado
-            </motion.span>
-          )}
         </div>
         <button onClick={toggleFullscreen} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
           {isFullscreen ? <Minimize2 className="w-5 h-5 text-white" /> : <Maximize2 className="w-5 h-5 text-white" />}
         </button>
       </div>
 
-      {/* Contenido */}
-      <div className="flex-1 bg-[#0a0b0f] p-4 md:p-8">
+      {/* Bracket - Layout tipo padel42 */}
+      <div className="flex-1 bg-[#0a0b0f] p-4 md:p-6 overflow-x-auto">
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* FASES SIN CONECTORES (Zona, Repechaje) */}
-            {fasesSinConectores.map(fase => (
-              <FaseSinConectores key={fase} fase={fase} partidos={partidosPorFase[fase]} />
+          <div className="flex items-start gap-6 min-w-max">
+            {fasesActivas.map((fase, faseIndex) => (
+              <BracketColumn
+                key={fase}
+                fase={fase}
+                partidos={partidosPorFase[fase]}
+                faseIndex={faseIndex}
+                totalFases={fasesActivas.length}
+              />
             ))}
-
-            {/* BRACKET ELIMINATORIO (Con conectores) */}
-            {fasesBracket.length > 0 && (
-              <BracketEliminatorio partidosPorFase={partidosPorFase} fasesActivas={fasesBracket} />
-            )}
           </div>
         )}
       </div>
@@ -273,134 +250,6 @@ export function ChampionshipBracket({
   );
 }
 
-// Componente para fases sin conectores (Zona, Repechaje)
-function FaseSinConectores({ fase, partidos }: { fase: string; partidos: Partido[] }) {
-  const getFaseLabel = (f: string) => {
-    switch(f) {
-      case 'ZONA': return 'FASE DE GRUPOS';
-      case 'REPECHAJE': return 'REPECHAJE';
-      default: return f;
-    }
-  };
-
-  return (
-    <div>
-      <div className="mb-4 px-4 py-2 bg-[#df2531]/20 text-[#df2531] border border-[#df2531]/30 rounded-lg inline-block">
-        <span className="text-sm font-bold uppercase tracking-wider">{getFaseLabel(fase)}</span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {partidos.map(partido => (
-          <PartidoCardSimple key={partido.id} partido={partido} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Card simple para fase de grupos/repechaje
-function PartidoCardSimple({ partido }: { partido: Partido }) {
-  const isFinalizado = !!partido.ganador;
-  const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
-  const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
-
-  return (
-    <div className={`bg-[#1a1d26] border rounded-lg overflow-hidden ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}`}>
-      <div className="px-3 py-2 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-        <span className="text-xs text-gray-400">#{partido.orden}</span>
-        {partido.cancha && <span className="text-[10px] text-gray-500">{partido.cancha}</span>}
-      </div>
-      <div className="p-3 space-y-3">
-        {/* Pareja 1 */}
-        <div className={`flex items-center justify-between ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
-          <div className="flex items-center gap-2">
-            {partido.inscripcion1 ? (
-              <>
-                <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion1.jugador1} small />
-                  <Avatar jugador={partido.inscripcion1.jugador2} small />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold">{partido.inscripcion1.jugador1.apellido}</div>
-                  <div className="text-xs font-semibold">{partido.inscripcion1.jugador2.apellido}</div>
-                </div>
-              </>
-            ) : (
-              <span className="text-xs text-gray-500 italic">Por definir</span>
-            )}
-          </div>
-          {isFinalizado && partido.resultado && (
-            <span className="text-sm font-mono font-bold">{partido.resultado.set1[0]}</span>
-          )}
-        </div>
-
-        {/* VS */}
-        <div className="flex items-center justify-center">
-          <span className="text-[#df2531] text-xs font-bold">VS</span>
-        </div>
-
-        {/* Pareja 2 */}
-        <div className={`flex items-center justify-between ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
-          <div className="flex items-center gap-2">
-            {partido.inscripcion2 ? (
-              <>
-                <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion2.jugador1} small />
-                  <Avatar jugador={partido.inscripcion2.jugador2} small />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold">{partido.inscripcion2.jugador1.apellido}</div>
-                  <div className="text-xs font-semibold">{partido.inscripcion2.jugador2.apellido}</div>
-                </div>
-              </>
-            ) : (
-              <span className="text-xs text-gray-500 italic">Por definir</span>
-            )}
-          </div>
-          {isFinalizado && partido.resultado && (
-            <span className="text-sm font-mono font-bold">{partido.resultado.set1[1]}</span>
-          )}
-        </div>
-      </div>
-      {partido.fecha && (
-        <div className="px-3 py-2 bg-black/20 text-[10px] text-gray-500">
-          {partido.fecha} {partido.hora}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Bracket eliminatorio con conectores (estructura de árbol)
-function BracketEliminatorio({ partidosPorFase, fasesActivas }: { 
-  partidosPorFase: Record<string, Partido[]>; 
-  fasesActivas: string[];
-}) {
-  
-  return (
-    <div>
-      <div className="mb-4 px-4 py-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg inline-block">
-        <span className="text-sm font-bold uppercase tracking-wider">🏆 ELIMINATORIAS</span>
-      </div>
-      
-      <div className="overflow-x-auto pb-4">
-        <div className="flex items-stretch gap-8 md:gap-12 min-w-max">
-          {fasesActivas.map((fase, faseIndex) => (
-            <BracketColumn
-              key={fase}
-              fase={fase}
-              partidos={partidosPorFase[fase]}
-              faseIndex={faseIndex}
-              totalFases={fasesActivas.length}
-
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Columna del bracket con conectores
 function BracketColumn({ 
   fase, 
   partidos, 
@@ -414,47 +263,35 @@ function BracketColumn({
 }) {
   const getFaseLabel = (f: string) => {
     switch(f) {
+      case 'ZONA': return 'ZONA';
+      case 'REPECHAJE': return 'REPECHAJE';
       case 'OCTAVOS': return 'OCTAVOS';
       case 'CUARTOS': return 'CUARTOS';
       case 'SEMIFINAL': return 'SEMIS';
-      case 'FINAL': return '🏆 FINAL';
+      case 'FINAL': return 'FINAL';
       default: return f;
     }
   };
 
-  const getFaseColor = (f: string) => {
-    switch(f) {
-      case 'FINAL': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'SEMIFINAL': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      default: return 'bg-[#df2531]/20 text-[#df2531] border-[#df2531]/30';
-    }
-  };
-
-  // Calcular el espaciado basado en cuántos partidos faltan en la columna
-  const nivelEnArbol = totalFases - 1 - faseIndex; // 0 = final, 1 = semis, etc.
-  
-  // El espaciado debe ser proporcional para que los conectores alineen bien
-  const baseSpacing = 20; // px
-  const gapBetweenCards = baseSpacing * Math.pow(2, nivelEnArbol + 1);
+  // Calcular espaciado entre partidos para los conectores
+  const nivelEnArbol = totalFases - 1 - faseIndex;
+  const gapEntrePartidos = 16 * Math.pow(2, nivelEnArbol);
 
   return (
-    <div className="flex flex-col">
-      {/* Etiqueta de fase */}
-      <div className={`mb-4 px-3 py-2 rounded-lg border ${getFaseColor(fase)} text-center`}>
-        <span className="text-xs font-bold uppercase tracking-wider">{getFaseLabel(fase)}</span>
+    <div className="flex flex-col min-w-[200px]">
+      {/* Título de fase */}
+      <div className="mb-3 pb-2 border-b border-white/20">
+        <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{getFaseLabel(fase)}</span>
       </div>
 
-      {/* Contenedor de partidos con espaciado dinámico */}
-      <div className="flex flex-col flex-1 justify-center" style={{ gap: `${gapBetweenCards}px` }}>
+      {/* Partidos */}
+      <div className="flex flex-col" style={{ gap: `${gapEntrePartidos}px` }}>
         {partidos.map((partido, index) => (
-          <BracketMatchCard
+          <MatchCard
             key={partido.id}
             partido={partido}
-            showConnectorLeft={faseIndex > 0}
-            showConnectorRight={faseIndex < totalFases - 1}
-            gapBetweenCards={gapBetweenCards}
-            isFirstInColumn={index === 0}
-            isLastInColumn={index === partidos.length - 1}
+            showConnector={faseIndex < totalFases - 1}
+            isLast={index === partidos.length - 1}
           />
         ))}
       </div>
@@ -462,146 +299,162 @@ function BracketColumn({
   );
 }
 
-// Card de partido con conectores
-function BracketMatchCard({
+function MatchCard({
   partido,
-  showConnectorLeft,
-  showConnectorRight,
-  gapBetweenCards,
+  showConnector,
+  isLast
 }: {
   partido: Partido;
-  showConnectorLeft: boolean;
-  showConnectorRight: boolean;
-  gapBetweenCards: number;
-  isFirstInColumn: boolean;
-  isLastInColumn: boolean;
+  showConnector: boolean;
+  isLast: boolean;
 }) {
   const isFinalizado = !!partido.ganador;
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
   
-  // Altura de la línea vertical del conector
-  const connectorHeight = gapBetweenCards / 2 + 40; // 40 es la mitad aprox de la altura de la card
+  // Formatear código del partido (ej: Z1, O1, C1, S1, F1)
+  const codigoPartido = `${partido.fase?.[0] || 'P'}${partido.orden}`;
 
   return (
     <div className="relative flex items-center">
-      {/* Línea de entrada izquierda (desde fase anterior) */}
-      {showConnectorLeft && (
-        <>
-          {/* Horizontal */}
-          <div className="absolute left-0 top-1/2 w-6 h-px bg-white/30 -translate-x-full" />
-          {/* Vertical superior */}
-          <div 
-            className="absolute bg-white/30 left-0 -translate-x-full"
-            style={{ 
-              width: '1px', 
-              height: `${connectorHeight}px`,
-              top: '50%',
-              transform: 'translate(-24px, -100%)'
-            }}
-          />
-          {/* Vertical inferior */}
-          <div 
-            className="absolute bg-white/30 left-0 -translate-x-full"
-            style={{ 
-              width: '1px', 
-              height: `${connectorHeight}px`,
-              top: '50%',
-              transform: 'translateX(-24px)'
-            }}
-          />
-        </>
-      )}
-
-      {/* Card del partido */}
-      <div className={`w-44 md:w-52 bg-[#1a1d26] border rounded-lg overflow-hidden shrink-0 ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}`}>
+      {/* Card del partido - Estilo padel42 */}
+      <div className="w-[200px] bg-white rounded overflow-hidden shadow-lg shrink-0">
         {/* Header */}
-        <div className="px-2.5 py-1 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-          <span className="text-[10px] text-gray-400">#{partido.orden}</span>
-          {partido.cancha && <span className="text-[9px] text-gray-500 truncate max-w-[60px]">{partido.cancha}</span>}
+        <div className="flex items-center justify-between px-2 py-1 bg-gray-100 border-b border-gray-200">
+          <span className="text-[10px] font-bold text-gray-600">{codigoPartido}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-gray-500">{partido.fecha?.slice(5)?.replace('-', '/')}</span>
+            <span className="text-[9px] text-gray-400">{partido.hora}</span>
+          </div>
         </div>
 
         {/* Equipo 1 */}
-        <div className={`px-3 py-2 flex items-center justify-between border-b border-white/5 ${pareja1Gano ? 'bg-green-500/5' : ''}`}>
-          <div className="flex items-center gap-2">
-            {partido.inscripcion1 ? (
-              <>
-                <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion1.jugador1} small />
-                  <Avatar jugador={partido.inscripcion1.jugador2} small />
+        <div className={`flex items-center px-2 py-1.5 border-b border-gray-100 ${pareja1Gano ? 'bg-blue-50' : ''}`}>
+          {partido.inscripcion1 ? (
+            <>
+              <div className="flex -space-x-1 mr-2">
+                <FotoJugador jugador={partido.inscripcion1.jugador1} />
+                <FotoJugador jugador={partido.inscripcion1.jugador2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={`text-[11px] font-bold uppercase truncate ${pareja1Gano ? 'text-blue-700' : 'text-gray-800'}`}>
+                  {partido.inscripcion1.jugador1.apellido}
                 </div>
-                <div className={`text-xs font-semibold ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
-                  {partido.inscripcion1.jugador1.apellido} / {partido.inscripcion1.jugador2.apellido}
+                <div className={`text-[9px] uppercase truncate ${pareja1Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {partido.inscripcion1.jugador1.nombre}
                 </div>
-              </>
-            ) : (
-              <span className="text-xs text-gray-500 italic">Por definir</span>
-            )}
-          </div>
-          {isFinalizado && partido.resultado && (
-            <span className={`text-sm font-mono font-bold ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
-              {partido.resultado.set1[0]}
-            </span>
+                <div className={`text-[11px] font-bold uppercase truncate ${pareja1Gano ? 'text-blue-700' : 'text-gray-800'}`}>
+                  {partido.inscripcion1.jugador2.apellido}
+                </div>
+                <div className={`text-[9px] uppercase truncate ${pareja1Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {partido.inscripcion1.jugador2.nombre}
+                </div>
+              </div>
+              {isFinalizado && partido.resultado && (
+                <div className="flex flex-col items-end ml-1">
+                  <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {partido.resultado.set1[0]}
+                  </span>
+                  {partido.resultado.set2 && (
+                    <span className={`text-[10px] ${pareja1Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {partido.resultado.set2[0]}
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <span className="text-[10px] text-gray-400 italic">Por definir</span>
           )}
         </div>
 
         {/* Equipo 2 */}
-        <div className={`px-3 py-2 flex items-center justify-between ${pareja2Gano ? 'bg-green-500/5' : ''}`}>
-          <div className="flex items-center gap-2">
-            {partido.inscripcion2 ? (
-              <>
-                <div className="flex -space-x-1">
-                  <Avatar jugador={partido.inscripcion2.jugador1} small />
-                  <Avatar jugador={partido.inscripcion2.jugador2} small />
+        <div className={`flex items-center px-2 py-1.5 ${pareja2Gano ? 'bg-blue-50' : ''}`}>
+          {partido.inscripcion2 ? (
+            <>
+              <div className="flex -space-x-1 mr-2">
+                <FotoJugador jugador={partido.inscripcion2.jugador1} />
+                <FotoJugador jugador={partido.inscripcion2.jugador2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={`text-[11px] font-bold uppercase truncate ${pareja2Gano ? 'text-blue-700' : 'text-gray-800'}`}>
+                  {partido.inscripcion2.jugador1.apellido}
                 </div>
-                <div className={`text-xs font-semibold ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
-                  {partido.inscripcion2.jugador1.apellido} / {partido.inscripcion2.jugador2.apellido}
+                <div className={`text-[9px] uppercase truncate ${pareja2Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {partido.inscripcion2.jugador1.nombre}
                 </div>
-              </>
-            ) : (
-              <span className="text-xs text-gray-500 italic">Por definir</span>
-            )}
-          </div>
-          {isFinalizado && partido.resultado && (
-            <span className={`text-sm font-mono font-bold ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
-              {partido.resultado.set1[1]}
-            </span>
+                <div className={`text-[11px] font-bold uppercase truncate ${pareja2Gano ? 'text-blue-700' : 'text-gray-800'}`}>
+                  {partido.inscripcion2.jugador2.apellido}
+                </div>
+                <div className={`text-[9px] uppercase truncate ${pareja2Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {partido.inscripcion2.jugador2.nombre}
+                </div>
+              </div>
+              {isFinalizado && partido.resultado && (
+                <div className="flex flex-col items-end ml-1">
+                  <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {partido.resultado.set1[1]}
+                  </span>
+                  {partido.resultado.set2 && (
+                    <span className={`text-[10px] ${pareja2Gano ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {partido.resultado.set2[1]}
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <span className="text-[10px] text-gray-400 italic">Por definir</span>
           )}
         </div>
 
-        {/* Fecha/hora */}
-        {partido.fecha && (
-          <div className="px-3 py-1.5 bg-black/20 text-[9px] text-gray-500 text-center">
-            {partido.fecha.slice(5)} {partido.hora}
+        {/* Footer - Cancha */}
+        {partido.cancha && (
+          <div className="px-2 py-1 bg-gray-50 border-t border-gray-100">
+            <span className="text-[9px] text-gray-400 uppercase">{partido.cancha}</span>
           </div>
         )}
       </div>
 
-      {/* Línea de salida derecha (hacia siguiente fase) */}
-      {showConnectorRight && (
-        <div className="absolute right-0 top-1/2 w-6 h-px bg-white/30 translate-x-full" />
+      {/* Conector L-shaped a la siguiente fase */}
+      {showConnector && (
+        <div className="absolute left-full top-1/2 flex items-center" style={{ width: '24px' }}>
+          {/* Horizontal */}
+          <div className="h-px bg-gray-400 flex-1" />
+          {/* Vertical que baja al siguiente partido (solo si no es el último) */}
+          {!isLast && (
+            <div 
+              className="absolute bg-gray-400"
+              style={{ 
+                width: '1px', 
+                height: '40px',
+                left: '100%',
+                top: '50%'
+              }}
+            />
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-// Avatar component
-function Avatar({ jugador, small = false }: { jugador: { nombre: string; fotoUrl?: string | null }; small?: boolean }) {
+// Componente de foto de jugador
+function FotoJugador({ jugador }: { jugador: Jugador }) {
   const initial = jugador.nombre ? jugador.nombre[0].toUpperCase() : '?';
-  const size = small ? 'w-5 h-5 text-[8px]' : 'w-6 h-6 text-[10px]';
   
   if (jugador.fotoUrl) {
     return (
       <img 
         src={jugador.fotoUrl} 
         alt={jugador.nombre}
-        className={`${size} rounded-full object-cover border border-[#1a1d26]`}
+        className="w-6 h-6 rounded-full object-cover border border-white bg-gray-200"
       />
     );
   }
   
   return (
-    <div className={`${size} rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center font-bold border border-[#1a1d26]`}>
+    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[8px] font-bold text-gray-600 border border-white">
       {initial}
     </div>
   );
