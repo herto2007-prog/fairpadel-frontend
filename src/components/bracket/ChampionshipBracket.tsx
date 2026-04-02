@@ -365,6 +365,28 @@ function MatchCard({
                   {partido.inscripcion1.jugador2.nombre}
                 </div>
               </div>
+              {/* Resultados equipo 1 */}
+              {isFinalizado && (
+                <div className="flex flex-col items-end ml-1">
+                  {esDescalificacion && pareja1Gano ? (
+                    <span className="text-[10px] font-bold text-red-600">DESC.</span>
+                  ) : esAbandono && !pareja1Gano ? (
+                    <span className="text-[10px] font-bold text-orange-600">AB.</span>
+                  ) : esWO && pareja1Gano ? (
+                    <span className="text-[10px] font-bold text-green-600">W.O.</span>
+                  ) : partido.resultado ? (
+                    <>
+                      {[partido.resultado.set1, partido.resultado.set2, partido.resultado.set3]
+                        .filter(Boolean)
+                        .map((set, idx) => (
+                          <span key={idx} className={`text-xs font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                            {set![0]}-{set![1]}
+                          </span>
+                        ))}
+                    </>
+                  ) : null}
+                </div>
+              )}
             </>
           ) : (
             <span className="text-[10px] text-gray-400 italic">Por definir</span>
@@ -393,34 +415,33 @@ function MatchCard({
                   {partido.inscripcion2.jugador2.nombre}
                 </div>
               </div>
+              {/* Resultados equipo 2 */}
+              {isFinalizado && (
+                <div className="flex flex-col items-end ml-1">
+                  {esDescalificacion && pareja2Gano ? (
+                    <span className="text-[10px] font-bold text-red-600">DESC.</span>
+                  ) : esAbandono && !pareja2Gano ? (
+                    <span className="text-[10px] font-bold text-orange-600">AB.</span>
+                  ) : esWO && pareja2Gano ? (
+                    <span className="text-[10px] font-bold text-green-600">W.O.</span>
+                  ) : partido.resultado ? (
+                    <>
+                      {[partido.resultado.set1, partido.resultado.set2, partido.resultado.set3]
+                        .filter(Boolean)
+                        .map((set, idx) => (
+                          <span key={idx} className={`text-xs font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                            {set![0]}-{set![1]}
+                          </span>
+                        ))}
+                    </>
+                  ) : null}
+                </div>
+              )}
             </>
           ) : (
             <span className="text-[10px] text-gray-400 italic">Por definir</span>
           )}
         </div>
-        
-        {/* Resultado del partido (una sola vez, entre los equipos y el footer) */}
-        {isFinalizado && (
-          <div className="px-2 py-1 bg-gray-50 border-y border-gray-100 flex items-center justify-end">
-            {esDescalificacion ? (
-              <span className="text-[10px] font-bold text-red-600">DESC.</span>
-            ) : esAbandono ? (
-              <span className="text-[10px] font-bold text-orange-600">ABANDONO</span>
-            ) : esWO ? (
-              <span className="text-[10px] font-bold text-green-600">W.O.</span>
-            ) : partido.resultado ? (
-              <div className="flex flex-col items-end">
-                {[partido.resultado.set1, partido.resultado.set2, partido.resultado.set3]
-                  .filter(Boolean)
-                  .map((set, idx) => (
-                    <span key={idx} className="text-xs font-bold text-gray-700">
-                      {set![0]}-{set![1]}
-                    </span>
-                  ))}
-              </div>
-            ) : null}
-          </div>
-        )}
 
         {/* Footer (zócalo): Fecha completa DD/MM/YYYY y hora */}
         {(partido.fecha || partido.hora) && (

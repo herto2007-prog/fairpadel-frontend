@@ -1,0 +1,60 @@
+import { api } from './api';
+
+export interface EstadoSuscripcion {
+  activa: boolean;
+  venceEn: string | null;
+  tipo: string | null;
+  habilitado: boolean;
+}
+
+export interface PagoSuscripcion {
+  id: string;
+  sedeId: string;
+  monto: number;
+  moneda: string;
+  estado: 'PENDIENTE' | 'COMPLETADO' | 'FALLIDO';
+  metodo: string | null;
+  referencia: string | null;
+  fechaPago: string | null;
+  periodoDesde: string;
+  periodoHasta: string;
+  createdAt: string;
+}
+
+export interface IniciarPagoResponse {
+  pagoId: string;
+  processId: string;
+  monto: number;
+  montoFormateado: string;
+  tipo: 'MENSUAL' | 'ANUAL';
+  periodoDesde: string;
+  periodoHasta: string;
+}
+
+export interface ConfigBancard {
+  publicKey: string;
+  baseUrl: string;
+  scriptUrl: string;
+}
+
+export const suscripcionService = {
+  // Verificar estado de suscripción de una sede
+  getEstado: (sedeId: string): Promise<EstadoSuscripcion> =>
+    api.get(`/alquileres/suscripcion/${sedeId}/estado`).then(r => r.data),
+
+  // Iniciar proceso de pago
+  iniciarPago: (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL'): Promise<IniciarPagoResponse> =>
+    api.post(`/alquileres/suscripcion/${sedeId}/iniciar-pago`, { tipo }).then(r => r.data),
+
+  // Obtener historial de pagos
+  getHistorialPagos: (sedeId: string): Promise<PagoSuscripcion[]> =>
+    api.get(`/alquileres/suscripcion/${sedeId}/pagos`).then(r => r.data),
+
+  // Obtener configuración de Bancard para el frontend
+  getConfigBancard: (): Promise<ConfigBancard> =>
+    api.get('/alquileres/suscripcion/config/bancard').then(r => r.data),
+
+  // Activar suscripción manualmente (solo admin/testing)
+  activarManual: (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL'): Promise<any> =>
+    api.post(`/alquileres/suscripcion/${sedeId}/activar-manual`, { tipo }).then(r => r.data),
+};

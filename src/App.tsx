@@ -41,6 +41,7 @@ import SedeDetailPage from './features/sedes/pages/SedeDetailPage';
 import AlquileresPage from './features/alquileres/pages/AlquileresPage';
 import MisReservasPage from './features/alquileres/pages/MisReservasPage';
 import GestionDisponibilidadPage from './features/alquileres/pages/GestionDisponibilidadPage';
+import SuscripcionPage from './features/alquileres/pages/SuscripcionPage';
 
 // Instructores (V2)
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
@@ -150,10 +151,11 @@ function App() {
           <Route path="/novedades" element={<HomeDashboardPage />} />
           
           {/* Organizador - Gestión de Torneos */}
-          <Route element={<RoleProtectedRoute allowedRoles={['organizador']} />}>
+          <Route element={<RoleProtectedRoute allowedRoles={['organizador', 'dueño']} />}>
             <Route path="/mis-torneos" element={<MisTorneosPage />} />
             <Route path="/mis-torneos/:id/gestionar" element={<GestionarTorneoPage />} />
             <Route path="/sede/:sedeId/disponibilidad" element={<GestionDisponibilidadPage />} />
+            <Route path="/sede/:sedeId/suscripcion" element={<SuscripcionPage />} />
           </Route>
           
           {/* Admin */}
