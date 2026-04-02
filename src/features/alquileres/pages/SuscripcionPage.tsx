@@ -251,7 +251,7 @@ export default function SuscripcionPage() {
                         <CheckCircle size={20} className="text-[#df2531]" />
                       )}
                     </div>
-                    <p className="text-3xl font-bold mb-1">$9.99 <span className="text-sm font-normal text-gray-400">USD/mes</span></p>
+                    <p className="text-3xl font-bold mb-1">$10.00 <span className="text-sm font-normal text-gray-400">USD/mes</span></p>
                     <p className="text-sm text-gray-400">Facturado mensualmente</p>
                   </button>
 
@@ -272,8 +272,8 @@ export default function SuscripcionPage() {
                         <CheckCircle size={20} className="text-[#df2531]" />
                       )}
                     </div>
-                    <p className="text-3xl font-bold mb-1">$107.89 <span className="text-sm font-normal text-gray-400">USD/año</span></p>
-                    <p className="text-sm text-gray-400">Equivalente a $8.99/mes</p>
+                    <p className="text-3xl font-bold mb-1">$108.00 <span className="text-sm font-normal text-gray-400">USD/año</span></p>
+                    <p className="text-sm text-gray-400">Equivalente a $9.00/mes</p>
                   </button>
                 </div>
 
