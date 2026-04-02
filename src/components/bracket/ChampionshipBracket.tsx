@@ -169,9 +169,9 @@ export function ChampionshipBracket({
   }
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col min-h-screen`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0B0E14]' : ''} flex flex-col min-h-screen bg-[#0B0E14]`}>
       {/* Header */}
-      <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/95 backdrop-blur shrink-0">
+      <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b border-[#232838] bg-[#151921] shrink-0">
         <div className="w-8" />
         <div className="flex-1 flex items-center justify-center gap-4">
           <div className="text-center">
@@ -231,13 +231,8 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket - Centrado con efecto de fondo */}
-      <div className="flex-1 relative p-4 md:p-6 overflow-auto">
-        {/* Efecto de fondo */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0b0f] via-[#0f1118] to-[#0a0b0f]" />
-        <div className="absolute inset-0 opacity-30" style={{ 
-          backgroundImage: 'radial-gradient(circle at 25% 25%, #df2531 0%, transparent 50%), radial-gradient(circle at 75% 75%, #df2531 0%, transparent 50%)',
-        }} />
+      {/* Bracket - Centrado */}
+      <div className="flex-1 relative p-4 md:p-6 overflow-auto bg-[#0B0E14]">
         
         <div className="relative z-10">
         {partidos.length === 0 ? (
@@ -290,7 +285,7 @@ function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[
       {/* Cards */}
       <div className="flex flex-col gap-3">
         {partidos.map(partido => (
-          <div key={partido.id} className="h-[140px]">
+          <div key={partido.id}>
             <MatchCard partido={partido} />
           </div>
         ))}
@@ -456,15 +451,15 @@ function MatchCard({ partido }: { partido: Partido }) {
     : partido.cancha || 'Cancha por definir';
 
   return (
-    <div className="w-full h-full bg-black/80 backdrop-blur-sm rounded overflow-hidden shadow-lg border border-white/10 flex flex-col">
+    <div className="w-full min-h-[140px] bg-[#151921] rounded-lg overflow-hidden shadow-lg border border-[#232838] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 bg-[#151921]/80 border-b border-[#df2531]/30 shrink-0">
+      <div className="flex items-center justify-between px-2 py-1 bg-[#0B0E14] border-b border-[#232838] shrink-0">
         <span className="text-[9px] font-bold text-[#df2531]">{codigoPartido}</span>
-        <span className="text-[8px] text-white/70 truncate max-w-[110px]">{headerText}</span>
+        <span className="text-[8px] text-gray-400 truncate max-w-[110px]">{headerText}</span>
       </div>
 
       {/* Equipo 1 */}
-      <div className={`flex items-center px-2 py-1 border-b border-white/10 flex-1 ${pareja1Gano ? 'bg-[#df2531]/10' : ''}`}>
+      <div className={`flex items-center px-2 py-1 border-b border-[#232838] flex-1 ${pareja1Gano ? 'bg-[#df2531]/10' : ''}`}>
         {partido.inscripcion1 ? (
           <>
             <div className="flex -space-x-1 mr-1.5 shrink-0">
@@ -472,16 +467,16 @@ function MatchCard({ partido }: { partido: Partido }) {
               <FotoJugador jugador={partido.inscripcion1.jugador2} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className={`text-[10px] font-bold uppercase truncate leading-tight ${pareja1Gano ? 'text-white' : 'text-white/90'}`}>
+              <div className={`text-[10px] font-bold uppercase truncate leading-tight text-white`}>
                 {partido.inscripcion1.jugador1.apellido}
               </div>
-              <div className={`text-[8px] uppercase truncate leading-tight ${pareja1Gano ? 'text-white/80' : 'text-white/60'}`}>
+              <div className={`text-[8px] uppercase truncate leading-tight text-gray-400`}>
                 {partido.inscripcion1.jugador1.nombre}
               </div>
-              <div className={`text-[10px] font-bold uppercase truncate leading-tight ${pareja1Gano ? 'text-white' : 'text-white/90'}`}>
+              <div className={`text-[10px] font-bold uppercase truncate leading-tight text-white`}>
                 {partido.inscripcion1.jugador2.apellido}
               </div>
-              <div className={`text-[8px] uppercase truncate leading-tight ${pareja1Gano ? 'text-white/80' : 'text-white/60'}`}>
+              <div className={`text-[8px] uppercase truncate leading-tight text-gray-400`}>
                 {partido.inscripcion1.jugador2.nombre}
               </div>
             </div>
@@ -495,7 +490,7 @@ function MatchCard({ partido }: { partido: Partido }) {
                   <span className="text-[9px] font-bold text-green-600">W.O.</span>
                 ) : partido.resultado ? (
                   <div className="flex gap-1">
-                    <span className={`text-xs font-bold ${pareja1Gano ? 'text-[#df2531]' : 'text-white/80'}`}>
+                    <span className={`text-xs font-bold ${pareja1Gano ? 'text-[#df2531]' : 'text-white'}`}>
                       {partido.resultado.set1[0]}
                     </span>
                     {partido.resultado.set2 && (
@@ -509,12 +504,12 @@ function MatchCard({ partido }: { partido: Partido }) {
             )}
           </>
         ) : (
-          <span className="text-[9px] text-white/40 italic">Por definir</span>
+          <span className="text-[9px] text-gray-500 italic">Por definir</span>
         )}
       </div>
 
       {/* Equipo 2 */}
-      <div className={`flex items-center px-2 py-1 flex-1 ${pareja2Gano ? 'bg-[#df2531]/10' : ''}`}>
+      <div className={`flex items-center px-2 py-1 flex-1 border-b border-[#232838] ${pareja2Gano ? 'bg-[#df2531]/10' : ''}`}>
         {partido.inscripcion2 ? (
           <>
             <div className="flex -space-x-1 mr-1.5 shrink-0">
@@ -559,14 +554,14 @@ function MatchCard({ partido }: { partido: Partido }) {
             )}
           </>
         ) : (
-          <span className="text-[9px] text-white/40 italic">Por definir</span>
+          <span className="text-[9px] text-gray-500 italic">Por definir</span>
         )}
       </div>
 
       {/* Footer */}
       {(partido.fecha || partido.hora) && (
-        <div className="px-2 py-0.5 bg-[#151921]/80 border-t border-[#df2531]/30 flex items-center justify-center shrink-0">
-          <span className="text-[8px] text-white/60">
+        <div className="px-2 py-0.5 bg-[#0B0E14] border-t border-[#232838] flex items-center justify-center shrink-0">
+          <span className="text-[8px] text-gray-500">
             {partido.fecha?.split('-').reverse().join('/')} {partido.hora}
           </span>
         </div>
