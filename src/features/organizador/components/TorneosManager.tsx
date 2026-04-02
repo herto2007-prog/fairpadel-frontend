@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Trophy, Plus, Eye, Lock, CheckCircle2, 
   AlertTriangle, DollarSign, Calendar, MapPin,
-  ChevronRight, Users
+  ChevronRight, Users, Info
 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { ChecklistCuaderno } from './checklist/ChecklistCuaderno';
-import { ComisionTorneo } from './ComisionTorneo';
+
 import { formatCurrency } from '../../../utils/currency';
 import { formatDatePY } from '../../../utils/date';
 
@@ -223,7 +222,6 @@ export function TorneosManager() {
       <TorneoDetalle 
         torneo={selectedTorneo}
         onBack={handleVolver}
-        onUpdate={loadTorneos}
       />
     );
   }
@@ -236,45 +234,11 @@ export function TorneosManager() {
 // ═══════════════════════════════════════════════════════════
 function TorneoDetalle({ 
   torneo, 
-  onBack,
-  onUpdate 
+  onBack
 }: { 
   torneo: Torneo; 
   onBack: () => void;
-  onUpdate: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'checklist' | 'comision' | 'info'>('checklist');
-  const [torneoData, setTorneoData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadTorneoDetail();
-  }, [torneo.id]);
-
-  const loadTorneoDetail = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get(`/admin/torneos/v2/${torneo.id}`);
-      setTorneoData(data);
-    } catch (error) {
-      console.error('Error cargando detalle:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -287,111 +251,33 @@ function TorneoDetalle({
         </button>
         <div>
           <h2 className="text-2xl font-bold text-white">{torneo.nombre}</h2>
-          <p className="text-gray-400">Gestiona el torneo y su configuración</p>
+          <p className="text-gray-400">Información del torneo</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2">
-        <TabButton
-          label="Checklist"
-          active={activeTab === 'checklist'}
-          onClick={() => setActiveTab('checklist')}
-          icon={CheckCircle2}
-        />
-        <TabButton
-          label="Comisión"
-          active={activeTab === 'comision'}
-          onClick={() => setActiveTab('comision')}
-          icon={DollarSign}
-          alert={torneo.comision?.bloqueoActivo}
-        />
-        <TabButton
-          label="Información"
-          active={activeTab === 'info'}
-          onClick={() => setActiveTab('info')}
-          icon={Trophy}
-        />
+      {/* Info Card */}
+      <div className="glass rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Info className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-bold text-white">Detalles</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoItem label="Nombre" value={torneo.nombre} />
+          <InfoItem label="Ciudad" value={torneo.ciudad} />
+          <InfoItem label="Fecha inicio" value={formatDatePY(torneo.fechaInicio)} />
+          <InfoItem label="Fecha fin" value={formatDatePY(torneo.fechaFin)} />
+          <InfoItem label="Costo inscripción" value={formatCurrency(torneo.costoInscripcion)} />
+          <InfoItem label="Inscripciones" value={`${torneo._count.inscripciones} jugadores`} />
+          <InfoItem label="Estado" value={torneo.estado} />
+        </div>
+        
+        <div className="mt-6 p-4 bg-[#0B0E14] rounded-xl">
+          <p className="text-sm text-gray-400">
+            Usa el menú principal para gestionar inscripciones, fixture y canchas.
+          </p>
+        </div>
       </div>
-
-      {/* Contenido */}
-      <AnimatePresence mode="wait">
-        {activeTab === 'checklist' && (
-          <motion.div
-            key="checklist"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <ChecklistCuaderno tournamentId={torneo.id} />
-          </motion.div>
-        )}
-
-        {activeTab === 'comision' && (
-          <motion.div
-            key="comision"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <ComisionTorneo 
-              tournamentId={torneo.id} 
-              comision={torneoData?.comision || torneo.comision}
-              onUpdate={onUpdate}
-            />
-          </motion.div>
-        )}
-
-        {activeTab === 'info' && (
-          <motion.div
-            key="info"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="glass rounded-2xl p-6"
-          >
-            <h3 className="text-lg font-bold text-white mb-4">Información del Torneo</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <InfoItem label="Nombre" value={torneo.nombre} />
-              <InfoItem label="Ciudad" value={torneo.ciudad} />
-              <InfoItem label="Fecha inicio" value={formatDatePY(torneo.fechaInicio)} />
-              <InfoItem label="Fecha fin" value={formatDatePY(torneo.fechaFin)} />
-              <InfoItem label="Costo inscripción" value={formatCurrency(torneo.costoInscripcion)} />
-              <InfoItem label="Inscripciones" value={`${torneo._count.inscripciones} jugadores`} />
-              <InfoItem label="Estado" value={torneo.estado} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
-  );
-}
-
-function TabButton({ 
-  label, 
-  active, 
-  onClick, 
-  icon: Icon,
-  alert = false 
-}: { 
-  label: string; 
-  active: boolean; 
-  onClick: () => void;
-  icon: React.ElementType;
-  alert?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-        active
-          ? 'bg-primary text-white shadow-lg'
-          : 'bg-[#151921] text-gray-400 hover:text-white hover:bg-[#232838]'
-      } ${alert ? 'ring-2 ring-red-500/50' : ''}`}
-    >
-      <Icon className="w-4 h-4" />
-      {label}
-    </button>
   );
 }
 

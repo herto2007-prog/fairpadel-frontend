@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Trophy, LayoutDashboard, Users, 
-  GitBranch, Settings, DollarSign, Info, Database 
+  GitBranch, Database 
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
-import { ChecklistCuaderno } from '../components/checklist/ChecklistCuaderno';
+
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
 
@@ -25,7 +25,7 @@ interface Torneo {
   fechaFin?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'comision' | 'checklist' | 'info' | 'canchasSorteo' | 'auditoria';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'auditoria';
 
 interface TabConfig {
   id: TabType;
@@ -42,7 +42,6 @@ export function GestionarTorneoPage() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [stats, setStats] = useState({
     inscripcionesPendientes: 0,
-    tareasChecklist: 0,
   });
 
   useEffect(() => {
@@ -55,25 +54,12 @@ export function GestionarTorneoPage() {
   const loadStats = async () => {
     if (!id) return;
     try {
-      // Cargar stats para badges
-      const [inscResponse, checklistResponse] = await Promise.all([
-        api.get(`/admin/torneos/${id}/inscripciones`),
-        api.get(`/admin/torneos/${id}/checklist`),
-      ]);
+      const inscResponse = await api.get(`/admin/torneos/${id}/inscripciones`);
 
       if (inscResponse.data?.stats) {
-        setStats(prev => ({
-          ...prev,
+        setStats({
           inscripcionesPendientes: inscResponse.data.stats.pendientes || 0,
-        }));
-      }
-
-      if (checklistResponse.data?.items) {
-        const pendientes = checklistResponse.data.items.filter((i: any) => !i.completado).length;
-        setStats(prev => ({
-          ...prev,
-          tareasChecklist: pendientes,
-        }));
+        });
       }
     } catch (error) {
       console.error('Error cargando stats:', error);
@@ -103,15 +89,6 @@ export function GestionarTorneoPage() {
     },
     { id: 'canchasSorteo', label: 'Canchas y Sorteo', icon: Trophy },
     { id: 'bracket', label: 'Fixture', icon: GitBranch },
-
-    { id: 'comision', label: 'Comision', icon: DollarSign },
-    { 
-      id: 'checklist', 
-      label: 'Checklist', 
-      icon: Settings,
-      badge: stats.tareasChecklist > 0 ? stats.tareasChecklist : undefined,
-    },
-    { id: 'info', label: 'Info', icon: Info },
     { id: 'auditoria', label: 'Auditoria', icon: Database },
   ];
 
@@ -187,10 +164,6 @@ export function GestionarTorneoPage() {
           />
         )}
 
-        {activeTab === 'checklist' && id && (
-          <ChecklistCuaderno tournamentId={id} />
-        )}
-
         {activeTab === 'inscripciones' && id && (
           <InscripcionesManager tournamentId={id} />
         )}
@@ -204,34 +177,6 @@ export function GestionarTorneoPage() {
         )}
 
 
-
-        {activeTab === 'comision' && (
-          <div className="glass rounded-2xl p-8 text-center">
-            <h3 className="text-lg font-medium text-gray-400">
-              Comision - Próximamente
-            </h3>
-          </div>
-        )}
-
-        {activeTab === 'info' && (
-          <div className="glass rounded-2xl p-8">
-            <h3 className="text-lg font-bold text-white mb-4">Informacion del Torneo</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Nombre:</span>
-                <p className="text-white">{torneo.nombre}</p>
-              </div>
-              <div>
-                <span className="text-gray-500">Ciudad:</span>
-                <p className="text-white">{torneo.ciudad}</p>
-              </div>
-              <div>
-                <span className="text-gray-500">Estado:</span>
-                <p className="text-white">{torneo.estado}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'auditoria' && id && (
           <AuditoriaManager tournamentId={id} />
