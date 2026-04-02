@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Maximize2, Minimize2, ChevronDown, Users } from 'lucide-react';
 import { api } from '../../services/api';
-import { formatDatePY } from '../../utils/date';
+
 
 
 interface Partido {
@@ -51,9 +51,11 @@ interface ChampionshipBracketProps {
 
 const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'] as const;
 
-// Altura de cada card de partido
-const CARD_HEIGHT = 112; // px
-const CARD_GAP = 48; // espacio entre cards
+// Dimensiones
+const CARD_HEIGHT = 100;
+const CARD_WIDTH = 180;
+const CARD_GAP_Y = 24; // gap vertical entre cards
+const COLUMN_GAP_X = 60; // gap horizontal entre columnas
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -182,6 +184,10 @@ export function ChampionshipBracket({
   }, [partidos]);
 
   const fasesActivas = FASES_ORDEN.filter(f => partidosPorFase[f]?.length > 0);
+
+  // Calcular altura total necesaria basada en la primera fase
+  const maxPartidosPrimeraFase = fasesActivas.length > 0 ? partidosPorFase[fasesActivas[0]].length : 0;
+  const alturaTotal = maxPartidosPrimeraFase * (CARD_HEIGHT + CARD_GAP_Y);
 
   const toggleFullscreen = () => {
     const newState = !isFullscreen;
@@ -351,16 +357,19 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket Container - Tree Layout (scroll natural del navegador) */}
-      <div className="flex-1 relative bg-[#0a0b0f]">
+      {/* Bracket Container */}
+      <div className="flex-1 relative bg-[#0a0b0f] overflow-auto">
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="min-w-max p-8 md:p-12">
-            <div className="flex items-center gap-16 md:gap-24">
+          <div 
+            className="min-w-max p-8 md:p-12"
+            style={{ minHeight: `${alturaTotal + 100}px` }}
+          >
+            <div className="flex gap-12 md:gap-16">
               {fasesActivas.map((fase, faseIndex) => (
                 <FaseColumn
                   key={fase}
@@ -389,11 +398,6 @@ function FaseColumn({
   faseIndex: number;
   totalFases: number;
 }) {
-  // Calcular el espaciado basado en la posición en el árbol
-  // Cuanto más avanzada la fase, más espacio entre partidos
-  const multiplicadorEspaciado = Math.pow(2, faseIndex);
-  const gapEntrePartidos = CARD_GAP * multiplicadorEspaciado;
-
   const getFaseLabel = (f: string) => {
     switch(f) {
       case 'OCTAVOS': return 'OCTAVOS DE FINAL';
@@ -414,31 +418,38 @@ function FaseColumn({
     }
   };
 
-  const isUltimaFase = faseIndex === totalFases - 1;
   const isPrimeraFase = faseIndex === 0;
+  const isUltimaFase = faseIndex === totalFases - 1;
+
+  // Calcular el espaciado vertical necesario
+  // Cada fase tiene el doble de espacio entre partidos que la anterior
+  const nivelEnArbol = totalFases - 1 - faseIndex; // 0 = final, 1 = semis, etc.
+  const espaciadoEntrePartidos = (CARD_HEIGHT + CARD_GAP_Y) * Math.pow(2, nivelEnArbol) - CARD_HEIGHT;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col" style={{ width: CARD_WIDTH }}>
       {/* Etiqueta de Fase */}
-      <div className={`mb-6 px-4 py-2 rounded-lg border ${getFaseColor(fase)}`}>
-        <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+      <div className={`mb-6 px-3 py-2 rounded-lg border ${getFaseColor(fase)} text-center`}>
+        <span className="text-xs font-bold uppercase tracking-wider">
           {getFaseLabel(fase)}
         </span>
       </div>
 
-      {/* Contenedor de partidos con espaciado dinámico */}
+      {/* Contenedor de partidos - centrado verticalmente */}
       <div 
         className="flex flex-col"
-        style={{ gap: `${gapEntrePartidos}px` }}
+        style={{ 
+          gap: `${espaciadoEntrePartidos}px`,
+          paddingTop: faseIndex === 0 ? 0 : (espaciadoEntrePartidos / 2)
+        }}
       >
-        {partidos.map((partido, index) => (
+        {partidos.map((partido) => (
           <PartidoNode
             key={partido.id}
             partido={partido}
-            index={index}
             showLineLeft={!isPrimeraFase}
             showLineRight={!isUltimaFase}
-            gapEntrePartidos={gapEntrePartidos}
+            lineOffset={espaciadoEntrePartidos / 2 + CARD_HEIGHT / 2}
           />
         ))}
       </div>
@@ -448,16 +459,14 @@ function FaseColumn({
 
 function PartidoNode({
   partido,
-  index,
   showLineLeft,
   showLineRight,
-  gapEntrePartidos
+  lineOffset
 }: {
   partido: Partido;
-  index: number;
   showLineLeft: boolean;
   showLineRight: boolean;
-  gapEntrePartidos: number;
+  lineOffset: number;
 }) {
   const isFinalizado = !!partido.ganador;
   const tienePareja1 = !!partido.inscripcion1;
@@ -466,32 +475,39 @@ function PartidoNode({
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
 
-  // Altura de la línea de conexión vertical
-  const lineHeight = gapEntrePartidos / 2 + CARD_HEIGHT / 2;
-
   return (
-    <div className="relative flex items-center">
+    <div className="relative" style={{ height: CARD_HEIGHT }}>
       {/* Línea de entrada izquierda */}
       {showLineLeft && (
         <>
           {/* Horizontal */}
-          <div className="absolute -left-8 top-1/2 w-8 h-px bg-white/20" />
-          {/* Vertical superior */}
           <div 
-            className="absolute -left-8 bg-white/20"
+            className="absolute bg-white/20"
+            style={{ 
+              width: `${COLUMN_GAP_X / 2}px`, 
+              height: '1px',
+              left: `-${COLUMN_GAP_X / 2}px`,
+              top: '50%'
+            }}
+          />
+          {/* Vertical que conecta arriba */}
+          <div 
+            className="absolute bg-white/20"
             style={{ 
               width: '1px', 
-              height: `${lineHeight}px`,
+              height: `${lineOffset}px`,
+              left: `-${COLUMN_GAP_X / 2}px`,
               top: '50%',
               transform: 'translateY(-100%)'
             }}
           />
-          {/* Vertical inferior */}
+          {/* Vertical que conecta abajo */}
           <div 
-            className="absolute -left-8 bg-white/20"
+            className="absolute bg-white/20"
             style={{ 
               width: '1px', 
-              height: `${lineHeight}px`,
+              height: `${lineOffset}px`,
+              left: `-${COLUMN_GAP_X / 2}px`,
               top: '50%'
             }}
           />
@@ -500,43 +516,41 @@ function PartidoNode({
 
       {/* Card del partido */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className={`
-          relative w-44 md:w-52 bg-[#1a1d26] border rounded-xl overflow-hidden shrink-0
-          ${isFinalizado ? 'border-green-500/30 shadow-lg shadow-green-500/5' : 'border-white/10'}
+          absolute inset-0 bg-[#1a1d26] border rounded-lg overflow-hidden
+          ${isFinalizado ? 'border-green-500/30' : 'border-white/10'}
           hover:border-white/20 transition-colors
         `}
-        style={{ height: `${CARD_HEIGHT}px` }}
       >
         {/* Header */}
-        <div className="px-3 py-1.5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-          <span className="text-[10px] md:text-xs font-medium text-gray-400">
+        <div className="px-2.5 py-1 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <span className="text-[10px] font-medium text-gray-400">
             #{partido.orden}
           </span>
           {partido.cancha && (
-            <span className="text-[10px] text-gray-500 truncate max-w-[80px]">
+            <span className="text-[9px] text-gray-500 truncate max-w-[70px]">
               {partido.cancha}
             </span>
           )}
         </div>
 
-        {/* Contenido - Layout horizontal */}
-        <div className="p-2.5 flex items-center justify-between h-[calc(100%-28px)]">
+        {/* Contenido - Layout horizontal compacto */}
+        <div className="p-2 flex items-center justify-between h-[calc(100%-24px)]">
           {/* Pareja 1 */}
-          <div className={`flex-1 flex flex-col items-center gap-1 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className={`flex flex-col items-center gap-0.5 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
             {tienePareja1 ? (
               <>
-                <div className="flex -space-x-1.5">
+                <div className="flex -space-x-1">
                   <Avatar jugador={partido.inscripcion1!.jugador1} />
                   <Avatar jugador={partido.inscripcion1!.jugador2} />
                 </div>
-                <div className="text-center">
-                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
+                <div className="text-center leading-tight">
+                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
                     {partido.inscripcion1!.jugador1.apellido}
                   </div>
-                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
+                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
                     {partido.inscripcion1!.jugador2.apellido}
                   </div>
                 </div>
@@ -547,41 +561,34 @@ function PartidoNode({
           </div>
 
           {/* VS / Resultado */}
-          <div className="px-2 flex flex-col items-center">
+          <div className="flex flex-col items-center px-1">
             {isFinalizado && partido.resultado ? (
-              <>
-                <span className="text-sm md:text-base font-mono text-green-400 font-bold">
-                  {partido.resultado.set1[0]}:{partido.resultado.set1[1]}
-                </span>
-                {partido.resultado.set2 && (
-                  <span className="text-[10px] text-gray-500">
-                    {partido.resultado.set2[0]}:{partido.resultado.set2[1]}
-                  </span>
-                )}
-              </>
+              <span className="text-xs font-mono text-green-400 font-bold">
+                {partido.resultado.set1[0]}:{partido.resultado.set1[1]}
+              </span>
             ) : (
-              <span className="text-[#df2531] text-xs font-bold">VS</span>
+              <span className="text-[#df2531] text-[10px] font-bold">VS</span>
             )}
             {partido.fecha && (
-              <span className="text-[9px] text-gray-500 mt-1">
-                {formatDatePY(partido.fecha).split('/').slice(0,2).join('/')}
+              <span className="text-[8px] text-gray-500 mt-0.5">
+                {partido.fecha.slice(5).replace('-', '/')}
               </span>
             )}
           </div>
 
           {/* Pareja 2 */}
-          <div className={`flex-1 flex flex-col items-center gap-1 ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className={`flex flex-col items-center gap-0.5 ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
             {tienePareja2 ? (
               <>
-                <div className="flex -space-x-1.5">
+                <div className="flex -space-x-1">
                   <Avatar jugador={partido.inscripcion2!.jugador1} />
                   <Avatar jugador={partido.inscripcion2!.jugador2} />
                 </div>
-                <div className="text-center">
-                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
+                <div className="text-center leading-tight">
+                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
                     {partido.inscripcion2!.jugador1.apellido}
                   </div>
-                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
+                  <div className="text-[9px] font-semibold truncate max-w-[60px]">
                     {partido.inscripcion2!.jugador2.apellido}
                   </div>
                 </div>
@@ -595,33 +602,43 @@ function PartidoNode({
         {/* Indicador de ganador */}
         {isFinalizado && (
           <div className="absolute top-1 right-1">
-            <Trophy className="w-3 h-3 text-yellow-500" />
+            <Trophy className="w-2.5 h-2.5 text-yellow-500" />
           </div>
         )}
       </motion.div>
 
       {/* Línea de salida derecha */}
       {showLineRight && (
-        <div className="absolute -right-8 top-1/2 w-8 h-px bg-white/20" />
+        <div 
+          className="absolute bg-white/20"
+          style={{ 
+            width: `${COLUMN_GAP_X / 2}px`, 
+            height: '1px',
+            right: `-${COLUMN_GAP_X / 2}px`,
+            top: '50%'
+          }}
+        />
       )}
     </div>
   );
 }
 
 function Avatar({ jugador }: { jugador: { nombre: string; fotoUrl?: string | null } }) {
+  const initial = jugador.nombre ? jugador.nombre[0].toUpperCase() : '?';
+  
   if (jugador.fotoUrl) {
     return (
       <img 
         src={jugador.fotoUrl} 
         alt={jugador.nombre}
-        className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border-2 border-[#1a1d26]"
+        className="w-6 h-6 rounded-full object-cover border border-[#1a1d26]"
       />
     );
   }
   
   return (
-    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center text-[10px] font-bold border-2 border-[#1a1d26]">
-      {jugador.nombre[0]}
+    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center text-[9px] font-bold border border-[#1a1d26]">
+      {initial}
     </div>
   );
 }
@@ -629,15 +646,15 @@ function Avatar({ jugador }: { jugador: { nombre: string; fotoUrl?: string | nul
 function PorDefinir() {
   return (
     <>
-      <div className="flex -space-x-1.5">
-        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-[#1a1d26]">
-          <Users className="w-3 h-3 text-gray-500" />
+      <div className="flex -space-x-1">
+        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center border border-[#1a1d26]">
+          <Users className="w-2.5 h-2.5 text-gray-500" />
         </div>
-        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-[#1a1d26]">
-          <Users className="w-3 h-3 text-gray-500" />
+        <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center border border-[#1a1d26]">
+          <Users className="w-2.5 h-2.5 text-gray-500" />
         </div>
       </div>
-      <div className="text-[10px] text-gray-500 italic">Por definir</div>
+      <div className="text-[8px] text-gray-500 italic">Por definir</div>
     </>
   );
 }
