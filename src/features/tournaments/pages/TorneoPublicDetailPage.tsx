@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin, Calendar, Trophy, Users, Clock, ArrowLeft,
-  CheckCircle, AlertCircle, Sparkles, Medal, Target
+  CheckCircle, AlertCircle, Sparkles, Medal, Target,
+  ChevronDown, UsersRound, Swords
 } from 'lucide-react';
 import { api } from '../../../services/api';
-import { formatDatePY, getDiasRestantes } from '../../../utils/date';
+import { formatDatePY } from '../../../utils/date';
 import { useAuth } from '../../auth/context/AuthContext';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 
@@ -56,6 +57,27 @@ interface TorneoDetail {
   totalInscritos: number;
 }
 
+interface Jugador {
+  id: string;
+  nombre: string;
+  apellido: string;
+  fotoUrl?: string;
+}
+
+interface Pareja {
+  id: string;
+  jugador1: Jugador;
+  jugador2: Jugador;
+  fechaInscripcion: string;
+}
+
+interface CategoriaInscritos {
+  categoriaId: string;
+  categoriaNombre: string;
+  categoriaTipo: string;
+  parejas: Pareja[];
+}
+
 export function TorneoPublicDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -63,6 +85,11 @@ export function TorneoPublicDetailPage() {
   const [torneo, setTorneo] = useState<TorneoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estado para inscritos
+  const [inscritos, setInscritos] = useState<CategoriaInscritos[]>([]);
+  const [loadingInscritos, setLoadingInscritos] = useState(false);
+  const [mostrarInscritos, setMostrarInscritos] = useState(false);
 
   useEffect(() => {
     const cargarTorneo = async () => {
@@ -91,6 +118,28 @@ export function TorneoPublicDetailPage() {
       return;
     }
     navigate(`/t/${slug}/inscribirse`);
+  };
+
+  const cargarInscritos = async () => {
+    if (!torneo) return;
+    try {
+      setLoadingInscritos(true);
+      const { data } = await api.get(`/public/torneos/${torneo.id}/inscritos`);
+      if (data.success) {
+        setInscritos(data.categorias);
+      }
+    } catch (err) {
+      console.error('Error cargando inscritos:', err);
+    } finally {
+      setLoadingInscritos(false);
+    }
+  };
+
+  const toggleInscritos = () => {
+    if (!mostrarInscritos && inscritos.length === 0) {
+      cargarInscritos();
+    }
+    setMostrarInscritos(!mostrarInscritos);
   };
 
   const formatFecha = (fecha: string) => {
@@ -139,8 +188,6 @@ export function TorneoPublicDetailPage() {
     );
   }
 
-  const diasHastaCierre = getDiasRestantes(torneo.fechaLimiteInscr);
-
   return (
     <div className="min-h-screen bg-dark relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
@@ -166,11 +213,6 @@ export function TorneoPublicDetailPage() {
                     Inscripciones cerradas
                   </span>
                 )}
-                {diasHastaCierre > 0 && diasHastaCierre <= 7 && torneo.inscripcionesAbiertas && (
-                  <span className="px-3 py-1 bg-orange-500/90 text-white text-sm font-medium rounded-full">
-                    ¡Cierra en {diasHastaCierre} días!
-                  </span>
-                )}
               </div>
 
               <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">{torneo.nombre}</h1>
@@ -183,10 +225,6 @@ export function TorneoPublicDetailPage() {
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-secondary" />
                   <span>{torneo.ciudad}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-green-400" />
-                  <span>{torneo.totalInscritos} inscritos</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5 text-yellow-400" />
@@ -235,6 +273,92 @@ export function TorneoPublicDetailPage() {
                     </div>
                   ))}
                 </div>
+              </motion.div>
+
+              {/* Sección de Inscritos - Desplegable */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+                <button
+                  onClick={toggleInscritos}
+                  className="w-full p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <UsersRound className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <h2 className="text-xl font-bold text-white">Parejas Inscritas</h2>
+                      <p className="text-sm text-white/60">{torneo.totalInscritos} parejas confirmadas</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-6 h-6 text-white/60 transition-transform ${mostrarInscritos ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {mostrarInscritos && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-6 pt-0 border-t border-white/10">
+                        {loadingInscritos ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                          </div>
+                        ) : inscritos.length === 0 ? (
+                          <div className="text-center py-8 text-white/60">
+                            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>Aún no hay inscripciones confirmadas</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-6 pt-6">
+                            {inscritos.map((cat) => (
+                              <div key={cat.categoriaId} className="space-y-3">
+                                <h3 className={`text-sm font-bold uppercase tracking-wider ${
+                                  cat.categoriaTipo === 'FEMENINO' ? 'text-pink-400' : 'text-blue-400'
+                                }`}>
+                                  {cat.categoriaNombre}
+                                  <span className="ml-2 text-white/40">({cat.parejas.length})</span>
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {cat.parejas.map((pareja) => (
+                                    <div
+                                      key={pareja.id}
+                                      className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-primary/30 transition-colors"
+                                    >
+                                      <div className="flex -space-x-2">
+                                        <img
+                                          src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
+                                          alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
+                                          className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                        />
+                                        <img
+                                          src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
+                                          alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
+                                          className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
+                                        />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-white truncate">
+                                          {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
+                                        </p>
+                                        <p className="text-xs text-white/50 truncate">
+                                          {pareja.jugador1.nombre} & {pareja.jugador2.nombre}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
 
               {torneo.premios.length > 0 && (
@@ -290,7 +414,8 @@ export function TorneoPublicDetailPage() {
 
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="sticky top-24">
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="sticky top-24 space-y-4">
+                {/* Card de Inscripción */}
                 <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
                   <div className="text-center mb-6">
                     <p className="text-white/60 text-sm mb-1">Inscripción por pareja</p>
@@ -311,31 +436,20 @@ export function TorneoPublicDetailPage() {
                       : 'Inscripciones cerradas'}
                   </button>
 
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between text-white/60">
-                      <span>Límite:</span>
-                      <span className={diasHastaCierre <= 3 ? 'text-red-400' : 'text-white/80'}>
-                        {formatFecha(torneo.fechaLimiteInscr)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-white/60">
-                      <span>Inscritos:</span>
-                      <span className="text-white/80">{torneo.totalInscritos} parejas</span>
-                    </div>
-                  </div>
-
-                  <div className="my-6 border-t border-white/10" />
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold">
-                      {torneo.organizador.nombre[0]}{torneo.organizador.apellido[0]}
-                    </div>
-                    <div>
-                      <p className="text-white/60 text-xs">Organizado por</p>
-                      <p className="text-white font-medium">{torneo.organizador.nombre} {torneo.organizador.apellido}</p>
-                    </div>
+                  <div className="flex items-center justify-between text-sm text-white/60">
+                    <span>Inscritos:</span>
+                    <span className="text-white/80">{torneo.totalInscritos} parejas</span>
                   </div>
                 </div>
+
+                {/* Botón Ver Bracket */}
+                <Link
+                  to={`/torneo/${torneo.id}/fixture`}
+                  className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold text-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary/50 text-white transition-all"
+                >
+                  <Swords className="w-5 h-5 text-primary" />
+                  Ver Bracket
+                </Link>
 
                 {torneo.sponsors.length > 0 && (
                   <div className="mt-6 bg-white/[0.03] border border-white/10 rounded-2xl p-6">
