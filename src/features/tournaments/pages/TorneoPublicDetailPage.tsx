@@ -49,7 +49,7 @@ interface TorneoDetail {
     tipo: string;
     orden: number;
     inscripcionAbierta: boolean;
-    estado: string;
+    estado: 'INSCRIPCIONES_ABIERTAS' | 'INSCRIPCIONES_CERRADAS' | 'EN_JUEGO' | 'FINALIZADA';
   }>;
   modalidades: Array<{ id: string; nombre: string; descripcion: string }>;
   premios: Array<{ id: string; puesto: string; descripcion: string; valor?: number }>;
@@ -257,6 +257,34 @@ export function TorneoPublicDetailPage() {
                   Categorías
                 </h2>
                 <div className="space-y-6">
+                  {/* Femeninas primero */}
+                  {torneo.categorias.some(cat => cat.tipo === 'FEMENINO') && (
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-pink-400 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-pink-400" />
+                        Damas
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {torneo.categorias
+                          .filter(cat => cat.tipo === 'FEMENINO')
+                          .sort((a, b) => a.orden - b.orden)
+                          .map(cat => (
+                            <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border bg-pink-500/10 border-pink-500/30">
+                              <div className="flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-pink-400" />
+                                <span className="font-medium text-white">{cat.nombre}</span>
+                              </div>
+                              {cat.inscripcionAbierta && cat.estado !== 'INSCRIPCIONES_CERRADAS' ? (
+                                <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
+                              ) : (
+                                <span className="text-xs text-red-400">Cerrada</span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Masculinas */}
                   {torneo.categorias.some(cat => cat.tipo !== 'FEMENINO') && (
                     <div>
@@ -274,35 +302,7 @@ export function TorneoPublicDetailPage() {
                                 <span className="w-2 h-2 rounded-full bg-blue-400" />
                                 <span className="font-medium text-white">{cat.nombre}</span>
                               </div>
-                              {cat.inscripcionAbierta ? (
-                                <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
-                              ) : (
-                                <span className="text-xs text-red-400">Cerrada</span>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Femeninas */}
-                  {torneo.categorias.some(cat => cat.tipo === 'FEMENINO') && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-pink-400 mb-3 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-pink-400" />
-                        Damas
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {torneo.categorias
-                          .filter(cat => cat.tipo === 'FEMENINO')
-                          .sort((a, b) => a.orden - b.orden)
-                          .map(cat => (
-                            <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl border bg-pink-500/10 border-pink-500/30">
-                              <div className="flex items-center gap-3">
-                                <span className="w-2 h-2 rounded-full bg-pink-400" />
-                                <span className="font-medium text-white">{cat.nombre}</span>
-                              </div>
-                              {cat.inscripcionAbierta ? (
+                              {cat.inscripcionAbierta && cat.estado !== 'INSCRIPCIONES_CERRADAS' ? (
                                 <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Abierta</span>
                               ) : (
                                 <span className="text-xs text-red-400">Cerrada</span>
@@ -354,19 +354,19 @@ export function TorneoPublicDetailPage() {
                           </div>
                         ) : (
                           <div className="space-y-8 pt-6">
-                            {/* Inscritos Masculinos */}
-                            {inscritos.some(cat => cat.categoriaTipo !== 'FEMENINO') && (
+                            {/* Inscritos Femeninos primero */}
+                            {inscritos.some(cat => cat.categoriaTipo === 'FEMENINO') && (
                               <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-blue-400" />
-                                  Caballeros
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-pink-400" />
+                                  Damas
                                 </h3>
                                 <div className="space-y-4">
                                   {inscritos
-                                    .filter(cat => cat.categoriaTipo !== 'FEMENINO')
+                                    .filter(cat => cat.categoriaTipo === 'FEMENINO')
                                     .map((cat) => (
                                       <div key={cat.categoriaId} className="space-y-2">
-                                        <h4 className="text-xs font-semibold text-blue-300/80">
+                                        <h4 className="text-xs font-semibold text-pink-300/80">
                                           {cat.categoriaNombre}
                                           <span className="ml-2 text-white/40">({cat.parejas.length})</span>
                                         </h4>
@@ -374,7 +374,7 @@ export function TorneoPublicDetailPage() {
                                           {cat.parejas.map((pareja) => (
                                             <div
                                               key={pareja.id}
-                                              className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-colors"
+                                              className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-500/10 hover:border-pink-500/30 transition-colors"
                                             >
                                               <div className="flex -space-x-2">
                                                 <img
@@ -405,19 +405,19 @@ export function TorneoPublicDetailPage() {
                               </div>
                             )}
                             
-                            {/* Inscritos Femeninos */}
-                            {inscritos.some(cat => cat.categoriaTipo === 'FEMENINO') && (
+                            {/* Inscritos Masculinos */}
+                            {inscritos.some(cat => cat.categoriaTipo !== 'FEMENINO') && (
                               <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-pink-400 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-pink-400" />
-                                  Damas
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                                  Caballeros
                                 </h3>
                                 <div className="space-y-4">
                                   {inscritos
-                                    .filter(cat => cat.categoriaTipo === 'FEMENINO')
+                                    .filter(cat => cat.categoriaTipo !== 'FEMENINO')
                                     .map((cat) => (
                                       <div key={cat.categoriaId} className="space-y-2">
-                                        <h4 className="text-xs font-semibold text-pink-300/80">
+                                        <h4 className="text-xs font-semibold text-blue-300/80">
                                           {cat.categoriaNombre}
                                           <span className="ml-2 text-white/40">({cat.parejas.length})</span>
                                         </h4>
@@ -425,7 +425,7 @@ export function TorneoPublicDetailPage() {
                                           {cat.parejas.map((pareja) => (
                                             <div
                                               key={pareja.id}
-                                              className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-500/10 hover:border-pink-500/30 transition-colors"
+                                              className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-colors"
                                             >
                                               <div className="flex -space-x-2">
                                                 <img
