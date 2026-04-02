@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { suscripcionService, EstadoSuscripcion, IniciarPagoResponse } from '../../../services/suscripcionService';
 import { sedesService } from '../../../services/sedesService';
 import { useToast } from '../../../components/ui/ToastProvider';
-import { useAuth } from '../../auth/context/AuthContext';
 import BancardCheckout from '../components/BancardCheckout';
 import { 
   CreditCard, 
@@ -27,7 +26,6 @@ export default function SuscripcionPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
-  const { user } = useAuth();
   
   const [sede, setSede] = useState<Sede | null>(null);
   const [estado, setEstado] = useState<EstadoSuscripcion | null>(null);

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import SuscripcionStatusCard from '../components/SuscripcionStatusCard';
 import { 
   Clock, Plus, Trash2, ChevronLeft, Lock 
 } from 'lucide-react';
@@ -165,7 +166,7 @@ export default function GestionDisponibilidadPage() {
       
       <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate('/mis-torneos')}
             className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
@@ -176,6 +177,11 @@ export default function GestionDisponibilidadPage() {
             <h1 className="text-3xl font-bold text-white">Gestión de Canchas</h1>
             <p className="text-white/60">Configurar horarios y bloqueos</p>
           </div>
+        </div>
+
+        {/* Estado de Suscripción */}
+        <div className="mb-6">
+          <SuscripcionStatusCard sedeId={sedeId!} />
         </div>
 
         {/* Tabs */}

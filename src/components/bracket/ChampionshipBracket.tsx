@@ -365,7 +365,7 @@ function MatchCard({
                   {partido.inscripcion1.jugador2.nombre}
                 </div>
               </div>
-              {/* Resultados equipo 1 */}
+              {/* Resultados equipo 1 (solo sus puntos) */}
               {isFinalizado && (
                 <div className="flex flex-col items-end ml-1">
                   {esDescalificacion && pareja1Gano ? (
@@ -376,13 +376,19 @@ function MatchCard({
                     <span className="text-[10px] font-bold text-green-600">W.O.</span>
                   ) : partido.resultado ? (
                     <>
-                      {[partido.resultado.set1, partido.resultado.set2, partido.resultado.set3]
-                        .filter(Boolean)
-                        .map((set, idx) => (
-                          <span key={idx} className={`text-xs font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                            {set![0]}-{set![1]}
-                          </span>
-                        ))}
+                      <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {partido.resultado.set1[0]}
+                      </span>
+                      {partido.resultado.set2 && (
+                        <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                          {partido.resultado.set2[0]}
+                        </span>
+                      )}
+                      {partido.resultado.set3 && (
+                        <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                          {partido.resultado.set3[0]}
+                        </span>
+                      )}
                     </>
                   ) : null}
                 </div>
@@ -415,7 +421,7 @@ function MatchCard({
                   {partido.inscripcion2.jugador2.nombre}
                 </div>
               </div>
-              {/* Resultados equipo 2 */}
+              {/* Resultados equipo 2 (solo sus puntos) */}
               {isFinalizado && (
                 <div className="flex flex-col items-end ml-1">
                   {esDescalificacion && pareja2Gano ? (
@@ -426,13 +432,19 @@ function MatchCard({
                     <span className="text-[10px] font-bold text-green-600">W.O.</span>
                   ) : partido.resultado ? (
                     <>
-                      {[partido.resultado.set1, partido.resultado.set2, partido.resultado.set3]
-                        .filter(Boolean)
-                        .map((set, idx) => (
-                          <span key={idx} className={`text-xs font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                            {set![0]}-{set![1]}
-                          </span>
-                        ))}
+                      <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                        {partido.resultado.set1[1]}
+                      </span>
+                      {partido.resultado.set2 && (
+                        <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                          {partido.resultado.set2[1]}
+                        </span>
+                      )}
+                      {partido.resultado.set3 && (
+                        <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
+                          {partido.resultado.set3[1]}
+                        </span>
+                      )}
                     </>
                   ) : null}
                 </div>
