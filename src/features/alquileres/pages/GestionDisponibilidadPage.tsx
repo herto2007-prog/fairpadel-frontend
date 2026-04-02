@@ -4,8 +4,7 @@ import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { 
-  Clock, Plus, Trash2, Calendar, AlertCircle, 
-  ChevronLeft, Save, X, Lock 
+  Clock, Plus, Trash2, ChevronLeft, Lock 
 } from 'lucide-react';
 
 interface Disponibilidad {

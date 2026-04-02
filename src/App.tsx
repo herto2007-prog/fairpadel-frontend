@@ -40,6 +40,7 @@ import SedeDetailPage from './features/sedes/pages/SedeDetailPage';
 // Alquileres (V2)
 import AlquileresPage from './features/alquileres/pages/AlquileresPage';
 import MisReservasPage from './features/alquileres/pages/MisReservasPage';
+import GestionDisponibilidadPage from './features/alquileres/pages/GestionDisponibilidadPage';
 
 // Instructores (V2)
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
@@ -152,6 +153,7 @@ function App() {
           <Route element={<RoleProtectedRoute allowedRoles={['organizador']} />}>
             <Route path="/mis-torneos" element={<MisTorneosPage />} />
             <Route path="/mis-torneos/:id/gestionar" element={<GestionarTorneoPage />} />
+            <Route path="/sede/:sedeId/disponibilidad" element={<GestionDisponibilidadPage />} />
           </Route>
           
           {/* Admin */}

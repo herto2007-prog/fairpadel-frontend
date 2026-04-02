@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 
+
 interface Jugador {
   nombre: string;
   apellido: string;
@@ -37,6 +38,9 @@ interface Partido {
   fecha?: string;
   hora?: string;
   cancha?: string;
+  sede?: string;
+  estado?: string;
+  razonResultado?: string;
 }
 
 interface Categoria {
@@ -275,12 +279,14 @@ function BracketColumn({
     }
   };
 
-  // Calcular espaciado entre partidos para los conectores
+  // ZONA y REPECHAJE: gap mínimo (son aleatorios)
+  // Resto: espaciado dinámico para conectores
+  const sinConectores = fase === 'ZONA' || fase === 'REPECHAJE';
   const nivelEnArbol = totalFases - 1 - faseIndex;
-  const gapEntrePartidos = 16 * Math.pow(2, nivelEnArbol);
+  const gapEntrePartidos = sinConectores ? 8 : 16 * Math.pow(2, nivelEnArbol);
 
   return (
-    <div className="flex flex-col min-w-[200px]">
+    <div className="flex flex-col min-w-[220px]">
       {/* Título de fase */}
       <div className="mb-3 pb-2 border-b border-white/20">
         <span className="text-xs font-bold text-white/60 uppercase tracking-wider">{getFaseLabel(fase)}</span>
@@ -301,6 +307,24 @@ function BracketColumn({
   );
 }
 
+// Componente para mostrar los sets del resultado
+function ResultadoSets({ resultado, ganador }: { resultado: Partido['resultado']; ganador: boolean }) {
+  if (!resultado) return null;
+  
+  const colorClass = ganador ? 'text-blue-700' : 'text-gray-700';
+  const sets = [resultado.set1, resultado.set2, resultado.set3].filter(Boolean) as [number, number][];
+  
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      {sets.map((set, idx) => (
+        <span key={idx} className={`text-xs font-bold ${colorClass}`}>
+          {set[0]}-{set[1]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function MatchCard({
   partido,
   showConnector,
@@ -314,20 +338,27 @@ function MatchCard({
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
   
-  // Formatear código del partido (ej: Z1, O1, C1, S1, F1)
+  // Estados especiales
+  const esDescalificacion = partido.razonResultado === 'descalificacion';
+  const esAbandono = partido.razonResultado === 'abandono' || partido.razonResultado === 'lesion';
+  const esWO = partido.razonResultado === 'wo';
+  
+  // Formatear código del partido
   const codigoPartido = `${partido.fase?.[0] || 'P'}${partido.orden}`;
+  
+  // Texto del header: Sede - Cancha
+  const headerText = partido.sede && partido.cancha 
+    ? `${partido.sede} - ${partido.cancha}`
+    : partido.cancha || 'Sin cancha';
 
   return (
     <div className="relative flex items-center">
-      {/* Card del partido - Estilo padel42 */}
-      <div className="w-[200px] bg-white rounded overflow-hidden shadow-lg shrink-0">
-        {/* Header */}
+      {/* Card del partido */}
+      <div className="w-[220px] bg-white rounded overflow-hidden shadow-lg shrink-0">
+        {/* Header: Sede - Cancha */}
         <div className="flex items-center justify-between px-2 py-1 bg-gray-100 border-b border-gray-200">
           <span className="text-[10px] font-bold text-gray-600">{codigoPartido}</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-gray-500">{partido.fecha?.slice(5)?.replace('-', '/')}</span>
-            <span className="text-[9px] text-gray-400">{partido.hora}</span>
-          </div>
+          <span className="text-[9px] text-gray-600 truncate max-w-[120px]">{headerText}</span>
         </div>
 
         {/* Equipo 1 */}
@@ -352,18 +383,16 @@ function MatchCard({
                   {partido.inscripcion1.jugador2.nombre}
                 </div>
               </div>
-              {isFinalizado && partido.resultado && (
-                <div className="flex flex-col items-end ml-1">
-                  <span className={`text-sm font-bold ${pareja1Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                    {partido.resultado.set1[0]}
-                  </span>
-                  {partido.resultado.set2 && (
-                    <span className={`text-[10px] ${pareja1Gano ? 'text-blue-600' : 'text-gray-500'}`}>
-                      {partido.resultado.set2[0]}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Resultados o estado especial */}
+              {esDescalificacion && pareja1Gano ? (
+                <span className="text-[10px] font-bold text-red-600">DESC.</span>
+              ) : esAbandono && !pareja1Gano ? (
+                <span className="text-[10px] font-bold text-orange-600">AB.</span>
+              ) : esWO && pareja1Gano ? (
+                <span className="text-[10px] font-bold text-green-600">W.O.</span>
+              ) : isFinalizado && partido.resultado ? (
+                <ResultadoSets resultado={partido.resultado} ganador={!!pareja1Gano} />
+              ) : null}
             </>
           ) : (
             <span className="text-[10px] text-gray-400 italic">Por definir</span>
@@ -392,28 +421,28 @@ function MatchCard({
                   {partido.inscripcion2.jugador2.nombre}
                 </div>
               </div>
-              {isFinalizado && partido.resultado && (
-                <div className="flex flex-col items-end ml-1">
-                  <span className={`text-sm font-bold ${pareja2Gano ? 'text-blue-700' : 'text-gray-700'}`}>
-                    {partido.resultado.set1[1]}
-                  </span>
-                  {partido.resultado.set2 && (
-                    <span className={`text-[10px] ${pareja2Gano ? 'text-blue-600' : 'text-gray-500'}`}>
-                      {partido.resultado.set2[1]}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Resultados o estado especial */}
+              {esDescalificacion && pareja2Gano ? (
+                <span className="text-[10px] font-bold text-red-600">DESC.</span>
+              ) : esAbandono && !pareja2Gano ? (
+                <span className="text-[10px] font-bold text-orange-600">AB.</span>
+              ) : esWO && pareja2Gano ? (
+                <span className="text-[10px] font-bold text-green-600">W.O.</span>
+              ) : isFinalizado && partido.resultado ? (
+                <ResultadoSets resultado={partido.resultado} ganador={!!pareja2Gano} />
+              ) : null}
             </>
           ) : (
             <span className="text-[10px] text-gray-400 italic">Por definir</span>
           )}
         </div>
 
-        {/* Footer - Cancha */}
-        {partido.cancha && (
-          <div className="px-2 py-1 bg-gray-50 border-t border-gray-100">
-            <span className="text-[9px] text-gray-400 uppercase">{partido.cancha}</span>
+        {/* Footer (zócalo): Fecha y hora */}
+        {(partido.fecha || partido.hora) && (
+          <div className="px-2 py-1 bg-gray-100 border-t border-gray-200 flex items-center justify-center">
+            <span className="text-[9px] text-gray-500">
+              {partido.fecha?.slice(5)?.replace('-', '/')} {partido.hora}
+            </span>
           </div>
         )}
       </div>
