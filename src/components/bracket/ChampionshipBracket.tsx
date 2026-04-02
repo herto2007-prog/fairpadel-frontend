@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Maximize2, Minimize2, ChevronDown, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatDatePY } from '../../utils/date';
 
@@ -50,6 +50,10 @@ interface ChampionshipBracketProps {
 }
 
 const FASES_ORDEN = ['ZONA', 'REPECHAJE', 'OCTAVOS', 'CUARTOS', 'SEMIFINAL', 'FINAL'] as const;
+
+// Altura de cada card de partido
+const CARD_HEIGHT = 112; // px
+const CARD_GAP = 48; // espacio entre cards
 
 export function ChampionshipBracket({ 
   tournamentId, 
@@ -216,7 +220,7 @@ export function ChampionshipBracket({
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0b0f]' : ''} flex flex-col h-screen`}>
       {/* Header Compacto */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0b0f]/80 backdrop-blur shrink-0">
         {/* Espaciador izquierdo */}
         <div className="w-8" />
 
@@ -347,9 +351,9 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket Container - Responsive con scroll horizontal */}
+      {/* Bracket Container - Tree Layout */}
       <div 
-        className="flex-1 overflow-x-auto overflow-y-hidden relative snap-x snap-mandatory" 
+        className="flex-1 overflow-auto relative bg-[#0a0b0f]" 
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#df2531 #1a1d26' }}
       >
         {/* Indicador de scroll en móvil */}
@@ -365,15 +369,15 @@ export function ChampionshipBracket({
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="min-w-max h-full flex items-center p-4 md:p-8">
-            <div className="flex items-stretch gap-2 sm:gap-3 md:gap-6">
+          <div className="min-w-max p-8 md:p-12">
+            <div className="flex items-center gap-16 md:gap-24">
               {fasesActivas.map((fase, faseIndex) => (
                 <FaseColumn
                   key={fase}
                   fase={fase}
                   partidos={partidosPorFase[fase]}
-                  isFirst={faseIndex === 0}
-                  isLast={faseIndex === fasesActivas.length - 1}
+                  faseIndex={faseIndex}
+                  totalFases={fasesActivas.length}
                 />
               ))}
             </div>
@@ -387,32 +391,64 @@ export function ChampionshipBracket({
 function FaseColumn({ 
   fase, 
   partidos, 
-  isFirst, 
-  isLast
+  faseIndex,
+  totalFases
 }: { 
   fase: string; 
   partidos: Partido[];
-  isFirst: boolean;
-  isLast: boolean;
+  faseIndex: number;
+  totalFases: number;
 }) {
+  // Calcular el espaciado basado en la posición en el árbol
+  // Cuanto más avanzada la fase, más espacio entre partidos
+  const multiplicadorEspaciado = Math.pow(2, faseIndex);
+  const gapEntrePartidos = CARD_GAP * multiplicadorEspaciado;
+
+  const getFaseLabel = (f: string) => {
+    switch(f) {
+      case 'OCTAVOS': return 'OCTAVOS DE FINAL';
+      case 'CUARTOS': return 'CUARTOS DE FINAL';
+      case 'SEMIFINAL': return 'SEMIFINALES';
+      case 'FINAL': return '🏆 FINAL';
+      case 'ZONA': return 'FASE DE GRUPOS';
+      case 'REPECHAJE': return 'REPECHAJE';
+      default: return f;
+    }
+  };
+
+  const getFaseColor = (f: string) => {
+    switch(f) {
+      case 'FINAL': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'SEMIFINAL': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      default: return 'bg-[#df2531]/20 text-[#df2531] border-[#df2531]/30';
+    }
+  };
+
+  const isUltimaFase = faseIndex === totalFases - 1;
+  const isPrimeraFase = faseIndex === 0;
+
   return (
-    <div className="flex flex-col items-center min-w-[160px] md:min-w-[200px] snap-center">
-      {/* Título de fase - Compacto */}
-      <div className="mb-2 md:mb-3">
-        <span className="px-3 py-1 bg-[#df2531] text-white font-bold rounded-full text-[10px] md:text-xs uppercase">
-          {fase === 'SEMIFINAL' ? 'SEMIS' : fase}
+    <div className="flex flex-col items-center">
+      {/* Etiqueta de Fase */}
+      <div className={`mb-6 px-4 py-2 rounded-lg border ${getFaseColor(fase)}`}>
+        <span className="text-xs md:text-sm font-bold uppercase tracking-wider">
+          {getFaseLabel(fase)}
         </span>
       </div>
 
-      {/* Partidos - Espaciado adaptativo */}
-      <div className="flex flex-col gap-2 md:gap-3">
+      {/* Contenedor de partidos con espaciado dinámico */}
+      <div 
+        className="flex flex-col"
+        style={{ gap: `${gapEntrePartidos}px` }}
+      >
         {partidos.map((partido, index) => (
-          <PartidoCard
+          <PartidoNode
             key={partido.id}
             partido={partido}
             index={index}
-            isFirst={isFirst}
-            isLast={isLast}
+            showLineLeft={!isPrimeraFase}
+            showLineRight={!isUltimaFase}
+            gapEntrePartidos={gapEntrePartidos}
           />
         ))}
       </div>
@@ -420,16 +456,18 @@ function FaseColumn({
   );
 }
 
-function PartidoCard({ 
-  partido, 
+function PartidoNode({
+  partido,
   index,
-  isFirst,
-  isLast
-}: { 
+  showLineLeft,
+  showLineRight,
+  gapEntrePartidos
+}: {
   partido: Partido;
   index: number;
-  isFirst: boolean;
-  isLast: boolean;
+  showLineLeft: boolean;
+  showLineRight: boolean;
+  gapEntrePartidos: number;
 }) {
   const isFinalizado = !!partido.ganador;
   const tienePareja1 = !!partido.inscripcion1;
@@ -438,117 +476,178 @@ function PartidoCard({
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
 
+  // Altura de la línea de conexión vertical
+  const lineHeight = gapEntrePartidos / 2 + CARD_HEIGHT / 2;
+
   return (
     <div className="relative flex items-center">
-      {/* Línea entrada */}
-      {!isFirst && (
-        <div className="absolute -left-3 top-1/2 w-3 h-px bg-white/20" />
+      {/* Línea de entrada izquierda */}
+      {showLineLeft && (
+        <>
+          {/* Horizontal */}
+          <div className="absolute -left-8 top-1/2 w-8 h-px bg-white/20" />
+          {/* Vertical superior */}
+          <div 
+            className="absolute -left-8 bg-white/20"
+            style={{ 
+              width: '1px', 
+              height: `${lineHeight}px`,
+              top: '50%',
+              transform: 'translateY(-100%)'
+            }}
+          />
+          {/* Vertical inferior */}
+          <div 
+            className="absolute -left-8 bg-white/20"
+            style={{ 
+              width: '1px', 
+              height: `${lineHeight}px`,
+              top: '50%'
+            }}
+          />
+        </>
       )}
-      
-      {/* Card según diseño de referencia - Responsive */}
+
+      {/* Card del partido */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
         className={`
-          relative w-40 md:w-48 bg-[#1a1d26] border rounded-lg overflow-hidden
-          ${isFinalizado ? 'border-green-500/30' : 'border-[#df2531]/30'}
+          relative w-44 md:w-52 bg-[#1a1d26] border rounded-xl overflow-hidden shrink-0
+          ${isFinalizado ? 'border-green-500/30 shadow-lg shadow-green-500/5' : 'border-white/10'}
+          hover:border-white/20 transition-colors
         `}
+        style={{ height: `${CARD_HEIGHT}px` }}
       >
-        {/* Header: Partido X */}
-        <div className="px-2.5 md:px-3 py-1.5 border-b border-white/5">
-          <span className="text-xs md:text-sm font-medium text-gray-300">
-            Partido {index + 1}
+        {/* Header */}
+        <div className="px-3 py-1.5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <span className="text-[10px] md:text-xs font-medium text-gray-400">
+            #{partido.orden}
           </span>
           {partido.cancha && (
-            <div className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider mt-0.5 truncate">
+            <span className="text-[10px] text-gray-500 truncate max-w-[80px]">
               {partido.cancha}
-            </div>
+            </span>
           )}
         </div>
 
-        {/* Contenido */}
-        <div className="p-2.5 md:p-3 space-y-2 md:space-y-3">
+        {/* Contenido - Layout horizontal */}
+        <div className="p-2.5 flex items-center justify-between h-[calc(100%-28px)]">
           {/* Pareja 1 */}
-          <div className={`flex items-center gap-3 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className={`flex-1 flex flex-col items-center gap-1 ${pareja1Gano ? 'text-green-400' : 'text-white'}`}>
             {tienePareja1 ? (
               <>
-                {/* Avatar doble */}
-                <div className="flex -space-x-2">
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
-                    {partido.inscripcion1!.jugador1.nombre[0]}
-                  </div>
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
-                    {partido.inscripcion1!.jugador2.nombre[0]}
-                  </div>
+                <div className="flex -space-x-1.5">
+                  <Avatar jugador={partido.inscripcion1!.jugador1} />
+                  <Avatar jugador={partido.inscripcion1!.jugador2} />
                 </div>
-                {/* Nombres - ambos mismo tamaño y peso */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
+                <div className="text-center">
+                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
                     {partido.inscripcion1!.jugador1.apellido}
                   </div>
-                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
+                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
                     {partido.inscripcion1!.jugador2.apellido}
                   </div>
                 </div>
               </>
             ) : (
-              <span className="text-sm text-gray-500 italic">Por definir</span>
+              <PorDefinir />
             )}
           </div>
 
           {/* VS / Resultado */}
-          <div className="flex items-center justify-center py-0.5">
+          <div className="px-2 flex flex-col items-center">
             {isFinalizado && partido.resultado ? (
-              <span className="text-base md:text-lg font-mono text-green-400 font-bold">
-                {partido.resultado.set1[0]} - {partido.resultado.set1[1]}
-              </span>
+              <>
+                <span className="text-sm md:text-base font-mono text-green-400 font-bold">
+                  {partido.resultado.set1[0]}:{partido.resultado.set1[1]}
+                </span>
+                {partido.resultado.set2 && (
+                  <span className="text-[10px] text-gray-500">
+                    {partido.resultado.set2[0]}:{partido.resultado.set2[1]}
+                  </span>
+                )}
+              </>
             ) : (
-              <span className="text-[#df2531] text-xs md:text-sm font-bold">VS</span>
+              <span className="text-[#df2531] text-xs font-bold">VS</span>
+            )}
+            {partido.fecha && (
+              <span className="text-[9px] text-gray-500 mt-1">
+                {formatDatePY(partido.fecha).split('/').slice(0,2).join('/')}
+              </span>
             )}
           </div>
 
           {/* Pareja 2 */}
-          <div className={`flex items-center gap-3 ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
+          <div className={`flex-1 flex flex-col items-center gap-1 ${pareja2Gano ? 'text-green-400' : 'text-white'}`}>
             {tienePareja2 ? (
               <>
-                {/* Avatar doble */}
-                <div className="flex -space-x-2">
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
-                    {partido.inscripcion2!.jugador1.nombre[0]}
-                  </div>
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#df2531] flex items-center justify-center text-[10px] md:text-xs font-bold border-2 border-[#1a1d26]">
-                    {partido.inscripcion2!.jugador2.nombre[0]}
-                  </div>
+                <div className="flex -space-x-1.5">
+                  <Avatar jugador={partido.inscripcion2!.jugador1} />
+                  <Avatar jugador={partido.inscripcion2!.jugador2} />
                 </div>
-                {/* Nombres - ambos mismo tamaño y peso */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
+                <div className="text-center">
+                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
                     {partido.inscripcion2!.jugador1.apellido}
                   </div>
-                  <div className="text-xs md:text-sm font-semibold leading-tight truncate">
+                  <div className="text-[10px] md:text-xs font-semibold leading-tight truncate max-w-[70px]">
                     {partido.inscripcion2!.jugador2.apellido}
                   </div>
                 </div>
               </>
             ) : (
-              <span className="text-sm text-gray-500 italic">Por definir</span>
+              <PorDefinir />
             )}
           </div>
         </div>
 
-        {/* Fecha/hora */}
-        {partido.fecha && (
-          <div className="px-2.5 md:px-3 py-1.5 md:py-2 bg-black/20 text-[10px] md:text-xs text-gray-500 flex items-center gap-1.5 md:gap-2">
-            <Calendar className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{formatDatePY(partido.fecha)} {partido.hora}</span>
+        {/* Indicador de ganador */}
+        {isFinalizado && (
+          <div className="absolute top-1 right-1">
+            <Trophy className="w-3 h-3 text-yellow-500" />
           </div>
         )}
       </motion.div>
 
-      {/* Línea salida */}
-      {!isLast && (
-        <div className="absolute -right-3 top-1/2 w-3 h-px bg-white/20" />
+      {/* Línea de salida derecha */}
+      {showLineRight && (
+        <div className="absolute -right-8 top-1/2 w-8 h-px bg-white/20" />
       )}
     </div>
+  );
+}
+
+function Avatar({ jugador }: { jugador: { nombre: string; fotoUrl?: string | null } }) {
+  if (jugador.fotoUrl) {
+    return (
+      <img 
+        src={jugador.fotoUrl} 
+        alt={jugador.nombre}
+        className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border-2 border-[#1a1d26]"
+      />
+    );
+  }
+  
+  return (
+    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#df2531] to-[#b91c22] flex items-center justify-center text-[10px] font-bold border-2 border-[#1a1d26]">
+      {jugador.nombre[0]}
+    </div>
+  );
+}
+
+function PorDefinir() {
+  return (
+    <>
+      <div className="flex -space-x-1.5">
+        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-[#1a1d26]">
+          <Users className="w-3 h-3 text-gray-500" />
+        </div>
+        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-[#1a1d26]">
+          <Users className="w-3 h-3 text-gray-500" />
+        </div>
+      </div>
+      <div className="text-[10px] text-gray-500 italic">Por definir</div>
+    </>
   );
 }

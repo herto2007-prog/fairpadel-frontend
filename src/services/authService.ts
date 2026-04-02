@@ -15,6 +15,7 @@ export interface LoginResponse {
     documento: string;
     estado: string;
     roles: string[];
+    fotoUrl?: string;
   };
 }
 
