@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Users, Calendar, Trophy, CheckCircle2, AlertCircle,
-  Download, RefreshCw, Database, UserX, Shield, Wrench, AlertTriangle, Info
+  Download, RefreshCw, Database, UserX, Shield, Wrench, AlertTriangle, Info,
+  Edit3, ArrowRightLeft
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
@@ -110,6 +111,23 @@ interface PartidoData {
   createdAt: string;
 }
 
+interface SlotDisponible {
+  id: string;
+  horaInicio: string;
+  horaFin: string;
+  esValido: boolean;
+  restriccion: string;
+  disponibilidad: {
+    fecha: string;
+  };
+  torneoCancha: {
+    id: string;
+    sedeCancha: {
+      nombre: string;
+    };
+  };
+}
+
 interface SlotData {
   id: string;
   horaInicio: string;
@@ -149,10 +167,15 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroFase, setFiltroFase] = useState('');
   const [filtroSinPareja, setFiltroSinPareja] = useState(false);
   const [filtroSinSlot, setFiltroSinSlot] = useState(false);
   const [filtroSinProgramar, setFiltroSinProgramar] = useState(false);
   const [filtroFinalizados, setFiltroFinalizados] = useState(false);
+
+  // Datos para filtros
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [fasesDisponibles, setFasesDisponibles] = useState<string[]>([]);
 
   // Datos
   const [inscripciones, setInscripciones] = useState<InscripcionData[]>([]);
@@ -168,6 +191,14 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [canchaSeleccionada, setCanchaSeleccionada] = useState('');
   const [canchasDisponibles, setCanchasDisponibles] = useState<Array<{ id: string; nombre: string; sede: string }>>([]);
   const [asignando, setAsignando] = useState(false);
+
+  // Modal editar slot
+  const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
+  const [partidoAEditar, setPartidoAEditar] = useState<PartidoData | null>(null);
+  const [slotsDisponibles, setSlotsDisponibles] = useState<SlotDisponible[]>([]);
+  const [slotSeleccionado, setSlotSeleccionado] = useState('');
+  const [cargandoSlots, setCargandoSlots] = useState(false);
+  const [partidoIntercambio, setPartidoIntercambio] = useState<PartidoData | null>(null);
 
   useEffect(() => {
     loadData();
@@ -227,12 +258,67 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
     const params = new URLSearchParams();
     if (busqueda) params.append('busqueda', busqueda);
     if (filtroCategoria) params.append('categoriaId', filtroCategoria);
+    if (filtroFase) params.append('fase', filtroFase);
     if (filtroSinProgramar) params.append('sinProgramar', 'true');
     if (filtroFinalizados) params.append('finalizados', 'true');
 
     const { data } = await api.get(`/admin/auditoria/torneos/${tournamentId}/partidos?${params}`);
     if (data.success) {
       setPartidos(data.data);
+      
+      // Extraer categorías y fases únicas para filtros
+      const cats = [...new Map(data.data.map((p: PartidoData) => [p.categoria.id, p.categoria])).values()] as { id: string; nombre: string }[];
+      setCategoriasDisponibles(cats);
+      const fases = [...new Set(data.data.map((p: PartidoData) => p.fase))] as string[];
+      setFasesDisponibles(fases);
+    }
+  };
+
+  const cargarSlotsDisponibles = async (partido: PartidoData) => {
+    setCargandoSlots(true);
+    try {
+      const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/partidos/${partido.id}/slots-disponibles`);
+      if (data.success) {
+        setSlotsDisponibles(data.data.slotsValidos);
+      }
+    } catch (err) {
+      console.error('Error cargando slots:', err);
+    } finally {
+      setCargandoSlots(false);
+    }
+  };
+
+  const cambiarSlot = async () => {
+    if (!partidoAEditar || !slotSeleccionado) return;
+    
+    try {
+      await api.put(`/admin/canchas-sorteo/${tournamentId}/partidos/${partidoAEditar.id}/cambiar-slot`, {
+        nuevoSlotId: slotSeleccionado,
+      });
+      
+      setModalEditarAbierto(false);
+      setPartidoAEditar(null);
+      setSlotSeleccionado('');
+      await loadPartidos();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al cambiar slot');
+    }
+  };
+
+  const intercambiarSlots = async () => {
+    if (!partidoAEditar || !partidoIntercambio) return;
+    
+    try {
+      await api.put(`/admin/canchas-sorteo/${tournamentId}/intercambiar-slots`, {
+        matchId1: partidoAEditar.id,
+        matchId2: partidoIntercambio.id,
+      });
+      
+      setPartidoIntercambio(null);
+      await loadPartidos();
+      alert('Slots intercambiados correctamente');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al intercambiar');
     }
   };
 
@@ -472,6 +558,26 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
 
           {vistaActiva === 'partidos' && (
             <>
+              <select
+                value={filtroCategoria}
+                onChange={(e) => setFiltroCategoria(e.target.value)}
+                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+              >
+                <option value="" className="bg-[#1a1d29]">Todas las categorías</option>
+                {categoriasDisponibles.map((cat) => (
+                  <option key={cat.id} value={cat.id} className="bg-[#1a1d29]">{cat.nombre}</option>
+                ))}
+              </select>
+              <select
+                value={filtroFase}
+                onChange={(e) => setFiltroFase(e.target.value)}
+                className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50"
+              >
+                <option value="" className="bg-[#1a1d29]">Todas las fases</option>
+                {fasesDisponibles.map((fase) => (
+                  <option key={fase} value={fase} className="bg-[#1a1d29]">{fase}</option>
+                ))}
+              </select>
               <label className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm cursor-pointer hover:bg-white/10">
                 <input
                   type="checkbox"
@@ -825,6 +931,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                         <th className="text-left py-3 px-4">Programación</th>
                         <th className="text-left py-3 px-4">Estado</th>
                         <th className="text-left py-3 px-4">Resultado</th>
+                        <th className="text-left py-3 px-4">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -875,6 +982,44 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                             ) : (
                               <span className="text-white/40 text-xs">-</span>
                             )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setPartidoAEditar(p);
+                                  cargarSlotsDisponibles(p);
+                                  setModalEditarAbierto(true);
+                                }}
+                                className="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                                title="Cambiar slot"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (partidoIntercambio && partidoIntercambio.id === p.id) {
+                                    setPartidoIntercambio(null);
+                                  } else if (partidoIntercambio) {
+                                    if (confirm(`¿Intercambiar slots entre ${partidoIntercambio.pareja1} vs ${p.pareja1}?`)) {
+                                      setPartidoAEditar(partidoIntercambio);
+                                      intercambiarSlots();
+                                      setPartidoIntercambio(null);
+                                    }
+                                  } else {
+                                    setPartidoIntercambio(p);
+                                  }
+                                }}
+                                className={`p-1.5 rounded-lg transition-colors ${
+                                  partidoIntercambio?.id === p.id
+                                    ? 'bg-[#df2531] text-white'
+                                    : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400'
+                                }`}
+                                title={partidoIntercambio?.id === p.id ? 'Cancelar' : 'Intercambiar slot'}
+                              >
+                                <ArrowRightLeft className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1036,6 +1181,127 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
               >
                 {asignando ? 'Asignando...' : 'Asignar Cancha'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Slot */}
+      {modalEditarAbierto && partidoAEditar && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Cambiar Slot</h3>
+              <button
+                onClick={() => {
+                  setModalEditarAbierto(false);
+                  setPartidoAEditar(null);
+                  setSlotSeleccionado('');
+                }}
+                className="text-white/40 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              {/* Info del partido actual */}
+              <div className="bg-white/5 rounded-lg p-3 text-sm">
+                <p className="text-white/60">Fase: <span className="text-white font-medium">{partidoAEditar.fase}</span></p>
+                <p className="text-white/60">Categoría: <span className="text-white">{partidoAEditar.categoria.nombre}</span></p>
+                <p className="text-white/60">Parejas: <span className="text-white">{partidoAEditar.pareja1} vs {partidoAEditar.pareja2}</span></p>
+                <div className="mt-2 pt-2 border-t border-white/10">
+                  <p className="text-white/60">Slot actual:</p>
+                  <p className="text-white">
+                    {partidoAEditar.programacion?.fecha ? formatDatePY(partidoAEditar.programacion.fecha) : 'Sin fecha'} 
+                    {' '}{partidoAEditar.programacion?.hora || ''}
+                    {partidoAEditar.programacion?.cancha && ` - ${partidoAEditar.programacion.cancha}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Lista de slots disponibles */}
+              <div>
+                <label className="block text-white/60 text-sm mb-2">
+                  Slots Disponibles ({slotsDisponibles.length} válidos)
+                </label>
+                
+                {cargandoSlots ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin w-6 h-6 border-2 border-[#df2531] border-t-transparent rounded-full mx-auto" />
+                  </div>
+                ) : slotsDisponibles.length === 0 ? (
+                  <p className="text-yellow-400 text-sm">No hay slots disponibles que cumplan las restricciones</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {slotsDisponibles.map((slot) => (
+                      <label
+                        key={slot.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          slotSeleccionado === slot.id
+                            ? 'bg-[#df2531]/20 border-[#df2531]/50'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="slot"
+                          value={slot.id}
+                          checked={slotSeleccionado === slot.id}
+                          onChange={() => setSlotSeleccionado(slot.id)}
+                          className="w-4 h-4 text-[#df2531] bg-white/5 border-white/20"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white text-sm">
+                            {formatDatePY(slot.disponibilidad.fecha)} {slot.horaInicio} - {slot.horaFin}
+                          </p>
+                          <p className="text-white/40 text-xs">{slot.torneoCancha.sedeCancha.nombre}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Intercambio rápido */}
+              {partidoIntercambio && partidoIntercambio.id !== partidoAEditar.id && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+                  <p className="text-purple-400 text-sm mb-2">Intercambio seleccionado:</p>
+                  <p className="text-white text-sm">{partidoIntercambio.pareja1} vs {partidoIntercambio.pareja2}</p>
+                  <p className="text-white/60 text-xs">
+                    {partidoIntercambio.programacion?.fecha ? formatDatePY(partidoIntercambio.programacion.fecha) : ''} {partidoIntercambio.programacion?.hora}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button
+                onClick={() => {
+                  setModalEditarAbierto(false);
+                  setPartidoAEditar(null);
+                  setSlotSeleccionado('');
+                }}
+                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              {partidoIntercambio && partidoIntercambio.id !== partidoAEditar.id ? (
+                <button
+                  onClick={intercambiarSlots}
+                  className="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-500/80 text-white rounded-lg transition-colors"
+                >
+                  Intercambiar
+                </button>
+              ) : (
+                <button
+                  onClick={cambiarSlot}
+                  disabled={!slotSeleccionado || cargandoSlots}
+                  className="flex-1 px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                >
+                  Cambiar Slot
+                </button>
+              )}
             </div>
           </div>
         </div>
