@@ -199,7 +199,7 @@ export default function MisSedesPage() {
               </h2>
               <p className="text-gray-400 max-w-2xl mx-auto">
                 Activa tu suscripción y transforma la manera de gestionar tu sede. 
-                Tus clientes reservan 24/7, tú recibes los pagos automáticamente.
+                Tus clientes reservan 24/7, vos controlás todo desde un solo panel.
               </p>
             </div>
 

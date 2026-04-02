@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  MapPin, Calendar, Trophy, Users, Clock, ArrowLeft,
+  MapPin, Calendar, Trophy, Users, ArrowLeft,
   CheckCircle, AlertCircle, Sparkles, Medal, Target,
   ChevronDown, UsersRound, Swords
 } from 'lucide-react';
@@ -226,10 +226,6 @@ export function TorneoPublicDetailPage() {
                   <MapPin className="w-5 h-5 text-secondary" />
                   <span>{torneo.ciudad}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-yellow-400" />
-                  <span>{torneo.minutosPorPartido} min/partido</span>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -239,6 +235,17 @@ export function TorneoPublicDetailPage() {
       {/* Contenido */}
       <section className="py-8 px-4">
         <div className="max-w-6xl mx-auto">
+          {/* Botón volver a torneos */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
+            <Link 
+              to="/torneos" 
+              className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Volver a torneos</span>
+            </Link>
+          </motion.div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {torneo.descripcion && (

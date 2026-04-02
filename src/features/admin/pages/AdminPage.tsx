@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
@@ -10,8 +10,9 @@ import { TorneosPendientesManager } from '../components/TorneosPendientesManager
 import { CircuitosManager } from '../components/CircuitosManager';
 import { AscensosManager } from '../components/AscensosManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
+import { SuscripcionesManager } from '../components/SuscripcionesManager';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
@@ -21,6 +22,7 @@ export function AdminPage() {
     { id: 'torneos' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-red-500' },
     { id: 'circuitos' as AdminTab, label: 'Circuitos', icon: Route, color: 'bg-purple-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: TrendingUp, color: 'bg-amber-500' },
+    { id: 'suscripciones' as AdminTab, label: 'Suscripciones', icon: CreditCard, color: 'bg-cyan-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Settings, color: 'bg-pink-500' },
     { id: 'duenos' as AdminTab, label: 'Dueños', icon: Crown, color: 'bg-amber-500' },
@@ -93,6 +95,7 @@ export function AdminPage() {
           {activeTab === 'circuitos' && <CircuitosManager />}
           {activeTab === 'ascensos' && <AscensosManager />}
           {activeTab === 'duenos' && <SedesDuenosManager />}
+          {activeTab === 'suscripciones' && <SuscripcionesManager />}
         </motion.div>
       </div>
     </div>
