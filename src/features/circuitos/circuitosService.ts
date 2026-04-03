@@ -236,6 +236,16 @@ export const circuitosService = {
     return response.data;
   },
 
+  getClasificados: async (circuitoId: string) => {
+    const response = await api.get(`/circuitos/${circuitoId}/clasificados`);
+    return response.data;
+  },
+
+  asignarTorneoFinal: async (circuitoId: string, torneoId: string) => {
+    const response = await api.post(`/circuitos/admin/${circuitoId}/asignar-final`, { torneoId });
+    return response.data;
+  },
+
   // ═══════════════════════════════════════════════════════════
   // UTILIDADES
   // ═══════════════════════════════════════════════════════════

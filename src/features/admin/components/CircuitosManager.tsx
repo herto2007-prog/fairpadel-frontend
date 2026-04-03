@@ -1,13 +1,12 @@
-﻿// CircuitosManager - Admin Panel para gestión de circuitos
+// CircuitosManager - Admin Panel para gestión de circuitos
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, 
   Upload, Image as ImageIcon, X, Calendar, Users, TrendingUp, Target,
-  Trash2, Save
+  Trash2, Save, Crown, Check, AlertCircle
 } from 'lucide-react';
 import { circuitosService, Circuito, TorneoCircuito, Solicitud } from '../../circuitos/circuitosService';
-import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -51,7 +50,7 @@ export function CircuitosManager() {
   const handleProcesarSolicitud = async (id: string, estado: 'APROBADO' | 'RECHAZADO') => {
     const confirmed = await confirm({
       title: estado === 'APROBADO' ? 'Aprobar solicitud' : 'Rechazar solicitud',
-      message: `¿Estás seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusión al circuito?`,
+      message: `Estás seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusión al circuito?`,
       confirmText: estado === 'APROBADO' ? 'Aprobar' : 'Rechazar',
       cancelText: 'Cancelar',
       variant: estado === 'APROBADO' ? 'success' : 'danger',
@@ -293,9 +292,9 @@ export function CircuitosManager() {
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// MODAL DE GESTIÃ“N DE CIRCUITO
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
+// MODAL DE GESTIÓN DE CIRCUITO
+// ═══════════════════════════════════════════════════════════
 
 interface CircuitoModalProps {
   isOpen: boolean;
@@ -392,9 +391,9 @@ function CircuitoModal({ isOpen, onClose, circuito, onUpdated }: CircuitoModalPr
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 // TAB: GENERAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 
 function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () => void }) {
   const { showSuccess, showError } = useToast();
@@ -552,9 +551,9 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 // TAB: TORNEOS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 
 function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () => void }) {
   const { showSuccess, showError } = useToast();
@@ -606,7 +605,7 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   const handleEliminar = async (torneoId: string, torneoNombre: string) => {
     const confirmed = await confirm({
       title: 'Eliminar torneo del circuito',
-      message: `¿Estás seguro de eliminar "${torneoNombre}" del circuito?`,
+      message: `Estás seguro de eliminar "${torneoNombre}" del circuito?`,
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
       variant: 'danger',
@@ -652,7 +651,7 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
         {torneosAsignados.length === 0 ? (
           <div className="text-center py-8 bg-[#151921] rounded-xl border border-white/5">
             <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">No hay torneos asignados aÃºn</p>
+            <p className="text-gray-400">No hay torneos asignados aún</p>
             <p className="text-gray-500 text-sm">Agrega torneos para formar el circuito</p>
           </div>
         ) : (
@@ -792,9 +791,9 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 // TAB: RANKING
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 
 function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () => void }) {
   const { showSuccess, showError } = useToast();
@@ -885,7 +884,6 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
               min={1}
             />
           </div>
-
         </div>
       </div>
 
@@ -901,17 +899,55 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 // TAB: FINAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
+
+interface Clasificado {
+  id: string;
+  jugadorId: string;
+  puntosAcumulados: number;
+  torneosJugados: number;
+  posicionClasificacion: number;
+  estado: 'CLASIFICADO' | 'CONFIRMADO' | 'RECHAZADO';
+  jugador: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    fotoUrl?: string;
+    categoriaActual?: { nombre: string };
+  };
+}
 
 function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () => void }) {
   const { showSuccess, showError } = useToast();
   const [saving, setSaving] = useState(false);
+  const [calculando, setCalculando] = useState(false);
+  const [clasificados, setClasificados] = useState<Clasificado[]>([]);
+  const [loadingClasificados, setLoadingClasificados] = useState(false);
   const [formData, setFormData] = useState({
     tieneFinal: circuito.tieneFinal || false,
     torneosParaClasificar: circuito.torneosParaClasificar || 8,
   });
+
+  // Cargar clasificados si tiene final
+  useEffect(() => {
+    if (formData.tieneFinal) {
+      loadClasificados();
+    }
+  }, [circuito.id, formData.tieneFinal]);
+
+  const loadClasificados = async () => {
+    setLoadingClasificados(true);
+    try {
+      const res = await circuitosService.getClasificados(circuito.id);
+      if (res.success) setClasificados(res.data);
+    } catch (error) {
+      console.error('Error cargando clasificados:', error);
+    } finally {
+      setLoadingClasificados(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -928,16 +964,33 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
   };
 
   const handleCalcularClasificados = async () => {
+    setCalculando(true);
     try {
       await circuitosService.calcularClasificados(circuito.id);
       showSuccess('Calculado', 'Clasificados actualizados');
+      await loadClasificados();
     } catch (error) {
       showError('Error', 'No se pudo calcular los clasificados');
+    } finally {
+      setCalculando(false);
     }
   };
 
+  const handleConfirmarClasificacion = async (jugadorId: string) => {
+    try {
+      await circuitosService.confirmarClasificacion(circuito.id, jugadorId);
+      showSuccess('Confirmado', 'Clasificación confirmada');
+      await loadClasificados();
+    } catch (error) {
+      showError('Error', 'No se pudo confirmar la clasificación');
+    }
+  };
+
+  const confirmados = clasificados.filter(c => c.estado === 'CONFIRMADO').length;
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
+      {/* Configuración del Master Final */}
       <form onSubmit={handleSubmit} className="bg-[#151921] rounded-xl p-4 border border-white/5">
         <h4 className="font-medium text-white mb-4 flex items-center gap-2">
           <Target className="w-5 h-5 text-[#df2531]" />
@@ -984,28 +1037,109 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
         </button>
       </form>
 
+      {/* Listado de Clasificados */}
       {formData.tieneFinal && (
         <div className="bg-[#151921] rounded-xl p-4 border border-white/5">
-          <h4 className="font-medium text-white mb-4">Calcular Clasificados</h4>
-          <p className="text-gray-400 text-sm mb-4">
-            Calcula los jugadores clasificados al Master Final segÃºn el ranking actual del circuito.
-          </p>
-          <button
-            onClick={handleCalcularClasificados}
-            className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <Users className="w-4 h-4" />
-            Calcular Clasificados
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className="font-medium text-white flex items-center gap-2">
+                <Crown className="w-5 h-5 text-yellow-500" />
+                Clasificados al Master Final
+              </h4>
+              <p className="text-gray-400 text-sm mt-1">
+                {confirmados} de {clasificados.length} confirmados
+              </p>
+            </div>
+            <button
+              onClick={handleCalcularClasificados}
+              disabled={calculando}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            >
+              {calculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+              Recalcular
+            </button>
+          </div>
+
+          {loadingClasificados ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-[#df2531]" />
+            </div>
+          ) : clasificados.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-400">No hay clasificados aún</p>
+              <p className="text-gray-500 text-sm">Haz clic en "Recalcular" para generar la lista</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {clasificados.map((clasificado) => (
+                <div
+                  key={clasificado.id}
+                  className="flex items-center gap-4 p-3 bg-[#0B0E14] rounded-lg border border-white/5"
+                >
+                  {/* Posición */}
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-lg font-bold text-sm ${
+                    clasificado.posicionClasificacion === 1 ? 'bg-yellow-500/20 text-yellow-400' :
+                    clasificado.posicionClasificacion === 2 ? 'bg-gray-400/20 text-gray-300' :
+                    clasificado.posicionClasificacion === 3 ? 'bg-orange-600/20 text-orange-400' :
+                    'bg-[#df2531]/20 text-[#df2531]'
+                  }`}>
+                    {clasificado.posicionClasificacion}
+                  </div>
+
+                  {/* Avatar */}
+                  {clasificado.jugador.fotoUrl ? (
+                    <img
+                      src={clasificado.jugador.fotoUrl}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover bg-white/5"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-gray-600" />
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <h5 className="font-medium text-white">
+                      {clasificado.jugador.apellido}, {clasificado.jugador.nombre}
+                    </h5>
+                    <p className="text-sm text-gray-400">
+                      {clasificado.puntosAcumulados} pts • {clasificado.torneosJugados} torneos
+                    </p>
+                  </div>
+
+                  {/* Estado */}
+                  <div className="flex items-center gap-2">
+                    {clasificado.estado === 'CONFIRMADO' ? (
+                      <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
+                        <Check className="w-4 h-4" />
+                        Confirmado
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleConfirmarClasificacion(clasificado.jugadorId)}
+                        className="flex items-center gap-1 px-3 py-1 bg-[#df2531]/20 text-[#df2531] hover:bg-[#df2531]/30 rounded-full text-sm transition-colors"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                        Confirmar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 // FORMULARIO NUEVO CIRCUITO
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════
 
 function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
   const { showError } = useToast();
@@ -1114,11 +1248,32 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
       {/* Ciudad y Temporada */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <CityAutocomplete
+          <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
+          <select
             value={formData.ciudad}
-            onChange={(value) => setFormData({ ...formData, ciudad: value })}
-            label="Ciudad *"
-          />
+            onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            required
+          >
+            <option value="Asunción">Asunción</option>
+            <option value="Ciudad del Este">Ciudad del Este</option>
+            <option value="San Lorenzo">San Lorenzo</option>
+            <option value="Luque">Luque</option>
+            <option value="Capiatá">Capiatá</option>
+            <option value="Lambaré">Lambaré</option>
+            <option value="Fernando de la Mora">Fernando de la Mora</option>
+            <option value="Limpio">Limpio</option>
+            <option value="Ñemby">Ñemby</option>
+            <option value="Itauguá">Itauguá</option>
+            <option value="Mariano Roque Alonso">Mariano Roque Alonso</option>
+            <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
+            <option value="Encarnación">Encarnación</option>
+            <option value="Villa Elisa">Villa Elisa</option>
+            <option value="San Antonio">San Antonio</option>
+            <option value="Coronel Oviedo">Coronel Oviedo</option>
+            <option value="Concepción">Concepción</option>
+            <option value="Villarrica">Villarrica</option>
+          </select>
         </div>
         <div>
           <label className="text-sm text-gray-400 block mb-1">Temporada *</label>
