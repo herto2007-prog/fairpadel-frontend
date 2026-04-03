@@ -223,26 +223,36 @@ export const circuitosService = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  // ADMIN - Clasificados
+  // ADMIN - Clasificados (por categoría)
   // ═══════════════════════════════════════════════════════════
 
-  calcularClasificados: async (id: string) => {
-    const response = await api.post(`/circuitos/admin/${id}/calcular-clasificados`);
+  calcularClasificados: async (id: string, categoryId: string) => {
+    const response = await api.post(`/circuitos/admin/${id}/calcular-clasificados`, { categoryId });
     return response.data;
   },
 
-  confirmarClasificacion: async (circuitoId: string, jugadorId: string) => {
-    const response = await api.post(`/circuitos/admin/${circuitoId}/confirmar-clasificacion/${jugadorId}`);
+  confirmarClasificacion: async (clasificadoId: string) => {
+    const response = await api.post(`/circuitos/admin/clasificado/${clasificadoId}/confirmar`);
     return response.data;
   },
 
-  getClasificados: async (circuitoId: string) => {
-    const response = await api.get(`/circuitos/${circuitoId}/clasificados`);
+  getClasificados: async (circuitoId: string, categoryId?: string) => {
+    const params = categoryId ? `?categoryId=${categoryId}` : '';
+    const response = await api.get(`/circuitos/${circuitoId}/clasificados${params}`);
     return response.data;
   },
 
   asignarTorneoFinal: async (circuitoId: string, torneoId: string) => {
     const response = await api.post(`/circuitos/admin/${circuitoId}/asignar-final`, { torneoId });
+    return response.data;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // CATEGORÍAS
+  // ═══════════════════════════════════════════════════════════
+
+  getCategorias: async () => {
+    const response = await api.get('/tournaments/categories');
     return response.data;
   },
 

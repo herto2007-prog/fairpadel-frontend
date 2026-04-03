@@ -906,6 +906,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
 interface Clasificado {
   id: string;
   jugadorId: string;
+  categoryId: string;
   puntosAcumulados: number;
   torneosJugados: number;
   posicionClasificacion: number;
@@ -917,6 +918,17 @@ interface Clasificado {
     fotoUrl?: string;
     categoriaActual?: { nombre: string };
   };
+  category: {
+    id: string;
+    nombre: string;
+    tipo: string;
+  };
+}
+
+interface Category {
+  id: string;
+  nombre: string;
+  tipo: string;
 }
 
 function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () => void }) {
@@ -926,12 +938,19 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
   const [asignandoFinal, setAsignandoFinal] = useState(false);
   const [clasificados, setClasificados] = useState<Clasificado[]>([]);
   const [torneosCircuito, setTorneosCircuito] = useState<TorneoCircuito[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [loadingClasificados, setLoadingClasificados] = useState(false);
   const [loadingTorneos, setLoadingTorneos] = useState(false);
   const [formData, setFormData] = useState({
     tieneFinal: circuito.tieneFinal || false,
     torneosParaClasificar: circuito.torneosParaClasificar || 8,
   });
+
+  // Cargar categorías al montar
+  useEffect(() => {
+    loadCategorias();
+  }, []);
 
   // Cargar clasificados y torneos si tiene final
   useEffect(() => {
@@ -940,6 +959,20 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
       loadTorneosCircuito();
     }
   }, [circuito.id, formData.tieneFinal]);
+
+  const loadCategorias = async () => {
+    try {
+      const res = await circuitosService.getCategorias();
+      if (res.success) {
+        setCategorias(res.data);
+        if (res.data.length > 0) {
+          setCategoriaSeleccionada(res.data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+    }
+  };
 
   const loadClasificados = async () => {
     setLoadingClasificados(true);
@@ -994,9 +1027,13 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
   };
 
   const handleCalcularClasificados = async () => {
+    if (!categoriaSeleccionada) {
+      showError('Error', 'Selecciona una categoría primero');
+      return;
+    }
     setCalculando(true);
     try {
-      await circuitosService.calcularClasificados(circuito.id);
+      await circuitosService.calcularClasificados(circuito.id, categoriaSeleccionada);
       showSuccess('Calculado', 'Clasificados actualizados');
       await loadClasificados();
     } catch (error) {
@@ -1006,9 +1043,9 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
     }
   };
 
-  const handleConfirmarClasificacion = async (jugadorId: string) => {
+  const handleConfirmarClasificacion = async (clasificadoId: string) => {
     try {
-      await circuitosService.confirmarClasificacion(circuito.id, jugadorId);
+      await circuitosService.confirmarClasificacion(clasificadoId);
       showSuccess('Confirmado', 'Clasificación confirmada');
       await loadClasificados();
     } catch (error) {
@@ -1172,14 +1209,29 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
                 {confirmados} de {clasificados.length} confirmados
               </p>
             </div>
-            <button
-              onClick={handleCalcularClasificados}
-              disabled={calculando}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              {calculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-              Recalcular
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Selector de Categoría */}
+              <select
+                value={categoriaSeleccionada}
+                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+                className="bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+              >
+                <option value="">Seleccionar categoría</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nombre} ({cat.tipo === 'FEMENINO' ? 'F' : 'M'})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleCalcularClasificados}
+                disabled={calculando || !categoriaSeleccionada}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                {calculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+                Recalcular
+              </button>
+            </div>
           </div>
 
           {loadingClasificados ? (
@@ -1241,7 +1293,7 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
                       </span>
                     ) : (
                       <button
-                        onClick={() => handleConfirmarClasificacion(clasificado.jugadorId)}
+                        onClick={() => handleConfirmarClasificacion(clasificado.id)}
                         className="flex items-center gap-1 px-3 py-1 bg-[#df2531]/20 text-[#df2531] hover:bg-[#df2531]/30 rounded-full text-sm transition-colors"
                       >
                         <AlertCircle className="w-4 h-4" />
