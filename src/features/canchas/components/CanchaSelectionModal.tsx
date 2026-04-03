@@ -149,13 +149,14 @@ export function CanchaSelectionModal({
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 -translate-x-1/2 top-4 bottom-4 w-[calc(100vw-32px)] md:w-[90vw] md:max-w-3xl md:top-[5vh] md:bottom-[5vh] md:max-h-[90vh] bg-[#0B0E14] border border-white/10 rounded-2xl z-50 overflow-hidden flex flex-col"
-          >
+          {/* Modal Container - Centrado con flexbox */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-3xl max-h-[90vh] bg-[#0B0E14] border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
               <div className="flex items-center gap-3">
@@ -346,7 +347,8 @@ export function CanchaSelectionModal({
                 </>
               )}
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
