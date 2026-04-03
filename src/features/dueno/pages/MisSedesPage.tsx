@@ -139,7 +139,11 @@ export default function MisSedesPage() {
                 <div className="flex flex-wrap gap-3 mt-4">
                   <button
                     onClick={() => navigate(`/sede/${sede.id}/suscripcion`)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531] rounded-lg transition-colors"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      sede.alquilerConfig?.suscripcionActiva
+                        ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
+                        : 'bg-[#df2531]/20 hover:bg-[#df2531]/30 text-[#df2531]'
+                    }`}
                   >
                     <CreditCard className="w-4 h-4" />
                     {sede.alquilerConfig?.suscripcionActiva ? 'Gestionar Suscripción' : 'Suscribirse'}
