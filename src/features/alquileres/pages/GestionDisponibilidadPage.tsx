@@ -5,7 +5,7 @@ import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import SuscripcionStatusCard from '../components/SuscripcionStatusCard';
 import { 
-  Clock, Plus, Trash2, ChevronLeft, Lock 
+  Clock, Plus, Trash2, ChevronLeft, Lock, CheckSquare, Square 
 } from 'lucide-react';
 
 interface Disponibilidad {
@@ -58,10 +58,11 @@ export default function GestionDisponibilidadPage() {
   const [activeTab, setActiveTab] = useState<'horarios' | 'bloqueos'>('horarios');
   
   // Form para nueva disponibilidad
-  const [selectedCancha, setSelectedCancha] = useState('');
+  const [selectedCanchas, setSelectedCanchas] = useState<string[]>([]);
   const [selectedDia, setSelectedDia] = useState(1);
   const [horaInicio, setHoraInicio] = useState('14:00');
   const [horaFin, setHoraFin] = useState('22:00');
+  const [aplicarATodas, setAplicarATodas] = useState(false);
   
   // Form para nuevo bloqueo
   const [bloqueoCancha, setBloqueoCancha] = useState(''); // '' = todas
@@ -93,14 +94,32 @@ export default function GestionDisponibilidadPage() {
 
   const handleAgregarDisponibilidad = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Determinar qué canchas aplicar
+    const canchasAplicar = aplicarATodas 
+      ? canchas.map(c => c.cancha.id) 
+      : selectedCanchas;
+    
+    if (canchasAplicar.length === 0) {
+      showError('Error', 'Selecciona al menos una cancha');
+      return;
+    }
+    
     try {
-      await api.post('/alquileres/disponibilidades', {
-        sedeCanchaId: selectedCancha,
-        diaSemana: selectedDia,
-        horaInicio,
-        horaFin,
-      });
-      showSuccess('Éxito', 'Horario agregado correctamente');
+      // Crear disponibilidad para cada cancha seleccionada
+      const promesas = canchasAplicar.map(canchaId => 
+        api.post('/alquileres/disponibilidades', {
+          sedeCanchaId: canchaId,
+          diaSemana: selectedDia,
+          horaInicio,
+          horaFin,
+        })
+      );
+      
+      await Promise.all(promesas);
+      showSuccess('Éxito', `Horario agregado a ${canchasAplicar.length} cancha(s)`);
+      setSelectedCanchas([]);
+      setAplicarATodas(false);
       cargarDatos();
     } catch (err: any) {
       showError('Error', err.response?.data?.message || 'No se pudo agregar el horario');
@@ -215,23 +234,67 @@ export default function GestionDisponibilidadPage() {
             {/* Form para agregar horario */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <h2 className="text-lg font-semibold text-white mb-4">Agregar Horario</h2>
-              <form onSubmit={handleAgregarDisponibilidad} className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <form onSubmit={handleAgregarDisponibilidad} className="space-y-4">
+                {/* Selección de canchas */}
                 <div>
-                  <label className="block text-sm text-white/60 mb-2">Cancha</label>
-                  <select
-                    value={selectedCancha}
-                    onChange={(e) => setSelectedCancha(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#df2531]"
-                    required
-                  >
-                    <option value="" className="bg-dark">Seleccionar...</option>
-                    {canchas.map((c) => (
-                      <option key={c.cancha.id} value={c.cancha.id} className="bg-dark">
-                        {c.cancha.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-white/60">Canchas</label>
+                    <label className="flex items-center gap-2 text-sm text-[#df2531] cursor-pointer hover:text-[#df2531]/80">
+                      <input
+                        type="checkbox"
+                        checked={aplicarATodas}
+                        onChange={(e) => {
+                          setAplicarATodas(e.target.checked);
+                          if (e.target.checked) setSelectedCanchas([]);
+                        }}
+                        className="rounded border-white/20 bg-white/5 text-[#df2531] focus:ring-[#df2531]"
+                      />
+                      Aplicar a todas las canchas
+                    </label>
+                  </div>
+                  
+                  {!aplicarATodas && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                      {canchas.map((c) => (
+                        <label
+                          key={c.cancha.id}
+                          className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedCanchas.includes(c.cancha.id)
+                              ? 'bg-[#df2531]/20 border-[#df2531] text-white'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCanchas.includes(c.cancha.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCanchas([...selectedCanchas, c.cancha.id]);
+                              } else {
+                                setSelectedCanchas(selectedCanchas.filter(id => id !== c.cancha.id));
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          {selectedCanchas.includes(c.cancha.id) ? (
+                            <CheckSquare size={16} className="text-[#df2531]" />
+                          ) : (
+                            <Square size={16} />
+                          )}
+                          <span className="text-sm">{c.cancha.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {aplicarATodas && (
+                    <div className="p-3 bg-[#df2531]/10 border border-[#df2531]/30 rounded-lg text-[#df2531] text-sm">
+                      Se aplicará a todas las {canchas.length} canchas
+                    </div>
+                  )}
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 
                 <div>
                   <label className="block text-sm text-white/60 mb-2">Día</label>
@@ -270,14 +333,16 @@ export default function GestionDisponibilidadPage() {
                   />
                 </div>
                 
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Plus size={18} />
-                    Agregar
-                  </button>
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      disabled={!aplicarATodas && selectedCanchas.length === 0}
+                      className="w-full py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Plus size={18} />
+                      Agregar a {aplicarATodas ? canchas.length : selectedCanchas.length} cancha(s)
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
