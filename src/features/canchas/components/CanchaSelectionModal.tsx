@@ -193,7 +193,7 @@ export function CanchaSelectionModal({
               {step === 'selection' ? (
                 <>
                   {/* Info de fecha y duración */}
-                  <div className="flex items-center gap-4 mb-6 p-3 bg-white/5 rounded-xl">
+                  <div className="flex items-center gap-4 mb-4 p-3 bg-white/5 rounded-xl">
                     <div className="flex items-center gap-2 text-white/70">
                       <Clock size={16} className="text-[#df2531]" />
                       <span className="text-sm">{formatFecha(fecha)}</span>
@@ -205,23 +205,19 @@ export function CanchaSelectionModal({
                     </div>
                   </div>
 
-                  {/* Lista de canchas */}
-                  <h3 className="text-white/50 text-sm font-medium mb-4">
-                    Selecciona una cancha y horario
-                  </h3>
-
-                  <div className="space-y-4">
+                  {/* Lista de canchas - Grid de 2 columnas en desktop */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     {canchasConSlots.map((cancha) => (
                       <div
                         key={cancha.cancha.id}
-                        className="bg-white/5 border border-white/10 rounded-xl p-4"
+                        className="bg-white/5 border border-white/10 rounded-xl p-3"
                       >
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <div>
-                            <h4 className="text-white font-medium">
+                            <h4 className="text-white font-medium text-sm">
                               {cancha.cancha.nombre}
                             </h4>
-                            <div className="flex items-center gap-2 text-white/50 text-sm">
+                            <div className="flex items-center gap-1 text-white/50 text-xs">
                               <span>{TIPO_CANCHA_LABELS[cancha.cancha.tipo] || cancha.cancha.tipo}</span>
                               {cancha.cancha.tieneLuz && (
                                 <>
@@ -231,23 +227,23 @@ export function CanchaSelectionModal({
                               )}
                             </div>
                           </div>
-                          <span className="text-green-400 text-sm">
+                          <span className="text-green-400 text-xs">
                             {cancha.slots.length} horarios
                           </span>
                         </div>
 
-                        {/* Grid de horarios */}
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                        {/* Grid de horarios - más compacto */}
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                           {cancha.slots.map((slot) => (
                             <button
                               key={slot.horaInicio}
                               onClick={() => handleSlotSelect(cancha, slot)}
-                              className="flex flex-col items-center p-2 bg-white/5 hover:bg-[#df2531] border border-white/10 hover:border-[#df2531] rounded-lg transition-all group"
+                              className="flex flex-col items-center py-1.5 px-1 bg-white/5 hover:bg-[#df2531] border border-white/10 hover:border-[#df2531] rounded-lg transition-all group"
                             >
-                              <span className="text-sm font-medium text-white group-hover:text-white">
+                              <span className="text-xs font-medium text-white group-hover:text-white">
                                 {slot.horaInicio}
                               </span>
-                              <span className="text-xs text-white/40 group-hover:text-white/70">
+                              <span className="text-[10px] text-white/40 group-hover:text-white/70">
                                 a {slot.horaFin}
                               </span>
                             </button>
