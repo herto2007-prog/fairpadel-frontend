@@ -12,7 +12,7 @@ interface Reserva {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  precio: number;
+  precio?: number; // Opcional - los precios se manejan fuera de la plataforma
   estado: 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA' | 'RECHAZADA';
   user?: {
     nombre: string;
@@ -264,9 +264,6 @@ export default function ReservasSedePage() {
                   {/* Acciones */}
                   <div className="flex items-center gap-3">
                     <div className="text-right mr-4">
-                      <p className="text-2xl font-bold">
-                        Gs. {reserva.precio.toLocaleString('es-PY')}
-                      </p>
                       <p className="text-xs text-gray-500">
                         Solicitada: {new Date(reserva.createdAt).toLocaleDateString('es-PY')}
                       </p>

@@ -62,7 +62,7 @@ export default function AlquileresPage() {
         fecha,
         horaInicio,
         horaFin,
-        precio: 50000, // TODO: obtener precio real
+        // Nota: el precio no se gestiona en la plataforma
       });
       showSuccess('Reserva creada', `Tu reserva para las ${horaInicio} - ${horaFin} fue creada exitosamente`);
       loadDisponibilidad();

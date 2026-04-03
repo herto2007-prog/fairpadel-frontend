@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Clock, Sun, DollarSign, ChevronRight, Check } from 'lucide-react';
+import { X, MapPin, Clock, Sun, ChevronRight, Check } from 'lucide-react';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { alquileresService } from '../../../services/alquileresService';
 
@@ -114,7 +114,7 @@ export function CanchaSelectionModal({
         horaInicio: selectedSlot.horaInicio,
         horaFin: selectedSlot.horaFin,
         duracionMinutos,
-        precio: 50000, // TODO: obtener precio real según franja
+        // Nota: el precio no se gestiona en la plataforma
       });
 
       showSuccess(
@@ -321,13 +321,7 @@ export function CanchaSelectionModal({
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between py-3">
-                        <span className="text-white/60">Precio</span>
-                        <div className="flex items-center gap-1 text-green-400 font-bold text-xl">
-                          <DollarSign size={18} />
-                          <span>50.000 Gs.</span>
-                        </div>
-                      </div>
+
                     </div>
                   </div>
 

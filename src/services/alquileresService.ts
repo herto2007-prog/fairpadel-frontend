@@ -6,7 +6,7 @@ export interface Reserva {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  precio: number;
+  precio?: number; // Opcional - los precios se manejan fuera de la plataforma
   estado: 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA';
   sedeCancha?: { nombre: string; sede: { nombre: string } };
 }

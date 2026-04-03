@@ -94,12 +94,10 @@ export default function MisReservasPage() {
                   </div>
 
                   <div className="text-right">
-                    <p className="text-2xl font-bold">Gs. {reserva.precio.toLocaleString()}</p>
-                    
                     {reserva.estado === 'PENDIENTE' && (
                       <button
                         onClick={() => handleCancelar(reserva.id)}
-                        className="mt-2 text-sm text-red-400 hover:text-red-300"
+                        className="text-sm text-red-400 hover:text-red-300"
                       >
                         Cancelar reserva
                       </button>
