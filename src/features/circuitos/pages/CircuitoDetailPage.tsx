@@ -20,7 +20,6 @@ interface Circuito {
   fechaFin?: string;
   fechaLimiteInscripcion?: string;
   torneosParaClasificar: number;
-  puntosMinimosClasificar?: number;
   tieneFinal: boolean;
   torneoFinal?: {
     id: string;
@@ -209,13 +208,7 @@ export default function CircuitoDetailPage() {
                   <p className="text-2xl font-bold text-white">{circuito.torneosParaClasificar}</p>
                   <p className="text-sm text-gray-400">Mejores clasifican</p>
                 </div>
-                {circuito.puntosMinimosClasificar && (
-                  <div className="bg-white/5 rounded-xl p-4 text-center">
-                    <Trophy className="w-6 h-6 text-[#df2531] mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-white">{circuito.puntosMinimosClasificar}</p>
-                    <p className="text-sm text-gray-400">Puntos mínimos</p>
-                  </div>
-                )}
+
                 <div className="bg-white/5 rounded-xl p-4 text-center">
                   <Users className="w-6 h-6 text-[#df2531] mx-auto mb-2" />
                   <p className="text-2xl font-bold text-white">{torneos.length}</p>

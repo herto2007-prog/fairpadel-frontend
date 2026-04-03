@@ -22,7 +22,6 @@ export interface Circuito {
   tipoAcumulacion?: string;
   torneosMinimosContar?: number;
   torneosParaClasificar: number;
-  puntosMinimosClasificar?: number;
   multiplicadorGlobal?: number;
   tieneFinal: boolean;
   torneoFinalId?: string;
@@ -91,7 +90,6 @@ export interface CreateCircuitoPayload {
   tipoAcumulacion?: string;
   torneosMinimosContar?: number;
   torneosParaClasificar?: number;
-  puntosMinimosClasificar?: number;
   multiplicadorGlobal?: number;
   tieneFinal?: boolean;
   estado?: string;

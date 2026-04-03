@@ -445,13 +445,31 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
         </div>
         <div>
           <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
-          <input
-            type="text"
+          <select
             value={formData.ciudad}
             onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
             className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
             required
-          />
+          >
+            <option value="Asunción">Asunción</option>
+            <option value="Ciudad del Este">Ciudad del Este</option>
+            <option value="San Lorenzo">San Lorenzo</option>
+            <option value="Luque">Luque</option>
+            <option value="Capiatá">Capiatá</option>
+            <option value="Lambaré">Lambaré</option>
+            <option value="Fernando de la Mora">Fernando de la Mora</option>
+            <option value="Limpio">Limpio</option>
+            <option value="Ñemby">Ñemby</option>
+            <option value="Itauguá">Itauguá</option>
+            <option value="Mariano Roque Alonso">Mariano Roque Alonso</option>
+            <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
+            <option value="Encarnación">Encarnación</option>
+            <option value="Villa Elisa">Villa Elisa</option>
+            <option value="San Antonio">San Antonio</option>
+            <option value="Coronel Oviedo">Coronel Oviedo</option>
+            <option value="Concepción">Concepción</option>
+            <option value="Villarrica">Villarrica</option>
+          </select>
         </div>
       </div>
 
@@ -785,7 +803,6 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
     tipoAcumulacion: circuito.tipoAcumulacion || 'ACUMULATIVO',
     torneosMinimosContar: circuito.torneosMinimosContar || 0,
     torneosParaClasificar: circuito.torneosParaClasificar || 1,
-    puntosMinimosClasificar: circuito.puntosMinimosClasificar || 0,
     multiplicadorGlobal: circuito.multiplicadorGlobal || 1.0,
   });
 
@@ -868,16 +885,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
               min={1}
             />
           </div>
-          <div>
-            <label className="text-sm text-gray-400 block mb-1">Puntos mínimos</label>
-            <input
-              type="number"
-              value={formData.puntosMinimosClasificar}
-              onChange={(e) => setFormData({ ...formData, puntosMinimosClasificar: parseInt(e.target.value) })}
-              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-              min={0}
-            />
-          </div>
+
         </div>
       </div>
 
