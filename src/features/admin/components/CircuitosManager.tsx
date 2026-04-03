@@ -7,6 +7,7 @@ import {
   Trash2, Save
 } from 'lucide-react';
 import { circuitosService, Circuito, TorneoCircuito, Solicitud } from '../../circuitos/circuitosService';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -1099,13 +1100,10 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
       {/* Ciudad y Temporada */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
-          <input
-            type="text"
+          <CityAutocomplete
             value={formData.ciudad}
-            onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-            required
+            onChange={(value) => setFormData({ ...formData, ciudad: value })}
+            label="Ciudad *"
           />
         </div>
         <div>
