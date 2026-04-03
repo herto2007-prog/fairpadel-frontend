@@ -1,5 +1,81 @@
 import { api } from '../../services/api';
 
+// ═══════════════════════════════════════════════════════════
+// INTERFACES
+// ═══════════════════════════════════════════════════════════
+
+export interface Circuito {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcion?: string;
+  ciudad: string;
+  region?: string;
+  temporada: string;
+  estado: 'ACTIVO' | 'INACTIVO' | 'FINALIZADO';
+  logoUrl?: string;
+  bannerUrl?: string;
+  colorPrimario?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  fechaLimiteInscripcion?: string;
+  tipoAcumulacion?: string;
+  torneosMinimosContar?: number;
+  torneosParaClasificar: number;
+  puntosMinimosClasificar?: number;
+  multiplicadorGlobal?: number;
+  tieneFinal: boolean;
+  torneoFinalId?: string;
+  orden?: number;
+  destacado?: boolean;
+  _count?: {
+    torneos: number;
+    clasificados: number;
+  };
+}
+
+export interface TorneoCircuito {
+  id: string;
+  orden: number;
+  estado: string;
+  puntosValidos: boolean;
+  esFinal: boolean;
+  multiplicador?: number;
+  notas?: string;
+  torneo: {
+    id: string;
+    nombre: string;
+    slug: string;
+    fechaInicio: string;
+    fechaFin?: string;
+    ciudad: string;
+    estado: string;
+    flyerUrl?: string;
+  };
+}
+
+export interface Solicitud {
+  id: string;
+  orden: number;
+  estado: string;
+  puntosValidos: boolean;
+  torneo: {
+    id: string;
+    nombre: string;
+    fechaInicio: string;
+    ciudad: string;
+    organizador: {
+      id: string;
+      nombre: string;
+      apellido: string;
+    };
+  };
+  circuito: {
+    id: string;
+    nombre: string;
+  };
+}
+
 export interface CreateCircuitoPayload {
   nombre: string;
   descripcion?: string;
@@ -10,6 +86,15 @@ export interface CreateCircuitoPayload {
   logoUrl?: string;
   bannerUrl?: string;
   destacado?: boolean;
+  fechaInicio?: string;
+  fechaFin?: string;
+  tipoAcumulacion?: string;
+  torneosMinimosContar?: number;
+  torneosParaClasificar?: number;
+  puntosMinimosClasificar?: number;
+  multiplicadorGlobal?: number;
+  tieneFinal?: boolean;
+  estado?: string;
 }
 
 export interface SolicitarInclusionPayload {
@@ -25,8 +110,23 @@ export interface ProcesarSolicitudPayload {
   notas?: string;
 }
 
+export interface AsignarTorneoDirectoPayload {
+  circuitoId: string;
+  torneoId: string;
+  orden?: number;
+  puntosValidos?: boolean;
+  notas?: string;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SERVICIO
+// ═══════════════════════════════════════════════════════════
+
 export const circuitosService = {
-  // Públicos
+  // ═══════════════════════════════════════════════════════════
+  // PÚBLICOS
+  // ═══════════════════════════════════════════════════════════
+
   getCircuitos: async () => {
     const response = await api.get('/circuitos');
     return response.data;
@@ -53,13 +153,19 @@ export const circuitosService = {
     return response.data;
   },
 
-  // Organizador - Solicitar inclusión
+  // ═══════════════════════════════════════════════════════════
+  // ORGANIZADOR - Solicitar inclusión
+  // ═══════════════════════════════════════════════════════════
+
   solicitarInclusion: async (torneoId: string, data: SolicitarInclusionPayload) => {
     const response = await api.post(`/circuitos/torneo/${torneoId}/solicitar`, data);
     return response.data;
   },
 
-  // Admin - CRUD Circuitos
+  // ═══════════════════════════════════════════════════════════
+  // ADMIN - CRUD Circuitos
+  // ═══════════════════════════════════════════════════════════
+
   createCircuito: async (data: CreateCircuitoPayload) => {
     const response = await api.post('/circuitos', data);
     return response.data;
@@ -75,7 +181,10 @@ export const circuitosService = {
     return response.data;
   },
 
-  // Admin - Gestión de solicitudes
+  // ═══════════════════════════════════════════════════════════
+  // ADMIN - Gestión de Solicitudes (Legacy)
+  // ═══════════════════════════════════════════════════════════
+
   getSolicitudesPendientes: async () => {
     const response = await api.get('/circuitos/admin/solicitudes-pendientes');
     return response.data;
@@ -91,7 +200,34 @@ export const circuitosService = {
     return response.data;
   },
 
-  // Admin - Clasificados
+  // ═══════════════════════════════════════════════════════════
+  // ADMIN - Gestión Directa de Torneos (NUEVO)
+  // ═══════════════════════════════════════════════════════════
+
+  getTorneosDeCircuito: async (circuitoId: string) => {
+    const response = await api.get(`/circuitos/${circuitoId}/torneos`);
+    return response.data;
+  },
+
+  getTorneosDisponibles: async (circuitoId: string) => {
+    const response = await api.get(`/circuitos/admin/torneos-disponibles?circuitoId=${circuitoId}`);
+    return response.data;
+  },
+
+  asignarTorneoDirecto: async (data: AsignarTorneoDirectoPayload) => {
+    const response = await api.post('/circuitos/admin/asignar-torneo', data);
+    return response.data;
+  },
+
+  eliminarTorneoDeCircuito: async (circuitoId: string, torneoId: string) => {
+    const response = await api.delete(`/circuitos/admin/${circuitoId}/torneo/${torneoId}`);
+    return response.data;
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // ADMIN - Clasificados
+  // ═══════════════════════════════════════════════════════════
+
   calcularClasificados: async (id: string) => {
     const response = await api.post(`/circuitos/admin/${id}/calcular-clasificados`);
     return response.data;
@@ -102,7 +238,10 @@ export const circuitosService = {
     return response.data;
   },
 
-  // Upload logo
+  // ═══════════════════════════════════════════════════════════
+  // UTILIDADES
+  // ═══════════════════════════════════════════════════════════
+
   uploadLogo: async (file: File) => {
     const formData = new FormData();
     formData.append('image', file);

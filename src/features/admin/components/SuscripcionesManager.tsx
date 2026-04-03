@@ -4,7 +4,8 @@ import {
   Building2, Users, Crown,
   AlertCircle, CheckCircle, Clock,
   ChevronLeft, ChevronRight, Filter, DollarSign,
-  Calendar, MapPin, Phone, Mail
+  Calendar, MapPin, Phone, Mail,
+  Gift, XCircle
 } from 'lucide-react';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { api } from '../../../services/api';
@@ -62,7 +63,7 @@ export function SuscripcionesManager() {
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const { showError } = useToast();
+  const { showError, showSuccess: showToastSuccess } = useToast();
 
 
 
@@ -82,6 +83,34 @@ export function SuscripcionesManager() {
       showError('Error', err.response?.data?.message || 'Error al cargar suscripciones');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Activar suscripción manualmente (regalar)
+  const activarSuscripcion = async (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL') => {
+    try {
+      const response = await api.post('/admin/suscripciones/activar-manual', {
+        sedeId,
+        tipo,
+        nota: 'Regalo de suscripción por admin',
+      });
+      showToastSuccess('¡Suscripción activada!', response.data.message);
+      cargarSuscripciones();
+      cargarEstadisticas();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo activar la suscripción');
+    }
+  };
+
+  // Desactivar suscripción
+  const desactivarSuscripcion = async (sedeId: string) => {
+    try {
+      await api.post('/admin/suscripciones/desactivar', { sedeId });
+      showToastSuccess('Suscripción desactivada', 'La suscripción ha sido desactivada correctamente');
+      cargarSuscripciones();
+      cargarEstadisticas();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo desactivar la suscripción');
     }
   };
 
@@ -277,6 +306,7 @@ export function SuscripcionesManager() {
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Estado</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Vencimiento</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Último Pago</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -342,6 +372,39 @@ export function SuscripcionesManager() {
                           ) : (
                             <span className="text-gray-500">-</span>
                           )}
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            {!suscripcion.suscripcionActiva ? (
+                              <>
+                                <button
+                                  onClick={() => activarSuscripcion(suscripcion.sedeId, 'MENSUAL')}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm transition-colors"
+                                  title="Activar mensual ($10)"
+                                >
+                                  <Gift className="w-4 h-4" />
+                                  Mensual
+                                </button>
+                                <button
+                                  onClick={() => activarSuscripcion(suscripcion.sedeId, 'ANUAL')}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors"
+                                  title="Activar anual ($108)"
+                                >
+                                  <Gift className="w-4 h-4" />
+                                  Anual
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => desactivarSuscripcion(suscripcion.sedeId)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+                                title="Desactivar suscripción"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                Desactivar
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
