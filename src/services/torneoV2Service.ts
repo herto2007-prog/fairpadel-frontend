@@ -9,7 +9,6 @@ export interface CreateTorneoV2Data {
   descripcion?: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscripcion: string;
   ciudad: string;
   costoInscripcion: number;
   sedeId?: string;
@@ -55,7 +54,7 @@ export interface TorneoV2Response {
   descripcion: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscr: string;
+  inscripcionesAbiertas?: boolean;
   ciudad: string;
   costoInscripcion: number;
   estado: string;

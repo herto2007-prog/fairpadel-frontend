@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy, Users, DollarSign, AlertCircle, CheckCircle2,
-  Clock, MapPin, Link as LinkIcon, ExternalLink, ChevronRight,
+  MapPin, Link as LinkIcon, ExternalLink, ChevronRight,
   Flame, Target, Calendar, TrendingUp, AlertTriangle,
   Info, Copy, Check
 } from 'lucide-react';
@@ -120,12 +120,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(torneo.estadoProceso)}`}>
                 {getEstadoLabel(torneo.estadoProceso)}
               </span>
-              {torneo.diasHastaCierre !== null && torneo.diasHastaCierre <= 3 && torneo.diasHastaCierre > 0 && (
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Cierra en {torneo.diasHastaCierre} dias
-                </span>
-              )}
+              {/* Nota: Ya no mostramos fecha de cierre. Las inscripciones se cierran manualmente. */}
             </div>
             <h2 className="text-xl font-bold text-white">{torneo.nombre}</h2>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">

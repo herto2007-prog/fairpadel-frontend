@@ -42,6 +42,8 @@ import AlquileresPage from './features/alquileres/pages/AlquileresPage';
 import MisReservasPage from './features/alquileres/pages/MisReservasPage';
 import GestionDisponibilidadPage from './features/alquileres/pages/GestionDisponibilidadPage';
 import SuscripcionPage from './features/alquileres/pages/SuscripcionPage';
+import SuscripcionConfirmacionPage from './features/alquileres/pages/SuscripcionConfirmacionPage';
+import SuscripcionCancelacionPage from './features/alquileres/pages/SuscripcionCancelacionPage';
 
 // Dueño
 import MisSedesPage from './features/dueno/pages/MisSedesPage';
@@ -170,6 +172,10 @@ function App() {
           <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminPage />} />
           </Route>
+          
+          {/* Páginas de retorno de Bancard */}
+          <Route path="/suscripcion/confirmacion" element={<SuscripcionConfirmacionPage />} />
+          <Route path="/suscripcion/cancelacion" element={<SuscripcionCancelacionPage />} />
           
           {/* Alias de rutas para navegación */}
           <Route path="/jugadores" element={<HomeDashboardPage />} /> {/* Temporal - redirige al dashboard */}

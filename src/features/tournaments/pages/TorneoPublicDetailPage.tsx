@@ -18,14 +18,13 @@ interface TorneoDetail {
   descripcion?: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscr: string;
+  inscripcionesAbiertas?: boolean;
   ciudad: string;
   region: string;
   pais: string;
   flyerUrl: string;
   costoInscripcion: number;
   minutosPorPartido: number;
-  inscripcionesAbiertas: boolean;
   organizador: {
     id: string;
     nombre: string;

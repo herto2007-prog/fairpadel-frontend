@@ -11,7 +11,6 @@ export interface TorneoDestacado {
   slug: string;
   flyerUrl?: string;
   fechaInicio: string;
-  fechaLimiteInscripcion: string;
   ciudad: string;
   costoInscripcion: number;
   cuposDisponibles: number;
@@ -20,8 +19,7 @@ export interface TorneoDestacado {
   sedeNombre: string;
   categorias: string[];
   modalidades: string[];
-  esUrgente: boolean;
-  diasRestantes: number;
+  inscripcionesAbiertas?: boolean;
 }
 
 export interface ActividadSocial {

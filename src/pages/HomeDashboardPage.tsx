@@ -23,12 +23,10 @@ interface TorneoConUrgencia {
   slug: string;
   flyerUrl?: string;
   fechaInicio: string;
-  fechaLimiteInscripcion: string;
   ciudad: string;
   costoInscripcion: number;
   sedeNombre: string;
-  diasRestantes: number;
-  esUrgente: boolean;
+  inscripcionesAbiertas?: boolean;
   cuposDisponibles?: number;
   inscripcionesRecientes?: number;
 }
@@ -336,7 +334,7 @@ function UrgencyCard({ torneo }: { torneo: TorneoConUrgencia }) {
             ¡Últimos cupos!
           </motion.div>
           <span className="text-white/80 text-sm">
-            Cierra en {torneo.diasRestantes} días
+            Inscripciones abiertas
           </span>
         </div>
 
@@ -642,9 +640,9 @@ function TorneosRecomendados({ torneos }: { torneos: TorneoConUrgencia[] }) {
                 <span className="text-xs text-[#df2531] font-medium">
                   ${torneo.costoInscripcion}
                 </span>
-                {torneo.esUrgente && (
-                  <span className="px-1.5 py-0.5 bg-[#df2531]/20 text-[#df2531] text-[10px] rounded">
-                    ¡Urgente!
+                {torneo.inscripcionesAbiertas && (
+                  <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-[10px] rounded">
+                    Abierto
                   </span>
                 )}
               </div>
@@ -681,28 +679,22 @@ export default function HomeDashboardPage() {
         limit: 10
       });
 
-      // Procesar torneos con urgencia
-      const torneosProcesados: TorneoConUrgencia[] = torneosData.torneos.map((t: any) => {
-        const fechaLimite = new Date(t.fechaLimiteInscripcion);
-        const ahora = new Date();
-        const diasRestantes = Math.ceil((fechaLimite.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
-        
-        return {
+      // Procesar torneos
+      const torneosProcesados: TorneoConUrgencia[] = torneosData.torneos
+        .filter((t: any) => t.inscripcionesAbiertas) // Solo torneos con inscripciones abiertas
+        .map((t: any) => ({
           id: t.id,
           nombre: t.nombre,
           slug: t.slug,
           flyerUrl: t.flyerUrl,
           fechaInicio: t.fechaInicio,
-          fechaLimiteInscripcion: t.fechaLimiteInscripcion,
           ciudad: t.ciudad,
           costoInscripcion: t.costoInscripcion,
           sedeNombre: t.sedePrincipal?.nombre || t.ciudad,
-          diasRestantes: Math.max(0, diasRestantes),
-          esUrgente: diasRestantes <= 3,
+          inscripcionesAbiertas: t.inscripcionesAbiertas,
           cuposDisponibles: Math.floor(Math.random() * 8) + 2, // Simulado por ahora
           inscripcionesRecientes: Math.floor(Math.random() * 20) + 5 // Simulado
-        };
-      }).sort((a: TorneoConUrgencia, b: TorneoConUrgencia) => a.diasRestantes - b.diasRestantes);
+        }));
 
       setTorneos(torneosProcesados);
     } catch (error) {
@@ -729,8 +721,8 @@ export default function HomeDashboardPage() {
     );
   }
 
-  const torneoMasUrgente = torneos.find(t => t.esUrgente);
-  const torneosRecomendados = torneos.filter(t => !t.esUrgente || t.id !== torneoMasUrgente?.id);
+  const torneoDestacado = torneos[0]; // Primer torneo como destacado
+  const torneosRecomendados = torneos.slice(1); // Resto de torneos
 
   return (
     <div className="min-h-screen bg-[#0B0E14] text-white p-4 sm:p-6">
@@ -743,8 +735,8 @@ export default function HomeDashboardPage() {
           {/* Columna izquierda - Urgencia + Actividad */}
           <div className="lg:col-span-2 space-y-6">
             {/* Carta de urgencia (si hay torneos urgentes) */}
-            {torneoMasUrgente && (
-              <UrgencyCard torneo={torneoMasUrgente} />
+            {torneoDestacado && (
+              <UrgencyCard torneo={torneoDestacado} />
             )}
 
             {/* Grid: Social Feed + Stats */}

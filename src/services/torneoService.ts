@@ -11,7 +11,7 @@ export interface TorneoPublic {
   descripcion?: string;
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscripcion: string;
+  inscripcionesAbiertas?: boolean;
   ciudad: string;
   costoInscripcion: number;
   flyerUrl?: string;

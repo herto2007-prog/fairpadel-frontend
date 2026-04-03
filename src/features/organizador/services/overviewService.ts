@@ -12,7 +12,6 @@ export interface TorneoOverview {
   estadoProceso: 'configuracion' | 'inscripciones' | 'sorteo' | 'programacion' | 'en_curso' | 'finalizado';
   fechaInicio: string;
   fechaFin: string;
-  fechaLimiteInscr: string;
   ciudad: string;
   flyerUrl?: string;
   sede?: {
@@ -21,7 +20,6 @@ export interface TorneoOverview {
     ciudad: string;
   };
   diasHastaInicio: number | null;
-  diasHastaCierre: number | null;
 }
 
 export interface ProgresoTorneo {
