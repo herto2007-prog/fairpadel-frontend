@@ -923,17 +923,21 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
   const { showSuccess, showError } = useToast();
   const [saving, setSaving] = useState(false);
   const [calculando, setCalculando] = useState(false);
+  const [asignandoFinal, setAsignandoFinal] = useState(false);
   const [clasificados, setClasificados] = useState<Clasificado[]>([]);
+  const [torneosCircuito, setTorneosCircuito] = useState<TorneoCircuito[]>([]);
   const [loadingClasificados, setLoadingClasificados] = useState(false);
+  const [loadingTorneos, setLoadingTorneos] = useState(false);
   const [formData, setFormData] = useState({
     tieneFinal: circuito.tieneFinal || false,
     torneosParaClasificar: circuito.torneosParaClasificar || 8,
   });
 
-  // Cargar clasificados si tiene final
+  // Cargar clasificados y torneos si tiene final
   useEffect(() => {
     if (formData.tieneFinal) {
       loadClasificados();
+      loadTorneosCircuito();
     }
   }, [circuito.id, formData.tieneFinal]);
 
@@ -946,6 +950,32 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
       console.error('Error cargando clasificados:', error);
     } finally {
       setLoadingClasificados(false);
+    }
+  };
+
+  const loadTorneosCircuito = async () => {
+    setLoadingTorneos(true);
+    try {
+      const res = await circuitosService.getTorneosDeCircuito(circuito.id);
+      if (res.success) setTorneosCircuito(res.data);
+    } catch (error) {
+      console.error('Error cargando torneos:', error);
+    } finally {
+      setLoadingTorneos(false);
+    }
+  };
+
+  const handleAsignarTorneoFinal = async (torneoId: string) => {
+    setAsignandoFinal(true);
+    try {
+      await circuitosService.asignarTorneoFinal(circuito.id, torneoId);
+      showSuccess('Asignado', 'Torneo final asignado correctamente');
+      onUpdated();
+      await loadTorneosCircuito();
+    } catch (error) {
+      showError('Error', 'No se pudo asignar el torneo final');
+    } finally {
+      setAsignandoFinal(false);
     }
   };
 
@@ -1036,6 +1066,98 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
           Guardar
         </button>
       </form>
+
+      {/* Torneo Final Asignado */}
+      {formData.tieneFinal && (
+        <div className="bg-[#151921] rounded-xl p-4 border border-white/5">
+          <h4 className="font-medium text-white mb-4 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Torneo Final del Circuito
+          </h4>
+
+          {loadingTorneos ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-[#df2531]" />
+            </div>
+          ) : torneosCircuito.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-gray-400 text-sm">No hay torneos en el circuito</p>
+              <p className="text-gray-500 text-xs">Agrega torneos primero en la pestaña "Torneos"</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Torneo final actual */}
+              {circuito.torneoFinalId && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-400 text-sm font-medium mb-1">Torneo Final Asignado:</p>
+                  {(() => {
+                    const torneoFinal = torneosCircuito.find(tc => tc.torneo.id === circuito.torneoFinalId);
+                    return torneoFinal ? (
+                      <div className="flex items-center gap-3">
+                        {torneoFinal.torneo.flyerUrl ? (
+                          <img src={torneoFinal.torneo.flyerUrl} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                            <Trophy className="w-6 h-6 text-yellow-500" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-white font-medium">{torneoFinal.torneo.nombre}</p>
+                          <p className="text-gray-400 text-sm">{formatDatePY(torneoFinal.torneo.fechaInicio)} • {torneoFinal.torneo.ciudad}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-sm">Torneo no encontrado en el circuito</p>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Selector de torneo final */}
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">
+                  {circuito.torneoFinalId ? 'Cambiar torneo final:' : 'Seleccionar torneo final:'}
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {torneosCircuito.map((tc) => (
+                    <button
+                      key={tc.torneo.id}
+                      onClick={() => handleAsignarTorneoFinal(tc.torneo.id)}
+                      disabled={asignandoFinal || circuito.torneoFinalId === tc.torneo.id}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                        circuito.torneoFinalId === tc.torneo.id
+                          ? 'bg-yellow-500/10 border-yellow-500/30 cursor-default'
+                          : 'bg-[#0B0E14] border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      {tc.torneo.flyerUrl ? (
+                        <img src={tc.torneo.flyerUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
+                          <Trophy className="w-5 h-5 text-gray-600" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium truncate">{tc.torneo.nombre}</p>
+                        <p className="text-gray-400 text-sm">{formatDatePY(tc.torneo.fechaInicio)}</p>
+                      </div>
+                      {circuito.torneoFinalId === tc.torneo.id ? (
+                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium">
+                          ACTUAL
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-[#df2531]/20 text-[#df2531] rounded text-xs font-medium">
+                          Seleccionar
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Listado de Clasificados */}
       {formData.tieneFinal && (
