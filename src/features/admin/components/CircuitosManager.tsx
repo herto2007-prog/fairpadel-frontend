@@ -50,7 +50,7 @@ export function CircuitosManager() {
   const handleProcesarSolicitud = async (id: string, estado: 'APROBADO' | 'RECHAZADO') => {
     const confirmed = await confirm({
       title: estado === 'APROBADO' ? 'Aprobar solicitud' : 'Rechazar solicitud',
-      message: `Â¿EstÃ¡s seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusiÃ³n al circuito?`,
+      message: `¿Estás seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusión al circuito?`,
       confirmText: estado === 'APROBADO' ? 'Aprobar' : 'Rechazar',
       cancelText: 'Cancelar',
       variant: estado === 'APROBADO' ? 'success' : 'danger',
@@ -194,7 +194,7 @@ export function CircuitosManager() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-gray-400 hover:text-white transition-colors"
-                      title="Ver pÃ¡gina pÃºblica"
+                      title="Ver página pública"
                     >
                       <ExternalLink className="w-5 h-5" />
                     </a>
@@ -236,7 +236,7 @@ export function CircuitosManager() {
                       Organizador: {sol.torneo.organizador.apellido}, {sol.torneo.organizador.nombre}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {sol.torneo.ciudad} â€¢ {formatDatePY(sol.torneo.fechaInicio)}
+                      {sol.torneo.ciudad} • {formatDatePY(sol.torneo.fechaInicio)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -332,7 +332,7 @@ function CircuitoModal({ isOpen, onClose, circuito, onUpdated }: CircuitoModalPr
             )}
             <div>
               <h2 className="text-xl font-bold text-white">{circuito.nombre}</h2>
-              <p className="text-gray-400 text-sm">{circuito.ciudad} â€¢ Temp. {circuito.temporada}</p>
+              <p className="text-gray-400 text-sm">{circuito.ciudad} • Temp. {circuito.temporada}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-colors">
@@ -449,7 +449,7 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
       </div>
 
       <div>
-        <label className="text-sm text-gray-400 block mb-1">DescripciÃ³n</label>
+        <label className="text-sm text-gray-400 block mb-1">Descripción</label>
         <textarea
           value={formData.descripcion}
           onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
@@ -581,7 +581,7 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   const handleEliminar = async (torneoId: string, torneoNombre: string) => {
     const confirmed = await confirm({
       title: 'Eliminar torneo del circuito',
-      message: `Â¿EstÃ¡s seguro de eliminar "${torneoNombre}" del circuito?`,
+      message: `¿Estás seguro de eliminar "${torneoNombre}" del circuito?`,
       confirmText: 'Eliminar',
       cancelText: 'Cancelar',
       variant: 'danger',
@@ -742,7 +742,7 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-white truncate">{torneo.nombre}</h4>
                       <p className="text-sm text-gray-400">
-                        {formatDatePY(torneo.fechaInicio)} â€¢ {torneo.ciudad}
+                        {formatDatePY(torneo.fechaInicio)} • {torneo.ciudad}
                       </p>
                       <p className="text-xs text-gray-500">
                         Org: {torneo.organizador.apellido}, {torneo.organizador.nombre}
@@ -787,10 +787,10 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
     setSaving(true);
     try {
       await circuitosService.updateCircuito(circuito.id, formData);
-      showSuccess('Guardado', 'ConfiguraciÃ³n de ranking actualizada');
+      showSuccess('Guardado', 'Configuración de ranking actualizada');
       onUpdated();
     } catch (error) {
-      showError('Error', 'No se pudo actualizar la configuraciÃ³n');
+      showError('Error', 'No se pudo actualizar la configuración');
     } finally {
       setSaving(false);
     }
@@ -801,12 +801,12 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
       <div className="bg-[#151921] rounded-xl p-4 border border-white/5">
         <h4 className="font-medium text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-[#df2531]" />
-          ConfiguraciÃ³n de Puntos
+          Configuración de Puntos
         </h4>
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-gray-400 block mb-1">Tipo de AcumulaciÃ³n</label>
+            <label className="text-sm text-gray-400 block mb-1">Tipo de Acumulación</label>
             <select
               value={formData.tipoAcumulacion}
               onChange={(e) => setFormData({ ...formData, tipoAcumulacion: e.target.value })}
@@ -839,7 +839,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
               onChange={(e) => setFormData({ ...formData, multiplicadorGlobal: parseFloat(e.target.value) })}
               className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
             />
-            <p className="text-xs text-gray-500 mt-1">Multiplica todos los puntos del circuito (ej: 1.5 = 50% mÃ¡s puntos)</p>
+            <p className="text-xs text-gray-500 mt-1">Multiplica todos los puntos del circuito (ej: 1.5 = 50% más puntos)</p>
           </div>
         </div>
       </div>
@@ -852,7 +852,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-gray-400 block mb-1">Torneos mÃ­nimos jugados</label>
+            <label className="text-sm text-gray-400 block mb-1">Torneos mínimos jugados</label>
             <input
               type="number"
               value={formData.torneosParaClasificar}
@@ -862,7 +862,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
             />
           </div>
           <div>
-            <label className="text-sm text-gray-400 block mb-1">Puntos mÃ­nimos</label>
+            <label className="text-sm text-gray-400 block mb-1">Puntos mínimos</label>
             <input
               type="number"
               value={formData.puntosMinimosClasificar}
@@ -880,7 +880,7 @@ function RankingTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
         className="flex items-center gap-2 px-6 py-2 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg font-medium transition-colors disabled:opacity-50"
       >
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Guardar ConfiguraciÃ³n
+        Guardar Configuración
       </button>
     </form>
   );
@@ -903,10 +903,10 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
     setSaving(true);
     try {
       await circuitosService.updateCircuito(circuito.id, formData);
-      showSuccess('Guardado', 'ConfiguraciÃ³n de final actualizada');
+      showSuccess('Guardado', 'Configuración de final actualizada');
       onUpdated();
     } catch (error) {
-      showError('Error', 'No se pudo actualizar la configuraciÃ³n');
+      showError('Error', 'No se pudo actualizar la configuración');
     } finally {
       setSaving(false);
     }
@@ -926,7 +926,7 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
       <form onSubmit={handleSubmit} className="bg-[#151921] rounded-xl p-4 border border-white/5">
         <h4 className="font-medium text-white mb-4 flex items-center gap-2">
           <Target className="w-5 h-5 text-[#df2531]" />
-          ConfiguraciÃ³n del Master Final
+          Configuración del Master Final
         </h4>
 
         <div className="space-y-4">
@@ -1000,7 +1000,7 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    ciudad: 'AsunciÃ³n',
+    ciudad: 'Asunción',
     temporada: new Date().getFullYear().toString(),
     colorPrimario: '#df2531',
   });
@@ -1084,15 +1084,15 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </div>
 
-      {/* DescripciÃ³n */}
+      {/* Descripción */}
       <div>
-        <label className="text-sm text-gray-400 block mb-1">DescripciÃ³n</label>
+        <label className="text-sm text-gray-400 block mb-1">Descripción</label>
         <textarea
           value={formData.descripcion}
           onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
           className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
           rows={3}
-          placeholder="DescripciÃ³n del circuito..."
+          placeholder="Descripción del circuito..."
         />
       </div>
 
@@ -1138,9 +1138,9 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
 
       {/* Info */}
       <div className="bg-white/5 rounded-lg p-3 text-sm text-gray-400">
-        <p>â€¢ Los circuitos son por temporada anual (2026, 2027...)</p>
-        <p>â€¢ Al finalizar la temporada se resetean los puntos</p>
-        <p>â€¢ El Master Final se configura como un torneo mÃ¡s del circuito</p>
+        <p>• Los circuitos son por temporada anual (2026, 2027...)</p>
+        <p>• Al finalizar la temporada se resetean los puntos</p>
+        <p>• El Master Final se configura como un torneo más del circuito</p>
       </div>
 
       <button
