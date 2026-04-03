@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, 
   Upload, Image as ImageIcon, X, Calendar, Users, TrendingUp, Target,
-  Trash2, Save, Crown, Check, AlertCircle
+  Trash2, Save, Crown, Check, HelpCircle
 } from 'lucide-react';
 import { circuitosService, Circuito, TorneoCircuito, Solicitud } from '../../circuitos/circuitosService';
 import { formatDatePY } from '../../../utils/date';
@@ -910,12 +910,14 @@ interface Clasificado {
   puntosAcumulados: number;
   torneosJugados: number;
   posicionClasificacion: number;
-  estado: 'CLASIFICADO' | 'CONFIRMADO' | 'RECHAZADO';
+  asistenciaConfirmada: boolean | null; // null = sin confirmar, true/false = viene/no viene
   jugador: {
     id: string;
     nombre: string;
     apellido: string;
     fotoUrl?: string;
+    telefono?: string;
+    email?: string;
     categoriaActual?: { nombre: string };
   };
   category: {
@@ -1012,6 +1014,21 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
     }
   };
 
+  const handleQuitarTorneoFinal = async () => {
+    if (!confirm('¿Quitar el torneo final asignado?')) return;
+    setAsignandoFinal(true);
+    try {
+      await circuitosService.quitarTorneoFinal(circuito.id);
+      showSuccess('Desasignado', 'Torneo final quitado correctamente');
+      onUpdated();
+      await loadTorneosCircuito();
+    } catch (error) {
+      showError('Error', 'No se pudo quitar el torneo final');
+    } finally {
+      setAsignandoFinal(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -1043,17 +1060,7 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
     }
   };
 
-  const handleConfirmarClasificacion = async (clasificadoId: string) => {
-    try {
-      await circuitosService.confirmarClasificacion(clasificadoId);
-      showSuccess('Confirmado', 'Clasificación confirmada');
-      await loadClasificados();
-    } catch (error) {
-      showError('Error', 'No se pudo confirmar la clasificación');
-    }
-  };
-
-  const confirmados = clasificados.filter(c => c.estado === 'CONFIRMADO').length;
+  const confirmados = clasificados.filter(c => c.asistenciaConfirmada === true).length;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -1126,7 +1133,16 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
               {/* Torneo final actual */}
               {circuito.torneoFinalId && (
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <p className="text-yellow-400 text-sm font-medium mb-1">Torneo Final Asignado:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-yellow-400 text-sm font-medium">Torneo Final Asignado:</p>
+                    <button
+                      onClick={handleQuitarTorneoFinal}
+                      disabled={asignandoFinal}
+                      className="text-xs text-red-400 hover:text-red-300 underline"
+                    >
+                      Quitar
+                    </button>
+                  </div>
                   {(() => {
                     const torneoFinal = torneosCircuito.find(tc => tc.torneo.id === circuito.torneoFinalId);
                     return torneoFinal ? (
@@ -1284,21 +1300,23 @@ function FinalTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: () =
                     </p>
                   </div>
 
-                  {/* Estado */}
+                  {/* Asistencia */}
                   <div className="flex items-center gap-2">
-                    {clasificado.estado === 'CONFIRMADO' ? (
+                    {clasificado.asistenciaConfirmada === true ? (
                       <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
                         <Check className="w-4 h-4" />
-                        Confirmado
+                        Asiste
+                      </span>
+                    ) : clasificado.asistenciaConfirmada === false ? (
+                      <span className="flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm">
+                        <X className="w-4 h-4" />
+                        No asiste
                       </span>
                     ) : (
-                      <button
-                        onClick={() => handleConfirmarClasificacion(clasificado.id)}
-                        className="flex items-center gap-1 px-3 py-1 bg-[#df2531]/20 text-[#df2531] hover:bg-[#df2531]/30 rounded-full text-sm transition-colors"
-                      >
-                        <AlertCircle className="w-4 h-4" />
-                        Confirmar
-                      </button>
+                      <span className="flex items-center gap-1 px-3 py-1 bg-gray-500/20 text-gray-400 rounded-full text-sm">
+                        <HelpCircle className="w-4 h-4" />
+                        Sin confirmar
+                      </span>
                     )}
                   </div>
                 </div>

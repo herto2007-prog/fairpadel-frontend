@@ -231,8 +231,8 @@ export const circuitosService = {
     return response.data;
   },
 
-  confirmarClasificacion: async (clasificadoId: string) => {
-    const response = await api.post(`/circuitos/admin/clasificado/${clasificadoId}/confirmar`);
+  marcarAsistencia: async (clasificadoId: string, asistencia: boolean) => {
+    const response = await api.post(`/circuitos/admin/clasificado/${clasificadoId}/asistencia`, { asistencia });
     return response.data;
   },
 
@@ -244,6 +244,11 @@ export const circuitosService = {
 
   asignarTorneoFinal: async (circuitoId: string, torneoId: string) => {
     const response = await api.post(`/circuitos/admin/${circuitoId}/asignar-final`, { torneoId });
+    return response.data;
+  },
+
+  quitarTorneoFinal: async (circuitoId: string) => {
+    const response = await api.delete(`/circuitos/admin/${circuitoId}/quitar-final`);
     return response.data;
   },
 
