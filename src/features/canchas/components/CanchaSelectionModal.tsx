@@ -154,7 +154,7 @@ export function CanchaSelectionModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-x-4 top-4 bottom-4 md:inset-auto md:top-[5vh] md:bottom-[5vh] md:left-1/2 md:-translate-x-1/2 md:w-[90vw] md:max-w-3xl md:max-h-[90vh] bg-[#0B0E14] border border-white/10 rounded-2xl z-50 overflow-hidden flex flex-col"
+            className="fixed left-1/2 -translate-x-1/2 top-4 bottom-4 w-[calc(100vw-32px)] md:w-[90vw] md:max-w-3xl md:top-[5vh] md:bottom-[5vh] md:max-h-[90vh] bg-[#0B0E14] border border-white/10 rounded-2xl z-50 overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
