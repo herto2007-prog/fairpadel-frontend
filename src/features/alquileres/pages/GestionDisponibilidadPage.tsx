@@ -59,10 +59,11 @@ export default function GestionDisponibilidadPage() {
   
   // Form para nueva disponibilidad
   const [selectedCanchas, setSelectedCanchas] = useState<string[]>([]);
-  const [selectedDia, setSelectedDia] = useState(1);
+  const [selectedDias, setSelectedDias] = useState<number[]>([1]); // Lunes por defecto
   const [horaInicio, setHoraInicio] = useState('14:00');
   const [horaFin, setHoraFin] = useState('22:00');
   const [aplicarATodas, setAplicarATodas] = useState(false);
+  const [aplicarTodosLosDias, setAplicarTodosLosDias] = useState(false);
   
   // Form para nuevo bloqueo
   const [bloqueoCancha, setBloqueoCancha] = useState(''); // '' = todas
@@ -100,26 +101,45 @@ export default function GestionDisponibilidadPage() {
       ? canchas.map(c => c.cancha.id) 
       : selectedCanchas;
     
+    // Determinar qué días aplicar
+    const diasAplicar = aplicarTodosLosDias
+      ? DIAS_SEMANA.map(d => d.id)
+      : selectedDias;
+    
     if (canchasAplicar.length === 0) {
       showError('Error', 'Selecciona al menos una cancha');
       return;
     }
     
+    if (diasAplicar.length === 0) {
+      showError('Error', 'Selecciona al menos un día');
+      return;
+    }
+    
     try {
-      // Crear disponibilidad para cada cancha seleccionada
-      const promesas = canchasAplicar.map(canchaId => 
-        api.post('/alquileres/disponibilidades', {
-          sedeCanchaId: canchaId,
-          diaSemana: selectedDia,
-          horaInicio,
-          horaFin,
-        })
-      );
+      // Crear disponibilidad para cada combinación de cancha y día
+      const promesas: Promise<any>[] = [];
+      
+      for (const canchaId of canchasAplicar) {
+        for (const diaId of diasAplicar) {
+          promesas.push(
+            api.post('/alquileres/disponibilidades', {
+              sedeCanchaId: canchaId,
+              diaSemana: diaId,
+              horaInicio,
+              horaFin,
+            })
+          );
+        }
+      }
       
       await Promise.all(promesas);
-      showSuccess('Éxito', `Horario agregado a ${canchasAplicar.length} cancha(s)`);
+      const totalCombinaciones = canchasAplicar.length * diasAplicar.length;
+      showSuccess('Éxito', `Horario agregado: ${canchasAplicar.length} cancha(s) × ${diasAplicar.length} día(s) = ${totalCombinaciones} configuraciones`);
       setSelectedCanchas([]);
+      setSelectedDias([1]);
       setAplicarATodas(false);
+      setAplicarTodosLosDias(false);
       cargarDatos();
     } catch (err: any) {
       showError('Error', err.response?.data?.message || 'No se pudo agregar el horario');
@@ -295,20 +315,58 @@ export default function GestionDisponibilidadPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                
-                <div>
-                  <label className="block text-sm text-white/60 mb-2">Día</label>
-                  <select
-                    value={selectedDia}
-                    onChange={(e) => setSelectedDia(Number(e.target.value))}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#df2531]"
-                  >
-                    {DIAS_SEMANA.map((d) => (
-                      <option key={d.id} value={d.id} className="bg-dark">
-                        {d.nombre}
-                      </option>
-                    ))}
-                  </select>
+                {/* Selección de días */}
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-white/60">Días</label>
+                    <label className="flex items-center gap-2 text-sm text-[#df2531] cursor-pointer hover:text-[#df2531]/80">
+                      <input
+                        type="checkbox"
+                        checked={aplicarTodosLosDias}
+                        onChange={(e) => {
+                          setAplicarTodosLosDias(e.target.checked);
+                          if (e.target.checked) setSelectedDias([]);
+                        }}
+                        className="rounded border-white/20 bg-white/5 text-[#df2531] focus:ring-[#df2531]"
+                      />
+                      Todos los días
+                    </label>
+                  </div>
+                  
+                  {!aplicarTodosLosDias && (
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                      {DIAS_SEMANA.map((d) => (
+                        <label
+                          key={d.id}
+                          className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border cursor-pointer transition-colors ${
+                            selectedDias.includes(d.id)
+                              ? 'bg-[#df2531]/20 border-[#df2531] text-white'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedDias.includes(d.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDias([...selectedDias, d.id]);
+                              } else {
+                                setSelectedDias(selectedDias.filter(id => id !== d.id));
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          <span className="text-xs font-bold">{d.corto}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {aplicarTodosLosDias && (
+                    <div className="p-3 bg-[#df2531]/10 border border-[#df2531]/30 rounded-lg text-[#df2531] text-sm">
+                      Se aplicará a los 7 días de la semana
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -336,11 +394,13 @@ export default function GestionDisponibilidadPage() {
                   <div className="flex items-end">
                     <button
                       type="submit"
-                      disabled={!aplicarATodas && selectedCanchas.length === 0}
+                      disabled={(!aplicarATodas && selectedCanchas.length === 0) || (!aplicarTodosLosDias && selectedDias.length === 0)}
                       className="w-full py-2.5 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Plus size={18} />
-                      Agregar a {aplicarATodas ? canchas.length : selectedCanchas.length} cancha(s)
+                      <span className="text-xs sm:text-sm">
+                        {(aplicarATodas ? canchas.length : selectedCanchas.length)} cancha(s) × {(aplicarTodosLosDias ? 7 : selectedDias.length)} día(s)
+                      </span>
                     </button>
                   </div>
                 </div>
