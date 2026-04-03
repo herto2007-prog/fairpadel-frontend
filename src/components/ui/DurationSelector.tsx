@@ -11,16 +11,17 @@ interface DurationSelectorProps {
 
 const OPCIONES_DURACION = [
   { valor: 60, label: '1h' },
-  { valor: 90, label: '1h 30m' },
   { valor: 120, label: '2h' },
+  { valor: 180, label: '3h' },
+  { valor: 240, label: '4h' },
 ];
 
 export function DurationSelector({
   duracionMinutos,
   onChange,
   min = 60,
-  max = 120,
-  step = 30,
+  max = 240,
+  step = 60,
   compact = false,
 }: DurationSelectorProps) {
   const disminuir = () => {

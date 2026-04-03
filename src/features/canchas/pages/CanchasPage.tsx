@@ -36,7 +36,7 @@ interface SedeDisponibilidad {
 
 export function CanchasPage() {
   const [fecha, setFecha] = useState(() => getDateOnlyPY());
-  const [duracionMinutos, setDuracionMinutos] = useState(90);
+  const [duracionMinutos, setDuracionMinutos] = useState(60);
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<SedeDisponibilidad[]>([]);
   const [sedeSeleccionada, setSedeSeleccionada] = useState<SedeDisponibilidad | null>(null);
