@@ -414,7 +414,13 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
     e.preventDefault();
     setSaving(true);
     try {
-      await circuitosService.updateCircuito(circuito.id, formData);
+      // Limpiar fechas vacías para enviar undefined en lugar de string vacío
+      const dataToSend = {
+        ...formData,
+        fechaInicio: formData.fechaInicio || undefined,
+        fechaFin: formData.fechaFin || undefined,
+      };
+      await circuitosService.updateCircuito(circuito.id, dataToSend);
       showSuccess('Guardado', 'Circuito actualizado correctamente');
       onUpdated();
     } catch (error) {
