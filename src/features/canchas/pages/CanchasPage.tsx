@@ -36,7 +36,7 @@ interface SedeDisponibilidad {
 
 export function CanchasPage() {
   const [fecha, setFecha] = useState(() => getDateOnlyPY());
-  const [duracionMinutos, setDuracionMinutos] = useState(60);
+  const [duracionMinutos, setDuracionMinutos] = useState(120);
   const [loading, setLoading] = useState(false);
   const [sedes, setSedes] = useState<SedeDisponibilidad[]>([]);
   const [sedeSeleccionada, setSedeSeleccionada] = useState<SedeDisponibilidad | null>(null);
@@ -95,8 +95,10 @@ export function CanchasPage() {
 
         {/* Filtros */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8 space-y-4">
-          {/* Carrusel de fechas - primera línea */}
-          <DateCarousel selectedDate={fecha} onSelectDate={setFecha} />
+          {/* Carrusel de fechas - primera línea, centrado */}
+          <div className="flex justify-center">
+            <DateCarousel selectedDate={fecha} onSelectDate={setFecha} />
+          </div>
           
           {/* Selector de duración - segunda línea, centrado */}
           <div className="flex justify-center">
