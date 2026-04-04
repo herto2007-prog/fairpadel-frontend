@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
 import PanelReservasVisual from '../components/PanelReservasVisual';
+import EstadisticasReservas from '../components/EstadisticasReservas';
 import { 
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, 
-  ChevronLeft, User, Filter, LayoutGrid, List
+  ChevronLeft, User, Filter, LayoutGrid, List, BarChart3
 } from 'lucide-react';
 
 interface Reserva {
@@ -35,7 +36,7 @@ export default function ReservasSedePage() {
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<string>('TODAS');
   const [fechaFiltro, setFechaFiltro] = useState('');
-  const [vistaActiva, setVistaActiva] = useState<'lista' | 'calendario'>('calendario');
+  const [vistaActiva, setVistaActiva] = useState<'lista' | 'calendario' | 'estadisticas'>('calendario');
 
   useEffect(() => {
     if (sedeId) {
@@ -164,6 +165,17 @@ export default function ReservasSedePage() {
               <List className="w-4 h-4" />
               Lista
             </button>
+            <button
+              onClick={() => setVistaActiva('estadisticas')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                vistaActiva === 'estadisticas' 
+                  ? 'bg-[#df2531] text-white' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Estadísticas
+            </button>
           </div>
         </div>
 
@@ -194,6 +206,11 @@ export default function ReservasSedePage() {
         {/* Vista Calendario */}
         {vistaActiva === 'calendario' && (
           <PanelReservasVisual sedeId={sedeId!} />
+        )}
+
+        {/* Vista Estadísticas */}
+        {vistaActiva === 'estadisticas' && (
+          <EstadisticasReservas sedeId={sedeId!} />
         )}
 
         {/* Vista Lista */}
