@@ -27,6 +27,10 @@ interface Reserva {
     apellido: string;
     telefono?: string;
   };
+  sedeCancha?: {
+    id: string;
+    nombre: string;
+  };
 }
 
 interface Slot {
@@ -50,7 +54,7 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
   });
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
-  const [disponibilidades, setDisponibilidades] = useState<any[]>([]);
+  const [disponibilidades, setDisponibilidades] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   
   // Modal de reserva
@@ -73,19 +77,26 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
     try {
       setLoading(true);
       
-      // Cargar canchas de la sede
-      const canchasRes = await api.get(`/sedes/${sedeId}/canchas`);
-      setCanchas(canchasRes.data);
+      // Cargar disponibilidades (devuelve {cancha, disponibilidades}[])
+      const dispRes = await api.get(`/alquileres/sede/${sedeId}/disponibilidades`);
+      const disponibilidadesData = dispRes.data;
+      
+      // Extraer canchas del resultado
+      const canchasFromDisp = disponibilidadesData.map((d: any) => d.cancha);
+      setCanchas(canchasFromDisp);
+      
+      // Guardar disponibilidades estructuradas por cancha
+      const dispPorCancha: Record<string, any[]> = {};
+      for (const item of disponibilidadesData) {
+        dispPorCancha[item.cancha.id] = item.disponibilidades || [];
+      }
+      setDisponibilidades(dispPorCancha);
       
       // Cargar reservas del día
       const reservasRes = await api.get(`/alquileres/sede/${sedeId}/reservas`, {
         params: { fecha }
       });
       setReservas(reservasRes.data);
-      
-      // Cargar disponibilidades
-      const dispRes = await api.get(`/alquileres/sede/${sedeId}/disponibilidades`);
-      setDisponibilidades(dispRes.data);
     } catch (err) {
       showError('Error', 'No se pudieron cargar los datos');
     } finally {
@@ -99,13 +110,15 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
     
     // Encontrar disponibilidades para esta cancha y día de la semana
     const diaSemana = new Date(fecha).getDay();
-    const dispsCancha = disponibilidades.filter(d => 
-      d.sedeCanchaId === canchaId && d.diaSemana === diaSemana
-    );
     
-    // Filtrar reservas activas
+    // Disponibilidades ya están agrupadas por cancha
+    const dispsCancha = (disponibilidades[canchaId] || []).filter(d => d.diaSemana === diaSemana);
+    
+    // Filtrar reservas activas para ESTA cancha específica
     const reservasActivas = reservas.filter(r => 
-      r.estado !== 'CANCELADA' && r.estado !== 'RECHAZADA'
+      r.estado !== 'CANCELADA' && 
+      r.estado !== 'RECHAZADA' && 
+      r.sedeCancha?.id === canchaId
     );
 
     // Generar slots de 1 hora
@@ -273,6 +286,11 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
       {canchas.length === 0 ? (
         <div className="p-12 text-center text-gray-400">
           No hay canchas configuradas para esta sede
+        </div>
+      ) : todasLasHoras.length === 0 ? (
+        <div className="p-12 text-center">
+          <p className="text-gray-400 mb-2">No hay horarios configurados para este día</p>
+          <p className="text-sm text-gray-500">Configura disponibilidades en la pestaña de disponibilidad</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
