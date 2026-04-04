@@ -10,6 +10,23 @@ const estadoConfig = {
   PENDIENTE: { icon: Clock3, color: 'text-yellow-500', label: 'Pendiente' },
   CONFIRMADA: { icon: CheckCircle, color: 'text-green-500', label: 'Confirmada' },
   CANCELADA: { icon: XCircle, color: 'text-red-500', label: 'Cancelada' },
+  RECHAZADA: { icon: XCircle, color: 'text-red-500', label: 'Rechazada' },
+};
+
+// Verificar si se puede cancelar (más de 4 horas antes del inicio)
+const puedeCancelar = (reserva: Reserva): boolean => {
+  const ahora = new Date();
+  
+  // Crear fecha de inicio de la reserva
+  const [year, month, day] = reserva.fecha.split('-').map(Number);
+  const [hour, minute] = reserva.horaInicio.split(':').map(Number);
+  const fechaInicio = new Date(year, month - 1, day, hour, minute);
+  
+  // Calcular diferencia en horas
+  const diffMs = fechaInicio.getTime() - ahora.getTime();
+  const diffHoras = diffMs / (1000 * 60 * 60);
+  
+  return diffHoras > 4;
 };
 
 export default function MisReservasPage() {
@@ -94,13 +111,21 @@ export default function MisReservasPage() {
                   </div>
 
                   <div className="text-right">
-                    {reserva.estado === 'PENDIENTE' && (
+                    {/* Puede cancelar si está pendiente o confirmada y faltan más de 4h */}
+                    {(reserva.estado === 'PENDIENTE' || reserva.estado === 'CONFIRMADA') && puedeCancelar(reserva) && (
                       <button
                         onClick={() => handleCancelar(reserva.id)}
                         className="text-sm text-red-400 hover:text-red-300"
                       >
                         Cancelar reserva
                       </button>
+                    )}
+                    
+                    {/* Mostrar info si ya no se puede cancelar */}
+                    {reserva.estado === 'CONFIRMADA' && !puedeCancelar(reserva) && (
+                      <p className="text-xs text-gray-500">
+                        No se puede cancelar (menos de 4h)
+                      </p>
                     )}
                   </div>
                 </div>
