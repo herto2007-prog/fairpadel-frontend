@@ -22,6 +22,7 @@ interface Reserva {
   documentoExterno?: string;
   telefonoExterno?: string;
   notas?: string;
+  creadoPorEncargado?: boolean;
   user?: {
     nombre: string;
     apellido: string;
@@ -96,7 +97,6 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
       const reservasRes = await api.get(`/alquileres/sede/${sedeId}/reservas`, {
         params: { fecha }
       });
-      console.log('[DEBUG] Reservas recibidas:', reservasRes.data);
       setReservas(reservasRes.data);
     } catch (err) {
       showError('Error', 'No se pudieron cargar los datos');
@@ -343,7 +343,9 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
                         transition-all duration-200 min-h-[60px]
                         ${slot.disponible 
                           ? 'bg-green-500/10 hover:bg-green-500/20' 
-                          : 'bg-red-500/10 hover:bg-red-500/20'
+                          : slot.reserva?.creadoPorEncargado
+                            ? 'bg-purple-500/10 hover:bg-purple-500/20'
+                            : 'bg-red-500/10 hover:bg-red-500/20'
                         }
                       `}
                     >
@@ -353,35 +355,57 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
                         </div>
                       ) : (
                         <div className="h-full flex flex-col justify-center">
-                          <p className="text-xs text-red-400 font-medium truncate">
-                            Ocupado
+                          {/* Color diferente según tipo de reserva */}
+                          <p className={`text-xs font-medium truncate ${
+                            slot.reserva?.creadoPorEncargado 
+                              ? 'text-purple-400' 
+                              : 'text-red-400'
+                          }`}>
+                            {slot.reserva?.creadoPorEncargado ? 'Reserva Local' : 'Ocupado'}
                           </p>
                           
                           {/* Tooltip en hover */}
                           <div className="absolute inset-0 bg-[#1a1f2e] border border-[#df2531] rounded m-1 p-2 
                                         opacity-0 group-hover:opacity-100 pointer-events-none z-20
-                                        shadow-xl transition-opacity">
-                            {slot.reserva?.user ? (
+                                        shadow-xl transition-opacity min-w-[150px]">
+                            {/* Reserva creada por encargado */}
+                            {slot.reserva?.creadoPorEncargado ? (
                               <>
-                                <p className="text-xs font-semibold text-white">
-                                  {slot.reserva.user.nombre} {slot.reserva.user.apellido}
-                                </p>
-                                {slot.reserva.user.telefono && (
-                                  <p className="text-xs text-gray-400">{slot.reserva.user.telefono}</p>
-                                )}
-                              </>
-                            ) : slot.reserva?.nombreExterno ? (
-                              <>
-                                <p className="text-xs font-semibold text-white">{slot.reserva.nombreExterno}</p>
-                                {slot.reserva.documentoExterno && (
-                                  <p className="text-xs text-gray-400">CI: {slot.reserva.documentoExterno}</p>
-                                )}
-                                {slot.reserva.telefonoExterno && (
-                                  <p className="text-xs text-gray-400">{slot.reserva.telefonoExterno}</p>
+                                <p className="text-xs font-semibold text-purple-400 mb-1">Reserva Local</p>
+                                {slot.reserva?.nombreExterno ? (
+                                  <>
+                                    <p className="text-xs font-semibold text-white">{slot.reserva.nombreExterno}</p>
+                                    {slot.reserva.documentoExterno && (
+                                      <p className="text-xs text-gray-400">CI: {slot.reserva.documentoExterno}</p>
+                                    )}
+                                    {slot.reserva.telefonoExterno && (
+                                      <p className="text-xs text-gray-400">{slot.reserva.telefonoExterno}</p>
+                                    )}
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-gray-400">Sin detalles de contacto</p>
                                 )}
                               </>
                             ) : (
-                              <p className="text-xs text-gray-400">Reserva sin detalles</p>
+                              /* Reserva de usuario desde la app */
+                              <>
+                                <p className="text-xs font-semibold text-green-400 mb-1">Reserva App</p>
+                                {slot.reserva?.user ? (
+                                  <>
+                                    <p className="text-xs font-semibold text-white">
+                                      {slot.reserva.user.nombre} {slot.reserva.user.apellido}
+                                    </p>
+                                    {slot.reserva.user.telefono && (
+                                      <p className="text-xs text-gray-400">{slot.reserva.user.telefono}</p>
+                                    )}
+                                  </>
+                                ) : (
+                                  <p className="text-xs text-gray-400">Usuario no identificado</p>
+                                )}
+                              </>
+                            )}
+                            {slot.reserva?.notas && (
+                              <p className="text-xs text-gray-500 mt-1 italic">"{slot.reserva.notas}"</p>
                             )}
                           </div>
                         </div>
