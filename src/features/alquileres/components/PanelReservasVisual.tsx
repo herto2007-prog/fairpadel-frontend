@@ -96,6 +96,7 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
       const reservasRes = await api.get(`/alquileres/sede/${sedeId}/reservas`, {
         params: { fecha }
       });
+      console.log('[DEBUG] Reservas recibidas:', reservasRes.data);
       setReservas(reservasRes.data);
     } catch (err) {
       showError('Error', 'No se pudieron cargar los datos');
