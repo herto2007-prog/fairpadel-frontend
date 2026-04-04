@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
+import PanelReservasVisual from '../components/PanelReservasVisual';
 import { 
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, 
-  ChevronLeft, User, Filter 
+  ChevronLeft, User, Filter, LayoutGrid, List
 } from 'lucide-react';
 
 interface Reserva {
@@ -34,6 +35,7 @@ export default function ReservasSedePage() {
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<string>('TODAS');
   const [fechaFiltro, setFechaFiltro] = useState('');
+  const [vistaActiva, setVistaActiva] = useState<'lista' | 'calendario'>('calendario');
 
   useEffect(() => {
     if (sedeId) {
@@ -137,7 +139,36 @@ export default function ReservasSedePage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Tabs de vista */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="bg-[#151921] rounded-lg p-1 flex items-center">
+            <button
+              onClick={() => setVistaActiva('calendario')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                vistaActiva === 'calendario' 
+                  ? 'bg-[#df2531] text-white' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Calendario
+            </button>
+            <button
+              onClick={() => setVistaActiva('lista')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                vistaActiva === 'lista' 
+                  ? 'bg-[#df2531] text-white' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              Lista
+            </button>
+          </div>
+        </div>
+
+        {/* Stats - solo en vista lista */}
+        {vistaActiva === 'lista' && (
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-[#151921] rounded-xl border border-[#232838] p-4">
             <p className="text-gray-400 text-sm">Total Reservas</p>
@@ -158,7 +189,16 @@ export default function ReservasSedePage() {
             </p>
           </div>
         </div>
+        )}
 
+        {/* Vista Calendario */}
+        {vistaActiva === 'calendario' && (
+          <PanelReservasVisual sedeId={sedeId!} />
+        )}
+
+        {/* Vista Lista */}
+        {vistaActiva === 'lista' && (
+        <>
         {/* Filtros */}
         <div className="bg-[#151921] rounded-xl border border-[#232838] p-4 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
@@ -293,6 +333,8 @@ export default function ReservasSedePage() {
             ))
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
