@@ -534,15 +534,37 @@ export default function SuscripcionPage() {
                 )}
 
                 {!verificandoPago && (
-                  <button
-                    onClick={() => {
-                      setPagoData(null);
-                      setUsarRedireccion(false);
-                    }}
-                    className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
-                  >
-                    Cancelar y volver
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setPagoData(null);
+                        setUsarRedireccion(false);
+                      }}
+                      className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
+                    >
+                      Cancelar y volver
+                    </button>
+                    
+                    {/* Botón de simulación - solo visible en desarrollo/testing */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setVerificandoPago(true);
+                          await suscripcionService.simularPago(pagoData.pagoId);
+                          setVerificandoPago(false);
+                          setPagoData(null);
+                          showSuccess('¡Pago exitoso!', 'Tu suscripción ha sido activada (simulación).');
+                          loadEstado();
+                        } catch (err: any) {
+                          setVerificandoPago(false);
+                          showError('Error', err.response?.data?.message || 'No se pudo simular el pago');
+                        }
+                      }}
+                      className="mt-3 w-full py-2 border border-dashed border-yellow-500/50 hover:bg-yellow-500/10 text-yellow-500 rounded-lg transition-colors text-sm"
+                    >
+                      🧪 Simular pago exitoso (testing)
+                    </button>
+                  </>
                 )}
               </>
             )}

@@ -65,4 +65,8 @@ export const suscripcionService = {
   // Verificar estado del pago directamente en Bancard (cuando el webhook no llegó)
   verificarEnBancard: (shopProcessId: string): Promise<{ status: string; mensaje: string; pago?: PagoSuscripcion }> =>
     api.post('/alquileres/suscripcion/verificar-en-bancard', { shopProcessId }).then(r => r.data),
+
+  // Simular pago exitoso (SOLO PARA TESTING)
+  simularPago: (pagoId: string): Promise<{ status: string; mensaje: string; pago: PagoSuscripcion }> =>
+    api.post(`/alquileres/suscripcion/simular-pago/${pagoId}`).then(r => r.data),
 };
