@@ -36,6 +36,7 @@ export default function SuscripcionPage() {
   const [tipoSuscripcion, setTipoSuscripcion] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPagos, setHistorialPagos] = useState<any[]>([]);
+  const [mostrarBotonVerificar, setMostrarBotonVerificar] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -164,6 +165,7 @@ export default function SuscripcionPage() {
 
   const iniciarVerificacionPago = (pagoId: string) => {
     setVerificandoPago(true);
+    setMostrarBotonVerificar(false);
     let intentos = 0;
     const maxIntentos = 60; // 5 minutos (5 segundos * 60)
     
@@ -173,6 +175,12 @@ export default function SuscripcionPage() {
     // Luego cada 5 segundos
     verificacionTimerRef.current = setInterval(async () => {
       intentos++;
+      
+      // Mostrar botón de verificación manual después de 30 segundos (6 intentos)
+      if (intentos === 6) {
+        setMostrarBotonVerificar(true);
+      }
+      
       const terminado = await verificarEstadoPago(pagoId);
       
       if (terminado || intentos >= maxIntentos) {
@@ -212,8 +220,44 @@ export default function SuscripcionPage() {
       verificacionTimerRef.current = null;
     }
     setVerificandoPago(false);
+    setMostrarBotonVerificar(false);
     showError('Pago cancelado', 'Puedes intentarlo nuevamente cuando quieras.');
     setPagoData(null);
+  };
+
+  // Verificación manual en Bancard (cuando el webhook no llegó)
+  const handleVerificarManual = async () => {
+    if (!pagoData?.pagoId) return;
+    
+    try {
+      setVerificandoPago(true);
+      
+      // Obtener el pago para tener la referencia (shop_process_id)
+      const pagoInfo = await suscripcionService.verificarPago(sedeIdParam!, pagoData.pagoId);
+      
+      if (!pagoInfo.pago.referencia) {
+        showError('Error', 'No se encontró la referencia del pago');
+        return;
+      }
+      
+      // Consultar directamente en Bancard
+      const resultado = await suscripcionService.verificarEnBancard(pagoInfo.pago.referencia);
+      
+      if (resultado.status === 'success') {
+        setVerificandoPago(false);
+        setMostrarBotonVerificar(false);
+        setPagoData(null);
+        showSuccess('¡Pago verificado!', 'Tu suscripción ha sido activada correctamente.');
+        loadEstado();
+      } else {
+        showError('Pago no confirmado', resultado.mensaje || 'El pago aún no ha sido procesado. Intenta nuevamente en unos minutos.');
+        setVerificandoPago(false);
+      }
+    } catch (err: any) {
+      console.error('Error en verificación manual:', err);
+      showError('Error', err.response?.data?.message || 'No se pudo verificar el pago');
+      setVerificandoPago(false);
+    }
   };
 
   const toggleHistorial = () => {
@@ -415,7 +459,19 @@ export default function SuscripcionPage() {
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 mb-6 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-3"></div>
                     <h4 className="text-green-400 font-semibold mb-1">¡Pago completado!</h4>
-                    <p className="text-gray-400 text-sm">Verificando tu suscripción, por favor espera...</p>
+                    <p className="text-gray-400 text-sm mb-4">Verificando tu suscripción, por favor espera...</p>
+                    
+                    {mostrarBotonVerificar && (
+                      <div className="mt-4 pt-4 border-t border-green-500/20">
+                        <p className="text-gray-400 text-sm mb-3">¿Está tomando demasiado tiempo?</p>
+                        <button
+                          onClick={handleVerificarManual}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Verificar pago manualmente
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
