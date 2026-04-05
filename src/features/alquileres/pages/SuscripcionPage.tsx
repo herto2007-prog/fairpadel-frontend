@@ -12,7 +12,8 @@ import {
   Clock,
   Shield,
   ArrowLeft,
-  History
+  History,
+  ExternalLink
 } from 'lucide-react';
 
 interface Sede {
@@ -32,11 +33,12 @@ export default function SuscripcionPage() {
   const [loading, setLoading] = useState(true);
   const [iniciandoPago, setIniciandoPago] = useState(false);
   const [pagoData, setPagoData] = useState<IniciarPagoResponse | null>(null);
-  const [configBancard, setConfigBancard] = useState<{ scriptUrl: string; publicKey: string } | null>(null);
+  const [configBancard, setConfigBancard] = useState<{ scriptUrl: string; publicKey: string; baseUrl: string } | null>(null);
   const [tipoSuscripcion, setTipoSuscripcion] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPagos, setHistorialPagos] = useState<any[]>([]);
   const [mostrarBotonVerificar, setMostrarBotonVerificar] = useState(false);
+  const [usarRedireccion, setUsarRedireccion] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -220,6 +222,7 @@ export default function SuscripcionPage() {
       verificacionTimerRef.current = null;
     }
     setVerificandoPago(false);
+    setUsarRedireccion(false);
     setMostrarBotonVerificar(false);
     showError('Pago cancelado', 'Puedes intentarlo nuevamente cuando quieras.');
     setPagoData(null);
@@ -475,19 +478,67 @@ export default function SuscripcionPage() {
                   </div>
                 )}
 
-                {!verificandoPago && configBancard && (
-                  <BancardCheckout
-                    processId={pagoData.processId}
-                    scriptUrl={configBancard.scriptUrl}
-                    onPaymentSuccess={handlePaymentSuccess}
-                    onPaymentError={handlePaymentError}
-                    onPaymentCancel={handlePaymentCancel}
-                  />
+                {!verificandoPago && configBancard && !usarRedireccion && (
+                  <>
+                    <BancardCheckout
+                      processId={pagoData.processId}
+                      scriptUrl={configBancard.scriptUrl}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                      onPaymentCancel={handlePaymentCancel}
+                    />
+                    
+                    {/* Opción alternativa de redirección */}
+                    <div className="mt-4 pt-4 border-t border-[#232838] text-center">
+                      <p className="text-gray-500 text-sm mb-3">¿Problemas con el formulario?</p>
+                      <button
+                        onClick={() => setUsarRedireccion(true)}
+                        className="flex items-center justify-center gap-2 w-full py-3 border border-[#df2531]/50 hover:bg-[#df2531]/10 text-[#df2531] rounded-lg transition-colors"
+                      >
+                        <ExternalLink size={18} />
+                        Pagar en sitio seguro de Bancard
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Opción de redirección */}
+                {!verificandoPago && usarRedireccion && configBancard && (
+                  <div className="bg-[#0B0E14] rounded-lg p-6 text-center">
+                    <div className="mb-4">
+                      <Shield className="w-12 h-12 text-[#df2531] mx-auto mb-3" />
+                      <h4 className="text-lg font-semibold mb-2">Pago seguro en Bancard</h4>
+                      <p className="text-gray-400 text-sm">
+                        Serás redirigido al sitio seguro de Bancard para completar tu pago.
+                        Después volverás automáticamente a FairPadel.
+                      </p>
+                    </div>
+                    
+                    <a
+                      href={`${configBancard.baseUrl}/checkout/new?process_id=${pagoData.processId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg font-semibold transition-colors mb-3"
+                    >
+                      <ExternalLink size={20} />
+                      Ir a pagar en Bancard
+                    </a>
+                    
+                    <button
+                      onClick={() => setUsarRedireccion(false)}
+                      className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
+                    >
+                      Volver al formulario
+                    </button>
+                  </div>
                 )}
 
                 {!verificandoPago && (
                   <button
-                    onClick={() => setPagoData(null)}
+                    onClick={() => {
+                      setPagoData(null);
+                      setUsarRedireccion(false);
+                    }}
                     className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
                   >
                     Cancelar y volver
