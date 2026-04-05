@@ -43,49 +43,71 @@ export default function BancardCheckout({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
-  // Cargar script de Bancard con manejo mejorado de conflictos
+  // Cargar script de Bancard
   useEffect(() => {
-    // Limpiar cualquier script anterior de Bancard para evitar conflictos
-    const existingScripts = document.querySelectorAll('script[src*="bancard-checkout"]');
-    existingScripts.forEach(s => s.remove());
-    
-    // Limpiar el objeto global Bancard si existe
-    if (window.Bancard) {
-      try {
-        // @ts-ignore
-        delete window.Bancard;
-      } catch (e) {
-        // Ignorar si no se puede eliminar
-      }
+    // Si ya hay un script cargado y Bancard está disponible, usarlo
+    if (window.Bancard?.Checkout) {
+      setScriptLoaded(true);
+      return;
     }
 
-    const script = document.createElement('script');
-    script.src = scriptUrl;
-    script.async = true;
-    script.crossOrigin = 'anonymous';
-    scriptRef.current = script;
-    
-    script.onload = () => {
-      // Esperar un momento para asegurar que Bancard está listo
-      setTimeout(() => {
-        if (window.Bancard?.Checkout) {
-          setScriptLoaded(true);
+    const loadScript = () => {
+      // Limpiar script anterior si existe
+      if (scriptRef.current) {
+        scriptRef.current.remove();
+        scriptRef.current = null;
+      }
+
+      const script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      // NOTA: No usar crossOrigin para evitar problemas CORS con Bancard
+      scriptRef.current = script;
+      
+      script.onload = () => {
+        // Esperar a que Bancard esté disponible
+        const checkBancard = setInterval(() => {
+          if (window.Bancard?.Checkout) {
+            clearInterval(checkBancard);
+            setScriptLoaded(true);
+            retryCount.current = 0;
+          }
+        }, 100);
+
+        // Timeout de 3 segundos para verificar si Bancard cargó
+        setTimeout(() => {
+          clearInterval(checkBancard);
+          if (!window.Bancard?.Checkout && retryCount.current < maxRetries) {
+            retryCount.current++;
+            console.log(`Reintentando cargar Bancard... (${retryCount.current}/${maxRetries})`);
+            loadScript();
+          } else if (!window.Bancard?.Checkout) {
+            setScriptError('No se pudo cargar el formulario de pago después de varios intentos.');
+          }
+        }, 3000);
+      };
+      
+      script.onerror = () => {
+        if (retryCount.current < maxRetries) {
+          retryCount.current++;
+          console.log(`Error cargando script, reintentando... (${retryCount.current}/${maxRetries})`);
+          setTimeout(loadScript, 1000);
         } else {
-          setScriptError('No se pudo inicializar el formulario de pago. Intenta recargar la página.');
+          setScriptError('Error al cargar el formulario de pago. Verifica tu conexión.');
         }
-      }, 500);
-    };
-    
-    script.onerror = () => {
-      setScriptError('Error al cargar el formulario de pago. Verifica tu conexión e intenta nuevamente.');
+      };
+
+      document.head.appendChild(script);
     };
 
-    document.body.appendChild(script);
+    loadScript();
     
     return () => {
-      if (scriptRef.current && scriptRef.current.parentNode) {
-        scriptRef.current.parentNode.removeChild(scriptRef.current);
+      if (scriptRef.current) {
+        scriptRef.current.remove();
       }
     };
   }, [scriptUrl]);
@@ -95,11 +117,9 @@ export default function BancardCheckout({
     if (!scriptLoaded || !processId || !containerRef.current) return;
 
     // Limpiar el contenedor antes de crear el formulario
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-    }
+    containerRef.current.innerHTML = '';
 
-    // Esperar a que el DOM esté listo
+    // Pequeño delay para asegurar que el DOM está listo
     const timer = setTimeout(() => {
       try {
         if (window.Bancard?.Checkout && containerRef.current) {
@@ -113,7 +133,7 @@ export default function BancardCheckout({
         console.error('Error creando formulario Bancard:', error);
         setScriptError('Error al crear el formulario de pago. Intenta recargar la página.');
       }
-    }, 100);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [scriptLoaded, processId]);
@@ -129,8 +149,7 @@ export default function BancardCheckout({
         'https://payments.infonet.com.py:8888',
       ];
       
-      // También aceptar mensajes de localhost para testing
-      if (!bancardOrigins.includes(event.origin) && !event.origin.includes('localhost')) {
+      if (!bancardOrigins.includes(event.origin)) {
         return;
       }
 
@@ -155,13 +174,13 @@ export default function BancardCheckout({
     return () => window.removeEventListener('message', handleMessage);
   }, [onPaymentSuccess, onPaymentError, onPaymentCancel]);
 
-  // Timeout de seguridad - si el script no carga en 15 segundos, mostrar error
+  // Timeout de seguridad
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!scriptLoaded && !scriptError) {
-        setScriptError('El formulario de pago está tardando demasiado en cargar. Verifica tu conexión o intenta en una pestaña de incógnito.');
+        setScriptError('El formulario de pago está tardando demasiado en cargar.');
       }
-    }, 15000);
+    }, 20000);
 
     return () => clearTimeout(timeout);
   }, [scriptLoaded, scriptError]);
@@ -186,7 +205,7 @@ export default function BancardCheckout({
           </button>
         </div>
         <p className="mt-4 text-sm text-gray-500">
-          💡 Tip: Si el problema persiste, intenta en una pestaña de incógnito o desactiva extensiones del navegador temporalmente.
+          💡 Tip: Si el problema persiste, intenta en una pestaña de incógnito o desactiva extensiones del navegador.
         </p>
       </div>
     );
