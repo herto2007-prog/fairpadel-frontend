@@ -11,6 +11,7 @@ import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { perfilService, PerfilJugador } from '../perfilService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { EditarPerfilModal } from '../components/EditarPerfilModal';
+import { WhatsAppPreferencesCard } from '../components/WhatsAppPreferencesCard';
 import { formatDatePY } from '../../../utils/date';
 
 export function PerfilPage() {
@@ -418,6 +419,14 @@ export function PerfilPage() {
           </div>
 
           <div className="space-y-6">
+            {/* Preferencias de WhatsApp (solo mi perfil) */}
+            {isMyProfile && (
+              <WhatsAppPreferencesCard 
+                perfil={perfil} 
+                onUpdate={loadPerfil}
+              />
+            )}
+
             {/* Logros */}
             <motion.div 
               initial={{ opacity: 0, x: 20 }}

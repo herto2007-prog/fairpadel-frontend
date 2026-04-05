@@ -31,6 +31,7 @@ export interface RegisterData {
   ciudad: string;
   categoria: string;
   fotoUrl?: string;
+  consentCheckboxWhatsapp?: boolean;
 }
 
 export interface ForgotPasswordData {

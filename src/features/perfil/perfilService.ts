@@ -71,10 +71,21 @@ export interface PerfilJugador {
     nivel: 'oro' | 'plata' | 'bronce' | 'especial';
     progreso: number;
   }>;
+  whatsapp?: {
+    consentCheckbox: boolean;
+    consentStatus: string | null;
+    consentDate: string | null;
+    preferenciaNotificacion: string;
+  };
   privado?: {
     inscripcionesPendientes: number;
     notificacionesNoLeidas: number;
   };
+}
+
+export interface PreferenciasNotificacionResponse {
+  success: boolean;
+  message: string;
 }
 
 export const perfilService = {
@@ -92,5 +103,23 @@ export const perfilService = {
   getMiPerfil: async (): Promise<PerfilJugador> => {
     const response = await api.get('/users/profile/me');
     return response.data.data;
+  },
+
+  /**
+   * Actualiza las preferencias de notificación del usuario
+   */
+  updatePreferenciasNotificacion: async (preferencia: 'EMAIL' | 'WHATSAPP' | 'AMBOS'): Promise<PreferenciasNotificacionResponse> => {
+    const response = await api.put('/users/profile/preferencias-notificacion', {
+      preferenciaNotificacion: preferencia,
+    });
+    return response.data;
+  },
+
+  /**
+   * Revoca el consentimiento de WhatsApp
+   */
+  revocarConsentimientoWhatsapp: async (): Promise<PreferenciasNotificacionResponse> => {
+    const response = await api.post('/users/profile/whatsapp/revocar');
+    return response.data;
   },
 };

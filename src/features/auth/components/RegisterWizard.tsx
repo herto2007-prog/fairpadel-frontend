@@ -28,6 +28,7 @@ interface FormData {
   password: string;
   confirmPassword: string;
   fotoUrl: string;
+  consentCheckboxWhatsapp: boolean;
 }
 
 const steps = [
@@ -191,6 +192,7 @@ export const RegisterWizard = () => {
     password: '',
     confirmPassword: '',
     fotoUrl: '',
+    consentCheckboxWhatsapp: false,
   });
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const countryDropdownRef = useRef<HTMLDivElement>(null);
@@ -209,7 +211,7 @@ export const RegisterWizard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const updateField = (field: keyof FormData, value: string) => {
+  const updateField = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -258,6 +260,7 @@ export const RegisterWizard = () => {
         ciudad: formData.ciudad,
         categoria: formData.categoria,
         fotoUrl: formData.fotoUrl,
+        consentCheckboxWhatsapp: formData.consentCheckboxWhatsapp,
       });
       
       // Redirigir al login después de 2 segundos
@@ -460,6 +463,32 @@ export const RegisterWizard = () => {
                   Femenino
                 </button>
               </div>
+            </motion.div>
+
+            {/* Checkbox de consentimiento WhatsApp */}
+            <motion.div variants={itemVariants} className="pt-2">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <div className="relative mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={formData.consentCheckboxWhatsapp}
+                    onChange={(e) => updateField('consentCheckboxWhatsapp', e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-600 rounded bg-dark-100 peer-checked:bg-primary peer-checked:border-primary transition-all">
+                    <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                    Quiero recibir notificaciones por WhatsApp
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Te enviaremos recordatorios de reservas, actualizaciones de torneos y más. 
+                    Podés cancelar en cualquier momento.
+                  </p>
+                </div>
+              </label>
             </motion.div>
           </motion.div>
         );
