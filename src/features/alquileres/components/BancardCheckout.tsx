@@ -141,32 +141,63 @@ export default function BancardCheckout({
   // Escuchar mensajes del iframe de Bancard
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Aceptar mensajes de los orígenes de Bancard
-      const bancardOrigins = [
-        'https://vpos.infonet.com.py',
-        'https://vpos.infonet.com.py:8888',
-        'https://payments.infonet.com.py',
-        'https://payments.infonet.com.py:8888',
-      ];
+      // Log de todos los mensajes para debug
+      console.log('Mensaje recibido - Origen:', event.origin, 'Datos:', event.data);
       
-      if (!bancardOrigins.includes(event.origin)) {
+      // Si no es de Bancard ni de nuestro dominio, ignorar
+      const isBancardOrigin = event.origin.includes('infonet.com.py');
+      if (!isBancardOrigin && event.origin !== window.location.origin) {
         return;
       }
 
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         
-        console.log('Mensaje de Bancard recibido:', data);
+        console.log('Procesando mensaje de Bancard:', data);
         
-        if (data.status === 'success' || data.message === 'Operación exitosa' || data.response === 'S') {
+        // Ignorar mensajes de ajuste de altura
+        if (data.iframeHeight) {
+          return;
+        }
+        
+        // Mensajes de éxito
+        if (data.status === 'success' || 
+            data.message === 'Operación exitosa' || 
+            data.response === 'S' ||
+            data.operation?.response === 'S') {
+          console.log('Pago exitoso detectado');
           onPaymentSuccess?.();
-        } else if (data.status === 'error' || data.status === 'failure' || data.response === 'N') {
-          onPaymentError?.(data.message || data.response_description || 'Error en el pago');
-        } else if (data.status === 'cancel') {
+        } 
+        // Mensajes de error
+        else if (data.status === 'error' || 
+                 data.status === 'failure' || 
+                 data.response === 'N' ||
+                 data.operation?.response === 'N') {
+          const errorMsg = data.message || 
+                          data.response_description || 
+                          data.operation?.response_description || 
+                          'Error en el pago';
+          console.log('Error de pago:', errorMsg);
+          onPaymentError?.(errorMsg);
+        } 
+        // Mensaje de cancelación
+        else if (data.status === 'cancel') {
+          console.log('Pago cancelado');
           onPaymentCancel?.();
         }
+        // Si hay operation con response, verificar
+        else if (data.operation) {
+          if (data.operation.response === 'S') {
+            console.log('Pago exitoso (desde operation)');
+            onPaymentSuccess?.();
+          } else if (data.operation.response === 'N') {
+            const errorMsg = data.operation.response_description || 'Error en el pago';
+            console.log('Error de pago (desde operation):', errorMsg);
+            onPaymentError?.(errorMsg);
+          }
+        }
       } catch (e) {
-        // Ignorar mensajes inválidos
+        console.error('Error procesando mensaje:', e);
       }
     };
 
