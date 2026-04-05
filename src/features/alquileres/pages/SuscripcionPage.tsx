@@ -117,7 +117,7 @@ export default function SuscripcionPage() {
   };
 
   const [verificandoPago, setVerificandoPago] = useState(false);
-  const verificacionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const verificacionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Limpiar timer al desmontar
   useEffect(() => {
