@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { suscripcionService, EstadoSuscripcion, IniciarPagoResponse } from '../../../services/suscripcionService';
 import { sedesService } from '../../../services/sedesService';
@@ -116,21 +116,102 @@ export default function SuscripcionPage() {
     }
   };
 
+  const [verificandoPago, setVerificandoPago] = useState(false);
+  const verificacionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (verificacionTimerRef.current) {
+        clearInterval(verificacionTimerRef.current);
+      }
+    };
+  }, []);
+
+  const verificarEstadoPago = async (pagoId: string) => {
+    try {
+      const resultado = await suscripcionService.verificarPago(sedeIdParam!, pagoId);
+      
+      if (resultado.pago.estado === 'COMPLETADO') {
+        // Pago completado, limpiar interval y recargar
+        if (verificacionTimerRef.current) {
+          clearInterval(verificacionTimerRef.current);
+          verificacionTimerRef.current = null;
+        }
+        setVerificandoPago(false);
+        setPagoData(null);
+        showSuccess('¡Pago exitoso!', 'Tu suscripción ha sido activada correctamente.');
+        loadEstado();
+        return true;
+      } else if (resultado.pago.estado === 'FALLIDO') {
+        // Pago fallido
+        if (verificacionTimerRef.current) {
+          clearInterval(verificacionTimerRef.current);
+          verificacionTimerRef.current = null;
+        }
+        setVerificandoPago(false);
+        setPagoData(null);
+        showError('Pago fallido', 'El pago no pudo ser procesado. Intenta nuevamente.');
+        return true; // Terminamos de verificar
+      }
+      // Si está pendiente, seguimos verificando
+      return false;
+    } catch (err) {
+      console.error('Error verificando pago:', err);
+      return false;
+    }
+  };
+
+  const iniciarVerificacionPago = (pagoId: string) => {
+    setVerificandoPago(true);
+    let intentos = 0;
+    const maxIntentos = 60; // 5 minutos (5 segundos * 60)
+    
+    // Verificar inmediatamente
+    verificarEstadoPago(pagoId);
+    
+    // Luego cada 5 segundos
+    verificacionTimerRef.current = setInterval(async () => {
+      intentos++;
+      const terminado = await verificarEstadoPago(pagoId);
+      
+      if (terminado || intentos >= maxIntentos) {
+        if (verificacionTimerRef.current) {
+          clearInterval(verificacionTimerRef.current);
+          verificacionTimerRef.current = null;
+        }
+        if (intentos >= maxIntentos && !terminado) {
+          setVerificandoPago(false);
+          showError('Tiempo de espera agotado', 'Por favor verifica tu historial de pagos más tarde o contacta soporte.');
+        }
+      }
+    }, 5000);
+  };
+
   const handlePaymentSuccess = () => {
-    showSuccess('¡Pago exitoso!', 'Procesando tu suscripción...');
-    // Esperar un momento y recargar estado
-    setTimeout(() => {
-      setPagoData(null);
-      loadEstado();
-    }, 2000);
+    showSuccess('¡Pago completado!', 'Verificando tu suscripción...');
+    // Iniciar verificación inmediata
+    if (pagoData?.pagoId) {
+      iniciarVerificacionPago(pagoData.pagoId);
+    }
   };
 
   const handlePaymentError = (error: string) => {
+    if (verificacionTimerRef.current) {
+      clearInterval(verificacionTimerRef.current);
+      verificacionTimerRef.current = null;
+    }
+    setVerificandoPago(false);
     showError('Error en el pago', error);
     setPagoData(null);
   };
 
   const handlePaymentCancel = () => {
+    if (verificacionTimerRef.current) {
+      clearInterval(verificacionTimerRef.current);
+      verificacionTimerRef.current = null;
+    }
+    setVerificandoPago(false);
     showError('Pago cancelado', 'Puedes intentarlo nuevamente cuando quieras.');
     setPagoData(null);
   };
@@ -330,7 +411,15 @@ export default function SuscripcionPage() {
                   Monto a pagar: <strong className="text-white">{pagoData.montoFormateado}</strong>
                 </p>
 
-                {configBancard && (
+                {verificandoPago && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 mb-6 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-3"></div>
+                    <h4 className="text-green-400 font-semibold mb-1">¡Pago completado!</h4>
+                    <p className="text-gray-400 text-sm">Verificando tu suscripción, por favor espera...</p>
+                  </div>
+                )}
+
+                {!verificandoPago && configBancard && (
                   <BancardCheckout
                     processId={pagoData.processId}
                     scriptUrl={configBancard.scriptUrl}
@@ -340,12 +429,14 @@ export default function SuscripcionPage() {
                   />
                 )}
 
-                <button
-                  onClick={() => setPagoData(null)}
-                  className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
-                >
-                  Cancelar y volver
-                </button>
+                {!verificandoPago && (
+                  <button
+                    onClick={() => setPagoData(null)}
+                    className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
+                  >
+                    Cancelar y volver
+                  </button>
+                )}
               </>
             )}
           </div>

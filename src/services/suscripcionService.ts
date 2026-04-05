@@ -57,4 +57,8 @@ export const suscripcionService = {
   // Activar suscripción manualmente (solo admin/testing)
   activarManual: (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL'): Promise<any> =>
     api.post(`/alquileres/suscripcion/${sedeId}/activar-manual`, { tipo }).then(r => r.data),
+
+  // Verificar estado de un pago específico (después de completar checkout de Bancard)
+  verificarPago: (sedeId: string, pagoId: string): Promise<{ status: string; pago: PagoSuscripcion }> =>
+    api.get(`/alquileres/suscripcion/${sedeId}/verificar-pago/${pagoId}`).then(r => r.data),
 };
