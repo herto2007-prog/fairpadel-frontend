@@ -224,7 +224,11 @@ export default function BancardCheckout({
       <div
         id="bancard-checkout-container"
         ref={containerRef}
-        className={`${scriptLoaded ? 'block' : 'hidden'} min-h-[400px]`}
+        className={`${scriptLoaded ? 'block' : 'hidden'}`}
+        style={{ 
+          minHeight: '580px',
+          overflow: 'visible'
+        }}
       />
       
       {scriptLoaded && (
