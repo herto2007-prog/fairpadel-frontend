@@ -272,8 +272,8 @@ export default function SuscripcionPage() {
                         <CheckCircle size={20} className="text-[#df2531]" />
                       )}
                     </div>
-                    <p className="text-3xl font-bold mb-1">Gs. 648.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
-                    <p className="text-sm text-gray-400">Equivalente a Gs. 54.000/mes</p>
+                    <p className="text-3xl font-bold mb-1">Gs. 600.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
+                    <p className="text-sm text-gray-400">¡Pagás 10 meses, llevás 12!</p>
                   </button>
                 </div>
 

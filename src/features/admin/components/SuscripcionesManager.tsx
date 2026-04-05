@@ -388,7 +388,7 @@ export function SuscripcionesManager() {
                                 <button
                                   onClick={() => activarSuscripcion(suscripcion.sedeId, 'ANUAL')}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors"
-                                  title="Activar anual (Gs. 648.000)"
+                                  title="Activar anual (Gs. 600.000)"
                                 >
                                   <Gift className="w-4 h-4" />
                                   Anual
