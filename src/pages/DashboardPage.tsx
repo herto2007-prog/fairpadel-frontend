@@ -1,165 +1,168 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Trophy, Calendar, Users, MapPin, ChevronRight, Bell } from 'lucide-react';
-import { BackgroundEffects } from '../components/ui/BackgroundEffects';
+// ═══════════════════════════════════════════════════════
+// DASHBOARD PAGE - Sistema Evolutivo por Fase
+// ═══════════════════════════════════════════════════════
 
-interface User {
-  nombre: string;
-  apellido: string;
-  roles: string[];
-}
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { BackgroundEffects } from '../components/ui/BackgroundEffects';
+import { NovatoDashboard } from '../features/dashboard/components/NovatoDashboard';
+import { DashboardData, UserFase } from '../features/dashboard/types/dashboard.types';
+import { determineUserFase } from '../features/dashboard/hooks/useUserFase';
+import { perfilService } from '../features/perfil/perfilService';
+import { api } from '../services/api';
+
+// TODO: Crear estos componentes cuando se implementen las otras fases
+// import { ActivoDashboard } from '../features/dashboard/components/ActivoDashboard';
+// import { RegularDashboard } from '../features/dashboard/components/RegularDashboard';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [fase, setFase] = useState<UserFase>('NOVATO');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser(payload);
-      } catch {
-        console.error('Error decoding token');
-      }
-    }
+    loadDashboardData();
   }, []);
 
-  const quickActions = [
-    {
-      title: 'Torneos',
-      description: 'Ver torneos disponibles y mis inscripciones',
-      icon: Trophy,
-      href: '/tournaments',
-      color: 'bg-blue-500/20 text-blue-400',
-    },
-    {
-      title: 'Sedes',
-      description: 'Explorar sedes y reservar canchas',
-      icon: MapPin,
-      href: '/sedes',
-      color: 'bg-green-500/20 text-green-400',
-    },
-    {
-      title: 'Instructores',
-      description: 'Reservar clases con instructores',
-      icon: Users,
-      href: '/instructores',
-      color: 'bg-purple-500/20 text-purple-400',
-    },
-    {
-      title: 'Rankings',
-      description: 'Ver rankings y estadísticas',
-      icon: Trophy,
-      href: '/rankings',
-      color: 'bg-yellow-500/20 text-yellow-400',
-    },
-  ];
+  const loadDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Obtener perfil del usuario
+      const perfil = await perfilService.getMiPerfil();
+
+      // 2. Calcular días desde registro (simulado por ahora, debería venir del backend)
+      // TODO: Agregar createdAt al perfil
+      const diasDesdeRegistro = 1; // Temporal - asumimos nuevo
+
+      // 3. Determinar fase
+      const userFase = determineUserFase({
+        torneosJugados: perfil.stats?.torneosJugados || 0,
+        diasDesdeRegistro,
+        seguidores: perfil.seguidores || 0,
+        torneosUltimos30Dias: 0, // TODO: Calcular desde historial
+        esPremium: perfil.esPremium || false,
+      });
+
+      setFase(userFase);
+
+      // 4. Cargar torneos abiertos (endpoint existente)
+      const torneosResponse = await api.get('/tournaments');
+      const torneosAbiertos = (torneosResponse.data?.data || [])
+        .filter((t: any) => t.estado === 'ABIERTO' || t.estado === 'INSCRIPCION')
+        .map((t: any) => ({
+          id: t.id,
+          nombre: t.nombre,
+          slug: t.slug || t.id,
+          flyerUrl: t.flyerUrl,
+          fechaInicio: t.fechaInicio,
+          fechaCierreInscripcion: t.fechaCierreInscripcion,
+          ciudad: t.ciudad || 'Sin ciudad',
+          sedeNombre: t.sede?.nombre || 'Sin sede',
+          costoInscripcion: t.costoInscripcion || 0,
+          cuposDisponibles: t.cuposDisponibles || 0,
+          cuposTotales: t.cuposTotales || 0,
+          categorias: t.categorias?.map((c: any) => c.nombre) || [],
+          inscripcionesAbiertas: t.inscripcionesAbiertas || false,
+          cierraEnHoras: t.fechaCierreInscripcion 
+            ? Math.max(0, Math.floor((new Date(t.fechaCierreInscripcion).getTime() - Date.now()) / (1000 * 60 * 60)))
+            : undefined,
+        }));
+
+      // 5. Construir objeto DashboardData
+      const dashboardData: DashboardData = {
+        perfil: {
+          id: perfil.id,
+          nombre: perfil.nombre,
+          apellido: perfil.apellido,
+          fotoUrl: perfil.fotoUrl,
+          bio: perfil.bio,
+          emailVerificado: perfil.estado === 'VERIFICADO',
+          categoria: perfil.categoria?.nombre,
+        },
+        stats: {
+          torneosJugados: perfil.stats?.torneosJugados || 0,
+          torneosUltimos30Dias: 0, // TODO
+          diasDesdeRegistro,
+          seguidores: perfil.seguidores || 0,
+          perfilCompleto: !!(perfil.fotoUrl && perfil.bio && perfil.ciudad),
+        },
+        torneosAbiertos,
+        torneosUrgentes: [], // Se filtran en el componente
+        actividadRed: [], // TODO: Implementar cuando haya red social
+        jugadoresSugeridos: [], // TODO
+        puntosTotales: perfil.ranking?.[0]?.puntosTotales || 0,
+        posicionRanking: perfil.ranking?.[0]?.posicion,
+        rachaActual: perfil.partidos?.rachaActual || 0,
+      };
+
+      setData(dashboardData);
+    } catch (err: any) {
+      console.error('Error cargando dashboard:', err);
+      setError(err.response?.data?.message || 'Error cargando datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <BackgroundEffects variant="subtle" showGrid={false} />
+        <Loader2 className="w-8 h-8 text-[#df2531] animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center p-4">
+        <BackgroundEffects variant="subtle" showGrid={false} />
+        <div className="text-center">
+          <p className="text-white/60 mb-4">{error || 'Error cargando dashboard'}</p>
+          <button
+            onClick={loadDashboardData}
+            className="px-4 py-2 bg-[#df2531] text-white rounded-lg"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar dashboard según fase
+  const renderDashboard = () => {
+    switch (fase) {
+      case 'NOVATO':
+        return <NovatoDashboard data={data} />;
+      
+      case 'ACTIVO':
+        // Por ahora mostramos Novato con ligeros ajustes
+        // TODO: Crear ActivoDashboard
+        return <NovatoDashboard data={data} />;
+      
+      case 'REGULAR':
+        // Por ahora mostramos Novato
+        // TODO: Crear RegularDashboard con red social
+        return <NovatoDashboard data={data} />;
+      
+      case 'PREMIUM':
+        // TODO: Crear PremiumDashboard
+        return <NovatoDashboard data={data} />;
+      
+      default:
+        return <NovatoDashboard data={data} />;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-dark text-white p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-dark text-white p-4 md:p-6 relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
       <div className="max-w-6xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            ¡Hola, {user?.nombre || 'Usuario'}! 👋
-          </h1>
-          <p className="text-gray-400">
-            {user?.roles?.includes('admin') 
-              ? 'Panel de Administrador' 
-              : 'Bienvenido a FairPadel'}
-          </p>
-        </div>
-
-        {/* Accesos Rápidos */}
-        <h2 className="text-xl font-semibold mb-4">Accesos Rápidos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.title}
-                to={action.href}
-                className="bg-[#151921] border border-[#232838] rounded-lg p-6 hover:border-[#df2531] transition-colors group"
-              >
-                <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
-                  <Icon size={24} />
-                </div>
-                <h3 className="font-semibold mb-1 group-hover:text-[#df2531] transition-colors">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-400">{action.description}</p>
-                <div className="flex items-center gap-1 mt-4 text-[#df2531] text-sm font-medium">
-                  Ver más
-                  <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Contenido Principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Mis Próximos Torneos */}
-          <div className="lg:col-span-2 bg-[#151921] border border-[#232838] rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Trophy size={20} className="text-[#df2531]" />
-                Mis Próximos Torneos
-              </h2>
-              <Link to="/tournaments" className="text-sm text-[#df2531] hover:underline">
-                Ver todos
-              </Link>
-            </div>
-            <div className="text-gray-400 text-center py-8">
-              No tienes torneos próximos
-              <div className="mt-4">
-                <Link 
-                  to="/tournaments" 
-                  className="inline-block px-4 py-2 bg-[#df2531] rounded-lg text-white text-sm hover:bg-red-700 transition-colors"
-                >
-                  Explorar Torneos
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Mis Reservas */}
-            <div className="bg-[#151921] border border-[#232838] rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Calendar size={20} className="text-[#df2531]" />
-                  Mis Reservas
-                </h2>
-                <Link to="/mis-reservas" className="text-sm text-[#df2531] hover:underline">
-                  Ver
-                </Link>
-              </div>
-              <div className="text-gray-400 text-sm text-center py-4">
-                No tienes reservas pendientes
-              </div>
-              <Link 
-                to="/alquileres" 
-                className="block w-full text-center py-2 bg-[#232838] rounded-lg text-sm hover:bg-[#2d3548] transition-colors"
-              >
-                Reservar Cancha
-              </Link>
-            </div>
-
-            {/* Notificaciones */}
-            <div className="bg-[#151921] border border-[#232838] rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Bell size={20} className="text-[#df2531]" />
-                <h2 className="text-lg font-semibold">Notificaciones</h2>
-              </div>
-              <div className="text-gray-400 text-sm text-center py-4">
-                No tienes notificaciones nuevas
-              </div>
-            </div>
-          </div>
-        </div>
+        {renderDashboard()}
       </div>
     </div>
   );
