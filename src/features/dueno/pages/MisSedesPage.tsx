@@ -272,7 +272,7 @@ export default function MisSedesPage() {
                 <div>
                   <h3 className="text-xl font-bold mb-2">¿Listo para empezar?</h3>
                   <p className="text-gray-400">
-                    Suscripción mensual por solo <span className="text-[#df2531] font-bold">$10.00 USD</span>. 
+                    Suscripción mensual por solo <span className="text-[#df2531] font-bold">Gs. 60.000</span>. 
                     Sin contratos, cancelás cuando quieras.
                   </p>
                 </div>

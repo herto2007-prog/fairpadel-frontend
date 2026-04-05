@@ -162,8 +162,8 @@ export function SuscripcionesManager() {
     );
   };
 
-  const formatMonto = (centavos: number) => {
-    return `$${(centavos / 100).toFixed(2)} USD`;
+  const formatMonto = (monto: number) => {
+    return `Gs. ${monto.toLocaleString('es-PY')}`;
   };
 
   const formatFecha = (fecha: string | null) => {
@@ -245,7 +245,7 @@ export function SuscripcionesManager() {
                   <span className="text-gray-400 text-sm">Recaudado este Mes</span>
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
-                <p className="text-2xl font-bold text-blue-400">${estadisticas.financiero.recaudadoMesUSD}</p>
+                <p className="text-2xl font-bold text-blue-400">Gs. {estadisticas.financiero.recaudadoMesUSD}</p>
               </div>
             </div>
           )}
@@ -380,7 +380,7 @@ export function SuscripcionesManager() {
                                 <button
                                   onClick={() => activarSuscripcion(suscripcion.sedeId, 'MENSUAL')}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm transition-colors"
-                                  title="Activar mensual ($10)"
+                                  title="Activar mensual (Gs. 60.000)"
                                 >
                                   <Gift className="w-4 h-4" />
                                   Mensual
@@ -388,7 +388,7 @@ export function SuscripcionesManager() {
                                 <button
                                   onClick={() => activarSuscripcion(suscripcion.sedeId, 'ANUAL')}
                                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors"
-                                  title="Activar anual ($108)"
+                                  title="Activar anual (Gs. 648.000)"
                                 >
                                   <Gift className="w-4 h-4" />
                                   Anual
