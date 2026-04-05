@@ -564,6 +564,43 @@ export default function SuscripcionPage() {
                     >
                       🧪 Simular pago exitoso (testing)
                     </button>
+                    
+                    {/* Botón para probar webhook de Bancard */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setVerificandoPago(true);
+                          
+                          // Obtener info del pago para tener la referencia
+                          const pagoInfo = await suscripcionService.verificarPago(sedeIdParam!, pagoData.pagoId);
+                          
+                          if (!pagoInfo.pago.referencia) {
+                            setVerificandoPago(false);
+                            showError('Error', 'El pago no tiene referencia de Bancard');
+                            return;
+                          }
+                          
+                          // Llamar al endpoint de test webhook
+                          const resultado = await suscripcionService.testWebhook(pagoInfo.pago.referencia, 'S');
+                          
+                          setVerificandoPago(false);
+                          
+                          if (resultado.status === 'success') {
+                            setPagoData(null);
+                            showSuccess('¡Webhook funcionando!', 'El pago fue procesado correctamente mediante el webhook simulado.');
+                            loadEstado();
+                          } else {
+                            showError('Error en webhook', resultado.mensaje || 'No se pudo procesar el webhook');
+                          }
+                        } catch (err: any) {
+                          setVerificandoPago(false);
+                          showError('Error', err.response?.data?.message || err.message || 'Error probando webhook');
+                        }
+                      }}
+                      className="mt-3 w-full py-2 border border-dashed border-blue-500/50 hover:bg-blue-500/10 text-blue-500 rounded-lg transition-colors text-sm"
+                    >
+                      🔗 Probar webhook de Bancard (testing)
+                    </button>
                   </>
                 )}
               </>

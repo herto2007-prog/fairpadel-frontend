@@ -69,4 +69,13 @@ export const suscripcionService = {
   // Simular pago exitoso (SOLO PARA TESTING)
   simularPago: (pagoId: string): Promise<{ status: string; mensaje: string; pago: PagoSuscripcion }> =>
     api.post(`/alquileres/suscripcion/simular-pago/${pagoId}`).then(r => r.data),
+
+  // Test webhook de Bancard (SOLO PARA TESTING)
+  testWebhook: (shopProcessId: string, response?: 'S' | 'N'): Promise<any> =>
+    api.post('/alquileres/suscripcion/test/webhook', { 
+      shopProcessId, 
+      response: response || 'S',
+      amount: '60000.00',
+      currency: 'PYG'
+    }).then(r => r.data),
 };
