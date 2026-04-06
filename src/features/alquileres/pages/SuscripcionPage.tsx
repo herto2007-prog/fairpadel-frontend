@@ -8,6 +8,7 @@ import {
   CheckCircle, 
   AlertCircle, 
   Calendar,
+  Clock,
   Shield,
   ArrowLeft,
   History
