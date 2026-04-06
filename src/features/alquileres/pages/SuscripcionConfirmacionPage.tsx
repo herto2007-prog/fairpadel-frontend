@@ -12,10 +12,14 @@ export default function SuscripcionConfirmacionPage() {
   useEffect(() => {
     const verificarPago = async () => {
       try {
+        console.log('[DEBUG] SuscripcionConfirmacionPage - Iniciando verificación');
+        
         // Recuperar datos del pago guardados en localStorage
         const pagoId = localStorage.getItem('suscripcion_pago_id');
         const sedeId = localStorage.getItem('suscripcion_sede_id');
         const timestamp = localStorage.getItem('suscripcion_timestamp');
+        
+        console.log('[DEBUG] Datos de localStorage:', { pagoId, sedeId, timestamp });
         
         // Limpiar datos de localStorage
         localStorage.removeItem('suscripcion_pago_id');
@@ -23,6 +27,7 @@ export default function SuscripcionConfirmacionPage() {
         localStorage.removeItem('suscripcion_timestamp');
         
         if (!pagoId || !sedeId) {
+          console.error('[DEBUG] No se encontró pagoId o sedeId en localStorage');
           setStatus('error');
           setMessage('No se encontró información del pago. Por favor, intenta nuevamente.');
           return;
@@ -30,18 +35,23 @@ export default function SuscripcionConfirmacionPage() {
         
         // Verificar que la sesión no haya expirado (30 minutos)
         if (timestamp && Date.now() - parseInt(timestamp) > 30 * 60 * 1000) {
+          console.error('[DEBUG] Sesión expirada');
           setStatus('error');
           setMessage('La sesión de pago ha expirado. Por favor, intenta nuevamente.');
           return;
         }
         
         // Esperar 3 segundos para dar tiempo al webhook de Bancard
+        console.log('[DEBUG] Esperando 3 segundos para que llegue el webhook...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Verificar estado del pago en nuestro backend
+        console.log('[DEBUG] Verificando pago en backend:', { sedeId, pagoId });
         const resultado = await suscripcionService.verificarPago(sedeId, pagoId);
+        console.log('[DEBUG] Resultado verificación:', resultado);
         
         if (resultado.pago.estado === 'COMPLETADO') {
+          console.log('[DEBUG] Pago COMPLETADO - Suscripción activada');
           setStatus('success');
           setMessage('¡Tu suscripción ha sido activada exitosamente!');
         } else if (resultado.pago.estado === 'FALLIDO') {

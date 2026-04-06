@@ -112,19 +112,30 @@ export default function SuscripcionPage() {
   const handleIniciarPago = async () => {
     try {
       setIniciandoPago(true);
+      console.log('[DEBUG] Iniciando pago:', { sedeId: sedeIdParam, tipo: tipoSuscripcion });
+      
       const data = await suscripcionService.iniciarPago(sedeIdParam!, tipoSuscripcion);
+      console.log('[DEBUG] Respuesta iniciarPago:', data);
       
       // Guardar datos del pago en localStorage para recuperarlos al volver
       localStorage.setItem('suscripcion_pago_id', data.pagoId);
       localStorage.setItem('suscripcion_sede_id', sedeIdParam!);
       localStorage.setItem('suscripcion_timestamp', Date.now().toString());
+      console.log('[DEBUG] Datos guardados en localStorage:', {
+        pagoId: data.pagoId,
+        sedeId: sedeIdParam,
+        processId: data.processId,
+      });
       
       // Redirigir al checkout de Bancard (flujo de redirección vPOS 1.0)
       // Según documentación Bancard: https://vpos.infonet.com.py:8888/checkout/new?process_id=XXX
       const bancardCheckoutUrl = `${configBancard?.baseUrl}/checkout/new?process_id=${data.processId}`;
+      console.log('[DEBUG] Redirigiendo a Bancard:', bancardCheckoutUrl);
       window.location.href = bancardCheckoutUrl;
       
     } catch (err: any) {
+      console.error('[DEBUG] Error iniciando pago:', err);
+      console.error('[DEBUG] Error response:', err.response?.data);
       showError('Error', err.response?.data?.message || 'No se pudo iniciar el pago');
       setIniciandoPago(false);
     }
