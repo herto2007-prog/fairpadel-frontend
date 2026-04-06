@@ -240,7 +240,7 @@ export default function SuscripcionPage() {
                     <CheckCircle size={20} className="text-[#df2531]" />
                   )}
                 </div>
-                <p className="text-3xl font-bold mb-1">Gs. 60.000 <span className="text-sm font-normal text-gray-400">/mes</span></p>
+                <p className="text-3xl font-bold mb-1">Gs. 1.000 <span className="text-sm font-normal text-gray-400">/mes</span></p>
                 <p className="text-sm text-gray-400">Facturado mensualmente</p>
               </button>
 
@@ -261,7 +261,7 @@ export default function SuscripcionPage() {
                     <CheckCircle size={20} className="text-[#df2531]" />
                   )}
                 </div>
-                <p className="text-3xl font-bold mb-1">Gs. 600.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
+                <p className="text-3xl font-bold mb-1">Gs. 10.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
                 <p className="text-sm text-gray-400">¡Pagás 10 meses, llevás 12!</p>
               </button>
             </div>
