@@ -11,7 +11,9 @@ import {
   Clock,
   Shield,
   ArrowLeft,
-  History
+  History,
+  RotateCcw,
+  Search
 } from 'lucide-react';
 
 interface Sede {
@@ -34,6 +36,8 @@ export default function SuscripcionPage() {
   const [tipoSuscripcion, setTipoSuscripcion] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPagos, setHistorialPagos] = useState<any[]>([]);
+  const [testingPagoId, setTestingPagoId] = useState<string | null>(null);
+  const [testingAction, setTestingAction] = useState<'rollback' | 'consultar' | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -131,6 +135,56 @@ export default function SuscripcionPage() {
       loadHistorial();
     }
     setShowHistorial(!showHistorial);
+  };
+
+  // ============================================
+  // FUNCIONES DE TESTING PARA BANCARD
+  // ============================================
+
+  const handleRollback = async (shopProcessId: string) => {
+    if (!confirm('¿Estás seguro de que querés hacer rollback de esta transacción?\n\nEsto cancelará/reversará el pago en Bancard.')) {
+      return;
+    }
+
+    setTestingPagoId(shopProcessId);
+    setTestingAction('rollback');
+
+    try {
+      const resultado = await suscripcionService.rollbackTransaccion(shopProcessId);
+      console.log('Rollback resultado:', resultado);
+      showSuccess('Rollback exitoso', resultado.data?.messages?.[0]?.dsc || 'Transacción reversada correctamente');
+      // Recargar historial
+      loadHistorial();
+      loadEstado();
+    } catch (err: any) {
+      showError('Error en rollback', err.response?.data?.message || 'No se pudo realizar el rollback');
+    } finally {
+      setTestingPagoId(null);
+      setTestingAction(null);
+    }
+  };
+
+  const handleConsultarEnBancard = async (shopProcessId: string) => {
+    setTestingPagoId(shopProcessId);
+    setTestingAction('consultar');
+
+    try {
+      const resultado = await suscripcionService.consultarTransaccion(shopProcessId);
+      console.log('Consulta Bancard:', resultado);
+      
+      const estado = resultado.confirmation?.response === 'S' ? 'Aprobada' : 
+                     resultado.confirmation?.response === 'N' ? 'Rechazada' : 'Pendiente/No encontrada';
+      
+      showSuccess(
+        `Estado en Bancard: ${estado}`,
+        `Monto: ${resultado.confirmation?.amount || 'N/A'} ${resultado.confirmation?.currency || ''}`
+      );
+    } catch (err: any) {
+      showError('Error consultando', err.response?.data?.message || 'No se pudo consultar en Bancard');
+    } finally {
+      setTestingPagoId(null);
+      setTestingAction(null);
+    }
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -337,6 +391,7 @@ export default function SuscripcionPage() {
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-400">Monto</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-400">Período</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-400">Estado</th>
+                        <th className="text-left py-2 px-4 text-sm font-medium text-gray-400">Testing Bancard</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -364,6 +419,47 @@ export default function SuscripcionPage() {
                               {pago.estado === 'FALLIDO' && <AlertCircle size={12} />}
                               {pago.estado}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {pago.referencia && (
+                              <div className="flex items-center gap-2">
+                                {/* Consultar en Bancard - disponible para todos */}
+                                <button
+                                  onClick={() => handleConsultarEnBancard(pago.referencia)}
+                                  disabled={testingPagoId === pago.referencia}
+                                  className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded text-xs transition-colors disabled:opacity-50"
+                                  title="Consultar estado en Bancard"
+                                >
+                                  {testingPagoId === pago.referencia && testingAction === 'consultar' ? (
+                                    <div className="animate-spin h-3 w-3 border-b-2 border-blue-400 rounded-full" />
+                                  ) : (
+                                    <Search size={12} />
+                                  )}
+                                  Consultar
+                                </button>
+
+                                {/* Rollback - solo para PENDIENTE o COMPLETADO */}
+                                {(pago.estado === 'PENDIENTE' || pago.estado === 'COMPLETADO') && (
+                                  <button
+                                    onClick={() => handleRollback(pago.referencia)}
+                                    disabled={testingPagoId === pago.referencia}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors disabled:opacity-50 ${
+                                      pago.estado === 'COMPLETADO'
+                                        ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
+                                        : 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-400'
+                                    }`}
+                                    title={pago.estado === 'COMPLETADO' ? 'Reversar transacción aprobada' : 'Cancelar pago pendiente'}
+                                  >
+                                    {testingPagoId === pago.referencia && testingAction === 'rollback' ? (
+                                      <div className="animate-spin h-3 w-3 border-b-2 border-white rounded-full" />
+                                    ) : (
+                                      <RotateCcw size={12} />
+                                    )}
+                                    {pago.estado === 'COMPLETADO' ? 'Reversar' : 'Cancelar'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}

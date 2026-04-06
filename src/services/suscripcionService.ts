@@ -78,4 +78,43 @@ export const suscripcionService = {
       amount: '60000.00',
       currency: 'PYG'
     }).then(r => r.data),
+
+  // ============================================
+  // ENDPOINTS PARA CHECKLIST DE BANCARD (TESTING)
+  // ============================================
+
+  /**
+   * Consulta el estado de una transacción directamente en Bancard
+   * Completa el test: "Recibimos pedido de confirmación del comercio"
+   */
+  consultarTransaccion: (shopProcessId: string): Promise<{
+    status: string;
+    confirmation?: {
+      shop_process_id: string;
+      response: 'S' | 'N';
+      response_details: string;
+      amount: string;
+      currency: string;
+      authorization_number?: string;
+      ticket_number?: string;
+      response_code: string;
+      response_description: string;
+    };
+    messages?: Array<{ key: string; level: 'info' | 'error'; dsc: string }>;
+  }> =>
+    api.post('/alquileres/suscripcion/consultar', { shopProcessId }).then(r => r.data),
+
+  /**
+   * Realiza rollback de una transacción en Bancard
+   * Completa el test: "Recibir rollback"
+   */
+  rollbackTransaccion: (shopProcessId: string): Promise<{
+    status: string;
+    message: string;
+    data: {
+      status: string;
+      messages?: Array<{ key: string; level: 'info' | 'error'; dsc: string }>;
+    };
+  }> =>
+    api.post('/alquileres/suscripcion/rollback', { shopProcessId }).then(r => r.data),
 };
