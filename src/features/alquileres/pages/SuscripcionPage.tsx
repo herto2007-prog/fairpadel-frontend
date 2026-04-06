@@ -1,19 +1,16 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { suscripcionService, EstadoSuscripcion, IniciarPagoResponse } from '../../../services/suscripcionService';
+import { suscripcionService, EstadoSuscripcion } from '../../../services/suscripcionService';
 import { sedesService } from '../../../services/sedesService';
 import { useToast } from '../../../components/ui/ToastProvider';
-import BancardCheckout from '../components/BancardCheckout';
 import { 
   CreditCard, 
   CheckCircle, 
   AlertCircle, 
-  Calendar, 
-  Clock,
+  Calendar,
   Shield,
   ArrowLeft,
-  History,
-  ExternalLink
+  History
 } from 'lucide-react';
 
 interface Sede {
@@ -32,13 +29,10 @@ export default function SuscripcionPage() {
   const [estado, setEstado] = useState<EstadoSuscripcion | null>(null);
   const [loading, setLoading] = useState(true);
   const [iniciandoPago, setIniciandoPago] = useState(false);
-  const [pagoData, setPagoData] = useState<IniciarPagoResponse | null>(null);
-  const [configBancard, setConfigBancard] = useState<{ scriptUrl: string; publicKey: string; baseUrl: string } | null>(null);
+  const [configBancard, setConfigBancard] = useState<{ publicKey: string; baseUrl: string } | null>(null);
   const [tipoSuscripcion, setTipoSuscripcion] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialPagos, setHistorialPagos] = useState<any[]>([]);
-  const [mostrarBotonVerificar, setMostrarBotonVerificar] = useState(false);
-  const [usarRedireccion, setUsarRedireccion] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -91,7 +85,11 @@ export default function SuscripcionPage() {
   const loadConfigBancard = async () => {
     try {
       const config = await suscripcionService.getConfigBancard();
-      setConfigBancard(config);
+      // Solo necesitamos baseUrl para la redirección
+      setConfigBancard({
+        publicKey: config.publicKey,
+        baseUrl: config.baseUrl
+      });
     } catch (err) {
       console.error('Error cargando config Bancard:', err);
     }
@@ -110,156 +108,20 @@ export default function SuscripcionPage() {
     try {
       setIniciandoPago(true);
       const data = await suscripcionService.iniciarPago(sedeIdParam!, tipoSuscripcion);
-      setPagoData(data);
-      showSuccess('Pago iniciado', 'Ingresa los datos de tu tarjeta en el formulario seguro.');
+      
+      // Guardar datos del pago en localStorage para recuperarlos al volver
+      localStorage.setItem('suscripcion_pago_id', data.pagoId);
+      localStorage.setItem('suscripcion_sede_id', sedeIdParam!);
+      localStorage.setItem('suscripcion_timestamp', Date.now().toString());
+      
+      // Redirigir al checkout de Bancard (flujo de redirección vPOS 1.0)
+      // Según documentación Bancard: https://vpos.infonet.com.py:8888/checkout/new?process_id=XXX
+      const bancardCheckoutUrl = `${configBancard?.baseUrl}/checkout/new?process_id=${data.processId}`;
+      window.location.href = bancardCheckoutUrl;
+      
     } catch (err: any) {
       showError('Error', err.response?.data?.message || 'No se pudo iniciar el pago');
-    } finally {
       setIniciandoPago(false);
-    }
-  };
-
-  const [verificandoPago, setVerificandoPago] = useState(false);
-  const verificacionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Limpiar timer al desmontar
-  useEffect(() => {
-    return () => {
-      if (verificacionTimerRef.current) {
-        clearInterval(verificacionTimerRef.current);
-      }
-    };
-  }, []);
-
-  const verificarEstadoPago = async (pagoId: string) => {
-    try {
-      const resultado = await suscripcionService.verificarPago(sedeIdParam!, pagoId);
-      
-      if (resultado.pago.estado === 'COMPLETADO') {
-        // Pago completado, limpiar interval y recargar
-        if (verificacionTimerRef.current) {
-          clearInterval(verificacionTimerRef.current);
-          verificacionTimerRef.current = null;
-        }
-        setVerificandoPago(false);
-        setPagoData(null);
-        showSuccess('¡Pago exitoso!', 'Tu suscripción ha sido activada correctamente.');
-        loadEstado();
-        return true;
-      } else if (resultado.pago.estado === 'FALLIDO') {
-        // Pago fallido
-        if (verificacionTimerRef.current) {
-          clearInterval(verificacionTimerRef.current);
-          verificacionTimerRef.current = null;
-        }
-        setVerificandoPago(false);
-        setPagoData(null);
-        showError('Pago fallido', 'El pago no pudo ser procesado. Intenta nuevamente.');
-        return true; // Terminamos de verificar
-      }
-      // Si está pendiente, seguimos verificando
-      return false;
-    } catch (err) {
-      console.error('Error verificando pago:', err);
-      return false;
-    }
-  };
-
-  const iniciarVerificacionPago = (pagoId: string) => {
-    setVerificandoPago(true);
-    setMostrarBotonVerificar(false);
-    let intentos = 0;
-    const maxIntentos = 60; // 5 minutos (5 segundos * 60)
-    
-    // Verificar inmediatamente
-    verificarEstadoPago(pagoId);
-    
-    // Luego cada 5 segundos
-    verificacionTimerRef.current = setInterval(async () => {
-      intentos++;
-      
-      // Mostrar botón de verificación manual después de 30 segundos (6 intentos)
-      if (intentos === 6) {
-        setMostrarBotonVerificar(true);
-      }
-      
-      const terminado = await verificarEstadoPago(pagoId);
-      
-      if (terminado || intentos >= maxIntentos) {
-        if (verificacionTimerRef.current) {
-          clearInterval(verificacionTimerRef.current);
-          verificacionTimerRef.current = null;
-        }
-        if (intentos >= maxIntentos && !terminado) {
-          setVerificandoPago(false);
-          showError('Tiempo de espera agotado', 'Por favor verifica tu historial de pagos más tarde o contacta soporte.');
-        }
-      }
-    }, 5000);
-  };
-
-  const handlePaymentSuccess = () => {
-    showSuccess('¡Pago completado!', 'Verificando tu suscripción...');
-    // Iniciar verificación inmediata
-    if (pagoData?.pagoId) {
-      iniciarVerificacionPago(pagoData.pagoId);
-    }
-  };
-
-  const handlePaymentError = (error: string) => {
-    if (verificacionTimerRef.current) {
-      clearInterval(verificacionTimerRef.current);
-      verificacionTimerRef.current = null;
-    }
-    setVerificandoPago(false);
-    showError('Error en el pago', error);
-    setPagoData(null);
-  };
-
-  const handlePaymentCancel = () => {
-    if (verificacionTimerRef.current) {
-      clearInterval(verificacionTimerRef.current);
-      verificacionTimerRef.current = null;
-    }
-    setVerificandoPago(false);
-    setUsarRedireccion(false);
-    setMostrarBotonVerificar(false);
-    showError('Pago cancelado', 'Puedes intentarlo nuevamente cuando quieras.');
-    setPagoData(null);
-  };
-
-  // Verificación manual en Bancard (cuando el webhook no llegó)
-  const handleVerificarManual = async () => {
-    if (!pagoData?.pagoId) return;
-    
-    try {
-      setVerificandoPago(true);
-      
-      // Obtener el pago para tener la referencia (shop_process_id)
-      const pagoInfo = await suscripcionService.verificarPago(sedeIdParam!, pagoData.pagoId);
-      
-      if (!pagoInfo.pago.referencia) {
-        showError('Error', 'No se encontró la referencia del pago');
-        return;
-      }
-      
-      // Consultar directamente en Bancard
-      const resultado = await suscripcionService.verificarEnBancard(pagoInfo.pago.referencia);
-      
-      if (resultado.status === 'success') {
-        setVerificandoPago(false);
-        setMostrarBotonVerificar(false);
-        setPagoData(null);
-        showSuccess('¡Pago verificado!', 'Tu suscripción ha sido activada correctamente.');
-        loadEstado();
-      } else {
-        showError('Pago no confirmado', resultado.mensaje || 'El pago aún no ha sido procesado. Intenta nuevamente en unos minutos.');
-        setVerificandoPago(false);
-      }
-    } catch (err: any) {
-      console.error('Error en verificación manual:', err);
-      showError('Error', err.response?.data?.message || 'No se pudo verificar el pago');
-      setVerificandoPago(false);
     }
   };
 
@@ -353,199 +215,98 @@ export default function SuscripcionPage() {
           </div>
         </div>
 
-        {/* Formulario de Pago o Selector de Plan */}
+        {/* Selector de Plan - Solo visible si no está activa */}
         {!estado?.activa && (
           <div className="bg-[#151921] rounded-xl border border-[#232838] p-6 mb-8">
-            {!pagoData ? (
-              <>
-                <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                  <CreditCard className="text-[#df2531]" />
-                  Selecciona tu plan
-                </h3>
+            <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <CreditCard className="text-[#df2531]" />
+              Selecciona tu plan
+            </h3>
 
-                {/* Opciones de plan */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <button
-                    onClick={() => setTipoSuscripcion('MENSUAL')}
-                    className={`p-6 rounded-lg border-2 text-left transition-all ${
-                      tipoSuscripcion === 'MENSUAL'
-                        ? 'border-[#df2531] bg-[#df2531]/10'
-                        : 'border-[#232838] hover:border-[#df2531]/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">Plan Mensual</span>
-                      {tipoSuscripcion === 'MENSUAL' && (
-                        <CheckCircle size={20} className="text-[#df2531]" />
-                      )}
-                    </div>
-                    <p className="text-3xl font-bold mb-1">Gs. 60.000 <span className="text-sm font-normal text-gray-400">/mes</span></p>
-                    <p className="text-sm text-gray-400">Facturado mensualmente</p>
-                  </button>
-
-                  <button
-                    onClick={() => setTipoSuscripcion('ANUAL')}
-                    className={`p-6 rounded-lg border-2 text-left transition-all relative overflow-hidden ${
-                      tipoSuscripcion === 'ANUAL'
-                        ? 'border-[#df2531] bg-[#df2531]/10'
-                        : 'border-[#232838] hover:border-[#df2531]/50'
-                    }`}
-                  >
-                    <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-bl-lg">
-                      Ahorra 10%
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">Plan Anual</span>
-                      {tipoSuscripcion === 'ANUAL' && (
-                        <CheckCircle size={20} className="text-[#df2531]" />
-                      )}
-                    </div>
-                    <p className="text-3xl font-bold mb-1">Gs. 600.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
-                    <p className="text-sm text-gray-400">¡Pagás 10 meses, llevás 12!</p>
-                  </button>
-                </div>
-
-                {/* Beneficios */}
-                <div className="bg-[#0B0E14] rounded-lg p-4 mb-8">
-                  <h4 className="font-medium mb-3 text-gray-300">Incluye:</h4>
-                  <ul className="space-y-2">
-                    {[
-                      'Sistema completo de reservas online',
-                      'Notificaciones automáticas por WhatsApp/Email',
-                      'Gestión de disponibilidad en tiempo real',
-                      'Panel de administración de reservas',
-                      'Soporte técnico prioritario'
-                    ].map((beneficio, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-sm text-gray-400">
-                        <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
-                        {beneficio}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Botón de pago */}
-                <button
-                  onClick={handleIniciarPago}
-                  disabled={iniciandoPago}
-                  className="w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  {iniciandoPago ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard size={20} />
-                      Pagar con Tarjeta
-                    </>
+            {/* Opciones de plan */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <button
+                onClick={() => setTipoSuscripcion('MENSUAL')}
+                className={`p-6 rounded-lg border-2 text-left transition-all ${
+                  tipoSuscripcion === 'MENSUAL'
+                    ? 'border-[#df2531] bg-[#df2531]/10'
+                    : 'border-[#232838] hover:border-[#df2531]/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold">Plan Mensual</span>
+                  {tipoSuscripcion === 'MENSUAL' && (
+                    <CheckCircle size={20} className="text-[#df2531]" />
                   )}
-                </button>
-
-                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <Shield size={16} />
-                  Pago seguro procesado por Bancard
                 </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                  <CreditCard className="text-[#df2531]" />
-                  Completar pago
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  Monto a pagar: <strong className="text-white">{pagoData.montoFormateado}</strong>
-                </p>
+                <p className="text-3xl font-bold mb-1">Gs. 60.000 <span className="text-sm font-normal text-gray-400">/mes</span></p>
+                <p className="text-sm text-gray-400">Facturado mensualmente</p>
+              </button>
 
-                {verificandoPago && (
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 mb-6 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-3"></div>
-                    <h4 className="text-green-400 font-semibold mb-1">¡Pago completado!</h4>
-                    <p className="text-gray-400 text-sm mb-4">Verificando tu suscripción, por favor espera...</p>
-                    
-                    {mostrarBotonVerificar && (
-                      <div className="mt-4 pt-4 border-t border-green-500/20">
-                        <p className="text-gray-400 text-sm mb-3">¿Está tomando demasiado tiempo?</p>
-                        <button
-                          onClick={handleVerificarManual}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Verificar pago manualmente
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <button
+                onClick={() => setTipoSuscripcion('ANUAL')}
+                className={`p-6 rounded-lg border-2 text-left transition-all relative overflow-hidden ${
+                  tipoSuscripcion === 'ANUAL'
+                    ? 'border-[#df2531] bg-[#df2531]/10'
+                    : 'border-[#232838] hover:border-[#df2531]/50'
+                }`}
+              >
+                <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-bl-lg">
+                  Ahorra 10%
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold">Plan Anual</span>
+                  {tipoSuscripcion === 'ANUAL' && (
+                    <CheckCircle size={20} className="text-[#df2531]" />
+                  )}
+                </div>
+                <p className="text-3xl font-bold mb-1">Gs. 600.000 <span className="text-sm font-normal text-gray-400">/año</span></p>
+                <p className="text-sm text-gray-400">¡Pagás 10 meses, llevás 12!</p>
+              </button>
+            </div>
 
-                {!verificandoPago && configBancard && !usarRedireccion && (
-                  <>
-                    <BancardCheckout
-                      processId={pagoData.processId}
-                      scriptUrl={configBancard.scriptUrl}
-                      onPaymentSuccess={handlePaymentSuccess}
-                      onPaymentError={handlePaymentError}
-                      onPaymentCancel={handlePaymentCancel}
-                    />
-                    
-                    {/* Opción alternativa de redirección */}
-                    <div className="mt-4 pt-4 border-t border-[#232838] text-center">
-                      <p className="text-gray-500 text-sm mb-3">¿Problemas con el formulario?</p>
-                      <button
-                        onClick={() => setUsarRedireccion(true)}
-                        className="flex items-center justify-center gap-2 w-full py-3 border border-[#df2531]/50 hover:bg-[#df2531]/10 text-[#df2531] rounded-lg transition-colors"
-                      >
-                        <ExternalLink size={18} />
-                        Pagar en sitio seguro de Bancard
-                      </button>
-                    </div>
-                  </>
-                )}
+            {/* Beneficios */}
+            <div className="bg-[#0B0E14] rounded-lg p-4 mb-8">
+              <h4 className="font-medium mb-3 text-gray-300">Incluye:</h4>
+              <ul className="space-y-2">
+                {[
+                  'Sistema completo de reservas online',
+                  'Notificaciones automáticas por WhatsApp/Email',
+                  'Gestión de disponibilidad en tiempo real',
+                  'Panel de administración de reservas',
+                  'Soporte técnico prioritario'
+                ].map((beneficio, idx) => (
+                  <li key={idx} className="flex items-center gap-2 text-sm text-gray-400">
+                    <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                    {beneficio}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-                {/* Opción de redirección */}
-                {!verificandoPago && usarRedireccion && configBancard && (
-                  <div className="bg-[#0B0E14] rounded-lg p-6 text-center">
-                    <div className="mb-4">
-                      <Shield className="w-12 h-12 text-[#df2531] mx-auto mb-3" />
-                      <h4 className="text-lg font-semibold mb-2">Pago seguro en Bancard</h4>
-                      <p className="text-gray-400 text-sm">
-                        Serás redirigido al sitio seguro de Bancard para completar tu pago.
-                        Después volverás automáticamente a FairPadel.
-                      </p>
-                    </div>
-                    
-                    <a
-                      href={`${configBancard.baseUrl}/checkout/new?process_id=${pagoData.processId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg font-semibold transition-colors mb-3"
-                    >
-                      <ExternalLink size={20} />
-                      Ir a pagar en Bancard
-                    </a>
-                    
-                    <button
-                      onClick={() => setUsarRedireccion(false)}
-                      className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
-                    >
-                      Volver al formulario
-                    </button>
-                  </div>
-                )}
+            {/* Botón de pago - Redirige a Bancard */}
+            <button
+              onClick={handleIniciarPago}
+              disabled={iniciandoPago}
+              className="w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {iniciandoPago ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Redirigiendo a Bancard...
+                </>
+              ) : (
+                <>
+                  <CreditCard size={20} />
+                  Pagar con Tarjeta
+                </>
+              )}
+            </button>
 
-                {!verificandoPago && (
-                  <button
-                    onClick={() => {
-                      setPagoData(null);
-                      setUsarRedireccion(false);
-                    }}
-                    className="mt-4 w-full py-3 border border-[#232838] hover:bg-[#232838] rounded-lg transition-colors"
-                  >
-                    Cancelar y volver
-                  </button>
-                )}
-              </>
-            )}
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
+              <Shield size={16} />
+              Pago seguro procesado por Bancard. Serás redirigido a su sitio seguro.
+            </div>
           </div>
         )}
 

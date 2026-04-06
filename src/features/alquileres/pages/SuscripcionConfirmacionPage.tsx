@@ -2,33 +2,77 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2, ArrowLeft, Home } from 'lucide-react';
-
+import { suscripcionService } from '../../../services/suscripcionService';
 
 export default function SuscripcionConfirmacionPage() {
-
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Procesando tu pago...');
+  const [message, setMessage] = useState('Verificando el estado de tu pago...');
 
   useEffect(() => {
-    const processPayment = async () => {
+    const verificarPago = async () => {
       try {
-        // Bancard redirige con parámetros en la URL
-        // Pero el webhook ya debería haber procesado el pago
-        // Aquí solo verificamos el estado actual
+        // Recuperar datos del pago guardados en localStorage
+        const pagoId = localStorage.getItem('suscripcion_pago_id');
+        const sedeId = localStorage.getItem('suscripcion_sede_id');
+        const timestamp = localStorage.getItem('suscripcion_timestamp');
         
-        // Esperar 2 segundos para dar tiempo al webhook
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Limpiar datos de localStorage
+        localStorage.removeItem('suscripcion_pago_id');
+        localStorage.removeItem('suscripcion_sede_id');
+        localStorage.removeItem('suscripcion_timestamp');
         
-        setStatus('success');
-        setMessage('¡Tu suscripción ha sido activada exitosamente!');
-      } catch (error) {
+        if (!pagoId || !sedeId) {
+          setStatus('error');
+          setMessage('No se encontró información del pago. Por favor, intenta nuevamente.');
+          return;
+        }
+        
+        // Verificar que la sesión no haya expirado (30 minutos)
+        if (timestamp && Date.now() - parseInt(timestamp) > 30 * 60 * 1000) {
+          setStatus('error');
+          setMessage('La sesión de pago ha expirado. Por favor, intenta nuevamente.');
+          return;
+        }
+        
+        // Esperar 3 segundos para dar tiempo al webhook de Bancard
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Verificar estado del pago en nuestro backend
+        const resultado = await suscripcionService.verificarPago(sedeId, pagoId);
+        
+        if (resultado.pago.estado === 'COMPLETADO') {
+          setStatus('success');
+          setMessage('¡Tu suscripción ha sido activada exitosamente!');
+        } else if (resultado.pago.estado === 'FALLIDO') {
+          setStatus('error');
+          setMessage('El pago no pudo ser procesado. Por favor, intenta con otro método de pago.');
+        } else {
+          // Si aún está pendiente, intentar verificar en Bancard directamente
+          if (resultado.pago.referencia) {
+            try {
+              const resultadoBancard = await suscripcionService.verificarEnBancard(resultado.pago.referencia);
+              if (resultadoBancard.status === 'success') {
+                setStatus('success');
+                setMessage('¡Tu suscripción ha sido activada exitosamente!');
+                return;
+              }
+            } catch (e) {
+              console.log('No se pudo verificar en Bancard:', e);
+            }
+          }
+          
+          setStatus('error');
+          setMessage('No pudimos confirmar tu pago. Si completaste el pago, contacta soporte.');
+        }
+      } catch (error: any) {
+        console.error('Error verificando pago:', error);
         setStatus('error');
-        setMessage('Hubo un problema al procesar tu pago. Por favor, contacta soporte.');
+        setMessage(error.response?.data?.message || 'Hubo un problema al verificar tu pago. Por favor, contacta soporte.');
       }
     };
 
-    processPayment();
+    verificarPago();
   }, []);
 
   return (
