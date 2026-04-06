@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { suscripcionService, EstadoSuscripcion } from '../../../services/suscripcionService';
+import BancardCheckout from '../components/BancardCheckout';
 import { sedesService } from '../../../services/sedesService';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { 
@@ -38,6 +39,10 @@ export default function SuscripcionPage() {
   const [historialPagos, setHistorialPagos] = useState<any[]>([]);
   const [testingPagoId, setTestingPagoId] = useState<string | null>(null);
   const [testingAction, setTestingAction] = useState<'rollback' | 'consultar' | null>(null);
+  
+  // Estados para iframe de Bancard (vPOS 2.0)
+  const [showBancardIframe, setShowBancardIframe] = useState(false);
+  const [bancardProcessId, setBancardProcessId] = useState<string | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -48,7 +53,7 @@ export default function SuscripcionPage() {
     }
   }, [sedeIdParam]);
 
-  // Verificar si viene de un pago exitoso (parámetro en URL)
+  // Verificar si viene de un pago exitoso (parámetro en URL) - Para flujo de redirección
   useEffect(() => {
     const status = searchParams.get('status');
     if (status === 'success') {
@@ -65,6 +70,25 @@ export default function SuscripcionPage() {
       navigate(`/sede/${sedeIdParam}/suscripcion`, { replace: true });
     }
   }, [searchParams]);
+
+  // Handler para cuando el pago es exitoso
+  const handlePaymentSuccess = () => {
+    showSuccess('¡Pago exitoso!', 'Tu suscripción ha sido activada correctamente.');
+    setShowBancardIframe(false);
+    loadEstado();
+  };
+
+  // Handler para error en el pago
+  const handlePaymentError = (error: string) => {
+    showError('Error en el pago', error);
+    setShowBancardIframe(false);
+  };
+
+  // Handler para cancelación
+  const handlePaymentCancel = () => {
+    showError('Pago cancelado', 'El pago fue cancelado. Podés intentarlo nuevamente.');
+    setShowBancardIframe(false);
+  };
 
   const loadSede = async () => {
     try {
@@ -117,21 +141,17 @@ export default function SuscripcionPage() {
       const data = await suscripcionService.iniciarPago(sedeIdParam!, tipoSuscripcion);
       console.log('[DEBUG] Respuesta iniciarPago:', data);
       
-      // Guardar datos del pago en localStorage para recuperarlos al volver
+      // Guardar datos del pago en localStorage
       localStorage.setItem('suscripcion_pago_id', data.pagoId);
       localStorage.setItem('suscripcion_sede_id', sedeIdParam!);
       localStorage.setItem('suscripcion_timestamp', Date.now().toString());
-      console.log('[DEBUG] Datos guardados en localStorage:', {
-        pagoId: data.pagoId,
-        sedeId: sedeIdParam,
-        processId: data.processId,
-      });
       
-      // Redirigir al checkout de Bancard (flujo de redirección vPOS 1.0)
-      // Según documentación Bancard: https://vpos.infonet.com.py:8888/checkout/new?process_id=XXX
-      const bancardCheckoutUrl = `${configBancard?.baseUrl}/checkout/new?process_id=${data.processId}`;
-      console.log('[DEBUG] Redirigiendo a Bancard:', bancardCheckoutUrl);
-      window.location.href = bancardCheckoutUrl;
+      // FLUJO IFRAME vPOS 2.0 - Cargar iframe embebido
+      // Según documentación Bancard vPOS 2.0
+      console.log('[DEBUG] Cargando iframe de Bancard con process_id:', data.processId);
+      setBancardProcessId(data.processId);
+      setShowBancardIframe(true);
+      setIniciandoPago(false);
       
     } catch (err: any) {
       console.error('[DEBUG] Error iniciando pago:', err);
@@ -350,29 +370,65 @@ export default function SuscripcionPage() {
               </ul>
             </div>
 
-            {/* Botón de pago - Redirige a Bancard */}
-            <button
-              onClick={handleIniciarPago}
-              disabled={iniciandoPago}
-              className="w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {iniciandoPago ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Redirigiendo a Bancard...
-                </>
-              ) : (
-                <>
-                  <CreditCard size={20} />
-                  Pagar con Tarjeta
-                </>
-              )}
-            </button>
+            {/* Modal/Iframe de Bancard vPOS 2.0 */}
+            {showBancardIframe && bancardProcessId && configBancard && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-[#151921] rounded-xl w-full max-w-2xl overflow-hidden border border-[#232838]">
+                  {/* Header del modal */}
+                  <div className="bg-[#df2531] text-white px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={20} />
+                      <span className="font-semibold">Pago seguro con Bancard</span>
+                    </div>
+                    <button
+                      onClick={() => setShowBancardIframe(false)}
+                      className="text-white/80 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* Contenedor del iframe usando componente BancardCheckout */}
+                  <div className="p-6">
+                    <BancardCheckout
+                      processId={bancardProcessId}
+                      scriptUrl={`${configBancard.baseUrl}/checkout/javascript/dist/bancard-checkout-4.0.0.js`}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                      onPaymentCancel={handlePaymentCancel}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
-              <Shield size={16} />
-              Pago seguro procesado por Bancard. Serás redirigido a su sitio seguro.
-            </div>
+            {/* Botón de pago */}
+            {!showBancardIframe && (
+              <>
+                <button
+                  onClick={handleIniciarPago}
+                  disabled={iniciandoPago}
+                  className="w-full py-4 bg-[#df2531] hover:bg-[#c41f2a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {iniciandoPago ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Iniciando pago...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={20} />
+                      Pagar con Tarjeta
+                    </>
+                  )}
+                </button>
+
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <Shield size={16} />
+                  Pago seguro procesado por Bancard vPOS 2.0
+                </div>
+              </>
+            )}
           </div>
         )}
 

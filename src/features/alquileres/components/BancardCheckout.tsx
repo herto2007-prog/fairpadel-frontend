@@ -6,7 +6,7 @@ declare global {
   interface Window {
     Bancard?: {
       Checkout: {
-        createForm: (containerId: string, processId: string, styles?: Record<string, string>) => void;
+        createForm: (containerId: string, processId: string, options?: { styles?: Record<string, string> }) => void;
         destroyForm?: () => void;
       };
     };
@@ -123,10 +123,14 @@ export default function BancardCheckout({
     const timer = setTimeout(() => {
       try {
         if (window.Bancard?.Checkout && containerRef.current) {
+          // Según documentación Bancard: los estilos van dentro de un objeto options
+          const options = {
+            styles: fairpadelStyles
+          };
           window.Bancard.Checkout.createForm(
             containerRef.current.id,
             processId,
-            fairpadelStyles
+            options
           );
         }
       } catch (error) {
