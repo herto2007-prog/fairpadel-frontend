@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Flame, TrendingUp, Calendar, MapPin, 
   ChevronRight, Bell, Zap, Users, Target, Crown,
-  Clock, AlertCircle, Star, Medal, Swords,
+  AlertCircle, Star, Medal, Swords,
   ChevronUp, Sparkles, Activity, Check, Trash2,
-  Info, CheckCircle, MessageSquare, Trophy as TrophyIcon,
+  Info, MessageSquare, Trophy as TrophyIcon,
   UserPlus, Gamepad2, CreditCard
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
