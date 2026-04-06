@@ -90,7 +90,7 @@ function DashboardHeader({ perfil }: { perfil: PerfilJugador | null }) {
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1f2e] to-[#151921] border border-[#2a3042] p-6 mb-6"
+      className="relative rounded-2xl bg-gradient-to-br from-[#1a1f2e] to-[#151921] border border-[#2a3042] p-6 mb-6"
     >
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#df2531]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
