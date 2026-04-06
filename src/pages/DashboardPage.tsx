@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BackgroundEffects } from '../components/ui/BackgroundEffects';
 import { NovatoDashboard } from '../features/dashboard/components/NovatoDashboard';
+import { ActivoDashboard } from '../features/dashboard/components/ActivoDashboard';
 import { DashboardData, UserFase } from '../features/dashboard/types/dashboard.types';
 import { determineUserFase } from '../features/dashboard/hooks/useUserFase';
 import { perfilService } from '../features/perfil/perfilService';
@@ -33,16 +34,15 @@ export default function DashboardPage() {
       // 1. Obtener perfil del usuario
       const perfil = await perfilService.getMiPerfil();
 
-      // 2. Calcular días desde registro (simulado por ahora, debería venir del backend)
-      // TODO: Agregar createdAt al perfil
-      const diasDesdeRegistro = 1; // Temporal - asumimos nuevo
-
-      // 3. Determinar fase
+      // 2. Determinar fase basada principalmente en torneos jugados
+      const torneosJugados = perfil.stats?.torneosJugados || 0;
+      const diasDesdeRegistro = torneosJugados === 0 ? 1 : 30;
+      
       const userFase = determineUserFase({
-        torneosJugados: perfil.stats?.torneosJugados || 0,
+        torneosJugados,
         diasDesdeRegistro,
         seguidores: perfil.seguidores || 0,
-        torneosUltimos30Dias: 0, // TODO: Calcular desde historial
+        torneosUltimos30Dias: 0,
         esPremium: perfil.esPremium || false,
       });
 
@@ -140,18 +140,9 @@ export default function DashboardPage() {
         return <NovatoDashboard data={data} />;
       
       case 'ACTIVO':
-        // Por ahora mostramos Novato con ligeros ajustes
-        // TODO: Crear ActivoDashboard
-        return <NovatoDashboard data={data} />;
-      
       case 'REGULAR':
-        // Por ahora mostramos Novato
-        // TODO: Crear RegularDashboard con red social
-        return <NovatoDashboard data={data} />;
-      
       case 'PREMIUM':
-        // TODO: Crear PremiumDashboard
-        return <NovatoDashboard data={data} />;
+        return <ActivoDashboard data={data} />;
       
       default:
         return <NovatoDashboard data={data} />;
