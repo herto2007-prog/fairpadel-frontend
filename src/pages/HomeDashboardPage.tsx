@@ -4,12 +4,15 @@ import {
   Trophy, Flame, TrendingUp, Calendar, MapPin, 
   ChevronRight, Bell, Zap, Users, Target, Crown,
   Clock, AlertCircle, Star, Medal, Swords,
-  ChevronUp, Sparkles, Activity
+  ChevronUp, Sparkles, Activity, Check, Trash2,
+  Info, CheckCircle, MessageSquare, Trophy as TrophyIcon,
+  UserPlus, Gamepad2, CreditCard
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
 import { torneoService } from '../services/torneoService';
+import { notificationService, Notificacion, TipoNotificacion } from '../services/notificationService';
 import { formatDatePY } from '../utils/date';
 
 
@@ -31,21 +34,19 @@ interface TorneoConUrgencia {
   inscripcionesRecientes?: number;
 }
 
-interface Notificacion {
-  id: string;
-  tipo: 'urgente' | 'oportunidad' | 'logro';
-  icono: React.ReactNode;
-  titulo: string;
-  mensaje: string;
-  accion?: { texto: string; link: string };
-  color: string;
-}
+// Notificacion viene del servicio (notificationService.ts)
 
 // ═══════════════════════════════════════════════════════
 // COMPONENTE: Header Personalizado
 // ═══════════════════════════════════════════════════════
 
-function DashboardHeader({ perfil }: { perfil: PerfilJugador | null }) {
+function DashboardHeader({ 
+  perfil, 
+  notificacionesNoLeidas 
+}: { 
+  perfil: PerfilJugador | null;
+  notificacionesNoLeidas: number;
+}) {
   const navigate = useNavigate();
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   
@@ -182,14 +183,18 @@ function DashboardHeader({ perfil }: { perfil: PerfilJugador | null }) {
                 className="relative p-3 bg-[#232838] hover:bg-[#2a3042] rounded-xl transition-colors"
               >
                 <Bell size={20} className="text-gray-400" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-[#df2531] rounded-full animate-pulse" />
+                {notificacionesNoLeidas > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#df2531] rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                    {notificacionesNoLeidas > 99 ? '99+' : notificacionesNoLeidas}
+                  </span>
+                )}
               </motion.button>
               
               <AnimatePresence>
                 {notificacionesAbiertas && (
                   <NotificacionesDropdown 
                     onClose={() => setNotificacionesAbiertas(false)}
-                    perfil={perfil}
+                    onNotificacionesLeidas={() => window.location.reload()}
                   />
                 )}
               </AnimatePresence>
@@ -228,78 +233,217 @@ function DashboardHeader({ perfil }: { perfil: PerfilJugador | null }) {
 // COMPONENTE: Notificaciones Dropdown
 // ═══════════════════════════════════════════════════════
 
-function NotificacionesDropdown({ onClose, perfil }: { onClose: () => void; perfil: PerfilJugador }) {
-  const notificaciones: Notificacion[] = [
-    {
-      id: '1',
-      tipo: 'urgente',
-      icono: <Clock size={16} />,
-      titulo: '¡Inscripción por cerrar!',
-      mensaje: 'El Torneo Summer cierra inscripciones en 2 días',
-      accion: { texto: 'Inscribirme', link: '/torneos' },
-      color: 'text-orange-500 bg-orange-500/10 border-orange-500/20'
-    },
-    {
-      id: '2',
-      tipo: 'oportunidad',
-      icono: <Zap size={16} />,
-      titulo: 'Nuevo torneo en tu ciudad',
-      mensaje: 'Se abrió un torneo de tu categoría en Buenos Aires',
-      accion: { texto: 'Ver', link: '/torneos' },
-      color: 'text-blue-500 bg-blue-500/10 border-blue-500/20'
-    },
-    {
-      id: '3',
-      tipo: 'logro',
-      icono: <Trophy size={16} />,
-      titulo: '¡Racha de victorias!',
-      mensaje: `Llevas ${perfil.partidos?.rachaActual || 0} victorias seguidas. ¡Sigue así!`,
-      color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20'
+const iconosPorTipo: Record<TipoNotificacion, React.ReactNode> = {
+  SISTEMA: <Info size={16} />,
+  TORNEO: <TrophyIcon size={16} />,
+  INSCRIPCION: <UserPlus size={16} />,
+  PARTIDO: <Gamepad2 size={16} />,
+  RANKING: <TrendingUp size={16} />,
+  SOCIAL: <Users size={16} />,
+  PAGO: <CreditCard size={16} />,
+  MENSAJE: <MessageSquare size={16} />,
+};
+
+const coloresPorTipo: Record<TipoNotificacion, string> = {
+  SISTEMA: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+  TORNEO: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+  INSCRIPCION: 'text-green-500 bg-green-500/10 border-green-500/20',
+  PARTIDO: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+  RANKING: 'text-pink-500 bg-pink-500/10 border-pink-500/20',
+  SOCIAL: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20',
+  PAGO: 'text-orange-500 bg-orange-500/10 border-orange-500/20',
+  MENSAJE: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
+};
+
+function NotificacionesDropdown({ 
+  onClose, 
+  onNotificacionesLeidas 
+}: { 
+  onClose: () => void;
+  onNotificacionesLeidas: () => void;
+}) {
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    cargarNotificaciones();
+  }, []);
+
+  const cargarNotificaciones = async () => {
+    try {
+      setLoading(true);
+      const data = await notificationService.getNotificaciones(1, 20, false);
+      setNotificaciones(data);
+    } catch (error) {
+      console.error('Error cargando notificaciones:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const marcarTodasLeidas = async () => {
+    try {
+      await notificationService.marcarTodasComoLeidas();
+      await cargarNotificaciones();
+      onNotificacionesLeidas();
+    } catch (error) {
+      console.error('Error marcando notificaciones:', error);
+    }
+  };
+
+  const eliminarNotificacion = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await notificationService.eliminarNotificacion(id);
+      setNotificaciones(prev => prev.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error eliminando notificación:', error);
+    }
+  };
+
+  const handleClickNotificacion = async (notif: Notificacion) => {
+    if (!notif.leida) {
+      try {
+        await notificationService.marcarComoLeida(notif.id);
+      } catch (error) {
+        console.error('Error marcando como leída:', error);
+      }
+    }
+    if (notif.enlace) {
+      navigate(notif.enlace);
+    }
+    onClose();
+    onNotificacionesLeidas();
+  };
+
+  const formatearFecha = (fecha: string) => {
+    const date = new Date(fecha);
+    const ahora = new Date();
+    const diffMs = ahora.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours} h`;
+    if (diffDays < 7) return `Hace ${diffDays} d`;
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  };
+
+  const noLeidas = notificaciones.filter(n => !n.leida).length;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-      className="absolute right-0 top-full mt-2 w-80 bg-[#1a1f2e] border border-[#2a3042] rounded-xl shadow-2xl z-50 overflow-hidden"
+      className="absolute right-0 top-full mt-2 w-96 bg-[#1a1f2e] border border-[#2a3042] rounded-xl shadow-2xl z-50 overflow-hidden"
     >
+      {/* Header */}
       <div className="p-3 border-b border-[#2a3042] flex items-center justify-between">
-        <span className="font-semibold text-white">Notificaciones</span>
-        <button onClick={onClose} className="text-gray-500 hover:text-white text-xs">
-          Cerrar
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-white">Notificaciones</span>
+          {noLeidas > 0 && (
+            <span className="px-2 py-0.5 bg-[#df2531] text-white text-xs rounded-full">
+              {noLeidas}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {noLeidas > 0 && (
+            <button 
+              onClick={marcarTodasLeidas}
+              className="text-xs text-[#df2531] hover:text-[#ff6b6b] flex items-center gap-1 transition-colors"
+            >
+              <Check size={12} />
+              Marcar leídas
+            </button>
+          )}
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xs">
+            Cerrar
+          </button>
+        </div>
       </div>
-      <div className="max-h-80 overflow-y-auto">
-        {notificaciones.map((notif) => (
-          <div
-            key={notif.id}
-            className={`p-3 border-b border-[#2a3042] last:border-0 hover:bg-[#232838] transition-colors ${
-              notif.tipo === 'urgente' ? 'bg-orange-500/5' : ''
-            }`}
-          >
-            <div className="flex gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${notif.color}`}>
-                {notif.icono}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white">{notif.titulo}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{notif.mensaje}</p>
-                {notif.accion && (
-                  <Link
-                    to={notif.accion.link}
-                    onClick={onClose}
-                    className="inline-block mt-2 text-xs text-[#df2531] hover:underline"
-                  >
-                    {notif.accion.texto} →
-                  </Link>
-                )}
-              </div>
-            </div>
+
+      {/* Lista */}
+      <div className="max-h-96 overflow-y-auto">
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-6 h-6 border-2 border-[#df2531]/20 border-t-[#df2531] rounded-full mx-auto mb-2"
+            />
+            Cargando...
           </div>
-        ))}
+        ) : notificaciones.length === 0 ? (
+          <div className="p-8 text-center">
+            <Bell size={32} className="text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No tienes notificaciones</p>
+            <p className="text-gray-600 text-xs mt-1">
+              Las notificaciones aparecerán cuando haya actividad en tus torneos
+            </p>
+          </div>
+        ) : (
+          notificaciones.map((notif) => (
+            <motion.div
+              key={notif.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => handleClickNotificacion(notif)}
+              className={`p-3 border-b border-[#2a3042] last:border-0 hover:bg-[#232838] transition-colors cursor-pointer group ${
+                !notif.leida ? 'bg-[#df2531]/5' : ''
+              }`}
+            >
+              <div className="flex gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${coloresPorTipo[notif.tipo]}`}>
+                  {iconosPorTipo[notif.tipo]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-sm truncate ${!notif.leida ? 'font-semibold text-white' : 'text-gray-300'}`}>
+                      {notif.titulo || 'Notificación'}
+                    </p>
+                    <span className="text-[10px] text-gray-500 flex-shrink-0">
+                      {formatearFecha(notif.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
+                    {notif.contenido}
+                  </p>
+                  {notif.enlace && (
+                    <span className="inline-block mt-1.5 text-xs text-[#df2531]">
+                      Ver más →
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => eliminarNotificacion(notif.id, e)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                  title="Eliminar"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
+
+      {/* Footer */}
+      {notificaciones.length > 0 && (
+        <div className="p-2 border-t border-[#2a3042] bg-[#151921]">
+          <Link
+            to="/notificaciones"
+            onClick={onClose}
+            className="block w-full py-2 text-center text-xs text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
+          >
+            Ver todas las notificaciones
+          </Link>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -728,7 +872,10 @@ export default function HomeDashboardPage() {
     <div className="min-h-screen bg-[#0B0E14] text-white p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Personalizado */}
-        <DashboardHeader perfil={perfil} />
+        <DashboardHeader 
+          perfil={perfil} 
+          notificacionesNoLeidas={perfil?.privado?.notificacionesNoLeidas || 0}
+        />
 
         {/* Layout principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
