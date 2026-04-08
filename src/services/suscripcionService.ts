@@ -117,4 +117,18 @@ export const suscripcionService = {
     };
   }> =>
     api.post('/alquileres/suscripcion/rollback', { shopProcessId }).then(r => r.data),
+
+  /**
+   * Cancelar suscripción de una sede (por el dueño)
+   * La sede seguirá activa hasta el vencimiento del período pagado
+   */
+  cancelarSuscripcion: (sedeId: string): Promise<{
+    status: string;
+    message: string;
+    data: {
+      diasRestantes: number;
+      nota: string;
+    };
+  }> =>
+    api.post(`/alquileres/suscripcion/${sedeId}/cancelar`).then(r => r.data),
 };
