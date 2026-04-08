@@ -4,6 +4,8 @@ import { suscripcionService, EstadoSuscripcion } from '../../../services/suscrip
 import BancardCheckout from '../components/BancardCheckout';
 import { sedesService } from '../../../services/sedesService';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -29,6 +31,7 @@ export default function SuscripcionPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmModalProps } = useConfirm();
   
   const [sede, setSede] = useState<Sede | null>(null);
   const [estado, setEstado] = useState<EstadoSuscripcion | null>(null);
@@ -175,9 +178,14 @@ export default function SuscripcionPage() {
   // ============================================
 
   const handleRollback = async (shopProcessId: string) => {
-    if (!confirm('¿Estás seguro de que querés hacer rollback de esta transacción?\n\nEsto cancelará/reversará el pago en Bancard.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: '¿Reversar transacción?',
+      message: 'Esto cancelará/reversará el pago en Bancard. Esta acción no se puede deshacer.',
+      confirmText: 'Reversar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
 
     setTestingPagoId(shopProcessId);
     setTestingAction('rollback');
@@ -225,9 +233,14 @@ export default function SuscripcionPage() {
   // ============================================
 
   const handleCancelarSuscripcion = async () => {
-    if (!confirm('¿Estás seguro de que querés cancelar tu suscripción?\n\nTu sede seguirá activa hasta el vencimiento del período pagado. Después de esa fecha, no podrás recibir nuevas reservas.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: '¿Cancelar suscripción?',
+      message: 'Tu sede seguirá activa hasta el vencimiento del período pagado. Después de esa fecha, no podrás recibir nuevas reservas.',
+      confirmText: 'Cancelar suscripción',
+      cancelText: 'Mantener suscripción',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
 
     setCancelandoSuscripcion(true);
 
@@ -589,6 +602,18 @@ export default function SuscripcionPage() {
             </div>
           )}
         </div>
+
+        {/* Modal de Confirmación */}
+        <ConfirmModal
+          isOpen={confirmModalProps.isOpen}
+          onClose={confirmModalProps.close}
+          onConfirm={confirmModalProps.handleConfirm}
+          title={confirmModalProps.title}
+          message={confirmModalProps.message}
+          confirmText={confirmModalProps.confirmText}
+          cancelText={confirmModalProps.cancelText}
+          variant={confirmModalProps.variant}
+        />
       </div>
     </div>
   );
