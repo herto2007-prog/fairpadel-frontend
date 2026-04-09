@@ -135,7 +135,7 @@ export function WhatsAppAdminPage() {
   }, [mensajes]);
 
   return (
-    <PageLayout showHeader>
+    <PageLayout showHeader variant="full" maxWidth="full" padding="none">
       <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Breadcrumb / Volver */}
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
