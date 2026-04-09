@@ -136,7 +136,7 @@ export function WhatsAppAdminPage() {
 
   return (
     <PageLayout showHeader>
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Breadcrumb / Volver */}
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <Link 
@@ -150,7 +150,7 @@ export function WhatsAppAdminPage() {
           <span className="text-white font-medium text-sm">WhatsApp</span>
         </div>
         {/* Estadísticas - Grid responsive */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 px-4 lg:px-8 max-w-[1800px] mx-auto w-full">
           <div className="bg-white/[0.03] border border-white/10 rounded-lg p-2 sm:p-4">
             <div className="text-white/60 text-xs sm:text-sm">Total Conversaciones</div>
             <div className="text-lg sm:text-2xl font-bold text-white">{estadisticas.totalConversaciones}</div>
@@ -170,11 +170,11 @@ export function WhatsAppAdminPage() {
           </div>
         </div>
 
-        {/* Layout principal - Responsive */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 h-[calc(100vh-220px)] lg:h-[calc(100vh-240px)]">
+        {/* Layout principal - Estilo WhatsApp Web */}
+        <div className="flex flex-1 overflow-hidden">
           
-          {/* Lista de conversaciones */}
-          <div className={`${mostrarChat ? 'hidden' : 'flex'} lg:flex lg:col-span-1 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`} style={{ minWidth: '320px', maxWidth: '400px' }}>
+          {/* Lista de conversaciones - Sidebar fijo */}
+          <div className={`${mostrarChat ? 'hidden' : 'flex'} lg:flex flex-col h-full bg-[#111b21] border-r border-white/10 w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:rounded-none rounded-lg`}>
             <div className="p-3 sm:p-4 border-b border-white/10 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-green-400" />
               <h3 className="text-white font-medium text-sm sm:text-base">Conversaciones</h3>
@@ -230,8 +230,8 @@ export function WhatsAppAdminPage() {
             </div>
           </div>
 
-          {/* Chat */}
-          <div className={`${mostrarChat ? 'flex' : 'hidden'} lg:flex lg:col-span-2 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
+          {/* Chat - Ocupa todo el espacio restante */}
+          <div className={`${mostrarChat ? 'flex' : 'hidden'} lg:flex flex-col flex-1 h-full bg-[#0b141a] lg:rounded-none rounded-lg`}>
             {conversacionSeleccionada ? (
               <>
                 {/* Header del chat - Responsive */}
