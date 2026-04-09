@@ -120,7 +120,11 @@ export function CanchasPage() {
         {/* Error */}
         {error && !loading && (
           <div className="text-center py-12">
-            <p className="text-red-400 mb-4">{error}</p>
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-8 h-8 text-red-400" />
+            </div>
+            <p className="text-red-400 mb-2 font-medium">{error}</p>
+            <p className="text-white/40 text-sm mb-4">No pudimos cargar la disponibilidad de canchas</p>
             <button
               onClick={() => cargarDisponibilidad()}
               className="px-4 py-2 bg-[#df2531] text-white rounded-lg hover:bg-[#df2531]/80 transition-colors"
@@ -134,14 +138,21 @@ export function CanchasPage() {
         {!loading && !error && sedes.length === 0 && (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-10 h-10 text-white/30" />
+              <MapPin className="w-10 h-10 text-white/30" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">
-              No hay canchas disponibles
+              No hay complejos disponibles
             </h3>
-            <p className="text-white/50">
-              Intenta con otra fecha o duración
+            <p className="text-white/50 max-w-md mx-auto mb-4">
+              Actualmente no hay sedes con sistema de reservas activo. 
+              Los complejos deportivos deben activar su suscripción para aparecer aquí.
             </p>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-md mx-auto">
+              <p className="text-sm text-white/60">
+                💡 <strong className="text-white">¿Tenés un complejo?</strong><br />
+                Registrá tu sede y activá el sistema de reservas para comenzar a recibir jugadores.
+              </p>
+            </div>
           </div>
         )}
 
