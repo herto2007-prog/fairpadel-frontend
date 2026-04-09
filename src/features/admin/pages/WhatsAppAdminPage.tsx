@@ -136,7 +136,7 @@ export function WhatsAppAdminPage() {
 
   return (
     <PageLayout showHeader>
-      <div className="max-w-7xl xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-2 sm:py-4">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Breadcrumb / Volver */}
         <div className="flex items-center gap-2 mb-3 sm:mb-4">
           <Link 
@@ -171,10 +171,10 @@ export function WhatsAppAdminPage() {
         </div>
 
         {/* Layout principal - Responsive */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 h-[calc(100vh-160px)] sm:h-[calc(100vh-180px)] lg:h-[calc(100vh-200px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 h-[calc(100vh-220px)] lg:h-[calc(100vh-240px)]">
           
           {/* Lista de conversaciones */}
-          <div className={`${mostrarChat ? 'hidden' : 'flex'} lg:flex flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
+          <div className={`${mostrarChat ? 'hidden' : 'flex'} lg:flex lg:col-span-1 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`} style={{ minWidth: '320px', maxWidth: '400px' }}>
             <div className="p-3 sm:p-4 border-b border-white/10 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-green-400" />
               <h3 className="text-white font-medium text-sm sm:text-base">Conversaciones</h3>
@@ -231,7 +231,7 @@ export function WhatsAppAdminPage() {
           </div>
 
           {/* Chat */}
-          <div className={`${mostrarChat ? 'flex' : 'hidden'} lg:flex lg:col-span-3 xl:col-span-4 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
+          <div className={`${mostrarChat ? 'flex' : 'hidden'} lg:flex lg:col-span-2 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
             {conversacionSeleccionada ? (
               <>
                 {/* Header del chat - Responsive */}
