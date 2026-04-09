@@ -58,6 +58,7 @@ import InstructorDetailPage from './features/instructores/pages/InstructorDetail
 
 // Admin
 import { AdminPage } from './features/admin/pages/AdminPage';
+import { WhatsAppAdminPage } from './features/admin/pages/WhatsAppAdminPage';
 
 // Organizador
 import { MisTorneosPage } from './features/organizador/pages/MisTorneosPage';
@@ -171,6 +172,7 @@ function App() {
           {/* Admin */}
           <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/whatsapp" element={<WhatsAppAdminPage />} />
           </Route>
           
           {/* Páginas de retorno de Bancard */}
