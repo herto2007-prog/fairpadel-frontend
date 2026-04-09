@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard } from 'lucide-react';
+import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
@@ -12,13 +13,15 @@ import { AscensosManager } from '../components/AscensosManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
 import { SuscripcionesManager } from '../components/SuscripcionesManager';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones' | 'whatsapp';
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
+  const navigate = useNavigate();
 
   const tabs = [
     { id: 'fairpadel' as AdminTab, label: 'FairPadel', icon: LayoutDashboard, color: 'bg-emerald-500' },
+    { id: 'whatsapp' as AdminTab, label: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500' },
     { id: 'torneos' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-red-500' },
     { id: 'circuitos' as AdminTab, label: 'Circuitos', icon: Route, color: 'bg-purple-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: TrendingUp, color: 'bg-amber-500' },
@@ -53,6 +56,27 @@ export function AdminPage() {
           </a>
         </motion.div>
 
+        {/* Botón WhatsApp destacado */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-6"
+        >
+          <button
+            onClick={() => navigate('/admin/whatsapp')}
+            className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/30 transition-all w-full sm:w-auto"
+          >
+            <div className="relative">
+              <MessageCircle className="w-6 h-6" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+            </div>
+            <div className="text-left">
+              <div className="font-semibold">WhatsApp Business</div>
+              <div className="text-sm text-green-300/70">Gestionar conversaciones y leads</div>
+            </div>
+          </button>
+        </motion.div>
+
         {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -66,7 +90,13 @@ export function AdminPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'whatsapp') {
+                    navigate('/admin/whatsapp');
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
                   isActive
                     ? `${tab.color} text-white shadow-lg`
