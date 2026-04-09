@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2 } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -17,6 +17,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const baseNavItems = [
     { path: '/tournaments', label: 'Torneos', icon: Trophy },
     { path: '/sedes', label: 'Canchas', icon: MapPin },
+    { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
     { path: '/instructores', label: 'Instructores', icon: Users },
     { path: '/rankings', label: 'Rankings', icon: Award },
   ];

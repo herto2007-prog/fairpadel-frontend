@@ -54,6 +54,9 @@ import ReservasSedePage from './features/alquileres/pages/ReservasSedePage';
 import InstructoresListPage from './features/instructores/pages/InstructoresListPage';
 import InstructorDetailPage from './features/instructores/pages/InstructorDetailPage';
 
+// Comunidad/Jugadores
+import { JugadoresListPage } from './features/jugadores/pages/JugadoresListPage';
+
 // Feed (Novedades)
 // Importación removida - NovedadesPage reemplazado por HomeDashboardPage
 
@@ -115,6 +118,10 @@ function App() {
         <Route path="/perfil" element={<PerfilPage />} />
         <Route path="/perfil/:id" element={<PerfilPage />} />
         
+        {/* Comunidad/Jugadores - Público */}
+        <Route path="/comunidad" element={<JugadoresListPage />} />
+        <Route path="/jugadores" element={<JugadoresListPage />} />
+        
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterWizard />} />
@@ -160,6 +167,7 @@ function App() {
           <Route path="/instructores" element={<InstructoresListPage />} />
           <Route path="/instructores/:id" element={<InstructorDetailPage />} />
           
+          
           {/* Feed / Novedades - Ahora redirige al dashboard unificado */}
           <Route path="/novedades" element={<HomeDashboardPage />} />
           
@@ -181,8 +189,8 @@ function App() {
           <Route path="/suscripcion/confirmacion" element={<SuscripcionConfirmacionPage />} />
           <Route path="/suscripcion/cancelacion" element={<SuscripcionCancelacionPage />} />
           
-          {/* Alias de rutas para navegación */}
-          <Route path="/jugadores" element={<HomeDashboardPage />} /> {/* Temporal - redirige al dashboard */}
+          {/* Redirecciones */}
+          <Route path="/feed" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
     </Router>
