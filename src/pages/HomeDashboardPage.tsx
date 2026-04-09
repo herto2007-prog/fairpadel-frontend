@@ -537,36 +537,9 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
     return actividadesConIcono.find(a => tipo.includes(a.tipo)) || actividadesConIcono[3];
   };
 
-  // Generar algunas actividades simuladas de otros jugadores para FOMO
-  const actividadesFOMO = [
-    {
-      id: 'fomo-1',
-      tipo: 'ascenso_otro',
-      titulo: 'Martín G. subió a 3° Categoría',
-      fecha: 'Hace 2 horas',
-      icono: ChevronUp,
-      color: 'text-green-500',
-      bg: 'bg-green-500/10'
-    },
-    {
-      id: 'fomo-2',
-      tipo: 'torneo_ganado_otro',
-      titulo: 'Lucía M. ganó el Torneo Spring',
-      fecha: 'Hace 5 horas',
-      icono: Trophy,
-      color: 'text-yellow-500',
-      bg: 'bg-yellow-500/10'
-    },
-    {
-      id: 'fomo-3',
-      tipo: 'racha_otro',
-      titulo: 'Carlos P. lleva 8 victorias seguidas',
-      fecha: 'Hace 1 día',
-      icono: Flame,
-      color: 'text-orange-500',
-      bg: 'bg-orange-500/10'
-    },
-  ];
+  // TODO: Obtener actividades reales de otros jugadores desde la API
+  // Por ahora no mostramos datos mock a usuarios reales
+  const actividadesFOMO: any[] = [];
 
   return (
     <motion.div
@@ -606,15 +579,17 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
           );
         })}
 
-        {/* Divider */}
-        <div className="relative py-2">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#232838]" />
+        {/* Divider - solo si hay actividades FOMO */}
+        {actividadesFOMO.length > 0 && (
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#232838]" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-3 bg-[#151921] text-xs text-gray-500">En tu red</span>
+            </div>
           </div>
-          <div className="relative flex justify-center">
-            <span className="px-3 bg-[#151921] text-xs text-gray-500">En tu red</span>
-          </div>
-        </div>
+        )}
 
         {/* Actividades FOMO de otros jugadores */}
         {actividadesFOMO.map((item, index) => (
@@ -635,14 +610,26 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
             <span className="text-xs text-[#df2531] flex-shrink-0">🔥 Trending</span>
           </motion.div>
         ))}
+
+        {/* Mensaje cuando no hay actividad */}
+        {(!actividad || actividad.length === 0) && actividadesFOMO.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <Activity size={32} className="mx-auto mb-3 opacity-30" />
+            <p className="text-sm">Aún no hay actividad en tu red</p>
+            <p className="text-xs mt-1">¡Participa en torneos para ver actualizaciones!</p>
+          </div>
+        )}
       </div>
 
-      <Link 
-        to="/rankings"
-        className="block w-full mt-4 py-2 text-center text-sm text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
-      >
-        Ver toda la actividad →
-      </Link>
+      {/* Link solo si hay actividad */}
+      {((actividad && actividad.length > 0) || actividadesFOMO.length > 0) && (
+        <Link 
+          to="/rankings"
+          className="block w-full mt-4 py-2 text-center text-sm text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
+        >
+          Ver toda la actividad →
+        </Link>
+      )}
     </motion.div>
   );
 }
