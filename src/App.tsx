@@ -9,6 +9,7 @@ import AppLayout from './components/layout/AppLayout';
 // Pages
 import LandingPage from './pages/LandingPage';
 import HomeDashboardPage from './pages/HomeDashboardPage';
+import AboutPage from './pages/AboutPage';
 
 // Auth
 import { LoginPage } from './features/auth/pages/LoginPage';
@@ -100,6 +101,7 @@ function App() {
         <Routes>
           {/* Landing - Pública */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
         
         {/* Torneos Públicos - V2 */}
         <Route path="/torneos" element={<TorneosPublicListPage />} />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from 'lucide-react';
 
 const footerLinks = {
@@ -10,7 +11,7 @@ const footerLinks = {
     { name: 'Actualizaciones', href: '#' },
   ],
   empresa: [
-    { name: 'Sobre Nosotros', href: '#' },
+    { name: 'Sobre Nosotros', href: '/about' },
     { name: 'Blog', href: '#' },
     { name: 'Prensa', href: '#' },
     { name: 'Trabajá con Nosotros', href: '#' },
@@ -30,13 +31,24 @@ const socialLinks = [
 ];
 
 export const Footer = () => {
-  const scrollToSection = (href: string) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLinkClick = (e: React.MouseEvent, href: string) => {
     if (href.startsWith('#')) {
-      const element = document.querySelector(href);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+      e.preventDefault();
+      // Si estamos en la landing page, hacer scroll
+      if (location.pathname === '/') {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        // Si estamos en otra página, navegar a home y luego scroll
+        navigate('/' + href);
       }
     }
+    // Si href no empieza con #, dejar que Link maneje la navegación
   };
 
   return (
@@ -86,18 +98,13 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.producto.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    onClick={(e: React.MouseEvent) => { 
-                      if (link.href.startsWith('#')) {
-                        e.preventDefault(); 
-                        scrollToSection(link.href); 
-                      }
-                    }}
+                  <Link
+                    to={link.href}
+                    onClick={(e: React.MouseEvent) => handleLinkClick(e, link.href)}
                     className="text-gray-400 hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -108,12 +115,13 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.empresa.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
+                    onClick={(e: React.MouseEvent) => handleLinkClick(e, link.href)}
                     className="text-gray-400 hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -124,12 +132,13 @@ export const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.soporte.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
+                    onClick={(e: React.MouseEvent) => handleLinkClick(e, link.href)}
                     className="text-gray-400 hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

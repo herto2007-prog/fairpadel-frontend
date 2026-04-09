@@ -8,6 +8,7 @@ import { Pricing } from '../components/landing/Pricing';
 import { CTA } from '../components/landing/CTA';
 import { Footer } from '../components/landing/Footer';
 import { ParticleBackground } from '../components/landing/ParticleBackground';
+import { SEOSection } from '../components/landing/SEOSection';
 
 export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +38,7 @@ export default function LandingPage() {
         <Testimonials />
         <Pricing />
         <CTA />
+        <SEOSection />
       </main>
       <Footer />
     </div>
