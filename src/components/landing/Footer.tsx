@@ -59,7 +59,7 @@ export const Footer = () => {
           <div className="col-span-2">
             <motion.a
               href="#hero"
-              onClick={(e: React.MouseEvent) => { e.preventDefault(); scrollToSection('#hero'); }}
+              onClick={(e: React.MouseEvent) => handleLinkClick(e, '#hero')}
               className="inline-block mb-6"
               whileHover={{ scale: 1.05 }}
             >
