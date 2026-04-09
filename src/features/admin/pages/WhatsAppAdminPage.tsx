@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PageLayout } from '../../../components/layout';
 import { api } from '../../../services/api';
 import { formatDatePY } from '../../../utils/date';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ChevronLeft, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Conversacion {
   id: string;
@@ -135,7 +136,19 @@ export function WhatsAppAdminPage() {
 
   return (
     <PageLayout showHeader>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-4">
+        {/* Breadcrumb / Volver */}
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <Link 
+            to="/admin" 
+            className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors text-sm"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span className="hidden sm:inline">Admin</span>
+          </Link>
+          <ChevronLeft className="w-4 h-4 text-white/40 rotate-180" />
+          <span className="text-white font-medium text-sm">WhatsApp</span>
+        </div>
         {/* Estadísticas - Grid responsive */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-white/[0.03] border border-white/10 rounded-lg p-2 sm:p-4">
@@ -158,10 +171,10 @@ export function WhatsAppAdminPage() {
         </div>
 
         {/* Layout principal - Responsive */}
-        <div className="relative h-[calc(100vh-200px)] sm:h-[calc(100vh-240px)] lg:h-[calc(100vh-280px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 h-[calc(100vh-180px)] sm:h-[calc(100vh-220px)] lg:h-[calc(100vh-260px)]">
           
           {/* Lista de conversaciones */}
-          <div className={`${mostrarChat ? 'hidden lg:flex' : 'flex'} flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
+          <div className={`${mostrarChat ? 'hidden' : 'flex'} lg:flex flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
             <div className="p-3 sm:p-4 border-b border-white/10 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-green-400" />
               <h3 className="text-white font-medium text-sm sm:text-base">Conversaciones</h3>
@@ -217,8 +230,8 @@ export function WhatsAppAdminPage() {
             </div>
           </div>
 
-          {/* Chat - En móvil ocupa toda la pantalla cuando está activo */}
-          <div className={`${mostrarChat ? 'flex' : 'hidden lg:flex'} absolute lg:relative inset-0 lg:inset-auto flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden lg:ml-0`}>
+          {/* Chat */}
+          <div className={`${mostrarChat ? 'flex' : 'hidden'} lg:flex lg:col-span-2 flex-col h-full bg-white/[0.03] border border-white/10 rounded-lg overflow-hidden`}>
             {conversacionSeleccionada ? (
               <>
                 {/* Header del chat - Responsive */}
@@ -226,9 +239,10 @@ export function WhatsAppAdminPage() {
                   {/* Botón volver en móvil */}
                   <button 
                     onClick={volverALista}
-                    className="lg:hidden p-2 -ml-2 text-white/70 hover:text-white"
+                    className="lg:hidden flex items-center gap-1 text-white/70 hover:text-white"
                   >
                     <ArrowLeft className="w-5 h-5" />
+                    <span className="text-sm">Volver</span>
                   </button>
                   
                   <div className="min-w-0 flex-1">
