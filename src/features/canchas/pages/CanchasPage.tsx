@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, ChevronRight, Clock } from 'lucide-react';
+import { MapPin, ChevronRight, Clock, MessageCircle } from 'lucide-react';
 import { api } from '../../../services/api';
 import { DateCarousel } from '../../../components/ui/DateCarousel';
 import { DurationSelector } from '../../../components/ui/DurationSelector';
@@ -148,10 +148,19 @@ export function CanchasPage() {
               Los complejos deportivos deben activar su suscripción para aparecer aquí.
             </p>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-md mx-auto">
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-white/60 mb-3">
                 💡 <strong className="text-white">¿Tenés un complejo?</strong><br />
                 Registrá tu sede y activá el sistema de reservas para comenzar a recibir jugadores.
               </p>
+              <a
+                href="https://wa.me/595982342473?text=Hola%20FairPadel!%20Tengo%20un%20complejo%20de%20padel%20y%20quiero%20saber%20más%20sobre%20el%20sistema%20de%20reservas."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <MessageCircle size={18} />
+                Contactar por WhatsApp
+              </a>
             </div>
           </div>
         )}
