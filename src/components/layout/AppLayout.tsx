@@ -18,6 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { path: '/tournaments', label: 'Torneos', icon: Trophy },
     { path: '/sedes', label: 'Canchas', icon: MapPin },
     { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
+    { path: '/comunidad-v2', label: 'Jugadores V2', icon: Users },
     { path: '/instructores', label: 'Instructores', icon: Users },
     { path: '/rankings', label: 'Rankings', icon: Award },
   ];

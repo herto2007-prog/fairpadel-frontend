@@ -56,6 +56,7 @@ import InstructorDetailPage from './features/instructores/pages/InstructorDetail
 
 // Comunidad/Jugadores
 import { JugadoresListPage } from './features/jugadores/pages/JugadoresListPage';
+import { ComunidadV2Page } from './features/jugadores/pages/ComunidadV2Page';
 
 // Feed (Novedades)
 // Importación removida - NovedadesPage reemplazado por HomeDashboardPage
@@ -157,6 +158,7 @@ function App() {
           {/* Comunidad/Jugadores */}
           <Route path="/comunidad" element={<JugadoresListPage />} />
           <Route path="/jugadores" element={<JugadoresListPage />} />
+          <Route path="/comunidad-v2" element={<ComunidadV2Page />} />
           
           {/* Dueño - Mis Sedes */}
           <Route path="/mis-sedes" element={<MisSedesPage />} />
