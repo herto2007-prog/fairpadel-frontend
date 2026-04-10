@@ -86,12 +86,32 @@ export function JugadoresListPage() {
   };
 
   const tieneFiltrosActivos = searchTerm || ciudadSeleccionada || categoriaSeleccionada;
+  
+  // Items base para todos los usuarios
+  const baseNavItems = [
+    { path: '/torneos', label: 'Torneos' },
+    { path: '/sedes', label: 'Canchas' },
+    { path: '/comunidad', label: 'Comunidad', active: true },
+    { path: '/instructores', label: 'Instructores' },
+    { path: '/rankings', label: 'Rankings' },
+  ];
+  
+  // Items solo para organizadores y admin
+  const isOrganizador = user?.roles?.includes('organizador') || user?.roles?.includes('admin');
+  
+  const navItems = isOrganizador
+    ? [
+        ...baseNavItems.slice(0, 1), // Torneos
+        { path: '/mis-torneos', label: 'Mis Torneos' },
+        ...baseNavItems.slice(1), // Resto
+      ]
+    : baseNavItems;
 
   return (
     <div className="min-h-screen bg-[#0B0E14] relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
 
-      {/* Header Público */}
+      {/* Header - Dinámico según autenticación */}
       <header className="bg-[#151921] border-b border-[#232838] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -103,13 +123,7 @@ export function JugadoresListPage() {
 
             {/* Navegación */}
             <nav className="hidden md:flex items-center gap-1">
-              {[
-                { path: '/torneos', label: 'Torneos' },
-                { path: '/sedes', label: 'Canchas' },
-                { path: '/comunidad', label: 'Comunidad', active: true },
-                { path: '/instructores', label: 'Instructores' },
-                { path: '/rankings', label: 'Rankings' },
-              ].map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
