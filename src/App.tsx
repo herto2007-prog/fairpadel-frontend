@@ -55,7 +55,6 @@ import InstructoresListPage from './features/instructores/pages/InstructoresList
 import InstructorDetailPage from './features/instructores/pages/InstructorDetailPage';
 
 // Comunidad/Jugadores
-import { JugadoresListPage } from './features/jugadores/pages/JugadoresListPage';
 import { ComunidadV2Page } from './features/jugadores/pages/ComunidadV2Page';
 
 // Feed (Novedades)
@@ -120,7 +119,7 @@ function App() {
         <Route path="/perfil/:id" element={<PerfilPage />} />
         
         {/* Comunidad/Jugadores - Público (sin layout) */}
-        <Route path="/jugadores-public" element={<JugadoresListPage />} />
+        <Route path="/jugadores-public" element={<Navigate to="/comunidad" replace />} />
         
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
@@ -156,9 +155,8 @@ function App() {
           <Route path="/sedes/:id" element={<SedeDetailPage />} />
           
           {/* Comunidad/Jugadores */}
-          <Route path="/comunidad" element={<JugadoresListPage />} />
-          <Route path="/jugadores" element={<JugadoresListPage />} />
-          <Route path="/comunidad-v2" element={<ComunidadV2Page />} />
+          <Route path="/comunidad" element={<ComunidadV2Page />} />
+          <Route path="/jugadores" element={<ComunidadV2Page />} />
           
           {/* Dueño - Mis Sedes */}
           <Route path="/mis-sedes" element={<MisSedesPage />} />

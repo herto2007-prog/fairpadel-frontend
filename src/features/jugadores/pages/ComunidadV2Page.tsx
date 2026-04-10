@@ -49,8 +49,8 @@ export function ComunidadV2Page() {
         {/* Header */}
         <div className="mb-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl font-bold text-white mb-2">Comunidad FairPadel V2</h1>
-            <p className="text-gray-400">Todos los jugadores registrados en la plataforma</p>
+            <h1 className="text-4xl font-bold text-white mb-2">Comunidad FairPadel</h1>
+            <p className="text-gray-400">Descubre jugadores, conecta y compite con la comunidad de pádel más grande de Paraguay</p>
           </motion.div>
         </div>
 
