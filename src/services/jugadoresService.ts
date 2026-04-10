@@ -50,6 +50,8 @@ export const jugadoresService = {
     if (filtros.categoriaId) params.append('categoriaId', filtros.categoriaId);
     if (filtros.page) params.append('page', filtros.page.toString());
     if (filtros.limit) params.append('limit', filtros.limit.toString());
+    // Cache buster para evitar CDN cache
+    params.append('_t', Date.now().toString());
 
     return api.get<{ success: boolean; data: Jugador[]; pagination: Pagination }>(
       `/users/buscar?${params.toString()}`
