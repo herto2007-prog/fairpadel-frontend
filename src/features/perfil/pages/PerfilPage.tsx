@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Trophy, MapPin, Calendar, TrendingUp, Award, 
+import {
+  Trophy, MapPin, Calendar, TrendingUp, Award,
   Share2, Settings, Camera, Edit3, Flame,
-  Target, Users, Star, MapPinned,
+  Target, Star, MapPinned,
   Activity, Crown, Zap, Shield, Loader2, ArrowLeft
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
@@ -12,6 +12,7 @@ import { perfilService, PerfilJugador } from '../perfilService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { EditarPerfilModal } from '../components/EditarPerfilModal';
 import { WhatsAppPreferencesCard } from '../components/WhatsAppPreferencesCard';
+import { SeguirButton } from '../components/SeguirButton';
 import { formatDatePY } from '../../../utils/date';
 
 export function PerfilPage() {
@@ -239,10 +240,13 @@ export function PerfilPage() {
               className="flex items-center gap-2 pb-2"
             >
               {!isMyProfile ? (
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all">
-                  <Users className="w-4 h-4" />
-                  Seguir
-                </button>
+                <SeguirButton
+                  usuarioId={perfil.id}
+                  initialSeguidoresCount={perfil.seguidores}
+                  onSeguimientoChange={(_siguiendo, count) => {
+                    setPerfil((prev) => (prev ? { ...prev, seguidores: count } : null));
+                  }}
+                />
               ) : (
                 <button 
                   onClick={() => setIsEditModalOpen(true)}
