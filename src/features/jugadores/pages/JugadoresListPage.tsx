@@ -8,11 +8,8 @@ import {
 import { jugadoresService, Jugador, CategoriaFiltro } from '../../../services/jugadoresService';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useToast } from '../../../components/ui/ToastProvider';
-import { useAuth } from '../../auth/context/AuthContext';
-
 export function JugadoresListPage() {
   const { showError } = useToast();
-  const { user, isAuthenticated } = useAuth();
   
   // Estados
   const [jugadores, setJugadores] = useState<Jugador[]>([]);
@@ -86,94 +83,10 @@ export function JugadoresListPage() {
   };
 
   const tieneFiltrosActivos = searchTerm || ciudadSeleccionada || categoriaSeleccionada;
-  
-  // Items base para todos los usuarios
-  const baseNavItems = [
-    { path: '/torneos', label: 'Torneos' },
-    { path: '/sedes', label: 'Canchas' },
-    { path: '/comunidad', label: 'Comunidad', active: true },
-    { path: '/instructores', label: 'Instructores' },
-    { path: '/rankings', label: 'Rankings' },
-  ];
-  
-  // Items solo para organizadores y admin
-  const isOrganizador = user?.roles?.includes('organizador') || user?.roles?.includes('admin');
-  
-  const navItems = isOrganizador
-    ? [
-        ...baseNavItems.slice(0, 1), // Torneos
-        { path: '/mis-torneos', label: 'Mis Torneos' },
-        ...baseNavItems.slice(1), // Resto
-      ]
-    : baseNavItems;
 
   return (
     <div className="min-h-screen bg-[#0B0E14] relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
-
-      {/* Header - Dinámico según autenticación */}
-      <header className="bg-[#151921] border-b border-[#232838] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <img src="/logos/Asset 2fair padel.png" alt="FairPadel" className="h-8 w-auto" />
-              <span className="font-bold text-xl text-white hidden sm:block">FairPadel</span>
-            </Link>
-
-            {/* Navegación */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    item.active
-                      ? 'bg-[#df2531] text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-[#232838]'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Auth Buttons o User */}
-            <div className="flex items-center gap-3">
-              {isAuthenticated && user ? (
-                <Link to="/dashboard" className="flex items-center gap-2">
-                  {user.fotoUrl ? (
-                    <img 
-                      src={user.fotoUrl} 
-                      alt={`${user.nombre} ${user.apellido}`}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center text-white font-semibold text-sm">
-                      {user.nombre[0]}{user.apellido[0]}
-                    </div>
-                  )}
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="hidden sm:block text-gray-400 hover:text-white text-sm font-medium"
-                  >
-                    Iniciar sesión
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="px-4 py-2 bg-[#df2531] hover:bg-[#ff4757] text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    Registrarse
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         {/* Header */}

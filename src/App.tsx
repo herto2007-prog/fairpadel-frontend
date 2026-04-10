@@ -118,9 +118,8 @@ function App() {
         <Route path="/perfil" element={<PerfilPage />} />
         <Route path="/perfil/:id" element={<PerfilPage />} />
         
-        {/* Comunidad/Jugadores - Público */}
-        <Route path="/comunidad" element={<JugadoresListPage />} />
-        <Route path="/jugadores" element={<JugadoresListPage />} />
+        {/* Comunidad/Jugadores - Público (sin layout) */}
+        <Route path="/jugadores-public" element={<JugadoresListPage />} />
         
         {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
@@ -154,6 +153,10 @@ function App() {
           {/* Canchas/Reservas (V2) */}
           <Route path="/sedes" element={<CanchasPage />} />
           <Route path="/sedes/:id" element={<SedeDetailPage />} />
+          
+          {/* Comunidad/Jugadores */}
+          <Route path="/comunidad" element={<JugadoresListPage />} />
+          <Route path="/jugadores" element={<JugadoresListPage />} />
           
           {/* Dueño - Mis Sedes */}
           <Route path="/mis-sedes" element={<MisSedesPage />} />
