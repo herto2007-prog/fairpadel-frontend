@@ -20,7 +20,7 @@ export interface PerfilJugador {
     tipo: string;
     orden: number;
   };
-  edad?: number;
+  edad?: number | null;
   estado: string;
   esPremium: boolean;
   roles: string[];
