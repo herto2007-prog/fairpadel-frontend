@@ -32,12 +32,20 @@ export function ComunidadV2Page() {
     }
   };
 
-  // Filtrar jugadores localmente por nombre/apellido
+  // Función para normalizar texto (quitar tildes)
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
+  // Filtrar jugadores localmente por nombre/apellido (búsqueda inteligente con tildes)
   const jugadoresFiltrados = searchTerm
     ? jugadores.filter(
         (j) =>
-          j.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          j.apellido.toLowerCase().includes(searchTerm.toLowerCase())
+          normalizeText(j.nombre).includes(normalizeText(searchTerm)) ||
+          normalizeText(j.apellido).includes(normalizeText(searchTerm))
       )
     : jugadores;
 
@@ -163,18 +171,6 @@ function JugadorCard({ jugador, index }: { jugador: JugadorComunidad; index: num
                 {jugador.categoria.nombre}
               </span>
             )}
-            {/* Estado del usuario */}
-            <span
-              className={`inline-block text-xs mt-1 px-2 py-0.5 rounded-full ${
-                jugador.estado === 'ACTIVO'
-                  ? 'bg-green-500/20 text-green-400'
-                  : jugador.estado === 'NO_VERIFICADO'
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-gray-500/20 text-gray-400'
-              }`}
-            >
-              {jugador.estado}
-            </span>
           </div>
         </div>
 
@@ -189,13 +185,7 @@ function JugadorCard({ jugador, index }: { jugador: JugadorComunidad; index: num
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-2 pt-4 border-t border-[#232838]">
-          <div className="text-center">
-            <p className="text-lg font-bold text-white">{jugador.seguidores}</p>
-            <p className="text-xs text-gray-500">Seguidores</p>
-          </div>
-        </div>
+        {/* Stats - Eliminado seguidores para mantener privacidad */}
       </Link>
     </motion.div>
   );
