@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, UserCheck, Shield, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { adminService, User } from '../../../services/adminService';
 
 const ROLES = [
@@ -124,6 +124,7 @@ export function UserRoleManager() {
             <thead className="bg-[#151921] border-b border-[#232838]">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Usuario</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">ID</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Documento</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Categoría</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Roles</th>
@@ -148,6 +149,20 @@ export function UserRoleManager() {
                         <p className="font-medium text-white">{user.nombre} {user.apellido}</p>
                         <p className="text-sm text-gray-500">{user.email}</p>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs text-gray-400 bg-[#232838] px-2 py-1 rounded truncate max-w-[120px]">
+                        {user.id}
+                      </code>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(user.id)}
+                        className="p-1.5 hover:bg-[#232838] rounded-lg transition-colors text-gray-400 hover:text-white"
+                        title="Copiar ID"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-400">{user.documento}</td>
