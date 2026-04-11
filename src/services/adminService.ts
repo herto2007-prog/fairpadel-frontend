@@ -8,6 +8,7 @@ export interface User {
   documento: string;
   estado: string;
   roles: string[];
+  fotoUrl?: string;
   categoriaActual?: {
     nombre: string;
   };

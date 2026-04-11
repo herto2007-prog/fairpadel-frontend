@@ -140,7 +140,18 @@ export function UserRoleManager() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      {user.fotoUrl ? (
+                        <img
+                          src={user.fotoUrl}
+                          alt={`${user.nombre} ${user.apellido}`}
+                          className="w-10 h-10 rounded-full object-cover bg-white/5"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center ${user.fotoUrl ? 'hidden' : ''}`}>
                         <span className="text-primary font-semibold">
                           {user.nombre.charAt(0)}{user.apellido.charAt(0)}
                         </span>
