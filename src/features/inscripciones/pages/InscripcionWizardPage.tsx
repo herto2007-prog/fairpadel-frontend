@@ -133,8 +133,10 @@ export function InscripcionWizardPage() {
         if (generoJugador === 'MASCULINO' && c.tipo === 'FEMENINO') return false;
         if (generoJugador === 'FEMENINO' && c.tipo === 'FEMENINO' && c.orden > ordenJugador) return false;
         if (c.tipo === 'MASCULINO') {
-          if (generoJugador === 'MASCULINO' && c.orden > ordenJugador) return false;
-          if (generoJugador === 'FEMENINO' && c.orden > ordenJugador + 1) return false;
+          // Regla: jugadores de categorías bajas (orden bajo) pueden jugar en categorías altas (orden alto)
+          // pero no al revés. Ej: 8ª (orden 1) puede jugar en 4ª (orden 5), pero 4ª no puede jugar en 8ª
+          if (generoJugador === 'MASCULINO' && c.orden < ordenJugador) return false;
+          if (generoJugador === 'FEMENINO' && c.orden < ordenJugador + 1) return false;
         }
         return true;
       })
