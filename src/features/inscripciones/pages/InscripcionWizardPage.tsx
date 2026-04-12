@@ -122,16 +122,18 @@ export function InscripcionWizardPage() {
 
   // Filtrar y ordenar categorías según género del jugador
   const categoriasFiltradas = useMemo(() => {
-    if (!torneo || !userProfile?.genero || !userProfile?.categoriaActual) return [];
+    if (!torneo || !userProfile?.genero || !userProfile?.categoria) return [];
     
-    const ordenJugador = userProfile.categoriaActual.orden;
+    const ordenJugador = userProfile.categoria.orden;
     const generoJugador = userProfile.genero;
     
     return torneo.categorias
       .filter((c: any) => c.inscripcionAbierta)
       .filter((c: any) => {
         if (generoJugador === 'MASCULINO' && c.tipo === 'FEMENINO') return false;
-        if (generoJugador === 'FEMENINO' && c.tipo === 'FEMENINO' && c.orden > ordenJugador) return false;
+        // Regla: jugadoras femeninas solo pueden jugar en su categoría o inferiores (mismo tipo FEMENINO)
+        // pero pueden jugar en categorías masculinas superiores (hasta orden + 1)
+        if (generoJugador === 'FEMENINO' && c.tipo === 'FEMENINO' && c.orden < ordenJugador) return false;
         if (c.tipo === 'MASCULINO') {
           // Regla: jugadores de categorías bajas (orden bajo) pueden jugar en categorías altas (orden alto)
           // pero no al revés. Ej: 8ª (orden 1) puede jugar en 4ª (orden 5), pero 4ª no puede jugar en 8ª
