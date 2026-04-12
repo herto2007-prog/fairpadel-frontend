@@ -438,17 +438,14 @@ export function InscripcionWizardPage() {
                     <p className="text-xs text-white/40 mb-1">Categoría</p>
                     <p className="text-sm">{torneo.categorias.find((c: any) => c.id === categoriaSeleccionada)?.nombre}</p>
                   </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => setModoPago('COMPLETO')} className={`px-3 py-1.5 rounded text-xs transition-colors ${modoPago === 'COMPLETO' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}>Un pago</button>
-                    <button onClick={() => setModoPago('INDIVIDUAL')} className={`px-3 py-1.5 rounded text-xs transition-colors ${modoPago === 'INDIVIDUAL' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}>Mitad cada uno</button>
-                  </div>
                 </div>
               </div>
               <label className="flex items-start gap-3 cursor-pointer p-3 border border-white/10 rounded-lg hover:border-white/20 transition-colors">
                 <input type="checkbox" checked={consentimiento} onChange={(e) => setConsentimiento(e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 mt-0.5" />
                 <p className="text-xs text-white/60 leading-relaxed">Confirmo que mi compañero/a me ha dado su consentimiento para inscribirlo/a. Ambos aceptamos las normativas de FairPadel.</p>
               </label>
-              <div className="p-3 border border-white/10 rounded-lg">
+              {/* TODO: Conectar datos bancarios reales del organizador */}
+              {/* <div className="p-3 border border-white/10 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="w-4 h-4 text-white/40" />
                   <p className="text-xs text-white/40 uppercase tracking-wider">Datos para transferencia</p>
@@ -459,7 +456,7 @@ export function InscripcionWizardPage() {
                   <p><span className="text-white/30">Cuenta:</span> 1234567890</p>
                   <p><span className="text-white/30">Alias:</span> TORNEO.PADEL</p>
                 </div>
-              </div>
+              </div> */}
             </motion.div>
           )}
         </AnimatePresence>
