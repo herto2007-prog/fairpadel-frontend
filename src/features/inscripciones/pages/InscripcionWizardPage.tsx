@@ -87,7 +87,7 @@ export function InscripcionWizardPage() {
         if (torneoData.success) setTorneo(torneoData.torneo);
         
         if (isAuthenticated) {
-          const { data: profileData } = await api.get('/users/me');
+          const { data: profileData } = await api.get('/auth/me');
           if (profileData.success) setUserProfile(profileData.user);
         } else {
           localStorage.setItem('redirectAfterLogin', `/t/${slug}/inscribirse`);
