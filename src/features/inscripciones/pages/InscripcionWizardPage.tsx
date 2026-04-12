@@ -122,9 +122,9 @@ export function InscripcionWizardPage() {
 
   // Filtrar y ordenar categorías según género del jugador
   const categoriasFiltradas = useMemo(() => {
-    if (!torneo || !userProfile?.genero || !userProfile?.categoriaActual) return [];
+    if (!torneo || !userProfile?.genero || !userProfile?.categoria) return [];
     
-    const ordenJugador = userProfile.categoriaActual.orden;
+    const ordenJugador = userProfile.categoria.orden;
     const generoJugador = userProfile.genero;
     
     return torneo.categorias
@@ -249,7 +249,7 @@ export function InscripcionWizardPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{user?.nombre} {user?.apellido}</p>
-                  <p className="text-xs text-white/40">{userProfile?.categoriaActual?.nombre || 'Sin categoría'}</p>
+                  <p className="text-xs text-white/40">{userProfile?.categoria?.nombre || 'Sin categoría'}</p>
                 </div>
                 <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
               </div>
