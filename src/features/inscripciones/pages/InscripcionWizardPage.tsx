@@ -56,7 +56,7 @@ const CODIGOS_PAIS = [
 ];
 
 export function InscripcionWizardPage() {
-  const { showError } = useToast();
+  const { showError, showWarning } = useToast();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -120,39 +120,47 @@ export function InscripcionWizardPage() {
     }
   };
 
-  // Filtrar y ordenar categorías según género del jugador
+  // Filtrar categorías: solo mostrar las que tienen inscripción abierta
+  // La validación de categoría inferior se hace al seleccionar
   const categoriasFiltradas = useMemo(() => {
-    if (!torneo || !userProfile?.genero || !userProfile?.categoria) return [];
+    if (!torneo) return [];
+    return torneo.categorias
+      .filter((c: any) => c.inscripcionAbierta)
+      .sort((a: any, b: any) => a.orden - b.orden);
+  }, [torneo]);
+
+  // Validar si el jugador puede inscribirse en una categoría
+  const puedeInscribirseEnCategoria = (categoria: any): boolean => {
+    if (!userProfile?.categoria) return true; // Si no tiene categoría, permitir (validación manual)
     
     const ordenJugador = userProfile.categoria.orden;
     const generoJugador = userProfile.genero;
     
-    return torneo.categorias
-      .filter((c: any) => c.inscripcionAbierta)
-      .filter((c: any) => {
-        if (generoJugador === 'MASCULINO' && c.tipo === 'FEMENINO') return false;
-        // Regla: jugadoras femeninas solo pueden jugar en su categoría o inferiores (mismo tipo FEMENINO)
-        // pero pueden jugar en categorías masculinas superiores (hasta orden + 1)
-        if (generoJugador === 'FEMENINO' && c.tipo === 'FEMENINO' && c.orden < ordenJugador) return false;
-        if (c.tipo === 'MASCULINO') {
-          // Regla: jugadores de categorías bajas (orden bajo) pueden jugar en categorías altas (orden alto)
-          // pero no al revés. Ej: 8ª (orden 1) puede jugar en 4ª (orden 5), pero 4ª no puede jugar en 8ª
-          if (generoJugador === 'MASCULINO' && c.orden < ordenJugador) return false;
-          if (generoJugador === 'FEMENINO' && c.orden < ordenJugador + 1) return false;
-        }
-        return true;
-      })
-      .sort((a: any, b: any) => {
-        if (generoJugador === 'FEMENINO') {
-          if (a.tipo === 'FEMENINO' && b.tipo !== 'FEMENINO') return -1;
-          if (a.tipo !== 'FEMENINO' && b.tipo === 'FEMENINO') return 1;
-        } else {
-          if (a.tipo === 'MASCULINO' && b.tipo !== 'MASCULINO') return -1;
-          if (a.tipo !== 'MASCULINO' && b.tipo === 'MASCULINO') return 1;
-        }
-        return a.orden - b.orden;
-      });
-  }, [torneo, userProfile]);
+    // No permitir categorías masculinas a jugadoras femeninas si es muy inferior
+    if (categoria.tipo === 'MASCULINO' && generoJugador === 'FEMENINO' && categoria.orden < ordenJugador + 1) {
+      return false;
+    }
+    
+    // No permitir categorías femeninas a jugadores masculinos
+    if (categoria.tipo === 'FEMENINO' && generoJugador === 'MASCULINO') {
+      return false;
+    }
+    
+    // No permitir categoría inferior (ej: jugador 4ª no puede jugar 8ª)
+    if (categoria.orden < ordenJugador) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSeleccionarCategoria = (categoria: any) => {
+    if (!puedeInscribirseEnCategoria(categoria)) {
+      showWarning('Categoría no permitida', `No puedes inscribirte en ${categoria.nombre} porque es inferior a tu categoría actual (${userProfile?.categoria?.nombre || 'Sin categoría'}).`);
+      return;
+    }
+    setCategoriaSeleccionada(categoria.id);
+  };
 
   const crearInscripcion = async () => {
     if (!torneo || !categoriaSeleccionada) return;
@@ -366,26 +374,35 @@ export function InscripcionWizardPage() {
                   </div>
                 )}
                 <div className="space-y-1">
-                  {categoriasFiltradas.map((cat: any) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCategoriaSeleccionada(cat.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        categoriaSeleccionada === cat.id
-                          ? cat.tipo === 'FEMENINO' ? 'bg-pink-500/10 border-pink-500/50' : 'bg-blue-500/10 border-blue-500/50'
-                          : 'bg-white/[0.02] border-white/5 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`w-2 h-2 rounded-full ${cat.tipo === 'FEMENINO' ? 'bg-pink-400' : 'bg-blue-400'}`} />
-                        <div className="text-left">
-                          <p className="text-sm font-medium">{cat.nombre}</p>
-                          <p className="text-xs text-white/40">{cat.tipo === 'FEMENINO' ? 'Damas' : 'Caballeros'}</p>
+                  {categoriasFiltradas.map((cat: any) => {
+                    const puedeSeleccionar = puedeInscribirseEnCategoria(cat);
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => handleSeleccionarCategoria(cat)}
+                        disabled={!puedeSeleccionar}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          categoriaSeleccionada === cat.id
+                            ? cat.tipo === 'FEMENINO' ? 'bg-pink-500/10 border-pink-500/50' : 'bg-blue-500/10 border-blue-500/50'
+                            : puedeSeleccionar 
+                              ? 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                              : 'bg-white/[0.01] border-white/5 opacity-40 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`w-2 h-2 rounded-full ${cat.tipo === 'FEMENINO' ? 'bg-pink-400' : 'bg-blue-400'}`} />
+                          <div className="text-left">
+                            <p className="text-sm font-medium">{cat.nombre}</p>
+                            <p className="text-xs text-white/40">{cat.tipo === 'FEMENINO' ? 'Damas' : 'Caballeros'}</p>
+                            {!puedeSeleccionar && (
+                              <p className="text-xs text-yellow-500/70">No disponible para tu perfil</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {categoriaSeleccionada === cat.id && <CheckCircle className={`w-4 h-4 ${cat.tipo === 'FEMENINO' ? 'text-pink-400' : 'text-blue-400'}`} />}
-                    </button>
-                  ))}
+                        {categoriaSeleccionada === cat.id && <CheckCircle className={`w-4 h-4 ${cat.tipo === 'FEMENINO' ? 'text-pink-400' : 'text-blue-400'}`} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
