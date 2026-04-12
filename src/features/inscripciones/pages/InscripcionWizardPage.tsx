@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Users, Trophy, CheckCircle,
-  AlertCircle, Search, CreditCard, Loader2, Check, X, Info
+  AlertCircle, Search, Loader2, Check, X, Info
 } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -72,7 +72,6 @@ export function InscripcionWizardPage() {
     nombre: '', apellido: '', documento: '', telefono: '', email: '',
   });
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
-  const [modoPago, setModoPago] = useState<'COMPLETO' | 'INDIVIDUAL'>('COMPLETO');
   const [consentimiento, setConsentimiento] = useState(false);
   
   const [busquedaQuery, setBusquedaQuery] = useState('');
@@ -169,7 +168,7 @@ export function InscripcionWizardPage() {
       const payload: any = {
         tournamentId: torneo.id,
         categoryId: categoriaSeleccionada,
-        modoPago,
+        modoPago: 'COMPLETO',
       };
       if (jugador2) payload.jugador2Id = jugador2.id;
       else {
