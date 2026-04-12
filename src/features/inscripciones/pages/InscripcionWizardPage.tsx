@@ -122,9 +122,9 @@ export function InscripcionWizardPage() {
 
   // Filtrar y ordenar categorías según género del jugador
   const categoriasFiltradas = useMemo(() => {
-    if (!torneo || !userProfile?.genero || !userProfile?.categoria) return [];
+    if (!torneo || !userProfile?.genero || !userProfile?.categoriaActual) return [];
     
-    const ordenJugador = userProfile.categoria.orden;
+    const ordenJugador = userProfile.categoriaActual.orden;
     const generoJugador = userProfile.genero;
     
     return torneo.categorias
