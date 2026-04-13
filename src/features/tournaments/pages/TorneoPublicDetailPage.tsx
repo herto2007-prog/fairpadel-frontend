@@ -10,6 +10,7 @@ import { api } from '../../../services/api';
 import { formatDatePY } from '../../../utils/date';
 import { useAuth } from '../../auth/context/AuthContext';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { ParejaAvatar } from '../../../components/ui/ParejaAvatar';
 
 interface TorneoDetail {
   id: string;
@@ -406,18 +407,11 @@ export function TorneoPublicDetailPage() {
                                               key={pareja.id}
                                               className="flex items-center gap-3 p-3 bg-pink-500/5 rounded-xl border border-pink-500/10 hover:border-pink-500/30 transition-colors"
                                             >
-                                              <div className="flex -space-x-2">
-                                                <img
-                                                  src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
-                                                  alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
-                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                                />
-                                                <img
-                                                  src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
-                                                  alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
-                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                                />
-                                              </div>
+                                              <ParejaAvatar
+                                                jugador1={pareja.jugador1}
+                                                jugador2={pareja.jugador2}
+                                                size="sm"
+                                              />
                                               <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">
                                                   {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
@@ -457,18 +451,11 @@ export function TorneoPublicDetailPage() {
                                               key={pareja.id}
                                               className="flex items-center gap-3 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-colors"
                                             >
-                                              <div className="flex -space-x-2">
-                                                <img
-                                                  src={pareja.jugador1.fotoUrl || '/avatar-default.png'}
-                                                  alt={`${pareja.jugador1.nombre} ${pareja.jugador1.apellido}`}
-                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                                />
-                                                <img
-                                                  src={pareja.jugador2.fotoUrl || '/avatar-default.png'}
-                                                  alt={`${pareja.jugador2.nombre} ${pareja.jugador2.apellido}`}
-                                                  className="w-8 h-8 rounded-full border-2 border-dark object-cover bg-white/10"
-                                                />
-                                              </div>
+                                              <ParejaAvatar
+                                                jugador1={pareja.jugador1}
+                                                jugador2={pareja.jugador2}
+                                                size="sm"
+                                              />
                                               <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-white truncate">
                                                   {pareja.jugador1.apellido} / {pareja.jugador2.apellido}
