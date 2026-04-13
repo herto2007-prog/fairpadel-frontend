@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, Calendar, Lock, 
   Camera, ChevronRight, ChevronLeft, Check, 
-  Trophy, Sparkles, Heart, Shield, ChevronDown
+  Trophy, Sparkles, Heart, Shield, ChevronDown, X
 } from 'lucide-react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
@@ -12,6 +12,7 @@ import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { ProfilePhotoGuidelines } from '../../../components/upload/ProfilePhotoGuidelines';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { uploadToCloudinary } from '../../../services/uploadService';
 
 
 interface FormData {
@@ -199,6 +200,7 @@ export const RegisterWizard = () => {
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [showPhotoGuidelines, setShowPhotoGuidelines] = useState(true);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -954,10 +956,22 @@ export const RegisterWizard = () => {
             <AvatarEditorModal
               image={avatarFile}
               onSave={async (dataUrl) => {
-                setFormData(prev => ({ ...prev, fotoUrl: dataUrl }));
-                setShowAvatarEditor(false);
-                setAvatarFile(null);
-                // Aquí podrías subir el dataUrl a Cloudinary
+                setIsUploadingPhoto(true);
+                try {
+                  // Subir a Cloudinary
+                  const cloudinaryUrl = await uploadToCloudinary(dataUrl, 'avatars');
+                  setFormData(prev => ({ ...prev, fotoUrl: cloudinaryUrl }));
+                  setShowAvatarEditor(false);
+                  setAvatarFile(null);
+                } catch (error: any) {
+                  console.error('Error subiendo foto:', error);
+                  // Fallback: guardar base64 temporalmente
+                  setFormData(prev => ({ ...prev, fotoUrl: dataUrl }));
+                  setShowAvatarEditor(false);
+                  setAvatarFile(null);
+                } finally {
+                  setIsUploadingPhoto(false);
+                }
               }}
               onCancel={() => {
                 setShowAvatarEditor(false);
@@ -966,6 +980,21 @@ export const RegisterWizard = () => {
             />
           )}
         </AnimatePresence>
+
+        {/* Loading overlay para upload */}
+        {isUploadingPhoto && (
+          <div className="fixed inset-0 z-[60] bg-dark/80 backdrop-blur-sm flex items-center justify-center">
+            <div className="text-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full mx-auto mb-4"
+              />
+              <p className="text-white font-medium">Subiendo foto...</p>
+              <p className="text-gray-400 text-sm">Esto puede tomar unos segundos</p>
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );
