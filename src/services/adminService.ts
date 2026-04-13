@@ -122,6 +122,10 @@ export const adminService = {
   updateUserRoles: (data: UpdateRolesData) => 
     api.post('/admin/users/update-roles', data).then(r => r.data),
   getStats: () => api.get('/admin/stats').then(r => r.data),
+  resendVerification: (email: string) =>
+    api.post('/auth/resend-verification', { email }).then(r => r.data),
+  requestPasswordReset: (email: string) =>
+    api.post('/auth/forgot-password', { email }).then(r => r.data),
   
   // SEDES
   getSedes: () => api.get('/admin/sedes').then(r => r.data),

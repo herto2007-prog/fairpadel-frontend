@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw } from 'lucide-react';
 import { adminService, User } from '../../../services/adminService';
 
 const ROLES = [
@@ -9,11 +9,15 @@ const ROLES = [
   { id: 'admin', label: 'Admin', color: 'bg-red-500', icon: Shield },
 ];
 
+type FiltroEstado = 'TODOS' | 'ACTIVO' | 'NO_VERIFICADO';
+
 export function UserRoleManager() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('TODOS');
   const [saving, setSaving] = useState<string | null>(null);
+  const [soporteLoading, setSoporteLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -56,12 +60,56 @@ export function UserRoleManager() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    user.apellido.toLowerCase().includes(search.toLowerCase()) ||
-    user.email.toLowerCase().includes(search.toLowerCase()) ||
-    user.documento.includes(search)
-  );
+  const filteredUsers = users.filter(user => {
+    const matchSearch =
+      user.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      user.apellido.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase()) ||
+      user.documento.includes(search);
+    const matchEstado = filtroEstado === 'TODOS' || user.estado === filtroEstado;
+    return matchSearch && matchEstado;
+  });
+
+  const handleResendVerification = async (email: string) => {
+    setSoporteLoading(`verify-${email}`);
+    setMessage(null);
+    try {
+      await adminService.resendVerification(email);
+      setMessage({ type: 'success', text: `Email de verificación reenviado a ${email}` });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Error reenviando verificación' });
+    } finally {
+      setSoporteLoading(null);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
+  const handlePasswordReset = async (email: string) => {
+    setSoporteLoading(`reset-${email}`);
+    setMessage(null);
+    try {
+      await adminService.requestPasswordReset(email);
+      setMessage({ type: 'success', text: `Email de recuperación enviado a ${email}` });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Error enviando recuperación' });
+    } finally {
+      setSoporteLoading(null);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    switch (estado) {
+      case 'ACTIVO':
+        return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'NO_VERIFICADO':
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'SUSPENDIDO':
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default:
+        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
 
   if (loading) {
     return (
@@ -85,15 +133,35 @@ export function UserRoleManager() {
           <p className="text-gray-400 text-sm">Asigna o quita roles a los usuarios</p>
         </div>
         
-        <div className="relative w-full sm:w-auto">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, email o documento..."
-            className="w-full sm:w-80 bg-[#151921] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex bg-[#151921] border border-[#232838] rounded-xl p-1">
+            {(['TODOS', 'ACTIVO', 'NO_VERIFICADO'] as FiltroEstado[]).map((estado) => (
+              <button
+                key={estado}
+                onClick={() => setFiltroEstado(estado)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filtroEstado === estado
+                    ? 'bg-primary text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {estado === 'TODOS' ? 'Todos' : estado === 'ACTIVO' ? 'Activos' : 'No verificados'}
+                <span className="ml-1.5 text-xs opacity-80">
+                  ({estado === 'TODOS' ? users.length : users.filter(u => u.estado === estado).length})
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre, email o documento..."
+              className="w-full sm:w-80 bg-[#151921] border border-[#232838] rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
         </div>
       </div>
 
@@ -127,7 +195,9 @@ export function UserRoleManager() {
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">ID</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Documento</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Categoría</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Estado</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Roles</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Soporte</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#232838]">
@@ -182,6 +252,11 @@ export function UserRoleManager() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-sm border ${getEstadoBadge(user.estado)}`}>
+                      {user.estado.replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex gap-2 flex-wrap">
                       {ROLES.map((role) => {
                         const hasRole = user.roles.includes(role.id);
@@ -206,6 +281,38 @@ export function UserRoleManager() {
                       })}
                     </div>
                   </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {user.estado === 'NO_VERIFICADO' && (
+                        <button
+                          onClick={() => handleResendVerification(user.email)}
+                          disabled={soporteLoading === `verify-${user.email}`}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                          title="Reenviar email de verificación"
+                        >
+                          {soporteLoading === `verify-${user.email}` ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Mail className="w-3.5 h-3.5" />
+                          )}
+                          Verificar
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handlePasswordReset(user.email)}
+                        disabled={soporteLoading === `reset-${user.email}`}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                        title="Enviar recuperación de contraseña"
+                      >
+                        {soporteLoading === `reset-${user.email}` ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Key className="w-3.5 h-3.5" />
+                        )}
+                        Reset pass
+                      </button>
+                    </div>
+                  </td>
                 </motion.tr>
               ))}
             </tbody>
@@ -221,21 +328,27 @@ export function UserRoleManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="glass rounded-2xl p-6">
           <p className="text-gray-400 text-sm mb-1">Total Usuarios</p>
           <p className="text-3xl font-bold text-white">{users.length}</p>
         </div>
         <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">Administradores</p>
-          <p className="text-3xl font-bold text-white">
-            {users.filter(u => u.roles.includes('admin')).length}
+          <p className="text-gray-400 text-sm mb-1">Activos</p>
+          <p className="text-3xl font-bold text-green-400">
+            {users.filter(u => u.estado === 'ACTIVO').length}
           </p>
         </div>
         <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">Organizadores</p>
+          <p className="text-gray-400 text-sm mb-1">No Verificados</p>
+          <p className="text-3xl font-bold text-yellow-400">
+            {users.filter(u => u.estado === 'NO_VERIFICADO').length}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-gray-400 text-sm mb-1">Administradores</p>
           <p className="text-3xl font-bold text-white">
-            {users.filter(u => u.roles.includes('organizador')).length}
+            {users.filter(u => u.roles.includes('admin')).length}
           </p>
         </div>
       </div>
