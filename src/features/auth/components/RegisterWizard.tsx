@@ -201,6 +201,8 @@ export const RegisterWizard = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [showPhotoGuidelines, setShowPhotoGuidelines] = useState(true);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -219,8 +221,12 @@ export const RegisterWizard = () => {
 
   const handleNext = () => {
     if (validateStep()) {
-      setDirection(1);
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      if (currentStep === 3) {
+        handleSubmit();
+      } else {
+        setDirection(1);
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+      }
     }
   };
 
@@ -244,10 +250,11 @@ export const RegisterWizard = () => {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
+    setRegistrationError(null);
+
     // Guardar email para reenvío de verificación
     localStorage.setItem('pendingVerificationEmail', formData.email);
-    
+
     try {
       // Llamada real a la API
       await authService.register({
@@ -264,13 +271,14 @@ export const RegisterWizard = () => {
         fotoUrl: formData.fotoUrl,
         consentCheckboxWhatsapp: formData.consentCheckboxWhatsapp,
       });
-      
-      // Redirigir al login después de 2 segundos
-      setTimeout(() => navigate('/login'), 2000);
+
+      setRegistrationSuccess(true);
+      setDirection(1);
+      setCurrentStep(4);
     } catch (error: any) {
       console.error('Error en registro:', error);
       const message = error.response?.data?.message || 'Error al crear cuenta. Intenta nuevamente.';
-      console.error('Error registrando:', message);
+      setRegistrationError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -496,6 +504,31 @@ export const RegisterWizard = () => {
         );
 
       case 3:
+        if (registrationSuccess) {
+          return (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-8"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Check className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">¡Cuenta creada!</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Tu registro ya fue completado exitosamente.
+              </p>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className="text-primary hover:underline text-sm"
+              >
+                Ver confirmación →
+              </button>
+            </motion.div>
+          );
+        }
+
         return (
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
             <motion.div variants={itemVariants}>
@@ -888,50 +921,65 @@ export const RegisterWizard = () => {
 
           {/* Navigation */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-800">
-            <motion.button
-              whileHover={{ x: -5 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={currentStep === 1 ? () => navigate('/') : handleBack}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              {currentStep === 1 ? 'Cancelar' : 'Atrás'}
-            </motion.button>
+            {currentStep === 4 ? (
+              <div />
+            ) : (
+              <motion.button
+                whileHover={{ x: -5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={currentStep === 1 ? () => navigate('/') : handleBack}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                {currentStep === 1 ? 'Cancelar' : 'Atrás'}
+              </motion.button>
+            )}
 
             {currentStep < 4 ? (
-              <motion.button
-                whileHover={{ scale: 1.02, x: 5 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleNext}
-                disabled={!validateStep()}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
-              >
-                Siguiente
-                <ChevronRight className="w-5 h-5" />
-              </motion.button>
+              <div className="flex flex-col items-end gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.02, x: 5 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleNext}
+                  disabled={!validateStep() || isSubmitting}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
+                >
+                  {isSubmitting && currentStep === 3 ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      Creando cuenta...
+                    </>
+                  ) : (
+                    <>
+                      {currentStep === 3 ? 'Crear mi cuenta' : 'Siguiente'}
+                      <ChevronRight className="w-5 h-5" />
+                    </>
+                  )}
+                </motion.button>
+                {currentStep === 3 && registrationError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-500 text-sm text-right max-w-[260px]"
+                  >
+                    {registrationError}
+                  </motion.p>
+                )}
+              </div>
             ) : (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="flex items-center gap-2 bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2 bg-gradient-to-r from-primary to-red-600 hover:from-primary/90 hover:to-red-600/90 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-primary/20"
               >
-                {isSubmitting ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                    />
-                    Creando cuenta...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-5 h-5" />
-                    ¡Comenzar!
-                  </>
-                )}
+                <Check className="w-5 h-5" />
+                Ir al login
               </motion.button>
             )}
           </div>
