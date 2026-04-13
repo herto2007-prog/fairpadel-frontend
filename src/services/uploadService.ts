@@ -1,18 +1,9 @@
+import { api } from './api';
+
 /**
- * Servicio de subida de imágenes a Cloudinary
- * Usa unsigned upload con upload preset
+ * Servicio de subida de imágenes
+ * Usa el backend para subir a Cloudinary de forma segura
  */
-
-interface CloudinaryConfig {
-  cloudName: string;
-  uploadPreset: string;
-}
-
-// Configuración de Cloudinary (debería venir de variables de entorno)
-const config: CloudinaryConfig = {
-  cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '',
-  uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '',
-};
 
 /**
  * Convierte un data URL (base64) a un File/Blob
@@ -30,59 +21,38 @@ function dataURLtoFile(dataUrl: string, filename: string): File {
 }
 
 /**
- * Sube una imagen a Cloudinary
+ * Sube una imagen de avatar al backend, que la sube a Cloudinary
  * @param image - Puede ser un File o un data URL (base64)
- * @param folder - Carpeta opcional en Cloudinary
  * @returns URL segura de la imagen subida
  */
 export async function uploadToCloudinary(
   image: File | string,
-  folder?: string
+  _folder?: string // Ignorado, el backend define la carpeta
 ): Promise<string> {
-  if (!config.cloudName || !config.uploadPreset) {
-    throw new Error('Cloudinary no está configurado. Verifica las variables de entorno.');
-  }
-
   // Convertir data URL a File si es necesario
   const file = typeof image === 'string' && image.startsWith('data:')
     ? dataURLtoFile(image, `avatar-${Date.now()}.jpg`)
     : image as File;
 
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', config.uploadPreset);
-  
-  if (folder) {
-    formData.append('folder', folder);
+  formData.append('image', file);
+
+  const { data } = await api.post('/uploads/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  if (!data.success) {
+    throw new Error(data.message || 'Error al subir imagen');
   }
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`,
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Error al subir imagen a Cloudinary');
-  }
-
-  const data = await response.json();
-  return data.secure_url;
+  return data.data.url;
 }
 
 /**
- * Verifica si Cloudinary está configurado
+ * Verifica si el servicio está disponible (siempre true, el backend maneja la config)
  */
 export function isCloudinaryConfigured(): boolean {
-  return !!config.cloudName && !!config.uploadPreset;
-}
-
-/**
- * Obtiene la configuración actual (para debugging)
- */
-export function getCloudinaryConfig(): CloudinaryConfig {
-  return { ...config };
+  return true;
 }
