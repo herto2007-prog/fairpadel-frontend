@@ -9,6 +9,7 @@ import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
 import { useAuth } from '../../../../features/auth/context/AuthContext';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
+import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface AuditoriaManagerProps {
   tournamentId: string;
@@ -160,6 +161,7 @@ interface DiaSlotsData {
 
 export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
   const [vistaActiva, setVistaActiva] = useState<VistaTipo>('validacion');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -307,7 +309,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       setSlotSeleccionado('');
       await loadPartidos();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al cambiar slot');
+      showError('Error', err.response?.data?.message || 'Error al cambiar slot');
     }
   };
 
@@ -322,9 +324,9 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       
       setPartidoIntercambio(null);
       await loadPartidos();
-      alert('Slots intercambiados correctamente');
+      showSuccess('Éxito', 'Slots intercambiados correctamente');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al intercambiar');
+      showError('Error', err.response?.data?.message || 'Error al intercambiar');
     }
   };
 
@@ -390,7 +392,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       await loadPartidosSinCancha();
     } catch (err: any) {
       console.error('Error asignando cancha:', err);
-      alert(err.response?.data?.message || 'Error al asignar cancha');
+      showError('Error', err.response?.data?.message || 'Error al asignar cancha');
     } finally {
       setAsignando(false);
     }
@@ -442,7 +444,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       await loadInscripciones();
     } catch (err: any) {
       console.error('Error eliminando inscripción:', err);
-      alert(err.response?.data?.message || 'Error al eliminar inscripción');
+      showError('Error', err.response?.data?.message || 'Error al eliminar inscripción');
     } finally {
       setEliminando(false);
     }
@@ -768,7 +770,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                             <button
                               onClick={() => {
                                 // Navegar a la categoría para re-sortear
-                                alert(`Re-sortear categoría: ${problema.categoria}`);
+                                showWarning('Re-sortear', `Re-sortear categoría: ${problema.categoria}`);
                               }}
                               className="px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
                             >
