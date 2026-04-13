@@ -67,6 +67,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
             </div>
           </div>
           <button
+            type="button"
             onClick={onCancel}
             className="p-2 hover:bg-dark-100 rounded-xl transition-colors"
           >
@@ -135,6 +136,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
             {/* Rotation Control */}
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setRotate(rotate - 90)}
                 className="flex-1 py-3 bg-dark-100 hover:bg-dark-200 rounded-xl text-gray-300 transition-colors flex items-center justify-center gap-2"
               >
@@ -142,6 +144,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                 <span className="text-sm">-90°</span>
               </button>
               <button
+                type="button"
                 onClick={() => setRotate(0)}
                 className="flex-1 py-3 bg-dark-100 hover:bg-dark-200 rounded-xl text-gray-300 transition-colors flex items-center justify-center gap-2"
               >
@@ -149,6 +152,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                 <span className="text-sm">Reset</span>
               </button>
               <button
+                type="button"
                 onClick={() => setRotate(rotate + 90)}
                 className="flex-1 py-3 bg-dark-100 hover:bg-dark-200 rounded-xl text-gray-300 transition-colors flex items-center justify-center gap-2"
               >
@@ -165,6 +169,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                   <span className="text-gray-300 text-sm font-medium">Posición Horizontal</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setPosition(prev => ({ ...prev, x: 0.5 }))}
                   className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                 >
@@ -195,6 +200,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                   <span className="text-gray-300 text-sm font-medium">Posición Vertical</span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setPosition(prev => ({ ...prev, y: 0.5 }))}
                   className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
                 >
@@ -227,6 +233,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
               <span className="text-gray-300 text-sm font-medium">Forma</span>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => setBorderRadius(50)}
                   className={`p-2 rounded-lg transition-colors ${
                     borderRadius === 50 ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
@@ -235,6 +242,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                   <User className="w-5 h-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setBorderRadius(0)}
                   className={`p-2 rounded-lg transition-colors ${
                     borderRadius === 0 ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
@@ -248,6 +256,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
 
           {/* Preview Toggle */}
           <button
+            type="button"
             onClick={generatePreview}
             className="w-full mt-4 py-2 text-primary text-sm hover:underline"
           >
@@ -258,12 +267,14 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-800">
           <button
+            type="button"
             onClick={onCancel}
             className="px-6 py-3 text-gray-400 hover:text-white transition-colors"
           >
             Cancelar
           </button>
           <motion.button
+            type="button"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleSave}
@@ -291,6 +302,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                   className="w-40 h-40 rounded-full mx-auto mb-6 border-4 border-primary/30"
                 />
                 <button
+                  type="button"
                   onClick={() => setShowPreview(false)}
                   className="btn-secondary"
                 >
