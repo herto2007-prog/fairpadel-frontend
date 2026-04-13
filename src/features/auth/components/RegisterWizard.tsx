@@ -655,18 +655,48 @@ export const RegisterWizard = () => {
                     <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                       <Check className="w-5 h-5 text-white" />
                     </div>
+                  </div>
+                  
+                  {/* Botones de acción */}
+                  <div className="flex items-center justify-center gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('avatar-input-change')?.click()}
+                      className="flex items-center gap-2 px-4 py-2 bg-dark-100 hover:bg-primary/20 border border-gray-700 hover:border-primary/50 rounded-lg text-gray-300 hover:text-primary transition-colors text-sm"
+                      title="Cambiar foto"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Cambiar
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
                         updateField('fotoUrl', '');
                         setShowPhotoGuidelines(true);
                       }}
-                      className="absolute -bottom-2 -right-8 w-8 h-8 bg-dark-100 border border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 transition-colors text-lg"
+                      className="flex items-center gap-2 px-4 py-2 bg-dark-100 hover:bg-red-500/20 border border-gray-700 hover:border-red-500/50 rounded-lg text-gray-300 hover:text-red-400 transition-colors text-sm"
                       title="Eliminar foto"
                     >
-                      ×
+                      <X className="w-4 h-4" />
+                      Eliminar
                     </button>
                   </div>
+                  
+                  {/* Input file oculto para cambiar foto */}
+                  <input
+                    id="avatar-input-change"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAvatarFile(file);
+                        setShowAvatarEditor(true);
+                      }
+                    }}
+                  />
+                  
                   <p className="text-gray-400 text-xs mt-3">
                     Tu foto será visible en brackets y rankings
                   </p>

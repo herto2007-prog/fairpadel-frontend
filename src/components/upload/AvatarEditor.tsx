@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AvatarEditor from 'react-avatar-editor';
 import { 
   ZoomIn, ZoomOut, RotateCw, Check, X, 
-  Sparkles, Crop, User
+  Sparkles, Crop, User, Move, Target
 } from 'lucide-react';
 
 interface AvatarEditorProps {
@@ -16,9 +16,11 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
   const [scale, setScale] = useState(1.2);
   const [rotate, setRotate] = useState(0);
   const [borderRadius, setBorderRadius] = useState(50); // 50 = círculo perfecto
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
   const editorRef = useRef<AvatarEditor>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleSave = () => {
     if (editorRef.current) {
@@ -90,7 +92,13 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                 color={[11, 14, 20, 0.8]} // RGBA
                 scale={scale}
                 rotate={rotate}
-                className="rounded-2xl"
+                position={position}
+                onPositionChange={setPosition}
+                onMouseDown={() => setIsDragging(true)}
+                onMouseUp={() => setIsDragging(false)}
+                onTouchStart={() => setIsDragging(true)}
+                onTouchEnd={() => setIsDragging(false)}
+                className="rounded-2xl cursor-move"
               />
               
               {/* Decorative ring */}
@@ -147,6 +155,71 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
                 <RotateCw className="w-4 h-4" />
                 <span className="text-sm">+90°</span>
               </button>
+            </div>
+
+            {/* Position Control - Horizontal */}
+            <div className="bg-dark-100 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Move className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-300 text-sm font-medium">Posición Horizontal</span>
+                </div>
+                <button
+                  onClick={() => setPosition(prev => ({ ...prev, x: 0.5 }))}
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                >
+                  <Target className="w-3 h-3" />
+                  Centrar
+                </button>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={position.x}
+                onChange={(e) => setPosition(prev => ({ ...prev, x: parseFloat(e.target.value) }))}
+                className="w-full h-2 bg-dark-200 rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Izquierda</span>
+                <span>Derecha</span>
+              </div>
+            </div>
+
+            {/* Position Control - Vertical */}
+            <div className="bg-dark-100 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Move className="w-4 h-4 text-gray-400 rotate-90" />
+                  <span className="text-gray-300 text-sm font-medium">Posición Vertical</span>
+                </div>
+                <button
+                  onClick={() => setPosition(prev => ({ ...prev, y: 0.5 }))}
+                  className="text-xs text-primary hover:text-primary/80 flex items-center gap-1"
+                >
+                  <Target className="w-3 h-3" />
+                  Centrar
+                </button>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={position.y}
+                onChange={(e) => setPosition(prev => ({ ...prev, y: parseFloat(e.target.value) }))}
+                className="w-full h-2 bg-dark-200 rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Arriba</span>
+                <span>Abajo</span>
+              </div>
+            </div>
+
+            {/* Drag Hint */}
+            <div className={`text-center text-xs transition-colors ${isDragging ? 'text-primary' : 'text-gray-500'}`}>
+              💡 También puedes arrastrar la imagen directamente con el mouse/touch
             </div>
 
             {/* Shape Toggle */}
