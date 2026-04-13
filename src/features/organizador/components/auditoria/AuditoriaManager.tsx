@@ -200,6 +200,11 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [partidoIntercambio, setPartidoIntercambio] = useState<PartidoData | null>(null);
 
+  // Modal eliminar inscripción
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
+  const [inscripcionAEliminar, setInscripcionAEliminar] = useState<InscripcionData | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -414,6 +419,32 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       link.href = URL.createObjectURL(blob);
       link.download = filename;
       link.click();
+    }
+  };
+
+  const abrirModalEliminar = (insc: InscripcionData) => {
+    setInscripcionAEliminar(insc);
+    setModalEliminarAbierto(true);
+  };
+
+  const eliminarInscripcion = async () => {
+    if (!inscripcionAEliminar) return;
+    
+    setEliminando(true);
+    try {
+      await api.delete(`/admin/auditoria/inscripciones/${inscripcionAEliminar.id}`);
+      
+      setModalEliminarAbierto(false);
+      setInscripcionAEliminar(null);
+      
+      // Recargar la lista
+      await loadInscripciones();
+      alert('Inscripción eliminada correctamente');
+    } catch (err: any) {
+      console.error('Error eliminando inscripción:', err);
+      alert(err.response?.data?.message || 'Error al eliminar inscripción');
+    } finally {
+      setEliminando(false);
     }
   };
 
@@ -828,6 +859,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                         <th className="text-left py-3 px-4">Pagos</th>
                         <th className="text-left py-3 px-4">Programación</th>
                         <th className="text-left py-3 px-4">Notas</th>
+                        <th className="text-left py-3 px-4">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -899,6 +931,15 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                             <span className="text-white/40 text-xs truncate max-w-[150px] block">
                               {insc.notas || '-'}
                             </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => abrirModalEliminar(insc)}
+                              className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                              title="Eliminar inscripción"
+                            >
+                              <UserX className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1302,6 +1343,87 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                   Cambiar Slot
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Inscripción */}
+      {modalEliminarAbierto && inscripcionAEliminar && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 w-full max-w-md">
+            <div className="p-4 border-b border-white/10">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                Eliminar Inscripción
+              </h3>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-sm mb-2">
+                  ¿Estás seguro de que deseas eliminar esta inscripción?
+                </p>
+                <p className="text-white/60 text-xs">
+                  Esta acción no se puede deshacer. La pareja perderá su lugar en el torneo.
+                </p>
+              </div>
+
+              <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
+                <p className="text-white/40 text-xs mb-1">Pareja</p>
+                <p className="text-white font-medium">
+                  {inscripcionAEliminar.pareja.jugador1} / {inscripcionAEliminar.pareja.completa ? inscripcionAEliminar.pareja.jugador2 : 'Sin pareja'}
+                </p>
+                <p className="text-white/40 text-xs mt-2 mb-1">Categoría</p>
+                <p className="text-white">{inscripcionAEliminar.categoria.nombre}</p>
+                <p className="text-white/40 text-xs mt-2 mb-1">Estado</p>
+                <span className={`px-2 py-1 rounded text-xs ${getEstadoBadge(inscripcionAEliminar.estado)}`}>
+                  {inscripcionAEliminar.estado.replace(/_/g, ' ')}
+                </span>
+              </div>
+
+              {inscripcionAEliminar.programacion.length > 0 && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                  <p className="text-yellow-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Esta inscripción tiene {inscripcionAEliminar.programacion.length} partido(s) programado(s). 
+                    Debes eliminar los partidos del bracket primero.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button
+                onClick={() => {
+                  setModalEliminarAbierto(false);
+                  setInscripcionAEliminar(null);
+                }}
+                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminarInscripcion}
+                disabled={eliminando || inscripcionAEliminar.programacion.length > 0}
+                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-500/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {eliminando ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full"
+                    />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <UserX className="w-4 h-4" />
+                    Eliminar
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
