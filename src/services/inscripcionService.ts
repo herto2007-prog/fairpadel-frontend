@@ -8,6 +8,10 @@ export interface Inscripcion {
   jugador2Id?: string;
   estado: 'PENDIENTE_PAGO' | 'PENDIENTE_CONFIRMACION' | 'CONFIRMADA' | 'CANCELADA';
   modalidad: string;
+  tournament?: { nombre: string; fechaInicio: string; ciudad: string };
+  category?: { nombre: string };
+  jugador1?: { nombre: string; apellido: string };
+  jugador2?: { nombre: string; apellido: string };
 }
 
 export const inscripcionService = {

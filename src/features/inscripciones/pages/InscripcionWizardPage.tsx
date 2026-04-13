@@ -179,7 +179,7 @@ export function InscripcionWizardPage() {
       }
       
       const { data } = await api.post('/inscripciones/public', payload);
-      if (data.success) navigate('/inscripciones/my');
+      if (data.success) navigate('/inscripciones/my', { state: { success: true } });
     } catch (error: any) {
       showError('Error', error.response?.data?.message || 'Error creando inscripción');
     } finally {
