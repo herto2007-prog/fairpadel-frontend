@@ -80,7 +80,7 @@ interface CategoriaInscritos {
 export function TorneoPublicDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [torneo, setTorneo] = useState<TorneoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +89,10 @@ export function TorneoPublicDetailPage() {
   const [inscritos, setInscritos] = useState<CategoriaInscritos[]>([]);
   const [loadingInscritos, setLoadingInscritos] = useState(false);
   const [mostrarInscritos, setMostrarInscritos] = useState(false);
+  
+  // Estado para verificar si el usuario está inscrito
+  const [estaInscrito, setEstaInscrito] = useState(false);
+  const [loadingInscripcion, setLoadingInscripcion] = useState(false);
 
   useEffect(() => {
     const cargarTorneo = async () => {
@@ -97,6 +101,10 @@ export function TorneoPublicDetailPage() {
         const { data } = await api.get(`/t/${slug}`);
         if (data.success) {
           setTorneo(data.torneo);
+          // Verificar si el usuario está inscrito
+          if (isAuthenticated && data.torneo?.id) {
+            verificarInscripcion(data.torneo.id);
+          }
         }
       } catch (err: any) {
         setError(err.response?.data?.message || 'Error cargando el torneo');
@@ -108,7 +116,23 @@ export function TorneoPublicDetailPage() {
     if (slug) {
       cargarTorneo();
     }
-  }, [slug]);
+  }, [slug, isAuthenticated]);
+
+  const verificarInscripcion = async (torneoId: string) => {
+    try {
+      setLoadingInscripcion(true);
+      const { data } = await api.get('/inscripciones/my');
+      // El backend devuelve directamente el array de inscripciones
+      const inscripciones = Array.isArray(data) ? data : [];
+      // Verificar si hay alguna inscripción para este torneo
+      const inscripcionEnTorneo = inscripciones.find((insc: any) => insc.tournamentId === torneoId);
+      setEstaInscrito(!!inscripcionEnTorneo);
+    } catch (err) {
+      console.error('Error verificando inscripción:', err);
+    } finally {
+      setLoadingInscripcion(false);
+    }
+  };
 
   const handleInscribirse = () => {
     if (!isAuthenticated) {
@@ -530,19 +554,33 @@ export function TorneoPublicDetailPage() {
                     <p className="text-4xl font-bold text-white">{formatPrecio(Number(torneo.costoInscripcion))}</p>
                   </div>
 
-                  <button
-                    onClick={handleInscribirse}
-                    disabled={!torneo.inscripcionesAbiertas}
-                    className={`w-full py-4 rounded-xl font-semibold text-lg transition-all mb-4 ${
-                      torneo.inscripcionesAbiertas
-                        ? 'bg-gradient-to-r from-primary to-secondary hover:from-primary/80 hover:to-secondary/80 text-white shadow-lg shadow-primary/25'
-                        : 'bg-white/10 text-white/40 cursor-not-allowed'
-                    }`}
-                  >
-                    {torneo.inscripcionesAbiertas
-                      ? isAuthenticated ? 'Inscribirme ahora' : 'Iniciar sesión para inscribirme'
-                      : 'Inscripciones cerradas'}
-                  </button>
+                  {estaInscrito ? (
+                    <div className="w-full py-4 rounded-xl font-semibold text-lg bg-green-500/20 text-green-400 border border-green-500/30 mb-4 flex items-center justify-center gap-2">
+                      <CheckCircle className="w-5 h-5" />
+                      Ya estás inscrito
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleInscribirse}
+                      disabled={!torneo.inscripcionesAbiertas || loadingInscripcion}
+                      className={`w-full py-4 rounded-xl font-semibold text-lg transition-all mb-4 ${
+                        torneo.inscripcionesAbiertas
+                          ? 'bg-gradient-to-r from-primary to-secondary hover:from-primary/80 hover:to-secondary/80 text-white shadow-lg shadow-primary/25'
+                          : 'bg-white/10 text-white/40 cursor-not-allowed'
+                      }`}
+                    >
+                      {loadingInscripcion ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Verificando...
+                        </span>
+                      ) : torneo.inscripcionesAbiertas ? (
+                        isAuthenticated ? 'Inscribirme ahora' : 'Iniciar sesión para inscribirme'
+                      ) : (
+                        'Inscripciones cerradas'
+                      )}
+                    </button>
+                  )}
 
                   <div className="flex items-center justify-between text-sm text-white/60">
                     <span>Inscritos:</span>

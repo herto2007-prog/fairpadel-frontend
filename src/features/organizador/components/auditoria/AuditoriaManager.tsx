@@ -208,6 +208,12 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [inscripcionAEliminar, setInscripcionAEliminar] = useState<InscripcionData | null>(null);
   const [eliminando, setEliminando] = useState(false);
 
+  // Modal cambiar estado de inscripción (emergencia)
+  const [modalCambiarEstadoAbierto, setModalCambiarEstadoAbierto] = useState(false);
+  const [inscripcionACambiarEstado, setInscripcionACambiarEstado] = useState<InscripcionData | null>(null);
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [cambiandoEstado, setCambiandoEstado] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -428,6 +434,35 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const abrirModalEliminar = (insc: InscripcionData) => {
     setInscripcionAEliminar(insc);
     setModalEliminarAbierto(true);
+  };
+
+  const abrirModalCambiarEstado = (insc: InscripcionData) => {
+    setInscripcionACambiarEstado(insc);
+    setNuevoEstado(insc.estado);
+    setModalCambiarEstadoAbierto(true);
+  };
+
+  const cambiarEstadoInscripcion = async () => {
+    if (!inscripcionACambiarEstado || !nuevoEstado) return;
+    
+    setCambiandoEstado(true);
+    try {
+      await api.patch(`/admin/auditoria/inscripciones/${inscripcionACambiarEstado.id}/estado`, {
+        estado: nuevoEstado,
+      });
+      
+      setModalCambiarEstadoAbierto(false);
+      setInscripcionACambiarEstado(null);
+      setNuevoEstado('');
+      
+      showSuccess('Éxito', 'Estado de inscripción actualizado correctamente');
+      await loadInscripciones();
+    } catch (err: any) {
+      console.error('Error cambiando estado:', err);
+      showError('Error', err.response?.data?.message || 'Error al cambiar estado');
+    } finally {
+      setCambiandoEstado(false);
+    }
   };
 
   const eliminarInscripcion = async () => {
@@ -948,13 +983,22 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <button
-                              onClick={() => abrirModalEliminar(insc)}
-                              className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
-                              title="Eliminar inscripción"
-                            >
-                              <UserX className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => abrirModalCambiarEstado(insc)}
+                                className="p-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors"
+                                title="Cambiar estado (emergencia)"
+                              >
+                                <Wrench className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => abrirModalEliminar(insc)}
+                                className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                                title="Eliminar inscripción"
+                              >
+                                <UserX className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1378,6 +1422,97 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
         variant={inscripcionAEliminar?.programacion.length ? 'warning' : 'danger'}
         isLoading={eliminando}
       />
+
+      {/* Modal Cambiar Estado (Emergencia) */}
+      {modalCambiarEstadoAbierto && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#1a1d29] rounded-xl border border-yellow-500/30 p-6 max-w-md w-full shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-yellow-500/20 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Cambiar Estado</h3>
+                <p className="text-white/60 text-sm">Modo emergencia - Use con precaución</p>
+              </div>
+            </div>
+
+            <div className="mb-6 space-y-4">
+              <div className="bg-white/5 rounded-lg p-3">
+                <p className="text-white/80 text-sm">
+                  <span className="text-white/40">Pareja:</span>{' '}
+                  <strong className="text-white">
+                    {inscripcionACambiarEstado?.pareja.jugador1} / {inscripcionACambiarEstado?.pareja.jugador2}
+                  </strong>
+                </p>
+                <p className="text-white/80 text-sm mt-1">
+                  <span className="text-white/40">Categoría:</span>{' '}
+                  <strong className="text-white">{inscripcionACambiarEstado?.categoria.nombre}</strong>
+                </p>
+                <p className="text-white/80 text-sm mt-1">
+                  <span className="text-white/40">Estado actual:</span>{' '}
+                  <span className={`px-2 py-0.5 rounded text-xs ${getEstadoBadge(inscripcionACambiarEstado?.estado || '')}`}>
+                    {inscripcionACambiarEstado?.estado.replace(/_/g, ' ')}
+                  </span>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-white/60 text-sm mb-2">Nuevo estado:</label>
+                <select
+                  value={nuevoEstado}
+                  onChange={(e) => setNuevoEstado(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-yellow-500/50"
+                >
+                  <option value="CONFIRMADA" className="bg-[#1a1d29]">CONFIRMADA</option>
+                  <option value="PENDIENTE_PAGO" className="bg-[#1a1d29]">PENDIENTE PAGO</option>
+                  <option value="PENDIENTE_CONFIRMACION" className="bg-[#1a1d29]">PENDIENTE CONFIRMACION</option>
+                  <option value="CANCELADA" className="bg-[#1a1d29]">CANCELADA</option>
+                </select>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                <p className="text-yellow-400 text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  Esta acción modifica directamente el estado de la inscripción. Úselo solo en casos de emergencia.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setModalCambiarEstadoAbierto(false);
+                  setInscripcionACambiarEstado(null);
+                  setNuevoEstado('');
+                }}
+                disabled={cambiandoEstado}
+                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={cambiarEstadoInscripcion}
+                disabled={cambiandoEstado || nuevoEstado === inscripcionACambiarEstado?.estado}
+                className="flex-1 px-4 py-2 bg-yellow-500 hover:bg-yellow-500/80 disabled:opacity-50 disabled:cursor-not-allowed text-black font-medium rounded-lg transition-colors"
+              >
+                {cambiandoEstado ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    Guardando...
+                  </span>
+                ) : (
+                  'Cambiar Estado'
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
