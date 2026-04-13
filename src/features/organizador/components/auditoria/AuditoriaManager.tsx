@@ -8,6 +8,7 @@ import {
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
 import { useAuth } from '../../../../features/auth/context/AuthContext';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 interface AuditoriaManagerProps {
   tournamentId: string;
@@ -439,13 +440,25 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       
       // Recargar la lista
       await loadInscripciones();
-      alert('Inscripción eliminada correctamente');
     } catch (err: any) {
       console.error('Error eliminando inscripción:', err);
       alert(err.response?.data?.message || 'Error al eliminar inscripción');
     } finally {
       setEliminando(false);
     }
+  };
+
+  // Mensaje para el modal de confirmación
+  const getMensajeEliminar = () => {
+    if (!inscripcionAEliminar) return '';
+    const pareja = `${inscripcionAEliminar.pareja.jugador1} / ${inscripcionAEliminar.pareja.completa ? inscripcionAEliminar.pareja.jugador2 : 'Sin pareja'}`;
+    const categoria = inscripcionAEliminar.categoria.nombre;
+    
+    if (inscripcionAEliminar.programacion.length > 0) {
+      return `La pareja "${pareja}" de la categoría "${categoria}" tiene ${inscripcionAEliminar.programacion.length} partido(s) programado(s). Debes eliminar los partidos del bracket primero.`;
+    }
+    
+    return `¿Estás seguro de que deseas eliminar la inscripción de "${pareja}" en la categoría "${categoria}"? Esta acción no se puede deshacer y la pareja perderá su lugar en el torneo.`;
   };
 
   const getEstadoBadge = (estado: string) => {
@@ -1349,85 +1362,20 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       )}
 
       {/* Modal Eliminar Inscripción */}
-      {modalEliminarAbierto && inscripcionAEliminar && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a1a2e] rounded-xl border border-white/10 w-full max-w-md">
-            <div className="p-4 border-b border-white/10">
-              <h3 className="text-white font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                Eliminar Inscripción
-              </h3>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-red-400 text-sm mb-2">
-                  ¿Estás seguro de que deseas eliminar esta inscripción?
-                </p>
-                <p className="text-white/60 text-xs">
-                  Esta acción no se puede deshacer. La pareja perderá su lugar en el torneo.
-                </p>
-              </div>
-
-              <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
-                <p className="text-white/40 text-xs mb-1">Pareja</p>
-                <p className="text-white font-medium">
-                  {inscripcionAEliminar.pareja.jugador1} / {inscripcionAEliminar.pareja.completa ? inscripcionAEliminar.pareja.jugador2 : 'Sin pareja'}
-                </p>
-                <p className="text-white/40 text-xs mt-2 mb-1">Categoría</p>
-                <p className="text-white">{inscripcionAEliminar.categoria.nombre}</p>
-                <p className="text-white/40 text-xs mt-2 mb-1">Estado</p>
-                <span className={`px-2 py-1 rounded text-xs ${getEstadoBadge(inscripcionAEliminar.estado)}`}>
-                  {inscripcionAEliminar.estado.replace(/_/g, ' ')}
-                </span>
-              </div>
-
-              {inscripcionAEliminar.programacion.length > 0 && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                  <p className="text-yellow-400 text-xs flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    Esta inscripción tiene {inscripcionAEliminar.programacion.length} partido(s) programado(s). 
-                    Debes eliminar los partidos del bracket primero.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-white/10 flex gap-2">
-              <button
-                onClick={() => {
-                  setModalEliminarAbierto(false);
-                  setInscripcionAEliminar(null);
-                }}
-                className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={eliminarInscripcion}
-                disabled={eliminando || inscripcionAEliminar.programacion.length > 0}
-                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-500/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                {eliminando ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full"
-                    />
-                    Eliminando...
-                  </>
-                ) : (
-                  <>
-                    <UserX className="w-4 h-4" />
-                    Eliminar
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={modalEliminarAbierto}
+        onClose={() => {
+          setModalEliminarAbierto(false);
+          setInscripcionAEliminar(null);
+        }}
+        onConfirm={eliminarInscripcion}
+        title="Eliminar Inscripción"
+        message={getMensajeEliminar()}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant={inscripcionAEliminar?.programacion.length ? 'warning' : 'danger'}
+        isLoading={eliminando}
+      />
     </div>
   );
 }
