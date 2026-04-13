@@ -43,7 +43,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-dark/95 backdrop-blur-xl" onClick={onCancel} />
@@ -53,7 +53,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative z-10 w-full max-w-lg glass rounded-3xl border border-primary/20 overflow-hidden"
+        className="relative z-10 w-full max-w-lg glass rounded-3xl border border-primary/20 overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
@@ -74,7 +74,7 @@ export const AvatarEditorModal = ({ image, onSave, onCancel }: AvatarEditorProps
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {/* Editor Canvas */}
           <div className="relative flex justify-center mb-6">
             <motion.div
