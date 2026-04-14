@@ -55,6 +55,7 @@ export const Navbar = () => {
                 src="/logos/Asset 2fair padel.png" 
                 alt="FairPadel" 
                 className="h-10 w-auto"
+                width="40" height="40"
               />
             </motion.a>
 

@@ -123,9 +123,9 @@ export const Features = () => {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors">
+                  <h2 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors">
                     {feature.title}
-                  </h3>
+                  </h2>
                   <p className="text-gray-400 text-sm leading-relaxed">
                     {feature.description}
                   </p>

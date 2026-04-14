@@ -260,7 +260,7 @@ function TorneoCard({ torneo, urgente }: TorneoCardProps) {
       }`}
     >
       {torneo.flyerUrl ? (
-        <img src={torneo.flyerUrl} alt="" className="w-16 h-16 rounded-lg object-cover" />
+        <img src={torneo.flyerUrl} alt="" className="w-16 h-16 rounded-lg object-cover" width="64" height="64" loading="lazy" />
       ) : (
         <div className="w-16 h-16 rounded-lg bg-[#232838] flex items-center justify-center">
           <Trophy className="w-8 h-8 text-gray-500" />

@@ -134,7 +134,7 @@ export function PerfilPage() {
       <div className="relative">
         <div className="h-48 md:h-64 relative overflow-hidden">
           {perfil.bannerUrl ? (
-            <img src={perfil.bannerUrl} alt="" className="w-full h-full object-cover" />
+            <img src={perfil.bannerUrl} alt="" className="w-full h-full object-cover" width="800" height="300" loading="lazy" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#df2531]/30 via-purple-900/20 to-blue-900/20" />
           )}
@@ -161,7 +161,7 @@ export function PerfilPage() {
             >
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-dark bg-[#151921] relative group">
                 {perfil.fotoUrl ? (
-                  <img src={perfil.fotoUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={perfil.fotoUrl} alt="" className="w-full h-full object-cover" width="128" height="128" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#df2531] to-purple-600 flex items-center justify-center text-4xl font-bold text-white">
                     {perfil.nombre[0]}{perfil.apellido[0]}

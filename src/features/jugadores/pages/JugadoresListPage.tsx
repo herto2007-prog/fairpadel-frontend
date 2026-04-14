@@ -313,6 +313,8 @@ function JugadorCard({ jugador, index }: { jugador: Jugador; index: number }) {
                 src={jugador.fotoUrl} 
                 alt={`${jugador.nombre} ${jugador.apellido}`}
                 className="w-full h-full object-cover"
+                width="64" height="64"
+                loading="lazy"
               />
             ) : (
               <span className="text-xl font-bold text-[#df2531]">

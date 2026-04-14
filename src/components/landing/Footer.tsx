@@ -67,6 +67,8 @@ export const Footer = () => {
                 src="/logos/Asset 2fair padel.png" 
                 alt="FairPadel" 
                 className="h-12 w-auto"
+                width="48" height="48"
+                loading="lazy"
               />
             </motion.a>
             <p className="text-gray-400 text-sm mb-6 max-w-xs">
@@ -94,7 +96,7 @@ export const Footer = () => {
 
           {/* Links Columns */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Producto</h4>
+            <h2 className="text-white font-semibold mb-4">Producto</h2>
             <ul className="space-y-3">
               {footerLinks.producto.map((link) => (
                 <li key={link.name}>
@@ -111,7 +113,7 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Empresa</h4>
+            <h2 className="text-white font-semibold mb-4">Empresa</h2>
             <ul className="space-y-3">
               {footerLinks.empresa.map((link) => (
                 <li key={link.name}>
@@ -128,7 +130,7 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Soporte</h4>
+            <h2 className="text-white font-semibold mb-4">Soporte</h2>
             <ul className="space-y-3">
               {footerLinks.soporte.map((link) => (
                 <li key={link.name}>

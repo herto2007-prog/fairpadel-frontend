@@ -707,6 +707,7 @@ function TorneosTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 text-gray-400 hover:text-white transition-colors"
+                    aria-label="Ver página pública del torneo"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>

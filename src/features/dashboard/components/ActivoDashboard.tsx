@@ -14,7 +14,7 @@ export function ActivoDashboard({ data }: Props) {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#151921] border border-[#232838] rounded-2xl p-6">
         <div className="flex items-center gap-4 mb-6">
           {perfil.fotoUrl ? (
-            <img src={perfil.fotoUrl} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-[#df2531]" />
+            <img src={perfil.fotoUrl} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-[#df2531]" width="64" height="64" loading="lazy" />
           ) : (
             <div className="w-16 h-16 rounded-full bg-[#232838] flex items-center justify-center text-2xl font-bold text-white">
               {perfil.nombre[0]}
@@ -46,7 +46,7 @@ export function ActivoDashboard({ data }: Props) {
                 {torneosAbiertos.slice(0, 3).map(torneo => (
                   <Link key={torneo.id} to={`/tournaments/${torneo.slug}`} className="flex items-center gap-4 p-4 bg-[#1a1f2e] rounded-xl hover:bg-[#232838] transition-colors">
                     {torneo.flyerUrl ? (
-                      <img src={torneo.flyerUrl} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                      <img src={torneo.flyerUrl} alt="" className="w-16 h-16 rounded-lg object-cover" width="64" height="64" loading="lazy" />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-[#232838] flex items-center justify-center">
                         <Trophy className="w-8 h-8 text-gray-500" />

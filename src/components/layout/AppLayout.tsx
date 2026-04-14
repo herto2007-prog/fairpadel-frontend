@@ -77,12 +77,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
                       className="relative group"
                       title="Menú de usuario"
+                      aria-label="Menú de usuario"
                     >
                       {user.fotoUrl ? (
                         <img 
                           src={user.fotoUrl} 
                           alt={`${user.nombre} ${user.apellido}`}
                           className="w-9 h-9 rounded-full object-cover hover:ring-2 hover:ring-[#df2531]/50 transition-all"
+                          width="36" height="36"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-[#df2531]/50 transition-all">
@@ -150,6 +153,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 text-gray-400 hover:text-white"
+                aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -188,6 +192,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         src={user.fotoUrl} 
                         alt={`${user.nombre} ${user.apellido}`}
                         className="w-10 h-10 rounded-full object-cover"
+                        width="40" height="40"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#df2531] to-[#ff4757] flex items-center justify-center text-white font-semibold">

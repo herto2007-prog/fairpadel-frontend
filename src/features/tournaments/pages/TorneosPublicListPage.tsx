@@ -343,6 +343,8 @@ export function TorneosPublicListPage() {
                           src={torneo.flyerUrl || '/placeholder-torneo.jpg'}
                           alt={torneo.nombre}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          width="384" height="192"
+                          loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent" />
                         
@@ -481,6 +483,8 @@ export function TorneosPublicListPage() {
                             src={torneo.flyerUrl || '/placeholder-torneo.jpg'}
                             alt={torneo.nombre}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale-[30%]"
+                            width="320" height="160"
+                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent" />
 

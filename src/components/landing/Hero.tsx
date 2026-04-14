@@ -192,9 +192,11 @@ export const Hero = () => {
                     src="/logos/Asset 2fair padel.png" 
                     alt="FairPadel" 
                     className="h-8 w-auto"
+                    width="32" height="32"
+                    loading="lazy"
                   />
                   <div>
-                    <h3 className="text-xl font-bold text-white">Copa Primavera</h3>
+                    <h2 className="text-xl font-bold text-white">Copa Primavera</h2>
                     <p className="text-gray-400 text-sm">24 equipos inscritos</p>
                   </div>
                 </div>
