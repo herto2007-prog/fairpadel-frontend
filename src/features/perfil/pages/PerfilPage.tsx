@@ -14,8 +14,10 @@ import { EditarPerfilModal } from '../components/EditarPerfilModal';
 import { WhatsAppPreferencesCard } from '../components/WhatsAppPreferencesCard';
 import { SeguirButton } from '../components/SeguirButton';
 import { formatDatePY } from '../../../utils/date';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 export function PerfilPage() {
+  useNoIndex();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: currentUser, isAuthenticated } = useAuth();
@@ -298,6 +300,149 @@ export function PerfilPage() {
           ))}
         </motion.div>
 
+        {/* DESTACADO: Primer / Último Torneo */}
+        {perfil.destacadoTorneo && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-8"
+          >
+            {(() => {
+              const dt = perfil.destacadoTorneo!;
+              return (
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#df2531]/10 via-[#151921]/80 to-[#151921]/80 backdrop-blur-sm">
+                  <div className="flex flex-col md:flex-row">
+                    {/* Flyer */}
+                    <div className="relative w-full md:w-56 lg:w-64 h-40 md:h-auto shrink-0">
+                      <img
+                        src={dt.flyerUrl || '/placeholder-torneo.jpg'}
+                        alt={dt.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#151921]/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#151921]/90" />
+                      {dt.esPrimerTorneo ? (
+                        <div className="absolute top-0 left-0 px-3 py-1.5 bg-gradient-to-r from-[#df2531] to-pink-600 text-white text-[10px] md:text-xs font-bold rounded-br-xl shadow-lg">
+                          MI PRIMER TORNEO
+                        </div>
+                      ) : (
+                        <div className="absolute top-0 left-0 px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-[10px] md:text-xs font-medium rounded-br-xl">
+                          ÚLTIMO TORNEO
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 p-4 md:p-6">
+                      <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                        {/* Posición */}
+                        <div className="flex items-center gap-4 md:flex-col md:items-center md:justify-center md:w-28 shrink-0">
+                          <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-xl md:text-2xl font-bold shrink-0 ${
+                            dt.posicionFinal === '1ro' ? 'bg-yellow-500/20 text-yellow-400' :
+                            dt.posicionFinal === '2do' ? 'bg-gray-400/20 text-gray-300' :
+                            dt.posicionFinal === '3ro' ? 'bg-amber-600/20 text-amber-500' :
+                            'bg-white/10 text-white'
+                          }`}>
+                            {dt.posicionFinal === '1ro' ? '🏆' :
+                             dt.posicionFinal === '2do' ? '🥈' :
+                             dt.posicionFinal === '3ro' ? '🥉' :
+                             dt.posicionFinal}
+                          </div>
+                          <div className="md:text-center">
+                            <p className="text-xs text-white/40 uppercase tracking-wider">Posición</p>
+                            <p className="text-white font-semibold">{dt.posicionFinal}</p>
+                          </div>
+                        </div>
+
+                        {/* Detalles */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg md:text-xl font-bold text-white truncate mb-1">
+                            {dt.nombre}
+                          </h3>
+                          <p className="text-sm text-white/60 mb-3">
+                            {dt.categoria} • {formatDatePY(dt.fecha)}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <span className="px-2.5 py-1 bg-[#df2531]/20 text-[#df2531] text-xs font-medium rounded-lg">
+                              +{dt.puntosGanados} pts
+                            </span>
+                            <span className="px-2.5 py-1 bg-white/5 text-white/70 text-xs rounded-lg">
+                              {dt.partidosJugados} partidos jugados
+                            </span>
+                          </div>
+
+                          {/* Pareja */}
+                          {dt.pareja && (
+                            <div className="flex items-center gap-2 mb-4">
+                              {dt.pareja.fotoUrl ? (
+                                <img
+                                  src={dt.pareja.fotoUrl}
+                                  alt=""
+                                  className="w-8 h-8 rounded-full object-cover border border-white/10"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#df2531] to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                                  {dt.pareja.nombre[0]}{dt.pareja.apellido[0]}
+                                </div>
+                              )}
+                              <span className="text-sm text-white/80">
+                                Pareja: <span className="text-white font-medium">{dt.pareja.nombre} {dt.pareja.apellido}</span>
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Barra de fases */}
+                          <div className="mt-2">
+                            <p className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Fase alcanzada</p>
+                            <div className="flex items-center gap-1">
+                              {[
+                                { key: 'ZONA', label: 'Zona' },
+                                { key: 'CUARTOS', label: 'Cuartos' },
+                                { key: 'SEMIS', label: 'Semis' },
+                                { key: 'FINAL', label: 'Final' },
+                              ].map((fase, idx, arr) => {
+                                const orden = { ZONA: 1, CUARTOS: 2, SEMIS: 3, FINAL: 4 };
+                                const actual = orden[dt.faseMasLejana];
+                                const este = orden[fase.key as keyof typeof orden];
+                                const activo = este <= actual;
+                                const esUltimo = idx === arr.length - 1;
+                                return (
+                                  <div key={fase.key} className="flex items-center flex-1">
+                                    <div className="flex flex-col items-center gap-1 flex-1">
+                                      <div className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition-colors ${
+                                        activo
+                                          ? fase.key === 'FINAL' && dt.posicionFinal === '1ro'
+                                            ? 'bg-yellow-500 text-black'
+                                            : 'bg-[#df2531] text-white'
+                                          : 'bg-white/10 text-white/40'
+                                      }`}>
+                                        {fase.key === 'ZONA' ? 'Z' : fase.key === 'CUARTOS' ? 'C' : fase.key === 'SEMIS' ? 'S' : 'F'}
+                                      </div>
+                                      <span className={`text-[9px] md:text-[10px] ${activo ? 'text-white/80' : 'text-white/30'}`}>
+                                        {fase.label}
+                                      </span>
+                                    </div>
+                                    {!esUltimo && (
+                                      <div className={`h-0.5 flex-1 mx-1 rounded-full ${
+                                        este < actual ? 'bg-[#df2531]' : 'bg-white/10'
+                                      }`} />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </motion.div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             {/* Gráfico de Evolución */}
@@ -329,11 +474,18 @@ export function PerfilPage() {
                       }`}>
                         {h.posicion === '1ro' ? '🏆' : h.posicion === '2do' ? '🥈' : h.posicion === '3ro' ? '🥉' : idx + 1}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-white font-medium">{h.torneo}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-medium truncate">{h.torneo}</p>
+                          {idx === 0 && perfil.destacadoTorneo && (
+                            <span className="px-1.5 py-0.5 bg-[#df2531]/20 text-[#df2531] text-[10px] font-semibold rounded">
+                              DESTACADO
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-white/40">{h.categoria}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-[#df2531] font-bold">+{h.puntos} pts</p>
                         <p className="text-xs text-white/40">
                           {formatDatePY(h.fecha)}

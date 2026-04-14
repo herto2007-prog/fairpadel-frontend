@@ -81,6 +81,19 @@ export interface PerfilJugador {
     inscripcionesPendientes: number;
     notificacionesNoLeidas: number;
   };
+  destacadoTorneo?: {
+    torneoId: string;
+    nombre: string;
+    flyerUrl?: string;
+    categoria: string;
+    posicionFinal: string;
+    puntosGanados: number;
+    fecha: string;
+    partidosJugados: number;
+    faseMasLejana: 'ZONA' | 'CUARTOS' | 'SEMIS' | 'FINAL';
+    pareja: { nombre: string; apellido: string; fotoUrl?: string } | null;
+    esPrimerTorneo: boolean;
+  } | null;
 }
 
 export interface PreferenciasNotificacionResponse {

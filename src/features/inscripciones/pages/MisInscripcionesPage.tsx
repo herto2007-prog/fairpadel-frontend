@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { inscripcionService, Inscripcion } from '../../../services/inscripcionService';
 import { Calendar, Trophy, Clock, MapPin, Users } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 const estadoConfig = {
   PENDIENTE_PAGO: { color: 'text-yellow-500', label: 'Pendiente de pago', bgColor: 'bg-yellow-500/10' },
@@ -11,6 +12,7 @@ const estadoConfig = {
 };
 
 export default function MisInscripcionesPage() {
+  useNoIndex();
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

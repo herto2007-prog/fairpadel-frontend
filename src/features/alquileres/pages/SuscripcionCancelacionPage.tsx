@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { XCircle, Home, CreditCard } from 'lucide-react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 export default function SuscripcionCancelacionPage() {
+  useNoIndex();
   const navigate = useNavigate();
 
   return (

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2, ArrowLeft, Home } from 'lucide-react';
 import { suscripcionService } from '../../../services/suscripcionService';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 export default function SuscripcionConfirmacionPage() {
+  useNoIndex();
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verificando el estado de tu pago...');

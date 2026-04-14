@@ -8,6 +8,7 @@ import { TorneoWizard } from '../components/TorneoWizard';
 import { api } from '../../../services/api';
 import { formatDatePY } from '../../../utils/date';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 interface Tournament {
   id: string;
   slug: string;
@@ -28,6 +29,7 @@ interface Tournament {
 }
 
 export function MisTorneosPage() {
+  useNoIndex();
   const [showWizard, setShowWizard] = useState(false);
   const [torneos, setTorneos] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);

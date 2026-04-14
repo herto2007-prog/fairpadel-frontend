@@ -4,6 +4,7 @@ import { alquileresService } from '../../../services/alquileresService';
 import { sedesService } from '../../../services/sedesService';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { Clock, MapPin } from 'lucide-react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Slot {
   horaInicio: string;
@@ -17,6 +18,7 @@ interface CanchaDisponibilidad {
 }
 
 export default function AlquileresPage() {
+  useNoIndex();
   const { showSuccess, showError } = useToast();
   const [searchParams] = useSearchParams();
   const sedeIdParam = searchParams.get('sedeId');

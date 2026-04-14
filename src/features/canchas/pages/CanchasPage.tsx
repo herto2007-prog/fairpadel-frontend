@@ -6,6 +6,7 @@ import { DurationSelector } from '../../../components/ui/DurationSelector';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { formatDatePYLong, getDateOnlyPY } from '../../../utils/date';
 import { CanchaSelectionModal } from '../components/CanchaSelectionModal';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface SedeDisponibilidad {
   sede: {
@@ -35,6 +36,7 @@ interface SedeDisponibilidad {
 }
 
 export function CanchasPage() {
+  useNoIndex();
   const [fecha, setFecha] = useState(() => getDateOnlyPY());
   const [duracionMinutos, setDuracionMinutos] = useState(120);
   const [loading, setLoading] = useState(false);

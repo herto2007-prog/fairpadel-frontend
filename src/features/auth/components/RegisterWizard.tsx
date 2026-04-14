@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, Calendar, Lock, 
@@ -156,6 +157,7 @@ const slideVariants = {
 };
 
 export const RegisterWizard = () => {
+  useNoIndex();
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);

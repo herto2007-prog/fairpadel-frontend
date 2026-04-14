@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { duenoService, SedeDelDueno } from '../../../services/duenoService';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 export default function MisSedesPage() {
+  useNoIndex();
   const navigate = useNavigate();
   const { showError } = useToast();
   const [sedes, setSedes] = useState<SedeDelDueno[]>([]);

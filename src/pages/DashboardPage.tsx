@@ -11,12 +11,14 @@ import { DashboardData, UserFase } from '../features/dashboard/types/dashboard.t
 import { determineUserFase } from '../features/dashboard/hooks/useUserFase';
 import { perfilService } from '../features/perfil/perfilService';
 import { api } from '../services/api';
+import { useNoIndex } from '../hooks/useNoIndex';
 
 // TODO: Crear estos componentes cuando se implementen las otras fases
 // import { ActivoDashboard } from '../features/dashboard/components/ActivoDashboard';
 // import { RegularDashboard } from '../features/dashboard/components/RegularDashboard';
 
 export default function DashboardPage() {
+  useNoIndex();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);

@@ -12,10 +12,12 @@ import { CircuitosManager } from '../components/CircuitosManager';
 import { AscensosManager } from '../components/AscensosManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
 import { SuscripcionesManager } from '../components/SuscripcionesManager';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones' | 'whatsapp';
 
 export function AdminPage() {
+  useNoIndex();
   const [activeTab, setActiveTab] = useState<AdminTab>('fairpadel');
   const navigate = useNavigate();
 

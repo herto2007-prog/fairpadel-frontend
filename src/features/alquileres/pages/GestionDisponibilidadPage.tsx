@@ -7,6 +7,7 @@ import SuscripcionStatusCard from '../components/SuscripcionStatusCard';
 import { 
   Clock, Plus, Trash2, ChevronLeft, Lock, CheckSquare, Square 
 } from 'lucide-react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Disponibilidad {
   id: string;
@@ -48,6 +49,7 @@ const DIAS_SEMANA = [
 ];
 
 export default function GestionDisponibilidadPage() {
+  useNoIndex();
   const { sedeId } = useParams<{ sedeId: string }>();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();

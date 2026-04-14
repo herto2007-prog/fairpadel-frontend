@@ -3,11 +3,13 @@ import { motion } from 'framer-motion';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Check, X, Loader2, Mail, ArrowRight, RefreshCw } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 import { api } from '../../../services/api';
 
 type VerificationState = 'verifying' | 'success' | 'error' | 'expired';
 
 export const VerifyEmailPage = () => {
+  useNoIndex();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [state, setState] = useState<VerificationState>('verifying');

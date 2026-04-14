@@ -15,6 +15,7 @@ import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteo
 
 import { AuditoriaManager } from '../components/auditoria/AuditoriaManager';
 import { api } from '../../../services/api';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Torneo {
   id: string;
@@ -35,6 +36,7 @@ interface TabConfig {
 }
 
 export function GestionarTorneoPage() {
+  useNoIndex();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [torneo, setTorneo] = useState<Torneo | null>(null);

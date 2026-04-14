@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mail, Lock, Eye, EyeOff, ArrowRight, 
@@ -10,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/authService';
 
 export const LoginPage = () => {
+  useNoIndex();
   const [documento, setDocumento] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

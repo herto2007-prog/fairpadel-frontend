@@ -9,6 +9,7 @@ import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Torneo {
   id: string;
@@ -56,6 +57,7 @@ const CODIGOS_PAIS = [
 ];
 
 export function InscripcionWizardPage() {
+  useNoIndex();
   const { showError, showWarning } = useToast();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();

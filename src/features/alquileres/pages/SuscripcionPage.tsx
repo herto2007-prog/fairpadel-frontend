@@ -19,6 +19,7 @@ import {
   Search,
   XCircle
 } from 'lucide-react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Sede {
   id: string;
@@ -27,6 +28,7 @@ interface Sede {
 }
 
 export default function SuscripcionPage() {
+  useNoIndex();
   const { sedeId: sedeIdParam } = useParams<{ sedeId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

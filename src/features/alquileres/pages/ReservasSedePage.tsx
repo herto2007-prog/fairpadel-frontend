@@ -8,6 +8,7 @@ import {
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, 
   ChevronLeft, User, Filter, LayoutGrid, List, BarChart3
 } from 'lucide-react';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Reserva {
   id: string;
@@ -28,6 +29,7 @@ interface Reserva {
 }
 
 export default function ReservasSedePage() {
+  useNoIndex();
   const { sedeId } = useParams<{ sedeId: string }>();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();

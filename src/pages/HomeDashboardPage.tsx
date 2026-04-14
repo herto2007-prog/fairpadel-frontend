@@ -14,6 +14,7 @@ import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
 import { torneoService } from '../services/torneoService';
 import { notificationService, Notificacion, TipoNotificacion } from '../services/notificationService';
 import { formatDatePY } from '../utils/date';
+import { useNoIndex } from '../hooks/useNoIndex';
 
 
 // ═══════════════════════════════════════════════════════
@@ -790,6 +791,7 @@ function TorneosRecomendados({ torneos }: { torneos: TorneoConUrgencia[] }) {
 // ═══════════════════════════════════════════════════════
 
 export default function HomeDashboardPage() {
+  useNoIndex();
   useAuth(); // Verifica autenticación
   const [perfil, setPerfil] = useState<PerfilJugador | null>(null);
   const [torneos, setTorneos] = useState<TorneoConUrgencia[]>([]);

@@ -4,6 +4,7 @@ import { useToast } from '../../../components/ui/ToastProvider';
 import { formatDatePY } from '../../../utils/date';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 import { Calendar, Clock, MapPin, CheckCircle, XCircle, Clock3, AlertCircle } from 'lucide-react';
 
 const estadoConfig = {
@@ -193,6 +194,7 @@ const ReservaCard = ({
 };
 
 export default function MisReservasPage() {
+  useNoIndex();
   const { showSuccess, showError } = useToast();
   const { confirm, ...confirmState } = useConfirm();
   const [reservas, setReservas] = useState<Reserva[]>([]);

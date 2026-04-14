@@ -4,6 +4,7 @@ import { api } from '../../../services/api';
 import { formatDatePY } from '../../../utils/date';
 import { ArrowLeft, MessageCircle, ChevronLeft, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface Conversacion {
   id: string;
@@ -37,6 +38,7 @@ interface Mensaje {
 }
 
 export function WhatsAppAdminPage() {
+  useNoIndex();
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([]);
   const [conversacionSeleccionada, setConversacionSeleccionada] = useState<Conversacion | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);

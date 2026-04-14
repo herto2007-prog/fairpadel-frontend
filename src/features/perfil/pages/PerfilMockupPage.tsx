@@ -7,6 +7,7 @@ import {
   Activity, Crown, Zap, Shield
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
+import { useNoIndex } from '../../../hooks/useNoIndex';
 
 // Mock data para visualización
 const MOCK_JUGADOR = {
@@ -57,6 +58,7 @@ const MOCK_JUGADOR = {
 };
 
 export function PerfilMockupPage() {
+  useNoIndex();
   const jugador = MOCK_JUGADOR;
 
   const statCards = [
