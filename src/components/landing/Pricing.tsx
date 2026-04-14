@@ -4,28 +4,28 @@ import { FadeIn } from './AnimatedSection';
 
 const plans = [
   {
-    name: 'Gratis',
+    name: 'Jugador',
     icon: Zap,
     price: '0',
     period: 'para siempre',
-    description: 'Perfecto para probar la plataforma',
+    description: 'Para jugadores que quieren competir y conectar',
     features: [
-      'Hasta 2 torneos activos',
-      '16 equipos por torneo',
-      'Fixture automático básico',
-      'Rankings simples',
-      'Soporte por email',
+      'Participar en torneos ilimitados',
+      'Perfil con estadísticas y logros',
+      'Comunidad de jugadores',
+      'Seguir amigos y rivales',
+      'Notificaciones de torneos y resultados',
     ],
-    cta: 'Empezar Gratis',
+    cta: 'Jugar Gratis',
     popular: false,
     gradient: 'from-gray-500 to-gray-600',
   },
   {
     name: 'Organizador',
     icon: Star,
-    price: '150.000',
-    period: 'Gs/mes',
-    description: 'Para organizadores serios',
+    price: '10.000',
+    period: 'por jugador inscripto',
+    description: 'Para quienes organizan torneos de pádel',
     features: [
       'Torneos ilimitados',
       'Equipos ilimitados',
@@ -35,26 +35,25 @@ const plans = [
       'Notificaciones push/WhatsApp',
       'Soporte prioritario',
     ],
-    cta: 'Ser Organizador Pro',
+    cta: 'Organizar Torneos',
     popular: true,
     gradient: 'from-primary to-red-600',
   },
   {
     name: 'Sede',
     icon: Crown,
-    price: '350.000',
-    period: 'Gs/mes',
-    description: 'Para clubes y sedes de pádel',
+    price: '60.000',
+    period: 'Gs/mes por sede',
+    description: 'Para clubes y sedes que alquilan canchas',
     features: [
-      'Todo de Organizador',
       'Gestión de múltiples canchas',
-      'Sistema de alquileres',
-      'Instructores integrados',
-      'Panel de administración',
+      'Sistema de alquileres integrado',
+      'Panel de administración de reservas',
       'Reportes financieros',
+      'Instructores integrados',
       'Soporte dedicado 24/7',
     ],
-    cta: 'Contactar Ventas',
+    cta: 'Empezar como Sede',
     popular: false,
     gradient: 'from-amber-500 to-orange-600',
   },
@@ -86,8 +85,8 @@ export const Pricing = () => {
             transition={{ delay: 0.1 }}
             className="heading-lg text-white mb-6"
           >
-            Invertí en tu pasión,{' '}
-            <span className="text-gradient">no en software complicado</span>
+            Una plataforma para cada necesidad{' '}
+            <span className="text-gradient">sin complicaciones</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -96,7 +95,7 @@ export const Pricing = () => {
             transition={{ delay: 0.2 }}
             className="text-body text-lg"
           >
-            Empezá gratis y escalá según necesites. Sin contratos, cancelás cuando quieras.
+            Jugadores disfrutan gratis, organizadores pagan por uso y las sedes gestionan sus canchas con un costo fijo mensual.
           </motion.p>
         </div>
 
@@ -138,6 +137,9 @@ export const Pricing = () => {
                       <span className="text-4xl font-bold text-white">{plan.price}</span>
                     </div>
                     <span className="text-gray-500 text-sm">/{plan.period}</span>
+                    {plan.name === 'Organizador' && (
+                      <p className="text-xs text-gray-500 mt-1">Pagás solo al finalizar el torneo</p>
+                    )}
                   </div>
 
                   {/* CTA Button */}
@@ -185,15 +187,15 @@ export const Pricing = () => {
         >
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-500" />
-            <span>Sin tarjeta de crédito</span>
+            <span>Sin tarjeta de crédito para empezar</span>
           </div>
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-500" />
-            <span>Cancelá cuando quieras</span>
+            <span>Organizadores pagan solo si hay torneo</span>
           </div>
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-500" />
-            <span>14 días de garantía</span>
+            <span>Sedes pueden cancelar cuando quieran</span>
           </div>
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-500" />
