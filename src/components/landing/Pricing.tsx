@@ -17,6 +17,7 @@ const plans = [
       'Notificaciones de torneos y resultados',
     ],
     cta: 'Jugar Gratis',
+    ctaLink: 'https://www.fairpadel.com/register',
     popular: false,
     gradient: 'from-gray-500 to-gray-600',
   },
@@ -36,6 +37,7 @@ const plans = [
       'Soporte prioritario',
     ],
     cta: 'Organizar Torneos',
+    ctaLink: 'https://wa.me/595982342473?text=Hola%20FairPadel!%20Me%20interesa%20organizar%20torneos%20con%20ustedes.',
     popular: true,
     gradient: 'from-primary to-red-600',
   },
@@ -54,6 +56,7 @@ const plans = [
       'Soporte dedicado 24/7',
     ],
     cta: 'Empezar como Sede',
+    ctaLink: 'https://wa.me/595982342473?text=Hola%20FairPadel!%20Tengo%20un%20complejo%20de%20p%C3%A1del%20y%20quiero%20saber%20m%C3%A1s%20sobre%20el%20sistema%20de%20reservas.',
     popular: false,
     gradient: 'from-amber-500 to-orange-600',
   },
@@ -144,7 +147,7 @@ export const Pricing = () => {
 
                   {/* CTA Button */}
                   <motion.a
-                    href="https://fairpadel-frontend-production.up.railway.app/register"
+                    href={plan.ctaLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.02 }}
