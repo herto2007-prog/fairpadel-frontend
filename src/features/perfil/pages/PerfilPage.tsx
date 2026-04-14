@@ -73,8 +73,7 @@ export function PerfilPage() {
     const targetEl = e.target as HTMLElement;
     // No iniciar pull-to-refresh si el touch empieza en un elemento interactivo
     if (targetEl.closest('button, a, [role="tab"], input, textarea, select')) return;
-    const target = containerRef.current;
-    if (target && target.scrollTop <= 0) {
+    if (window.scrollY <= 0) {
       setPullStartY(e.touches[0].clientY);
       setIsPulling(true);
     }
@@ -84,8 +83,7 @@ export function PerfilPage() {
     if (!isPulling || window.innerWidth >= 768) return;
     const y = e.touches[0].clientY;
     const dist = Math.max(0, y - pullStartY);
-    const target = containerRef.current;
-    if (target && target.scrollTop <= 0 && dist > 0) {
+    if (window.scrollY <= 0 && dist > 0) {
       setPullDistance(Math.min(dist * 0.5, 90));
     }
   };
@@ -326,19 +324,19 @@ export function PerfilPage() {
   };
 
   return (
-    <div className="h-screen bg-dark relative overflow-hidden">
+    <div className="min-h-screen bg-dark relative overflow-hidden">
       <BackgroundEffects variant="subtle" showGrid={true} />
       
       <div
         ref={containerRef}
-        className="h-full overflow-y-auto overflow-x-hidden relative"
+        className="min-h-screen overflow-x-hidden relative pt-16"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Pull to refresh indicator (mobile only) */}
         <div 
-          className="md:hidden fixed top-0 left-0 right-0 flex justify-center z-50 pointer-events-none"
+          className="md:hidden fixed top-16 left-0 right-0 flex justify-center z-[60] pointer-events-none"
           style={{ 
             transform: `translateY(${Math.max(0, pullDistance - 20)}px)`,
             opacity: pullDistance > 10 ? Math.min((pullDistance - 10) / 40, 1) : 0,
@@ -567,7 +565,7 @@ export function PerfilPage() {
             </motion.div>
 
             {/* Mobile tabs */}
-            <div className="md:hidden sticky top-0 z-40 bg-dark/95 backdrop-blur-md border-b border-white/10 mb-4 -mx-4 px-4">
+            <div className="md:hidden sticky top-16 z-40 bg-dark/95 backdrop-blur-md border-b border-white/10 mb-4 -mx-4 px-4">
               <div className="flex">
                 <TabButton tab="resumen" label="Resumen" />
                 <TabButton tab="logros" label="Logros" />

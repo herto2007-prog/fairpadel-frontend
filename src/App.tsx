@@ -79,6 +79,15 @@ function PageLoader() {
   );
 }
 
+// Layout público con navegación visible (sin requerir auth)
+function PublicLayout() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
+
 // Layout wrapper para rutas protegidas con autenticación
 function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -125,9 +134,11 @@ function App() {
             {/* Mockup Perfil - Temporal */}
             <Route path="/perfil-mockup" element={<PerfilMockupPage />} />
 
-            {/* Perfil de Jugador */}
-            <Route path="/perfil" element={<PerfilPage />} />
-            <Route path="/perfil/:id" element={<PerfilPage />} />
+            {/* Perfil de Jugador - Con Layout para navegación visible */}
+            <Route element={<PublicLayout />}>
+              <Route path="/perfil" element={<PerfilPage />} />
+              <Route path="/perfil/:id" element={<PerfilPage />} />
+            </Route>
 
             {/* Comunidad/Jugadores - Público (sin layout) */}
             <Route path="/jugadores-public" element={<Navigate to="/comunidad" replace />} />
