@@ -32,7 +32,7 @@ const plans = [
       'Equipos ilimitados',
       'Fixture con acomodación paraguaya',
       'Rankings avanzados + estadísticas',
-      'Pagos online con Bancard',
+
       'Notificaciones push/WhatsApp',
       'Soporte prioritario',
     ],
@@ -52,7 +52,7 @@ const plans = [
       'Sistema de alquileres integrado',
       'Panel de administración de reservas',
       'Reportes financieros',
-      'Instructores integrados',
+
       'Soporte dedicado 24/7',
     ],
     cta: 'Empezar como Sede',
