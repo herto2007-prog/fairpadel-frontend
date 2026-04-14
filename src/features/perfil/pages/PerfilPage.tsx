@@ -70,6 +70,9 @@ export function PerfilPage() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (window.innerWidth >= 768) return;
+    const targetEl = e.target as HTMLElement;
+    // No iniciar pull-to-refresh si el touch empieza en un elemento interactivo
+    if (targetEl.closest('button, a, [role="tab"], input, textarea, select')) return;
     const target = containerRef.current;
     if (target && target.scrollTop <= 0) {
       setPullStartY(e.touches[0].clientY);
@@ -164,20 +167,163 @@ export function PerfilPage() {
 
   const TabButton = ({ tab, label }: { tab: typeof activeTab; label: string }) => (
     <button
-      onClick={() => setActiveTab(tab)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setActiveTab(tab);
+      }}
       className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
         activeTab === tab ? 'text-white' : 'text-white/40'
       }`}
     >
       {label}
-      {activeTab === tab && (
-        <motion.div
-          layoutId="activeTab"
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#df2531]"
-        />
-      )}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-0.5 bg-[#df2531] transition-opacity duration-200 ${
+          activeTab === tab ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
     </button>
   );
+
+  const DestacadoTorneoCard = () => {
+    if (!perfil.destacadoTorneo) return null;
+    const dt = perfil.destacadoTorneo;
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="mb-6 md:mb-8"
+      >
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#df2531]/10 via-[#151921]/80 to-[#151921]/80 backdrop-blur-sm">
+          <div className="flex flex-col md:flex-row">
+            {/* Flyer */}
+            <div className="relative w-full md:w-56 lg:w-64 h-32 md:h-auto shrink-0">
+              <img
+                src={dt.flyerUrl || '/placeholder-torneo.jpg'}
+                alt={dt.nombre}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#151921]/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#151921]/90" />
+              {dt.esPrimerTorneo ? (
+                <div className="absolute top-0 left-0 px-3 py-1.5 bg-gradient-to-r from-[#df2531] to-pink-600 text-white text-[10px] md:text-xs font-bold rounded-br-xl shadow-lg">
+                  MI PRIMER TORNEO
+                </div>
+              ) : (
+                <div className="absolute top-0 left-0 px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-[10px] md:text-xs font-medium rounded-br-xl">
+                  ÚLTIMO TORNEO
+                </div>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 p-3 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                {/* Posición */}
+                <div className="flex md:flex-col md:items-center md:justify-center md:w-28 shrink-0">
+                  <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-lg md:text-2xl font-bold shrink-0 ${
+                    dt.posicionFinal === '1ro' ? 'bg-yellow-500/20 text-yellow-400' :
+                    dt.posicionFinal === '2do' ? 'bg-gray-400/20 text-gray-300' :
+                    dt.posicionFinal === '3ro' ? 'bg-amber-600/20 text-amber-500' :
+                    'bg-white/10 text-white'
+                  }`}>
+                    {dt.posicionFinal === '1ro' ? '🏆' :
+                     dt.posicionFinal === '2do' ? '🥈' :
+                     dt.posicionFinal === '3ro' ? '🥉' :
+                     dt.posicionFinal}
+                  </div>
+                  <div className="ml-3 md:ml-0 md:mt-1 md:text-center">
+                    <p className="text-[10px] md:text-xs text-white/40 uppercase tracking-wider">Posición</p>
+                    <p className="text-white font-semibold text-sm md:text-base">{dt.posicionFinal}</p>
+                  </div>
+                </div>
+
+                {/* Detalles */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base md:text-xl font-bold text-white truncate mb-1">
+                    {dt.nombre}
+                  </h3>
+                  <p className="text-xs md:text-sm text-white/60 mb-2 md:mb-3">
+                    {dt.categoria} • {formatDatePY(dt.fecha)}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <span className="px-2 py-0.5 md:px-2.5 md:py-1 bg-[#df2531]/20 text-[#df2531] text-[10px] md:text-xs font-medium rounded-lg">
+                      +{dt.puntosGanados} pts
+                    </span>
+                    <span className="px-2 py-0.5 md:px-2.5 md:py-1 bg-white/5 text-white/70 text-[10px] md:text-xs rounded-lg">
+                      {dt.partidosJugados} partidos jugados
+                    </span>
+                  </div>
+
+                  {/* Pareja */}
+                  {dt.pareja && (
+                    <div className="flex items-center gap-2 mb-3 md:mb-4">
+                      {dt.pareja.fotoUrl ? (
+                        <img
+                          src={dt.pareja.fotoUrl}
+                          alt=""
+                          className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border border-white/10"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#df2531] to-purple-600 flex items-center justify-center text-[10px] md:text-xs font-bold text-white">
+                          {dt.pareja.nombre[0]}{dt.pareja.apellido[0]}
+                        </div>
+                      )}
+                      <span className="text-xs md:text-sm text-white/80">
+                        Pareja: <span className="text-white font-medium">{dt.pareja.nombre} {dt.pareja.apellido}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Barra de fases */}
+                  <div className="mt-1 md:mt-2">
+                    <p className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2">Fase alcanzada</p>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { key: 'ZONA', label: 'Zona' },
+                        { key: 'CUARTOS', label: 'Cuartos' },
+                        { key: 'SEMIS', label: 'Semis' },
+                        { key: 'FINAL', label: 'Final' },
+                      ].map((fase, idx, arr) => {
+                        const orden = { ZONA: 1, CUARTOS: 2, SEMIS: 3, FINAL: 4 };
+                        const actual = orden[dt.faseMasLejana];
+                        const este = orden[fase.key as keyof typeof orden];
+                        const activo = este <= actual;
+                        const esUltimo = idx === arr.length - 1;
+                        return (
+                          <div key={fase.key} className="flex items-center flex-1">
+                            <div className="flex flex-col items-center gap-1 flex-1">
+                              <div className={`w-7 h-7 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition-colors ${
+                                activo
+                                  ? fase.key === 'FINAL' && dt.posicionFinal === '1ro'
+                                    ? 'bg-yellow-500 text-black'
+                                    : 'bg-[#df2531] text-white'
+                                  : 'bg-white/10 text-white/40'
+                              }`}>
+                                {fase.key === 'ZONA' ? 'Z' : fase.key === 'CUARTOS' ? 'C' : fase.key === 'SEMIS' ? 'S' : 'F'}
+                              </div>
+                              <span className={`text-[9px] md:text-[10px] ${activo ? 'text-white/80' : 'text-white/30'}`}>
+                                {fase.label}
+                              </span>
+                            </div>
+                            {!esUltimo && (
+                              <div className={`h-0.5 flex-1 mx-1 rounded-full ${
+                                este < actual ? 'bg-[#df2531]' : 'bg-white/10'
+                              }`} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="h-screen bg-dark relative overflow-hidden">
@@ -429,153 +575,17 @@ export function PerfilPage() {
               </div>
             </div>
 
-            {/* DESTACADO: Primer / Último Torneo */}
-            {perfil.destacadoTorneo && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="mb-6 md:mb-8"
-              >
-                {(() => {
-                  const dt = perfil.destacadoTorneo!;
-                  return (
-                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#df2531]/10 via-[#151921]/80 to-[#151921]/80 backdrop-blur-sm">
-                      <div className="flex flex-col md:flex-row">
-                        {/* Flyer */}
-                        <div className="relative w-full md:w-56 lg:w-64 h-32 md:h-auto shrink-0">
-                          <img
-                            src={dt.flyerUrl || '/placeholder-torneo.jpg'}
-                            alt={dt.nombre}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#151921]/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-[#151921]/90" />
-                          {dt.esPrimerTorneo ? (
-                            <div className="absolute top-0 left-0 px-3 py-1.5 bg-gradient-to-r from-[#df2531] to-pink-600 text-white text-[10px] md:text-xs font-bold rounded-br-xl shadow-lg">
-                              MI PRIMER TORNEO
-                            </div>
-                          ) : (
-                            <div className="absolute top-0 left-0 px-3 py-1.5 bg-white/10 backdrop-blur-sm text-white text-[10px] md:text-xs font-medium rounded-br-xl">
-                              ÚLTIMO TORNEO
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 p-3 md:p-6">
-                          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-                            {/* Posición */}
-                            <div className="flex md:flex-col md:items-center md:justify-center md:w-28 shrink-0">
-                              <div className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-lg md:text-2xl font-bold shrink-0 ${
-                                dt.posicionFinal === '1ro' ? 'bg-yellow-500/20 text-yellow-400' :
-                                dt.posicionFinal === '2do' ? 'bg-gray-400/20 text-gray-300' :
-                                dt.posicionFinal === '3ro' ? 'bg-amber-600/20 text-amber-500' :
-                                'bg-white/10 text-white'
-                              }`}>
-                                {dt.posicionFinal === '1ro' ? '🏆' :
-                                 dt.posicionFinal === '2do' ? '🥈' :
-                                 dt.posicionFinal === '3ro' ? '🥉' :
-                                 dt.posicionFinal}
-                              </div>
-                              <div className="ml-3 md:ml-0 md:mt-1 md:text-center">
-                                <p className="text-[10px] md:text-xs text-white/40 uppercase tracking-wider">Posición</p>
-                                <p className="text-white font-semibold text-sm md:text-base">{dt.posicionFinal}</p>
-                              </div>
-                            </div>
-
-                            {/* Detalles */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base md:text-xl font-bold text-white truncate mb-1">
-                                {dt.nombre}
-                              </h3>
-                              <p className="text-xs md:text-sm text-white/60 mb-2 md:mb-3">
-                                {dt.categoria} • {formatDatePY(dt.fecha)}
-                              </p>
-
-                              <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                                <span className="px-2 py-0.5 md:px-2.5 md:py-1 bg-[#df2531]/20 text-[#df2531] text-[10px] md:text-xs font-medium rounded-lg">
-                                  +{dt.puntosGanados} pts
-                                </span>
-                                <span className="px-2 py-0.5 md:px-2.5 md:py-1 bg-white/5 text-white/70 text-[10px] md:text-xs rounded-lg">
-                                  {dt.partidosJugados} partidos jugados
-                                </span>
-                              </div>
-
-                              {/* Pareja */}
-                              {dt.pareja && (
-                                <div className="flex items-center gap-2 mb-3 md:mb-4">
-                                  {dt.pareja.fotoUrl ? (
-                                    <img
-                                      src={dt.pareja.fotoUrl}
-                                      alt=""
-                                      className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border border-white/10"
-                                    />
-                                  ) : (
-                                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#df2531] to-purple-600 flex items-center justify-center text-[10px] md:text-xs font-bold text-white">
-                                      {dt.pareja.nombre[0]}{dt.pareja.apellido[0]}
-                                    </div>
-                                  )}
-                                  <span className="text-xs md:text-sm text-white/80">
-                                    Pareja: <span className="text-white font-medium">{dt.pareja.nombre} {dt.pareja.apellido}</span>
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Barra de fases */}
-                              <div className="mt-1 md:mt-2">
-                                <p className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider mb-1.5 md:mb-2">Fase alcanzada</p>
-                                <div className="flex items-center gap-1">
-                                  {[
-                                    { key: 'ZONA', label: 'Zona' },
-                                    { key: 'CUARTOS', label: 'Cuartos' },
-                                    { key: 'SEMIS', label: 'Semis' },
-                                    { key: 'FINAL', label: 'Final' },
-                                  ].map((fase, idx, arr) => {
-                                    const orden = { ZONA: 1, CUARTOS: 2, SEMIS: 3, FINAL: 4 };
-                                    const actual = orden[dt.faseMasLejana];
-                                    const este = orden[fase.key as keyof typeof orden];
-                                    const activo = este <= actual;
-                                    const esUltimo = idx === arr.length - 1;
-                                    return (
-                                      <div key={fase.key} className="flex items-center flex-1">
-                                        <div className="flex flex-col items-center gap-1 flex-1">
-                                          <div className={`w-7 h-7 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition-colors ${
-                                            activo
-                                              ? fase.key === 'FINAL' && dt.posicionFinal === '1ro'
-                                                ? 'bg-yellow-500 text-black'
-                                                : 'bg-[#df2531] text-white'
-                                              : 'bg-white/10 text-white/40'
-                                          }`}>
-                                            {fase.key === 'ZONA' ? 'Z' : fase.key === 'CUARTOS' ? 'C' : fase.key === 'SEMIS' ? 'S' : 'F'}
-                                          </div>
-                                          <span className={`text-[9px] md:text-[10px] ${activo ? 'text-white/80' : 'text-white/30'}`}>
-                                            {fase.label}
-                                          </span>
-                                        </div>
-                                        {!esUltimo && (
-                                          <div className={`h-0.5 flex-1 mx-1 rounded-full ${
-                                            este < actual ? 'bg-[#df2531]' : 'bg-white/10'
-                                          }`} />
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </motion.div>
-            )}
+            {/* DESTACADO: Primer / Último Torneo (desktop only) */}
+            <div className="hidden md:block">
+              <DestacadoTorneoCard />
+            </div>
 
             {/* Mobile conditional content */}
             <div className="md:hidden space-y-4">
               {activeTab === 'resumen' && (
                 <>
+                  <DestacadoTorneoCard />
+
                   {/* Actividad Reciente */}
                   {perfil.actividadReciente.length > 0 && (
                     <motion.div 
@@ -749,6 +759,14 @@ export function PerfilPage() {
                         </div>
                       </div>
                     </motion.div>
+                  )}
+
+                  {/* WhatsApp Preferences (solo mi perfil, mobile) */}
+                  {isMyProfile && (
+                    <WhatsAppPreferencesCard 
+                      perfil={perfil} 
+                      onUpdate={loadPerfil}
+                    />
                   )}
 
                   {isMyProfile && perfil.privado && perfil.privado.inscripcionesPendientes > 0 && (
