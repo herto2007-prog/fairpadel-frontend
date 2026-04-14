@@ -16,7 +16,7 @@ const plans = [
       'Seguir amigos y rivales',
       'Notificaciones de torneos y resultados',
     ],
-    cta: 'Jugar Gratis',
+    cta: 'Unirme a la comunidad',
     ctaLink: 'https://www.fairpadel.com/register',
     popular: false,
     gradient: 'from-gray-500 to-gray-600',
