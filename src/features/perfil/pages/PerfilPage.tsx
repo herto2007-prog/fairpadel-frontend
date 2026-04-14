@@ -637,7 +637,7 @@ export function PerfilPage() {
                   </div>
                   <div>
                     <p className="text-sm text-white/40">Mejor Ranking</p>
-                    <p className="text-white font-semibold">#{perfil.ranking[0].posicion} {perfil.ranking[0].alcance}</p>
+                    <p className="text-white font-semibold">#{perfil.ranking[0].posicion} {perfil.ranking[0].alcanceNombre || perfil.ranking[0].alcance}</p>
                   </div>
                 </div>
                 <div className="space-y-2">

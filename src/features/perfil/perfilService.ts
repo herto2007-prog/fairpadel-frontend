@@ -43,6 +43,7 @@ export interface PerfilJugador {
   ranking: Array<{
     tipo: string;
     alcance: string;
+    alcanceNombre?: string;
     posicion: number;
     puntosTotales: number;
     torneosJugados: number;
