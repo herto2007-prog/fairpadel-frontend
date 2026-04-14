@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
+import { Trophy, Maximize2, Minimize2, ChevronDown, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 
 
@@ -69,6 +69,14 @@ export function ChampionshipBracket({
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [mostrarSelector, setMostrarSelector] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => { loadCategorias(); }, [tournamentId]);
   useEffect(() => { if (categoriaSeleccionada) loadData(); }, [tournamentId, categoriaSeleccionada]);
@@ -231,26 +239,26 @@ export function ChampionshipBracket({
         </button>
       </div>
 
-      {/* Bracket - Centrado */}
+      {/* Bracket - Scroll horizontal en móvil, centrado en desktop */}
       <div className="flex-1 relative p-4 md:p-6 overflow-auto bg-[#0B0E14]">
-        
-        <div className="relative z-10">
+        <div className="relative z-10 min-w-max">
         {partidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
             <Trophy className="w-16 h-16 text-gray-600 mb-4" />
             <p className="text-gray-400">No hay partidos para esta categoría</p>
           </div>
         ) : (
-          <div className="flex justify-center items-center min-h-full">
-            <div className="flex gap-8">
+          <div className="flex justify-start md:justify-center items-start md:items-center min-h-full">
+            <div className="flex gap-4 md:gap-8">
               {/* ZONA y REPECHAJE - Columnas simples */}
               {tieneZonaRepechaje && (
-                <div className="flex gap-6">
+                <div className="flex gap-3 md:gap-6">
                   {fasesActivas.filter(f => f === 'ZONA' || f === 'REPECHAJE').map(fase => (
                     <FaseColumnSimple
                       key={fase}
                       fase={fase}
                       partidos={partidosPorFase[fase]}
+                      isMobile={isMobile}
                     />
                   ))}
                 </div>
@@ -258,10 +266,16 @@ export function ChampionshipBracket({
               
               {/* BRACKET CON POSICIONAMIENTO ABSOLUTO */}
               {fasesBracket.length > 0 && (
-                <div className="relative">
+                <div className="relative flex items-center gap-4 md:gap-8">
                   <BracketTree 
                     fases={fasesBracket}
                     partidosPorFase={partidosPorFase}
+                    isMobile={isMobile}
+                  />
+                  {/* CAMPEONES */}
+                  <ChampionsCard 
+                    ganador={partidosPorFase['FINAL']?.[0]?.ganador}
+                    isMobile={isMobile}
                   />
                 </div>
               )}
@@ -275,9 +289,9 @@ export function ChampionshipBracket({
 }
 
 // Columna simple para ZONA y REPECHAJE
-function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[] }) {
+function FaseColumnSimple({ fase, partidos, isMobile }: { fase: string; partidos: Partido[]; isMobile?: boolean }) {
   return (
-    <div className="flex flex-col w-[200px]">
+    <div className={`flex flex-col ${isMobile ? 'w-[150px]' : 'w-[200px]'}`}>
       {/* Título */}
       <div className="mb-3 pb-2 border-b-2 border-[#df2531]">
         <span className="text-xs font-bold text-[#df2531] uppercase tracking-wider">{fase}</span>
@@ -286,7 +300,7 @@ function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[
       <div className="flex flex-col gap-3">
         {partidos.map(partido => (
           <div key={partido.id}>
-            <MatchCard partido={partido} />
+            <MatchCard partido={partido} isMobile={isMobile} />
           </div>
         ))}
       </div>
@@ -297,10 +311,12 @@ function FaseColumnSimple({ fase, partidos }: { fase: string; partidos: Partido[
 // Bracket principal con posicionamiento absoluto
 function BracketTree({ 
   fases, 
-  partidosPorFase 
+  partidosPorFase,
+  isMobile = false
 }: { 
   fases: string[];
   partidosPorFase: Record<string, Partido[]>;
+  isMobile?: boolean;
 }) {
   if (fases.length === 0) return null;
 
@@ -310,12 +326,12 @@ function BracketTree({
   );
   const maxPartidos = partidosPorFase[faseInicial].length;
   
-  // Dimensiones
-  const cardWidth = 200;
-  const cardHeight = 140;
-  const headerHeight = 40; // espacio para título
-  const gapX = 48;
-  const gapY = 20;
+  // Dimensiones responsive
+  const cardWidth = isMobile ? 150 : 200;
+  const cardHeight = isMobile ? 110 : 140;
+  const headerHeight = isMobile ? 32 : 40;
+  const gapX = isMobile ? 24 : 48;
+  const gapY = isMobile ? 12 : 20;
   
   // Altura total = header + cards
   const contentHeight = maxPartidos * cardHeight + (maxPartidos - 1) * gapY;
@@ -402,7 +418,7 @@ function BracketTree({
               className="absolute"
               style={{ left: x, top: y, width: cardWidth, height: cardHeight }}
             >
-              <MatchCard partido={partido} />
+              <MatchCard partido={partido} isMobile={isMobile} />
             </div>
           );
         })
@@ -435,8 +451,83 @@ function ConnectorLine({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number;
   );
 }
 
+// Tarjeta de Campeones
+function ChampionsCard({ ganador, isMobile }: { ganador?: Partido['ganador']; isMobile?: boolean }) {
+  if (!ganador) return null;
+
+  const fotoSize = isMobile ? 'w-14 h-14' : 'w-20 h-20';
+  const trofeoSize = isMobile ? 'w-20 h-20' : 'w-28 h-28';
+  const containerWidth = isMobile ? 'w-[150px]' : 'w-[200px]';
+
+  return (
+    <div className={`${containerWidth} flex flex-col items-center justify-center h-full`}>
+      <div className="relative flex flex-col items-center">
+        {/* Estrellas */}
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-0.5 z-10">
+          <Sparkles className="w-3 h-3 text-yellow-300" />
+          <Sparkles className="w-4 h-4 text-yellow-400 -mt-1" />
+          <Sparkles className="w-3 h-3 text-yellow-300" />
+        </div>
+
+        {/* Copa de fondo */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-20 z-0">
+          <Trophy className={`${trofeoSize} text-yellow-500`} />
+        </div>
+
+        {/* Fotos ganadores */}
+        <div className="relative flex -space-x-2 z-10">
+          {ganador.jugador1.fotoUrl ? (
+            <img
+              src={ganador.jugador1.fotoUrl}
+              alt={ganador.jugador1.nombre}
+              className={`${fotoSize} rounded-full object-cover border-2 border-yellow-400 bg-[#151921] shadow-lg shadow-yellow-500/20`}
+            />
+          ) : (
+            <div className={`${fotoSize} rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-sm font-bold text-white border-2 border-yellow-200 shadow-lg`}>
+              {ganador.jugador1.nombre?.[0]}{ganador.jugador1.apellido?.[0]}
+            </div>
+          )}
+          {ganador.jugador2.fotoUrl ? (
+            <img
+              src={ganador.jugador2.fotoUrl}
+              alt={ganador.jugador2.nombre}
+              className={`${fotoSize} rounded-full object-cover border-2 border-yellow-400 bg-[#151921] shadow-lg shadow-yellow-500/20`}
+            />
+          ) : (
+            <div className={`${fotoSize} rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-sm font-bold text-white border-2 border-yellow-200 shadow-lg`}>
+              {ganador.jugador2.nombre?.[0]}{ganador.jugador2.apellido?.[0]}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CAMPEONES dorado */}
+      <h3 className={`mt-3 font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 drop-shadow-[0_2px_4px_rgba(234,179,8,0.5)] tracking-widest ${isMobile ? 'text-lg' : 'text-2xl'}`}>
+        CAMPEONES
+      </h3>
+
+      {/* Nombres */}
+      <div className="mt-1 text-center space-y-0.5">
+        <p className={`font-bold text-white ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+          {ganador.jugador1.nombre} <span className="text-yellow-400">{ganador.jugador1.apellido}</span>
+        </p>
+        <p className={`font-bold text-white ${isMobile ? 'text-[10px]' : 'text-xs'}`}>
+          {ganador.jugador2.nombre} <span className="text-yellow-400">{ganador.jugador2.apellido}</span>
+        </p>
+      </div>
+
+      {/* Logo FairPadel */}
+      <img
+        src="https://res.cloudinary.com/dncjaaybv/image/upload/q_auto/f_auto/v1773057029/logo_h4y1tl.png"
+        alt="FairPadel"
+        className={`mt-3 object-contain opacity-90 ${isMobile ? 'h-6' : 'h-8'}`}
+      />
+    </div>
+  );
+}
+
 // Match Card con fondo oscuro 80% transparencia
-function MatchCard({ partido }: { partido: Partido }) {
+function MatchCard({ partido, isMobile }: { partido: Partido; isMobile?: boolean }) {
   const isFinalizado = !!partido.ganador;
   const pareja1Gano = isFinalizado && partido.ganador?.id === partido.inscripcion1?.id;
   const pareja2Gano = isFinalizado && partido.ganador?.id === partido.inscripcion2?.id;
@@ -451,15 +542,15 @@ function MatchCard({ partido }: { partido: Partido }) {
     : partido.cancha || 'Cancha por definir';
 
   return (
-    <div className="w-full min-h-[140px] bg-[#151921] rounded-lg overflow-hidden shadow-lg border border-[#232838] flex flex-col">
+    <div className={`w-full bg-[#151921] rounded-lg overflow-hidden shadow-lg border border-[#232838] flex flex-col ${isMobile ? 'min-h-[110px]' : 'min-h-[140px]'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 bg-[#0B0E14] border-b border-[#232838] shrink-0">
+      <div className={`flex items-center justify-between bg-[#0B0E14] border-b border-[#232838] shrink-0 ${isMobile ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
         <span className="text-[9px] font-bold text-[#df2531]">{codigoPartido}</span>
-        <span className="text-[8px] text-gray-400 truncate max-w-[110px]">{headerText}</span>
+        <span className={`text-[8px] text-gray-400 truncate ${isMobile ? 'max-w-[80px]' : 'max-w-[110px]'}`}>{headerText}</span>
       </div>
 
       {/* Equipo 1 */}
-      <div className={`flex items-center px-2 py-1 border-b border-[#232838] flex-1 ${pareja1Gano ? 'bg-[#df2531]/10' : ''}`}>
+      <div className={`flex items-center border-b border-[#232838] flex-1 ${pareja1Gano ? 'bg-[#df2531]/10' : ''} ${isMobile ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
         {partido.inscripcion1 ? (
           <>
             <div className="flex -space-x-1 mr-1.5 shrink-0">
@@ -509,7 +600,7 @@ function MatchCard({ partido }: { partido: Partido }) {
       </div>
 
       {/* Equipo 2 */}
-      <div className={`flex items-center px-2 py-1 flex-1 border-b border-[#232838] ${pareja2Gano ? 'bg-[#df2531]/10' : ''}`}>
+      <div className={`flex items-center flex-1 border-b border-[#232838] ${pareja2Gano ? 'bg-[#df2531]/10' : ''} ${isMobile ? 'px-1.5 py-0.5' : 'px-2 py-1'}`}>
         {partido.inscripcion2 ? (
           <>
             <div className="flex -space-x-1 mr-1.5 shrink-0">
