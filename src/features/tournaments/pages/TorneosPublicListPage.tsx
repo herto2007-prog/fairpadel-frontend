@@ -66,6 +66,25 @@ export function TorneosPublicListPage() {
   const [filtrosExpandidos, setFiltrosExpandidos] = useState(false);
   const [ciudadesDisponibles, setCiudadesDisponibles] = useState<string[]>([]);
   const [categoriasDisponibles, setCategoriasDisponibles] = useState<Array<{id: string, nombre: string, tipo: string}>>([]);
+  const [torneosFinalizados, setTorneosFinalizados] = useState<Torneo[]>([]);
+  const [loadingFinalizados, setLoadingFinalizados] = useState(true);
+
+  // Cargar torneos finalizados (historial fijo)
+  useEffect(() => {
+    const cargarFinalizados = async () => {
+      try {
+        const { data } = await api.get('/t/public?estado=finalizados&limit=6&page=1');
+        if (data.success) {
+          setTorneosFinalizados(data.torneos);
+        }
+      } catch (error) {
+        console.error('Error cargando torneos finalizados:', error);
+      } finally {
+        setLoadingFinalizados(false);
+      }
+    };
+    cargarFinalizados();
+  }, []);
 
   // Cargar datos de filtros
   useEffect(() => {
@@ -418,6 +437,121 @@ export function TorneosPublicListPage() {
           )}
         </div>
       </section>
+
+      {/* Historial de Torneos Finalizados */}
+      {(torneosFinalizados.length > 0 || loadingFinalizados) && (
+        <section className="px-4 pb-16">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-px flex-1 bg-white/10" />
+                <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-500" />
+                  Historial de Torneos
+                </h2>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+
+              {loadingFinalizados ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-xl h-[280px] animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <AnimatePresence mode="popLayout">
+                    {torneosFinalizados.map((torneo, index) => (
+                      <motion.div
+                        key={torneo.id}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="group bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300"
+                      >
+                        <div className="relative h-40 overflow-hidden">
+                          <img
+                            src={torneo.flyerUrl || '/placeholder-torneo.jpg'}
+                            alt={torneo.nombre}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale-[30%]"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent" />
+
+                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-yellow-500/20 text-yellow-300 text-[10px] font-semibold rounded-full border border-yellow-500/30">
+                            Finalizado
+                          </div>
+
+                          <div className="absolute bottom-2 left-2">
+                            <span className="px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold rounded-lg">
+                              {formatPrecio(Number(torneo.costoInscripcion))}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-4">
+                          <h3 className="text-base font-bold text-white mb-1 line-clamp-1 group-hover:text-yellow-400 transition-colors">
+                            {torneo.nombre}
+                          </h3>
+
+                          <div className="space-y-1 mb-3">
+                            <div className="flex items-center gap-2 text-white/50 text-sm">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>{formatFecha(torneo.fechaInicio)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-white/50 text-sm">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>{torneo.ciudad}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-white/50 text-sm">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>{torneo.totalInscritos} inscritos</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {torneo.categorias.slice(0, 2).map(cat => (
+                              <span
+                                key={cat.id}
+                                className={`px-1.5 py-0.5 text-[10px] rounded-md ${
+                                  cat.tipo === 'FEMENINO'
+                                    ? 'bg-pink-500/15 text-pink-300'
+                                    : 'bg-blue-500/15 text-blue-300'
+                                }`}
+                              >
+                                {cat.nombre}
+                              </span>
+                            ))}
+                            {torneo.categorias.length > 2 && (
+                              <span className="px-1.5 py-0.5 text-[10px] bg-white/10 text-white/60 rounded-md">
+                                +{torneo.categorias.length - 2}
+                              </span>
+                            )}
+                          </div>
+
+                          <Link
+                            to={`/t/${torneo.slug}`}
+                            className="flex items-center justify-center gap-2 w-full py-2 bg-white/5 hover:bg-yellow-500/10 border border-white/10 hover:border-yellow-500/30 rounded-lg text-white/70 hover:text-yellow-400 transition-all group/btn text-sm"
+                          >
+                            <span>Ver resultados</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                          </Link>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
