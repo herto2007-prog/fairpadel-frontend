@@ -62,7 +62,7 @@ export function FairpadelPanel() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [torneosBloqueados, setTorneosBloqueados] = useState<TorneoBloqueado[]>([]);
   const [torneosComisiones, setTorneosComisiones] = useState<TorneoBloqueado[]>([]);
-  const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'pendientes' | 'bloqueados' | 'pagados'>('todos');
+  const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'pendientes' | 'bloqueados' | 'pagados' | 'exonerados'>('todos');
   const [busquedaComisiones, setBusquedaComisiones] = useState('');
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,6 +148,17 @@ export function FairpadelPanel() {
       await loadAllData();
     } catch (error) {
       setMessage({ type: 'error', text: 'Error bloqueando torneo' });
+    }
+  };
+
+  const exonerarTorneo = async (id: string) => {
+    if (!confirm('¿Estás seguro de exonerar este torneo? No se cobrará comisión.')) return;
+    try {
+      await torneoV2Service.exonerarTorneo(id);
+      setMessage({ type: 'success', text: 'Torneo exonerado correctamente' });
+      await loadAllData();
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error exonerando torneo' });
     }
   };
 
@@ -404,7 +415,7 @@ export function FairpadelPanel() {
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex flex-wrap gap-2">
-          {(['todos', 'pendientes', 'bloqueados', 'pagados'] as const).map((f) => (
+          {(['todos', 'pendientes', 'bloqueados', 'pagados', 'exonerados'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFiltroComisiones(f)}
@@ -416,7 +427,8 @@ export function FairpadelPanel() {
             >
               {f === 'todos' ? 'Todos' :
                f === 'pendientes' ? 'Pendientes' :
-               f === 'bloqueados' ? 'Bloqueados' : 'Pagados'}
+               f === 'bloqueados' ? 'Bloqueados' :
+               f === 'pagados' ? 'Pagados' : 'Exonerados'}
             </button>
           ))}
         </div>
@@ -450,7 +462,9 @@ export function FairpadelPanel() {
                   ? 'border-red-500/20'
                   : torneo.comision.estado === 'PAGADO'
                     ? 'border-emerald-500/20'
-                    : 'border-slate-700'
+                    : torneo.comision.estado === 'EXONERADO'
+                      ? 'border-blue-500/20'
+                      : 'border-slate-700'
               }`}
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -461,12 +475,16 @@ export function FairpadelPanel() {
                         ? 'bg-red-500/20'
                         : torneo.comision.estado === 'PAGADO'
                           ? 'bg-emerald-500/20'
-                          : 'bg-amber-500/20'
+                          : torneo.comision.estado === 'EXONERADO'
+                            ? 'bg-blue-500/20'
+                            : 'bg-amber-500/20'
                     }`}>
                       {torneo.comision.bloqueoActivo ? (
                         <Lock className="w-5 h-5 text-red-400" />
                       ) : torneo.comision.estado === 'PAGADO' ? (
                         <Check className="w-5 h-5 text-emerald-400" />
+                      ) : torneo.comision.estado === 'EXONERADO' ? (
+                        <DollarSign className="w-5 h-5 text-blue-400" />
                       ) : (
                         <AlertTriangle className="w-5 h-5 text-amber-400" />
                       )}
@@ -515,40 +533,53 @@ export function FairpadelPanel() {
                     <span className={`text-sm font-medium ${
                       torneo.comision.estado === 'PAGADO'
                         ? 'text-emerald-400'
-                        : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
-                          ? 'text-amber-400'
-                          : torneo.comision.bloqueoActivo
-                            ? 'text-red-400'
-                            : 'text-slate-300'
+                        : torneo.comision.estado === 'EXONERADO'
+                          ? 'text-blue-400'
+                          : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
+                            ? 'text-amber-400'
+                            : torneo.comision.bloqueoActivo
+                              ? 'text-red-400'
+                              : 'text-slate-300'
                     }`}>
                       {torneo.comision.estado === 'PAGADO'
                         ? 'Pagado'
-                        : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
-                          ? 'Pendiente verificación'
-                          : torneo.comision.bloqueoActivo
-                            ? 'Bloqueado'
-                            : 'Pendiente'}
+                        : torneo.comision.estado === 'EXONERADO'
+                          ? 'Exonerado'
+                          : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
+                            ? 'Pendiente verificación'
+                            : torneo.comision.bloqueoActivo
+                              ? 'Bloqueado'
+                              : 'Pendiente'}
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
-                    {!torneo.comision.bloqueoActivo && torneo.comision.estado !== 'PAGADO' && (
-                      <button
-                        onClick={() => bloquearTorneo(torneo.id)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                      >
-                        <Lock className="w-4 h-4" />
-                        Bloquear
-                      </button>
-                    )}
-                    {(torneo.comision.estado === 'PENDIENTE_VERIFICACION' || torneo.comision.bloqueoActivo) && (
-                      <button
-                        onClick={() => liberarTorneo(torneo.id, torneo.comision.montoEstimado)}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                      >
-                        <Unlock className="w-4 h-4" />
-                        Liberar
-                      </button>
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {torneo.comision.estado !== 'PAGADO' && torneo.comision.estado !== 'EXONERADO' && (
+                      <>
+                        {!torneo.comision.bloqueoActivo && (
+                          <button
+                            onClick={() => bloquearTorneo(torneo.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+                          >
+                            <Lock className="w-4 h-4" />
+                            Bloquear
+                          </button>
+                        )}
+                        <button
+                          onClick={() => liberarTorneo(torneo.id, torneo.comision.montoEstimado)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <Unlock className="w-4 h-4" />
+                          {torneo.comision.bloqueoActivo ? 'Liberar' : 'Marcar pagado'}
+                        </button>
+                        <button
+                          onClick={() => exonerarTorneo(torneo.id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                          Exonerar
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

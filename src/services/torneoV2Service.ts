@@ -197,6 +197,9 @@ export const torneoV2Service = {
   liberarTorneo: (id: string, data: { montoPagado: number; notas?: string }) => 
     api.post(`/fairpadel/admin/torneos/${id}/liberar`, data).then(r => r.data),
   
+  exonerarTorneo: (id: string, data?: { motivo?: string }) => 
+    api.post(`/fairpadel/admin/torneos/${id}/exonerar`, data || {}).then(r => r.data),
+  
   bloquearTorneo: (id: string) => 
     api.post(`/fairpadel/admin/torneos/${id}/bloquear`, {}).then(r => r.data),
 };
