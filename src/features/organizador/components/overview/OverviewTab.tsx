@@ -189,7 +189,6 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
                 {req.completado ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                 {req.nombre === 'flyer' ? 'Flyer' :
                  req.nombre === 'sede' ? 'Sede' :
-                 req.nombre === 'comision' ? 'Comision' :
                  req.nombre === 'fixture' ? 'Fixture' :
                  req.nombre === 'disponibilidad' ? 'Canchas' :
                  'Inscripciones'}
@@ -229,9 +228,14 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           icon={Trophy}
           label="Estado"
           value={getEstadoLabel(torneo.estadoProceso)}
-          subtext={comision?.bloqueoActivo ? 'Bloqueado por comision' : 'Todo OK'}
+          subtext={
+            comision?.bloqueoActivo
+              ? `Bloqueado - Gs. ${comision.montoEstimado.toLocaleString('es-PY')} comisión`
+              : comision
+                ? `Gs. ${comision.montoEstimado.toLocaleString('es-PY')} comisión acumulada`
+                : 'Todo OK'
+          }
           color={comision?.bloqueoActivo ? 'red' : 'yellow'}
-          onClick={() => comision?.bloqueoActivo && onTabChange('comision')}
         />
       </div>
 
