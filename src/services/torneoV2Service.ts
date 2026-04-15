@@ -188,6 +188,9 @@ export const torneoV2Service = {
   getTorneosBloqueados: () => 
     api.get('/fairpadel/admin/torneos/bloqueados').then(r => r.data),
   
+  getTorneosComisiones: (params?: { estado?: string; busqueda?: string }) => 
+    api.get('/fairpadel/admin/torneos/comisiones', { params }).then(r => r.data),
+  
   getTorneoAdmin: (id: string) => 
     api.get(`/fairpadel/admin/torneos/${id}`).then(r => r.data),
   

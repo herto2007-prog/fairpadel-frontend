@@ -12,7 +12,10 @@ import {
   User,
   Save,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Search,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 import { torneoV2Service } from '../../../services/torneoV2Service';
 import { formatCurrency } from '../../../utils/currency';
@@ -55,9 +58,12 @@ interface ConfigItem {
 }
 
 export function FairpadelPanel() {
-  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'config' | 'bloqueados'>('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'config' | 'bloqueados' | 'comisiones'>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [torneosBloqueados, setTorneosBloqueados] = useState<TorneoBloqueado[]>([]);
+  const [torneosComisiones, setTorneosComisiones] = useState<TorneoBloqueado[]>([]);
+  const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'pendientes' | 'bloqueados' | 'pagados'>('todos');
+  const [busquedaComisiones, setBusquedaComisiones] = useState('');
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,15 +79,17 @@ export function FairpadelPanel() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [dashData, configData, bloqueadosData] = await Promise.all([
+      const [dashData, configData, bloqueadosData, comisionesData] = await Promise.all([
         torneoV2Service.getDashboard(),
         torneoV2Service.getConfig(),
         torneoV2Service.getTorneosBloqueados(),
+        torneoV2Service.getTorneosComisiones(),
       ]);
 
       setStats(dashData.stats);
       setConfigs(configData.configs);
       setTorneosBloqueados(bloqueadosData.torneos);
+      setTorneosComisiones(comisionesData.torneos);
       
       // Inicializar valores editables
       const initialValues: Record<string, string> = {};
@@ -94,6 +102,19 @@ export function FairpadelPanel() {
       setMessage({ type: 'error', text: 'Error cargando datos' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadComisiones = async () => {
+    try {
+      const data = await torneoV2Service.getTorneosComisiones({
+        estado: filtroComisiones === 'todos' ? undefined : filtroComisiones,
+        busqueda: busquedaComisiones.trim() || undefined,
+      });
+      setTorneosComisiones(data.torneos);
+    } catch (error) {
+      console.error('Error cargando comisiones:', error);
+      setMessage({ type: 'error', text: 'Error cargando comisiones' });
     }
   };
 
@@ -119,6 +140,22 @@ export function FairpadelPanel() {
       setMessage({ type: 'error', text: 'Error liberando torneo' });
     }
   };
+
+  const bloquearTorneo = async (id: string) => {
+    try {
+      await torneoV2Service.bloquearTorneo(id);
+      setMessage({ type: 'success', text: 'Torneo bloqueado correctamente' });
+      await loadAllData();
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Error bloqueando torneo' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === 'comisiones') {
+      loadComisiones();
+    }
+  }, [activeSubTab, filtroComisiones, busquedaComisiones]);
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -349,6 +386,180 @@ export function FairpadelPanel() {
     </div>
   );
 
+  const renderComisiones = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h3 className="text-lg font-semibold text-white">
+          Comisiones por Torneo ({torneosComisiones.length})
+        </h3>
+        <button
+          onClick={loadComisiones}
+          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors self-start"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Recargar
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(['todos', 'pendientes', 'bloqueados', 'pagados'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFiltroComisiones(f)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filtroComisiones === f
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              {f === 'todos' ? 'Todos' :
+               f === 'pendientes' ? 'Pendientes' :
+               f === 'bloqueados' ? 'Bloqueados' : 'Pagados'}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Buscar torneo u organizador..."
+            value={busquedaComisiones}
+            onChange={(e) => setBusquedaComisiones(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {torneosComisiones.length === 0 ? (
+        <div className="glass rounded-2xl p-12 text-center">
+          <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">Sin resultados</h3>
+          <p className="text-slate-400">No hay torneos que coincidan con el filtro seleccionado</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {torneosComisiones.map((torneo) => (
+            <motion.div
+              key={torneo.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`glass rounded-2xl p-5 border ${
+                torneo.comision.bloqueoActivo
+                  ? 'border-red-500/20'
+                  : torneo.comision.estado === 'PAGADO'
+                    ? 'border-emerald-500/20'
+                    : 'border-slate-700'
+              }`}
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      torneo.comision.bloqueoActivo
+                        ? 'bg-red-500/20'
+                        : torneo.comision.estado === 'PAGADO'
+                          ? 'bg-emerald-500/20'
+                          : 'bg-amber-500/20'
+                    }`}>
+                      {torneo.comision.bloqueoActivo ? (
+                        <Lock className="w-5 h-5 text-red-400" />
+                      ) : torneo.comision.estado === 'PAGADO' ? (
+                        <Check className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-400" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-white">{torneo.nombre}</h4>
+                      <p className="text-sm text-slate-400">
+                        {torneo.organizador.nombre} {torneo.organizador.apellido}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Users className="w-4 h-4" />
+                      {torneo.inscripciones} inscripciones
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <DollarSign className="w-4 h-4" />
+                      Comisión: {formatCurrency(torneo.comision.montoEstimado)}
+                    </div>
+                    {torneo.comision.montoPagado > 0 && (
+                      <div className="flex items-center gap-2 text-emerald-400">
+                        <Check className="w-4 h-4" />
+                        Pagado: {formatCurrency(torneo.comision.montoPagado)}
+                      </div>
+                    )}
+                  </div>
+
+                  {torneo.comision.comprobanteUrl && (
+                    <a
+                      href={torneo.comision.comprobanteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-3 text-sm text-emerald-400 hover:text-emerald-300"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ver comprobante subido
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 lg:items-end">
+                  <div className="text-right">
+                    <span className="text-xs text-slate-500 block">Estado comisión</span>
+                    <span className={`text-sm font-medium ${
+                      torneo.comision.estado === 'PAGADO'
+                        ? 'text-emerald-400'
+                        : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
+                          ? 'text-amber-400'
+                          : torneo.comision.bloqueoActivo
+                            ? 'text-red-400'
+                            : 'text-slate-300'
+                    }`}>
+                      {torneo.comision.estado === 'PAGADO'
+                        ? 'Pagado'
+                        : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
+                          ? 'Pendiente verificación'
+                          : torneo.comision.bloqueoActivo
+                            ? 'Bloqueado'
+                            : 'Pendiente'}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {!torneo.comision.bloqueoActivo && torneo.comision.estado !== 'PAGADO' && (
+                      <button
+                        onClick={() => bloquearTorneo(torneo.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <Lock className="w-4 h-4" />
+                        Bloquear
+                      </button>
+                    )}
+                    {(torneo.comision.estado === 'PENDIENTE_VERIFICACION' || torneo.comision.bloqueoActivo) && (
+                      <button
+                        onClick={() => liberarTorneo(torneo.id, torneo.comision.montoEstimado)}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <Unlock className="w-4 h-4" />
+                        Liberar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -373,6 +584,12 @@ export function FairpadelPanel() {
           active={activeSubTab === 'bloqueados'}
           onClick={() => setActiveSubTab('bloqueados')}
           alert={torneosBloqueados.length > 0}
+        />
+        <SubTabButton
+          label="Comisiones"
+          icon={DollarSign}
+          active={activeSubTab === 'comisiones'}
+          onClick={() => setActiveSubTab('comisiones')}
         />
         <SubTabButton
           label="Configuración"
@@ -407,6 +624,7 @@ export function FairpadelPanel() {
           {activeSubTab === 'dashboard' && renderDashboard()}
           {activeSubTab === 'config' && renderConfig()}
           {activeSubTab === 'bloqueados' && renderBloqueados()}
+          {activeSubTab === 'comisiones' && renderComisiones()}
         </>
       )}
     </div>
