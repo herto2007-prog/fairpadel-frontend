@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { torneoV2Service } from '../../../services/torneoV2Service';
 import { formatCurrency } from '../../../utils/currency';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 
 interface DashboardStats {
@@ -68,6 +70,7 @@ export function FairpadelPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { confirm, ...confirmState } = useConfirm();
 
   // Valores editables de config
   const [editValues, setEditValues] = useState<Record<string, string>>({});
@@ -142,6 +145,14 @@ export function FairpadelPanel() {
   };
 
   const bloquearTorneo = async (id: string) => {
+    const confirmed = await confirm({
+      title: 'Bloquear torneo',
+      message: '¿Estás seguro de bloquear este torneo? El organizador no podrá avanzar con el torneo hasta pagar la comisión.',
+      confirmText: 'Bloquear',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await torneoV2Service.bloquearTorneo(id);
       setMessage({ type: 'success', text: 'Torneo bloqueado correctamente' });
@@ -152,7 +163,14 @@ export function FairpadelPanel() {
   };
 
   const exonerarTorneo = async (id: string) => {
-    if (!confirm('¿Estás seguro de exonerar este torneo? No se cobrará comisión.')) return;
+    const confirmed = await confirm({
+      title: 'Exonerar torneo',
+      message: '¿Estás seguro de exonerar este torneo? No se cobrará comisión.',
+      confirmText: 'Exonerar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
     try {
       await torneoV2Service.exonerarTorneo(id);
       setMessage({ type: 'success', text: 'Torneo exonerado correctamente' });
@@ -658,6 +676,17 @@ export function FairpadelPanel() {
           {activeSubTab === 'comisiones' && renderComisiones()}
         </>
       )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

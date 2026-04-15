@@ -40,12 +40,22 @@ interface Partido {
   };
   formatoSet3?: 'SET_COMPLETO' | 'SUPER_TIE_BREAK';
   estado?: string;
+  parejaRetirada?: number | null;
+  razonResultado?: string | null;
+  observaciones?: string | null;
+  duracionMinutos?: number | null;
   fecha?: string;
   hora?: string;
   cancha?: string;
   torneoCanchaId?: string | null;
   fechaProgramada?: string | null;
   horaProgramada?: string | null;
+  navegacion?: {
+    partidoSiguienteId?: string | null;
+    partidoPerdedorSiguienteId?: string | null;
+    posicionEnSiguiente?: number | null;
+    posicionEnPerdedor?: number | null;
+  };
 }
 
 export function BracketView({ 
@@ -56,7 +66,7 @@ export function BracketView({
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [faseActiva, setFaseActiva] = useState<FaseType>('ZONA');
-  const [modalResultado, setModalResultado] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
+  const [modalResultado, setModalResultado] = useState<{ open: boolean; partido: Partido | null; mode: 'create' | 'edit' }>({ open: false, partido: null, mode: 'create' });
   const [modalVivo, setModalVivo] = useState<{ open: boolean; partido: Partido | null }>({ open: false, partido: null });
 
   useEffect(() => {
@@ -146,8 +156,10 @@ export function BracketView({
               key={partido.id} 
               partido={partido} 
               index={index} 
-              onRegistrarResultado={() => setModalResultado({ open: true, partido })}
+              todosLosPartidos={partidos}
+              onRegistrarResultado={() => setModalResultado({ open: true, partido, mode: 'create' })}
               onMarcadorVivo={() => setModalVivo({ open: true, partido })}
+              onEditarResultado={() => setModalResultado({ open: true, partido, mode: 'edit' })}
             />
           ))}
         </div>
@@ -155,11 +167,12 @@ export function BracketView({
       {/* Modales */}
       <RegistroResultadoModal
         isOpen={modalResultado.open}
-        onClose={() => setModalResultado({ open: false, partido: null })}
+        onClose={() => setModalResultado({ open: false, partido: null, mode: 'create' })}
         match={modalResultado.partido as any}
+        mode={modalResultado.mode}
         onSuccess={() => {
           loadPartidos();
-          setModalResultado({ open: false, partido: null });
+          setModalResultado({ open: false, partido: null, mode: 'create' });
         }}
       />
 
@@ -185,20 +198,35 @@ export function BracketView({
   );
 }
 
+function puedeEditarResultado(partido: Partido, todosLosPartidos: Partido[]): boolean {
+  if (!partido.ganador) return false;
+  const siguienteId = partido.navegacion?.partidoSiguienteId;
+  const perdedorSiguienteId = partido.navegacion?.partidoPerdedorSiguienteId;
+  const siguiente = siguienteId ? todosLosPartidos.find(p => p.id === siguienteId) : null;
+  const perdedorSiguiente = perdedorSiguienteId ? todosLosPartidos.find(p => p.id === perdedorSiguienteId) : null;
+  if (siguiente?.ganador) return false;
+  if (perdedorSiguiente?.ganador) return false;
+  return true;
+}
+
 function PartidoCard({ 
   partido, 
   index,
+  todosLosPartidos,
   onRegistrarResultado,
   onMarcadorVivo,
+  onEditarResultado,
 }: { 
   partido: Partido; 
   index: number;
+  todosLosPartidos: Partido[];
   onRegistrarResultado: () => void;
   onMarcadorVivo: () => void;
+  onEditarResultado: () => void;
 }) {
   const isFinalizado = !!partido.ganador;
-  // MVP: No requerir programación previa para cargar resultados
   const puedeJugar = partido.inscripcion1 && partido.inscripcion2 && !partido.esBye && !isFinalizado;
+  const puedeEditar = isFinalizado && puedeEditarResultado(partido, todosLosPartidos);
   
   return (
     <motion.div
@@ -311,6 +339,24 @@ function PartidoCard({
             <Edit3 className="w-4 h-4" />
             Resultado
           </button>
+        </div>
+      )}
+
+      {puedeEditar && (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+          <button
+            onClick={onEditarResultado}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Edit3 className="w-4 h-4" />
+            Editar resultado
+          </button>
+        </div>
+      )}
+
+      {isFinalizado && !puedeEditar && !puedeJugar && (
+        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-gray-500 text-center">
+          Resultado bloqueado: ya hay partidos posteriores definidos
         </div>
       )}
 

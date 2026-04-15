@@ -33,9 +33,21 @@ export const resultadosService = {
     return response.data;
   },
 
+  // Editar resultado normal
+  editarResultado: async (matchId: string, data: RegistrarResultadoPayload) => {
+    const response = await api.patch(`/admin/resultados/matches/${matchId}/resultado`, data);
+    return response.data;
+  },
+
   // Resultado especial (retiro, descalificación, WO)
   registrarResultadoEspecial: async (matchId: string, data: ResultadoEspecialPayload) => {
     const response = await api.post(`/admin/resultados/matches/${matchId}/resultado-especial`, data);
+    return response.data;
+  },
+
+  // Editar resultado especial
+  editarResultadoEspecial: async (matchId: string, data: ResultadoEspecialPayload) => {
+    const response = await api.patch(`/admin/resultados/matches/${matchId}/resultado-especial`, data);
     return response.data;
   },
 

@@ -18,14 +18,19 @@ interface Props {
     };
     formatoSet3?: 'SET_COMPLETO' | 'SUPER_TIE_BREAK';
     estado?: string;
+    parejaRetirada?: number | null;
+    razonResultado?: string | null;
+    observaciones?: string | null;
+    duracionMinutos?: number | null;
   } | null;
+  mode?: 'create' | 'edit';
   onSuccess?: () => void;
 }
 
 type TipoResultado = 'NORMAL' | 'ESPECIAL';
 type TipoResultadoEspecial = 'RETIRO_LESION' | 'RETIRO_OTRO' | 'DESCALIFICACION' | 'WO';
 
-export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Props) {
+export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create', onSuccess }: Props) {
   const [tipoResultado, setTipoResultado] = useState<TipoResultado>('NORMAL');
   
   // Formulario normal
@@ -58,26 +63,44 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
   // Cargar resultado existente cuando se abre el modal
   useEffect(() => {
     if (isOpen && match) {
-      // Si el partido ya tiene resultado, cargarlo en el formulario
-      if (match.resultado) {
-        setFormData({
-          set1Pareja1: match.resultado.set1[0],
-          set1Pareja2: match.resultado.set1[1],
-          set2Pareja1: match.resultado.set2[0],
-          set2Pareja2: match.resultado.set2[1],
-          set3Pareja1: match.resultado.set3?.[0],
-          set3Pareja2: match.resultado.set3?.[1],
-          formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
+      const estadosEspeciales = ['RETIRADO', 'DESCALIFICADO', 'WO'];
+      if (estadosEspeciales.includes(match.estado || '')) {
+        setTipoResultado('ESPECIAL');
+        let tipo: TipoResultadoEspecial = 'RETIRO_OTRO';
+        if (match.estado === 'DESCALIFICACION') tipo = 'DESCALIFICACION';
+        else if (match.estado === 'WO') tipo = 'WO';
+        else if (match.razonResultado?.toUpperCase().includes('LESION')) tipo = 'RETIRO_LESION';
+
+        setFormEspecial({
+          tipo,
+          parejaAfectada: match.parejaRetirada || 1,
+          razon: match.razonResultado || '',
+          observaciones: match.observaciones || '',
+          duracionMinutos: match.duracionMinutos || undefined,
         });
       } else {
-        // Resetear a 0 si no hay resultado (evita confusiones)
-        setFormData({
-          set1Pareja1: 0,
-          set1Pareja2: 0,
-          set2Pareja1: 0,
-          set2Pareja2: 0,
-          formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
-        });
+        setTipoResultado('NORMAL');
+        if (match.resultado) {
+          setFormData({
+            set1Pareja1: match.resultado.set1[0],
+            set1Pareja2: match.resultado.set1[1],
+            set2Pareja1: match.resultado.set2[0],
+            set2Pareja2: match.resultado.set2[1],
+            set3Pareja1: match.resultado.set3?.[0],
+            set3Pareja2: match.resultado.set3?.[1],
+            formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
+            observaciones: match.observaciones || undefined,
+            duracionMinutos: match.duracionMinutos || undefined,
+          });
+        } else {
+          setFormData({
+            set1Pareja1: 0,
+            set1Pareja2: 0,
+            set2Pareja1: 0,
+            set2Pareja2: 0,
+            formatoSet3: match.formatoSet3 || 'SET_COMPLETO',
+          });
+        }
       }
     }
   }, [isOpen, match?.id]);
@@ -101,7 +124,11 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
 
     try {
       if (tipoResultado === 'NORMAL') {
-        await resultadosService.registrarResultado(match.id, formData);
+        if (mode === 'edit') {
+          await resultadosService.editarResultado(match.id, formData);
+        } else {
+          await resultadosService.registrarResultado(match.id, formData);
+        }
       } else {
         const payload: ResultadoEspecialPayload = {
           tipo: formEspecial.tipo,
@@ -110,7 +137,11 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
           observaciones: formEspecial.observaciones,
           duracionMinutos: formEspecial.duracionMinutos,
         };
-        await resultadosService.registrarResultadoEspecial(match.id, payload);
+        if (mode === 'edit') {
+          await resultadosService.editarResultadoEspecial(match.id, payload);
+        } else {
+          await resultadosService.registrarResultadoEspecial(match.id, payload);
+        }
       }
       setSuccess(true);
       setTimeout(() => {
@@ -119,7 +150,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
         setSuccess(false);
       }, 1500);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar el resultado');
+      setError(err.response?.data?.message || `Error al ${mode === 'edit' ? 'actualizar' : 'registrar'} el resultado`);
     } finally {
       setLoading(false);
     }
@@ -156,7 +187,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <Trophy className="w-5 h-5 text-[#df2531]" />
-                <h2 className="text-lg font-bold text-white">Registrar Resultado</h2>
+                <h2 className="text-lg font-bold text-white">{mode === 'edit' ? 'Editar Resultado' : 'Registrar Resultado'}</h2>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
                 <X className="w-5 h-5 text-gray-400" />
@@ -210,8 +241,8 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
               >
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </motion.div>
-              <h3 className="text-xl font-bold text-white mb-2">¡Resultado Registrado!</h3>
-              <p className="text-gray-400">El ganador avanza automáticamente.</p>
+              <h3 className="text-xl font-bold text-white mb-2">{mode === 'edit' ? '¡Resultado Actualizado!' : '¡Resultado Registrado!'}</h3>
+              <p className="text-gray-400">{mode === 'edit' ? 'El cambio se aplicó correctamente.' : 'El ganador avanza automáticamente.'}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -546,7 +577,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, onSuccess }: Pr
                     tipoResultado === 'ESPECIAL' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#df2531] hover:bg-[#df2531]/90'
                   }`}
                 >
-                  {loading ? 'Guardando...' : tipoResultado === 'ESPECIAL' ? 'Registrar Incidencia' : 'Guardar Resultado'}
+                  {loading ? 'Guardando...' : tipoResultado === 'ESPECIAL' ? (mode === 'edit' ? 'Actualizar Incidencia' : 'Registrar Incidencia') : (mode === 'edit' ? 'Actualizar Resultado' : 'Guardar Resultado')}
                 </button>
               </div>
             </form>
