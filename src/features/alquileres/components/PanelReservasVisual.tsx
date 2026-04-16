@@ -56,6 +56,8 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<Record<string, any[]>>({});
+  const [bloqueos, setBloqueos] = useState<{ sedeCanchaId?: string; fechaInicio: string; fechaFin: string }[]>([]);
+  const [sedeConfig, setSedeConfig] = useState<{ duracionSlotMinutos?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Modal de reserva
@@ -92,12 +94,24 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
         dispPorCancha[item.cancha.id] = item.disponibilidades || [];
       }
       setDisponibilidades(dispPorCancha);
+
+      // Cargar configuración de la sede
+      const configRes = await api.get(`/alquileres/config/${sedeId}`);
+      setSedeConfig(configRes.data);
       
       // Cargar reservas del día
       const reservasRes = await api.get(`/alquileres/sede/${sedeId}/reservas`, {
         params: { fecha }
       });
       setReservas(reservasRes.data);
+
+      // Cargar bloqueos de la sede y filtrar los que aplican a la fecha actual
+      const bloqueosRes = await api.get(`/alquileres/sede/${sedeId}/bloqueos`);
+      const todosBloqueos = bloqueosRes.data || [];
+      const bloqueosActivos = todosBloqueos.filter((b: any) =>
+        fecha >= b.fechaInicio && fecha <= b.fechaFin
+      );
+      setBloqueos(bloqueosActivos);
     } catch (err) {
       showError('Error', 'No se pudieron cargar los datos');
     } finally {
@@ -107,6 +121,10 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
 
   // Generar slots para una cancha
   const generarSlots = (canchaId: string): Slot[] => {
+    // Verificar si la cancha está bloqueada (bloqueo específico o general de sede)
+    const bloqueada = bloqueos.some(b => !b.sedeCanchaId || b.sedeCanchaId === canchaId);
+    if (bloqueada) return [];
+
     const slots: Slot[] = [];
     
     // Encontrar disponibilidades para esta cancha y día de la semana
@@ -122,14 +140,16 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
       r.sedeCancha?.id === canchaId
     );
 
-    // Generar slots de 1 hora
+    // Generar slots según la configuración real de la sede
+    const duracionSlot = sedeConfig?.duracionSlotMinutos || 90;
+
     for (const disp of dispsCancha) {
       let horaActual = parseTimeToMinutes(disp.horaInicio);
       const horaFin = parseTimeToMinutes(disp.horaFin) || 24 * 60; // 00:00 = 24:00
       
       while (horaActual < horaFin) {
         const slotInicio = formatTimeFromMinutes(horaActual);
-        const slotFin = formatTimeFromMinutes(horaActual + 60);
+        const slotFin = formatTimeFromMinutes(horaActual + duracionSlot);
         
         // Verificar si hay reserva en este slot
         const reservaExistente = reservasActivas.find(r => {
@@ -149,7 +169,7 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
           reserva: reservaExistente
         });
         
-        horaActual += 60;
+        horaActual += duracionSlot;
       }
     }
     
@@ -203,7 +223,7 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
         fecha,
         horaInicio: selectedSlot.slot.horaInicio,
         horaFin: selectedSlot.slot.horaFin,
-        duracionMinutos: 60,
+        duracionMinutos: sedeConfig?.duracionSlotMinutos || 90,
         nombreExterno: formData.nombre,
         documentoExterno: formData.documento,
         telefonoExterno: formData.telefono,
@@ -227,7 +247,7 @@ export default function PanelReservasVisual({ sedeId }: PanelReservasVisualProps
       result[cancha.id] = generarSlots(cancha.id);
     }
     return result;
-  }, [canchas, disponibilidades, reservas, fecha]);
+  }, [canchas, disponibilidades, reservas, fecha, bloqueos, sedeConfig]);
 
   // Obtener todas las horas únicas para las filas
   const todasLasHoras = useMemo(() => {

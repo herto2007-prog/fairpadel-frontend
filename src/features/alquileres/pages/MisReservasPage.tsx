@@ -38,7 +38,7 @@ const estadoConfig = {
   },
 };
 
-// Verificar si se puede cancelar (más de 4 horas antes del inicio)
+// Verificar si se puede cancelar según la política de la sede
 const puedeCancelar = (reserva: Reserva): boolean => {
   if (reserva.estado === 'CANCELADA' || (reserva.estado as string) === 'RECHAZADA') return false;
   
@@ -50,7 +50,8 @@ const puedeCancelar = (reserva: Reserva): boolean => {
   const diffMs = fechaInicio.getTime() - ahora.getTime();
   const diffHoras = diffMs / (1000 * 60 * 60);
   
-  return diffHoras > 4;
+  const minHoras = reserva.sedeCancha?.sede?.alquilerConfig?.cancelacionMinHoras ?? 4;
+  return diffHoras > minHoras;
 };
 
 // Agrupar reservas por fecha relativa
@@ -155,7 +156,7 @@ const ReservaCard = ({
             
             {reserva.estado === 'CONFIRMADA' && !cancelable && (
               <span className="text-xs text-gray-500">
-                No modificable
+                Cancelación hasta {reserva.sedeCancha?.sede?.alquilerConfig?.cancelacionMinHoras ?? 4}h antes
               </span>
             )}
           </div>
@@ -306,8 +307,8 @@ export default function MisReservasPage() {
             <div>
               <h4 className="font-medium text-sm">Política de cancelación</h4>
               <p className="text-xs text-gray-400 mt-1">
-                Podés cancelar tus reservas hasta 4 horas antes del horario de inicio. 
-                Después de ese tiempo, la reserva no podrá ser modificada.
+                Cada sede define su propia política de cancelación.
+                Generalmente podés cancelar con al menos unas horas de anticipación antes del horario de inicio.
               </p>
             </div>
           </div>

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { alquileresService } from '../../../services/alquileresService';
 import { sedesService } from '../../../services/sedesService';
+import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { Clock, MapPin } from 'lucide-react';
 import { useNoIndex } from '../../../hooks/useNoIndex';
@@ -27,6 +28,7 @@ export default function AlquileresPage() {
   const [sedeId, setSedeId] = useState(sedeIdParam || '');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [disponibilidad, setDisponibilidad] = useState<CanchaDisponibilidad[]>([]);
+  const [sedeConfig, setSedeConfig] = useState<{ anticipacionMaxDias?: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -38,6 +40,14 @@ export default function AlquileresPage() {
       loadDisponibilidad();
     }
   }, [sedeId, fecha]);
+
+  useEffect(() => {
+    if (sedeId) {
+      api.get(`/alquileres/config/${sedeId}`)
+        .then(res => setSedeConfig(res.data))
+        .catch(() => setSedeConfig(null));
+    }
+  }, [sedeId]);
 
   const loadSedes = async () => {
     const data = await sedesService.getAll();
@@ -57,13 +67,28 @@ export default function AlquileresPage() {
     }
   };
 
+  const maxDate = useMemo(() => {
+    const dias = sedeConfig?.anticipacionMaxDias;
+    if (dias === undefined || dias === null) return undefined;
+    const d = new Date();
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().split('T')[0];
+  }, [sedeConfig]);
+
   const handleReservar = async (canchaId: string, horaInicio: string, horaFin: string) => {
     try {
+      const parseTime = (time: string) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const duracionMinutos = parseTime(horaFin) - parseTime(horaInicio);
+
       await alquileresService.crearReserva({
         sedeCanchaId: canchaId,
         fecha,
         horaInicio,
         horaFin,
+        duracionMinutos,
         // Nota: el precio no se gestiona en la plataforma
       });
       showSuccess('Reserva creada', `Tu reserva para las ${horaInicio} - ${horaFin} fue creada exitosamente`);
@@ -103,6 +128,7 @@ export default function AlquileresPage() {
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
+                max={maxDate}
                 className="w-full px-4 py-2 bg-[#0B0E14] border border-[#232838] rounded-lg focus:border-[#df2531] outline-none"
               />
             </div>
