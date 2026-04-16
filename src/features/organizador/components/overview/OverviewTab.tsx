@@ -330,9 +330,10 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           >
             Ver todas las inscripciones
           </button>
-
-          <SolicitarCircuitoCard tournamentId={tournamentId} />
         </motion.div>
+
+        {/* Solicitar Circuito - Card propia */}
+        <SolicitarCircuitoCard tournamentId={tournamentId} />
       </div>
     </div>
   );
