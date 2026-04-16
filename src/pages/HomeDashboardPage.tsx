@@ -203,28 +203,7 @@ function DashboardHeader({
           </div>
         </div>
 
-        {/* Barra de progreso a siguiente categoría (ego validation) */}
-        {perfil.ranking?.[0] && (
-          <div className="mt-6 pt-4 border-t border-[#2a3042]">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-400">Progreso hacia {perfil.categoria?.tipo === 'PRIMERA' ? 'el top 10' : 'siguiente categoría'}</span>
-              <span className="text-[#df2531] font-medium">
-                {perfil.ranking[0].puntosTotales} pts
-              </span>
-            </div>
-            <div className="h-2 bg-[#232838] rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min((perfil.ranking[0].puntosTotales / 1000) * 100, 100)}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="h-full bg-gradient-to-r from-[#df2531] to-[#ff6b6b] rounded-full"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              🔥 Te faltan {Math.max(1000 - perfil.ranking[0].puntosTotales, 0)} puntos para el siguiente ascenso
-            </p>
-          </div>
-        )}
+        {/* Progreso eliminado: el reglamento no usa puntos para ascenso */}
       </div>
     </motion.div>
   );
