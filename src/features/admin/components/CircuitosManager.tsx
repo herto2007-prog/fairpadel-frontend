@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, 
   Upload, Image as ImageIcon, X, Calendar,
-  Trash2, Save
+  Trash2, Save, RefreshCw
 } from 'lucide-react';
 import { circuitosService, Circuito, TorneoCircuito, Solicitud } from '../../circuitos/circuitosService';
+import { rankingsService } from '../../rankings/rankingsService';
 import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -402,6 +403,26 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
     colorPrimario: circuito.colorPrimario || '#df2531',
   });
 
+  // Recalcular ranking
+  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
+  const [recalculando, setRecalculando] = useState(false);
+
+  useEffect(() => {
+    loadCategorias();
+  }, []);
+
+  const loadCategorias = async () => {
+    try {
+      const res = await circuitosService.getCategorias();
+      if (res?.success && Array.isArray(res.data)) {
+        setCategorias(res.data);
+      }
+    } catch (error) {
+      // Silencioso
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -422,125 +443,180 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
     }
   };
 
+  const handleRecalcular = async () => {
+    if (!categoriaSeleccionada) {
+      showError('Error', 'Seleccioná una categoría para recalcular');
+      return;
+    }
+    setRecalculando(true);
+    try {
+      await rankingsService.recalcularRankingCircuito(
+        circuito.id,
+        categoriaSeleccionada,
+        circuito.temporada,
+      );
+      showSuccess('Recalculado', 'Ranking del circuito actualizado para la categoría seleccionada');
+    } catch (error) {
+      showError('Error', 'No se pudo recalcular el ranking');
+    } finally {
+      setRecalculando(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Nombre *</label>
-          <input
-            type="text"
-            value={formData.nombre}
-            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-            required
-          />
-        </div>
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
-          <select
-            value={formData.ciudad}
-            onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-            required
-          >
-            <option value="Asunción">Asunción</option>
-            <option value="Ciudad del Este">Ciudad del Este</option>
-            <option value="San Lorenzo">San Lorenzo</option>
-            <option value="Luque">Luque</option>
-            <option value="Capiatá">Capiatá</option>
-            <option value="Lambaré">Lambaré</option>
-            <option value="Fernando de la Mora">Fernando de la Mora</option>
-            <option value="Limpio">Limpio</option>
-            <option value="Ñemby">Ñemby</option>
-            <option value="Itauguá">Itauguá</option>
-            <option value="Mariano Roque Alonso">Mariano Roque Alonso</option>
-            <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
-            <option value="Encarnación">Encarnación</option>
-            <option value="Villa Elisa">Villa Elisa</option>
-            <option value="San Antonio">San Antonio</option>
-            <option value="Coronel Oviedo">Coronel Oviedo</option>
-            <option value="Concepción">Concepción</option>
-            <option value="Villarrica">Villarrica</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm text-gray-400 block mb-1">Descripción</label>
-        <textarea
-          value={formData.descripcion}
-          onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          rows={3}
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Temporada</label>
-          <input
-            type="text"
-            value={formData.temporada}
-            onChange={(e) => setFormData({ ...formData, temporada: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          />
-        </div>
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Fecha Inicio</label>
-          <input
-            type="date"
-            value={formData.fechaInicio}
-            onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          />
-        </div>
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Fecha Fin</label>
-          <input
-            type="date"
-            value={formData.fechaFin}
-            onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Estado</label>
-          <select
-            value={formData.estado}
-            onChange={(e) => setFormData({ ...formData, estado: e.target.value as 'ACTIVO' | 'INACTIVO' | 'FINALIZADO' })}
-            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          >
-            <option value="ACTIVO">Activo</option>
-            <option value="INACTIVO">Inactivo</option>
-            <option value="FINALIZADO">Finalizado</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-sm text-gray-400 block mb-1">Color Principal</label>
-          <div className="flex items-center gap-3">
+    <div className="space-y-8 max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Nombre *</label>
             <input
-              type="color"
-              value={formData.colorPrimario}
-              onChange={(e) => setFormData({ ...formData, colorPrimario: e.target.value })}
-              className="w-12 h-10 rounded cursor-pointer bg-transparent"
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+              required
             />
-            <span className="text-gray-400 text-sm">{formData.colorPrimario}</span>
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Ciudad *</label>
+            <select
+              value={formData.ciudad}
+              onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+              required
+            >
+              <option value="Asunción">Asunción</option>
+              <option value="Ciudad del Este">Ciudad del Este</option>
+              <option value="San Lorenzo">San Lorenzo</option>
+              <option value="Luque">Luque</option>
+              <option value="Capiatá">Capiatá</option>
+              <option value="Lambaré">Lambaré</option>
+              <option value="Fernando de la Mora">Fernando de la Mora</option>
+              <option value="Limpio">Limpio</option>
+              <option value="Ñemby">Ñemby</option>
+              <option value="Itauguá">Itauguá</option>
+              <option value="Mariano Roque Alonso">Mariano Roque Alonso</option>
+              <option value="Pedro Juan Caballero">Pedro Juan Caballero</option>
+              <option value="Encarnación">Encarnación</option>
+              <option value="Villa Elisa">Villa Elisa</option>
+              <option value="San Antonio">San Antonio</option>
+              <option value="Coronel Oviedo">Coronel Oviedo</option>
+              <option value="Concepción">Concepción</option>
+              <option value="Villarrica">Villarrica</option>
+            </select>
           </div>
         </div>
-      </div>
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="flex items-center gap-2 px-6 py-2 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Guardar Cambios
-      </button>
-    </form>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">Descripción</label>
+          <textarea
+            value={formData.descripcion}
+            onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+            className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            rows={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Temporada</label>
+            <input
+              type="text"
+              value={formData.temporada}
+              onChange={(e) => setFormData({ ...formData, temporada: e.target.value })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Fecha Inicio</label>
+            <input
+              type="date"
+              value={formData.fechaInicio}
+              onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Fecha Fin</label>
+            <input
+              type="date"
+              value={formData.fechaFin}
+              onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Estado</label>
+            <select
+              value={formData.estado}
+              onChange={(e) => setFormData({ ...formData, estado: e.target.value as 'ACTIVO' | 'INACTIVO' | 'FINALIZADO' })}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
+            >
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+              <option value="FINALIZADO">Finalizado</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Color Principal</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={formData.colorPrimario}
+                onChange={(e) => setFormData({ ...formData, colorPrimario: e.target.value })}
+                className="w-12 h-10 rounded cursor-pointer bg-transparent"
+              />
+              <span className="text-gray-400 text-sm">{formData.colorPrimario}</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Guardar Cambios
+        </button>
+      </form>
+
+      <div className="border-t border-white/10 pt-6">
+        <h4 className="text-white font-medium mb-4 flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 text-blue-400" />
+          Recalcular Ranking
+        </h4>
+        <p className="text-sm text-gray-400 mb-4">
+          Si modificaste multiplicadores o puntos válidos de los torneos, recalculá el ranking del circuito para una categoría específica.
+        </p>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className="text-xs text-gray-500 block mb-1">Categoría</label>
+            <select
+              value={categoriaSeleccionada}
+              onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+            >
+              <option value="">Seleccionar categoría...</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleRecalcular}
+            disabled={recalculando || !categoriaSeleccionada}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {recalculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Recalcular
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

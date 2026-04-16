@@ -85,6 +85,14 @@ export const rankingsService = {
     return response.data;
   },
 
+  recalcularRankingCircuito: async (circuitoId: string, categoryId: string, temporada?: string) => {
+    const response = await api.post(`/rankings/admin/recalcular-circuito/${circuitoId}`, {
+      categoryId,
+      temporada,
+    });
+    return response.data;
+  },
+
   // Admin - Ascensos
   getAscensosPendientes: async () => {
     const response = await api.get('/rankings/admin/ascensos-pendientes');

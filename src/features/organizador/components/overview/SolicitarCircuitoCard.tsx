@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitBranch, ChevronDown, Send, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { GitBranch, ChevronDown, Send, Loader2, CheckCircle2, AlertCircle, X, Clock } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { circuitosService } from '../../../circuitos/circuitosService';
 
 interface Circuito {
   id: string;
@@ -10,34 +11,51 @@ interface Circuito {
   temporada: string;
 }
 
+interface EstadoCircuito {
+  tieneRelacion: boolean;
+  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | null;
+  circuito: { id: string; nombre: string; temporada: string } | null;
+  puntosValidos: boolean | null;
+}
+
 interface SolicitarCircuitoCardProps {
   tournamentId: string;
 }
 
 export function SolicitarCircuitoCard({ tournamentId }: SolicitarCircuitoCardProps) {
   const [circuitos, setCircuitos] = useState<Circuito[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const [estadoTorneo, setEstadoTorneo] = useState<EstadoCircuito | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [selectedCircuitoId, setSelectedCircuitoId] = useState<string>('');
   const [notas, setNotas] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    loadCircuitos();
-  }, []);
+    loadData();
+  }, [tournamentId]);
 
-  const loadCircuitos = async () => {
+  const loadData = async () => {
     try {
-      setFetching(true);
-      const { data } = await api.get('/circuitos');
-      const activos = (data?.data || data || []).filter((c: Circuito) => c.temporada === new Date().getFullYear().toString());
+      setLoading(true);
+      const [circuitosRes, estadoRes] = await Promise.all([
+        circuitosService.getCircuitos(),
+        circuitosService.getEstadoCircuito(tournamentId),
+      ]);
+
+      const activos = (circuitosRes?.data || []).filter(
+        (c: Circuito) => c.temporada === new Date().getFullYear().toString()
+      );
       setCircuitos(activos);
+
+      if (estadoRes?.data) {
+        setEstadoTorneo(estadoRes.data);
+      }
     } catch (err: any) {
-      setError('No se pudieron cargar los circuitos.');
+      // Silencioso - si falla el estado, simplemente mostramos el flujo normal
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
   };
 
@@ -45,29 +63,30 @@ export function SolicitarCircuitoCard({ tournamentId }: SolicitarCircuitoCardPro
     e.preventDefault();
     if (!selectedCircuitoId) return;
 
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
     try {
       await api.post(`/circuitos/torneo/${tournamentId}/solicitar`, {
         circuitoId: selectedCircuitoId,
         notas: notas.trim() || undefined,
       });
-      setSuccess(true);
       setIsOpen(false);
+      await loadData();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error enviando la solicitud');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const selectedCircuito = circuitos.find((c) => c.id === selectedCircuitoId);
 
-  if (fetching) {
+  if (loading) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
         className="bg-[#151921] border border-[#232838] rounded-2xl p-5"
       >
         <div className="flex items-center gap-3">
@@ -83,24 +102,86 @@ export function SolicitarCircuitoCard({ tournamentId }: SolicitarCircuitoCardPro
     );
   }
 
-  if (success) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-green-500/10 border border-green-500/30 rounded-2xl p-5"
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
+  if (estadoTorneo?.tieneRelacion) {
+    const estado = estadoTorneo.estado;
+    const circuitoNombre = estadoTorneo.circuito?.nombre || 'el circuito';
+
+    if (estado === 'APROBADO') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-green-500/10 border border-green-500/30 rounded-2xl p-5"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-white font-medium">Aprobado en {circuitoNombre}</p>
+              <p className="text-sm text-green-400/80 mt-0.5">
+                Este torneo forma parte del circuito y sus puntos se contabilizan en el ranking.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-white font-medium">Solicitud enviada</p>
-            <p className="text-sm text-green-400/80">Tu torneo fue solicitado para formar parte del circuito. Esperando aprobación.</p>
+        </motion.div>
+      );
+    }
+
+    if (estado === 'PENDIENTE') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-5"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-white font-medium">Solicitud pendiente</p>
+              <p className="text-sm text-yellow-400/80 mt-0.5">
+                Tu torneo fue solicitado para {circuitoNombre}. Esperando aprobación del administrador.
+              </p>
+            </div>
           </div>
-        </div>
-      </motion.div>
-    );
+        </motion.div>
+      );
+    }
+
+    if (estado === 'RECHAZADO') {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-red-500/10 border border-red-500/30 rounded-2xl p-5"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+              <X className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-white font-medium">Solicitud rechazada</p>
+              <p className="text-sm text-red-400/80 mt-0.5">
+                Tu solicitud para {circuitoNombre} fue rechazada. Podés intentar con otro circuito si hay disponibles.
+              </p>
+            </div>
+          </div>
+          {circuitos.length > 0 && (
+            <button
+              onClick={() => setIsOpen(true)}
+              className="mt-4 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-sm font-medium rounded-xl transition-colors"
+            >
+              Solicitar otro circuito
+            </button>
+          )}
+        </motion.div>
+      );
+    }
   }
 
   if (circuitos.length === 0) {
@@ -134,6 +215,7 @@ export function SolicitarCircuitoCard({ tournamentId }: SolicitarCircuitoCardPro
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
         className="bg-[#151921] border border-[#232838] rounded-2xl p-5"
       >
         <div className="flex items-start justify-between gap-4">
@@ -248,11 +330,11 @@ export function SolicitarCircuitoCard({ tournamentId }: SolicitarCircuitoCardPro
                   </button>
                   <button
                     type="submit"
-                    disabled={!selectedCircuitoId || loading}
+                    disabled={!selectedCircuitoId || submitting}
                     className="flex items-center gap-2 px-5 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-500/40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
                   >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    {loading ? 'Enviando...' : 'Enviar solicitud'}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {submitting ? 'Enviando...' : 'Enviar solicitud'}
                   </button>
                 </div>
               </form>

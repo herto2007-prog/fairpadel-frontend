@@ -151,6 +151,11 @@ export const circuitosService = {
     return response.data;
   },
 
+  getEstadoCircuito: async (torneoId: string) => {
+    const response = await api.get(`/circuitos/torneo/${torneoId}/estado-circuito`);
+    return response.data;
+  },
+
   // ═══════════════════════════════════════════════════════════
   // ORGANIZADOR - Solicitar inclusión
   // ═══════════════════════════════════════════════════════════
