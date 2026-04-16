@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trophy, MapPin, Calendar, Medal, ChevronLeft, Users } from 'lucide-react';
 import { PageLayout } from '../../../components/layout';
@@ -67,11 +67,19 @@ interface TorneoCircuito {
 
 export default function CircuitoDetailPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const [circuito, setCircuito] = useState<Circuito | null>(null);
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [torneos, setTorneos] = useState<TorneoCircuito[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'ranking' | 'torneos'>('info');
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl === 'ranking' || tabFromUrl === 'torneos' || tabFromUrl === 'info') {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (slug) {
