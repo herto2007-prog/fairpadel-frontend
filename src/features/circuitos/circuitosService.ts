@@ -193,7 +193,7 @@ export const circuitosService = {
     return response.data;
   },
 
-  configurarTorneoCircuito: async (id: string, data: { puntosValidos?: boolean; orden?: number; esFinal?: boolean; notas?: string }) => {
+  configurarTorneoCircuito: async (id: string, data: { puntosValidos?: boolean; orden?: number; esFinal?: boolean; multiplicador?: number; notas?: string }) => {
     const response = await api.post(`/circuitos/admin/torneo-circuito/${id}/configurar`, data);
     return response.data;
   },

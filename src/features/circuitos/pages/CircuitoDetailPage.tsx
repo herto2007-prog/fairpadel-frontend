@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, MapPin, Calendar, Medal, ChevronLeft, Users, Target } from 'lucide-react';
+import { Trophy, MapPin, Calendar, Medal, ChevronLeft, Users } from 'lucide-react';
 import { PageLayout } from '../../../components/layout';
 import { circuitosService } from '../circuitosService';
 import { formatDatePY } from '../../../utils/date';
@@ -204,12 +204,6 @@ export default function CircuitoDetailPage() {
               <h3 className="text-lg font-bold text-white mb-4">Reglas de Clasificación</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white/5 rounded-xl p-4 text-center">
-                  <Target className="w-6 h-6 text-[#df2531] mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-white">{circuito.torneosParaClasificar}</p>
-                  <p className="text-sm text-gray-400">Mejores clasifican</p>
-                </div>
-
-                <div className="bg-white/5 rounded-xl p-4 text-center">
                   <Users className="w-6 h-6 text-[#df2531] mx-auto mb-2" />
                   <p className="text-2xl font-bold text-white">{torneos.length}</p>
                   <p className="text-sm text-gray-400">Torneos en el circuito</p>
@@ -218,34 +212,37 @@ export default function CircuitoDetailPage() {
             </div>
 
             {/* Final */}
-            {circuito.tieneFinal && circuito.torneoFinal && (
-              <div className="bg-gradient-to-r from-[#df2531]/20 to-transparent border border-[#df2531]/30 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                  <Medal className="w-5 h-5 text-[#df2531]" />
-                  Gran Final
-                </h3>
-                <Link 
-                  to={`/t/${circuito.torneoFinal.slug}`}
-                  className="flex items-center gap-4 group"
-                >
-                  {circuito.torneoFinal.flyerUrl && (
-                    <img 
-                      src={circuito.torneoFinal.flyerUrl} 
-                      alt="" 
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                  )}
-                  <div>
-                    <p className="font-bold text-white group-hover:text-[#df2531] transition-colors">
-                      {circuito.torneoFinal.nombre}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      {formatDatePY(circuito.torneoFinal.fechaInicio)}
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            )}
+            {(() => {
+              const tf = torneos.find((t) => t.esFinal)?.torneo;
+              return tf ? (
+                <div className="bg-gradient-to-r from-[#df2531]/20 to-transparent border border-[#df2531]/30 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <Medal className="w-5 h-5 text-[#df2531]" />
+                    Gran Final
+                  </h3>
+                  <Link
+                    to={`/t/${tf.slug}`}
+                    className="flex items-center gap-4 group"
+                  >
+                    {tf.flyerUrl && (
+                      <img
+                        src={tf.flyerUrl}
+                        alt=""
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    )}
+                    <div>
+                      <p className="font-bold text-white group-hover:text-[#df2531] transition-colors">
+                        {tf.nombre}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {formatDatePY(tf.fechaInicio)}
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
 
