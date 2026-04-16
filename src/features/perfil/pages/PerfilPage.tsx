@@ -5,7 +5,8 @@ import {
   Trophy, MapPin, Calendar, TrendingUp, Award,
   Share2, Settings, Camera, Edit3, Flame,
   Target, Star, MapPinned,
-  Activity, Crown, Zap, Shield, Loader2, ArrowLeft, RefreshCw
+  Activity, Crown, Zap, Shield, Loader2, ArrowLeft, RefreshCw,
+  GitBranch
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { perfilService, PerfilJugador } from '../perfilService';
@@ -759,6 +760,45 @@ export function PerfilPage() {
                     </motion.div>
                   )}
 
+                  {/* Mis Circuitos (mobile) */}
+                  {perfil.circuitos.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[#151921]/50 border border-white/5 rounded-2xl p-4 backdrop-blur-sm"
+                    >
+                      <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                        <GitBranch className="w-4 h-4 text-[#df2531]" />
+                        Mis Circuitos
+                      </h3>
+                      <div className="space-y-2">
+                        {perfil.circuitos.map((c) => (
+                          <div
+                            key={c.id}
+                            onClick={() => navigate(`/circuitos/${c.slug}`)}
+                            className="flex items-center gap-3 p-2.5 bg-white/5 rounded-xl hover:bg-white/[0.07] transition-colors cursor-pointer"
+                          >
+                            {c.logoUrl ? (
+                              <img src={c.logoUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-white/10" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <GitBranch className="w-4 h-4 text-purple-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium text-sm truncate">{c.nombre}</p>
+                              <p className="text-[10px] text-white/40">Temporada {c.temporada}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-purple-400 font-bold text-sm">#{c.posicion}</p>
+                              <p className="text-[10px] text-white/40">{c.puntosTotales} pts</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* WhatsApp Preferences (solo mi perfil, mobile) */}
                   {isMyProfile && (
                     <WhatsAppPreferencesCard 
@@ -995,6 +1035,49 @@ export function PerfilPage() {
                         <span className="text-white/40">Torneos</span>
                         <span className="text-white">{perfil.ranking[0].torneosJugados}</span>
                       </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Mis Circuitos (desktop) */}
+                {perfil.circuitos.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.75 }}
+                    className="bg-[#151921]/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <GitBranch className="w-5 h-5 text-[#df2531]" />
+                        Mis Circuitos
+                      </h3>
+                      <span className="text-sm text-white/40">{perfil.circuitos.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {perfil.circuitos.map((c) => (
+                        <div
+                          key={c.id}
+                          onClick={() => navigate(`/circuitos/${c.slug}`)}
+                          className="flex items-center gap-4 p-3 bg-white/5 rounded-xl hover:bg-white/[0.07] transition-colors cursor-pointer group"
+                        >
+                          {c.logoUrl ? (
+                            <img src={c.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                              <GitBranch className="w-5 h-5 text-purple-400" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate group-hover:text-[#df2531] transition-colors">{c.nombre}</p>
+                            <p className="text-xs text-white/40">Temporada {c.temporada}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-purple-400 font-bold">#{c.posicion}</p>
+                            <p className="text-xs text-white/40">{c.puntosTotales} pts</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 )}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
 import { formatDatePY } from '../../../../utils/date';
+import { SolicitarCircuitoCard } from './SolicitarCircuitoCard';
 
 interface OverviewTabProps {
   tournamentId: string;
@@ -329,6 +330,8 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           >
             Ver todas las inscripciones
           </button>
+
+          <SolicitarCircuitoCard tournamentId={tournamentId} />
         </motion.div>
       </div>
     </div>

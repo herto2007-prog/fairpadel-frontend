@@ -72,6 +72,16 @@ export interface PerfilJugador {
     nivel: 'oro' | 'plata' | 'bronce' | 'especial';
     progreso: number;
   }>;
+  circuitos: Array<{
+    id: string;
+    nombre: string;
+    slug: string;
+    logoUrl?: string;
+    posicion: number;
+    puntosTotales: number;
+    torneosJugados: number;
+    temporada: string;
+  }>;
   whatsapp?: {
     consentCheckbox: boolean;
     consentStatus: string | null;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
@@ -35,6 +35,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [loading, setLoading] = useState(true);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [cerrandoInscripciones, setCerrandoInscripciones] = useState<string | null>(null);
+  const [finalizandoCategoria, setFinalizandoCategoria] = useState<string | null>(null);
   
   // Estado para selección múltiple
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<Set<string>>(new Set());
@@ -249,6 +250,8 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
         return { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', label: 'Sorteo publicado' };
       case 'EN_CURSO':
         return { color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', label: 'En curso' };
+      case 'FINALIZADA':
+        return { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'Finalizada' };
       default:
         return { color: 'bg-gray-500/10 text-gray-400 border-gray-500/20', label: estado };
     }
@@ -324,6 +327,35 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       }
     } catch (error: any) {
       showError('Error', error.response?.data?.message || 'Error al despublicar');
+    }
+  };
+
+  const handleFinalizarCategoria = async (categoria: Categoria) => {
+    const confirmed = await confirm({
+      title: '¿Finalizar categoría?',
+      message: `Se marcará ${categoria.category.nombre} como finalizada y se calcularán automáticamente los puntos de ranking. Esta acción no se puede deshacer.`,
+      variant: 'warning',
+      confirmText: 'Finalizar y calcular puntos',
+    });
+
+    if (!confirmed) return;
+
+    setFinalizandoCategoria(categoria.id);
+    try {
+      const { data } = await api.post(
+        `/admin/torneos/${tournamentId}/categorias/${categoria.categoryId}/finalizar`
+      );
+      if (data.success) {
+        showSuccess('Categoría finalizada', data.message);
+        loadCategorias();
+      } else {
+        showError('Error', data.message || 'No se pudo finalizar la categoría');
+      }
+    } catch (error: any) {
+      console.error('Error finalizando categoría:', error);
+      showError('Error', error.response?.data?.message || 'Error al finalizar la categoría');
+    } finally {
+      setFinalizandoCategoria(null);
     }
   };
 
@@ -601,6 +633,21 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                               title="Reabrir inscripciones"
                             >
                               <Unlock className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {yaSorteado && categoria.estado !== 'FINALIZADA' && (
+                            <button
+                              onClick={() => handleFinalizarCategoria(categoria)}
+                              disabled={finalizandoCategoria === categoria.id}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-lg hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {finalizandoCategoria === categoria.id ? (
+                                <div className="w-3.5 h-3.5 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                              ) : (
+                                <Trophy className="w-3.5 h-3.5" />
+                              )}
+                              Finalizar
                             </button>
                           )}
 
