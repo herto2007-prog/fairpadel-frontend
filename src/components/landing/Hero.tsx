@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Trophy, Users, Calendar } from 'lucide-react';
+import { ArrowRight, Trophy, Users, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Hero = () => {
-  const stats = [
-    { icon: Trophy, value: '500+', label: 'Torneos Creados' },
-    { icon: Users, value: '10K+', label: 'Jugadores Activos' },
-    { icon: Calendar, value: '50+', label: 'Sedes Registradas' },
+  const features = [
+    { icon: Trophy, label: 'Organizá torneos profesionales' },
+    { icon: Users, label: 'Conectá con la comunidad' },
+    { icon: Zap, label: 'Gestioná todo en un solo lugar' },
   ];
 
   return (
@@ -118,8 +118,8 @@ export const Hero = () => {
               transition={{ duration: 0.8, delay: 0.7 }}
               className="text-body text-lg mb-10 max-w-xl mx-auto lg:mx-0"
             >
-              Únete a miles de jugadores y organizadores que ya viven el pádel 
-              de forma profesional. Tu torneo, tu comunidad, tu pasión. 
+              La plataforma pensada para jugadores, organizadores y sedes de pádel en Paraguay. 
+              Brackets automáticos, rankings en tiempo real, reservas de canchas y mucho más. 
               Todo en un solo lugar.
             </motion.p>
 
@@ -169,7 +169,7 @@ export const Hero = () => {
                   </div>
                 ))}
               </div>
-              <span>+500 organizadores confían en FairPadel</span>
+              <span>La comunidad de pádel de Paraguay</span>
             </motion.div>
           </div>
 
@@ -196,8 +196,8 @@ export const Hero = () => {
                     loading="lazy"
                   />
                   <div>
-                    <h2 className="text-xl font-bold text-white">Copa Primavera</h2>
-                    <p className="text-gray-400 text-sm">24 equipos inscritos</p>
+                    <h2 className="text-xl font-bold text-white">Copa FairPadel</h2>
+                    <p className="text-gray-400 text-sm">Torneo en curso</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
@@ -283,34 +283,33 @@ export const Hero = () => {
                   <Users className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm">+12 inscritos</p>
-                  <p className="text-gray-400 text-xs">Esta semana</p>
+                  <p className="text-white font-semibold text-sm">Inscripciones abiertas</p>
+                  <p className="text-gray-400 text-xs">Sumate al próximo torneo</p>
                 </div>
               </div>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Stats Bar */}
+        {/* Features Bar */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.1 }}
           className="mt-20 grid grid-cols-3 gap-8 max-w-3xl mx-auto"
         >
-          {stats.map((stat, index) => (
+          {features.map((feat, index) => (
             <motion.div
-              key={stat.label}
+              key={feat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
               className="text-center"
             >
               <div className="flex items-center justify-center gap-2 mb-2">
-                <stat.icon className="w-5 h-5 text-primary" />
-                <span className="text-3xl sm:text-4xl font-bold text-white">{stat.value}</span>
+                <feat.icon className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-gray-400 text-sm">{stat.label}</p>
+              <p className="text-gray-400 text-sm">{feat.label}</p>
             </motion.div>
           ))}
         </motion.div>

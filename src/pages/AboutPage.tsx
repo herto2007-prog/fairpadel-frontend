@@ -3,11 +3,11 @@ import { Trophy, Users, Target, Heart, MapPin, Award, Zap, Globe } from 'lucide-
 import { Link } from 'react-router-dom';
 import { BackgroundEffects } from '../components/ui/BackgroundEffects';
 
-const stats = [
-  { icon: Trophy, value: '500+', label: 'Torneos Organizados' },
-  { icon: Users, value: '10,000+', label: 'Jugadores Activos' },
-  { icon: MapPin, value: '50+', label: 'Sedes Registradas' },
-  { icon: Award, value: '15+', label: 'Ciudades de Paraguay' },
+const valores = [
+  { icon: Trophy, label: 'Organización de torneos' },
+  { icon: Users, label: 'Comunidad de jugadores' },
+  { icon: MapPin, label: 'Sedes conectadas' },
+  { icon: Award, label: 'Ciudades de Paraguay' },
 ];
 
 const values = [
@@ -66,18 +66,17 @@ export default function AboutPage() {
         <section className="py-16 bg-white/[0.02]">
           <div className="max-w-7xl mx-auto section-padding">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
+              {valores.map((val, index) => (
                 <motion.div
-                  key={stat.label}
+                  key={val.label}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <stat.icon className="w-8 h-8 text-primary mx-auto mb-4" />
-                  <div className="text-3xl md:text-4xl font-bold text-white mb-2">{stat.value}</div>
-                  <div className="text-gray-400">{stat.label}</div>
+                  <val.icon className="w-8 h-8 text-primary mx-auto mb-4" />
+                  <div className="text-gray-400">{val.label}</div>
                 </motion.div>
               ))}
             </div>
@@ -176,10 +175,10 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold text-white mb-6 mt-12">¿Por qué elegir FairPadel?</h3>
               
               <p className="text-gray-300 leading-relaxed mb-6">
-                Más de <strong className="text-white">500 torneos</strong> han sido organizados exitosamente 
-                a través de nuestra plataforma. Nuestra comunidad supera los <strong className="text-white">10,000 jugadores activos</strong> 
-                que confían en FairPadel para encontrar competencias, seguir su progreso y conectar con otros 
-                amantes del pádel. Ofrecemos soporte técnico dedicado, capacitación gratuita para nuevos 
+                FairPadel está construida para organizar torneos de pádel de forma 
+                exitosa. Nuestra comunidad está creciendo día a día y confía en 
+                FairPadel para encontrar competencias, seguir su progreso y conectar con otros 
+                amantes del pádel. Ofrecemos soporte técnico dedicado, capacitación para nuevos 
                 organizadores y actualizaciones constantes basadas en el feedback de nuestra comunidad.
               </p>
 
@@ -237,7 +236,7 @@ export default function AboutPage() {
                 ¿Listo para ser parte de la comunidad?
               </h2>
               <p className="text-gray-300 mb-8 text-lg">
-                Unite a miles de jugadores y organizadores que ya confían en FairPadel 
+                Unite a la comunidad de jugadores y organizadores que confían en FairPadel 
                 para vivir el pádel de forma profesional.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

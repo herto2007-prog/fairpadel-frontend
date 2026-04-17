@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Flame, TrendingUp, Calendar, MapPin, 
   ChevronRight, Bell, Zap, Users, Target, Crown,
-  AlertCircle, Star, Medal, Swords,
+  Star, Medal, Swords,
   ChevronUp, Sparkles, Activity, Check, Trash2,
   Info, MessageSquare, Trophy as TrophyIcon,
   UserPlus, Gamepad2, CreditCard
@@ -31,8 +31,7 @@ interface TorneoConUrgencia {
   costoInscripcion: number;
   sedeNombre: string;
   inscripcionesAbiertas?: boolean;
-  cuposDisponibles?: number;
-  inscripcionesRecientes?: number;
+  totalInscritos?: number;
 }
 
 // Notificacion viene del servicio (notificationService.ts)
@@ -468,17 +467,15 @@ function UrgencyCard({ torneo }: { torneo: TorneoConUrgencia }) {
           {torneo.sedeNombre}, {torneo.ciudad}
         </p>
 
-        {/* Métricas de FOMO */}
-        <div className="flex items-center gap-4 mb-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Users size={14} className="text-yellow-300" />
-            <span>{torneo.inscripcionesRecientes || 12} inscripciones hoy</span>
+        {/* Info de inscritos */}
+        {torneo.totalInscritos !== undefined && (
+          <div className="flex items-center gap-4 mb-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Users size={14} className="text-yellow-300" />
+              <span>{torneo.totalInscritos} inscriptos</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <AlertCircle size={14} className="text-yellow-300" />
-            <span>{torneo.cuposDisponibles || 5} cupos libres</span>
-          </div>
-        </div>
+        )}
 
         {/* CTA Urgente */}
         <motion.button
@@ -490,10 +487,6 @@ function UrgencyCard({ torneo }: { torneo: TorneoConUrgencia }) {
           <Zap size={18} />
           ¡Inscribirme Ahora!
         </motion.button>
-        
-        <p className="text-center text-xs text-white/60 mt-2">
-          ⚡ {torneo.inscripcionesRecientes || 8} personas se inscribieron en las últimas horas
-        </p>
       </div>
     </motion.div>
   );
@@ -804,8 +797,7 @@ export default function HomeDashboardPage() {
           costoInscripcion: t.costoInscripcion,
           sedeNombre: t.sedePrincipal?.nombre || t.ciudad,
           inscripcionesAbiertas: t.inscripcionesAbiertas,
-          cuposDisponibles: Math.floor(Math.random() * 8) + 2, // Simulado por ahora
-          inscripcionesRecientes: Math.floor(Math.random() * 20) + 5 // Simulado
+          totalInscritos: t.totalInscritos || 0
         }));
 
       setTorneos(torneosProcesados);

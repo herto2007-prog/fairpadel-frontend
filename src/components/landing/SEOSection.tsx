@@ -17,7 +17,7 @@ export const SEOSection = () => {
           <div className="grid md:grid-cols-2 gap-8 text-gray-300 leading-relaxed">
             <div className="space-y-4">
               <p>
-                <strong className="text-white">FairPadel</strong> es la plataforma número uno de 
+                <strong className="text-white">FairPadel</strong> es una plataforma de 
                 <strong className="text-white"> pádel en Paraguay</strong>, diseñada para conectar 
                 jugadores, organizadores y sedes en un solo ecosistema digital. Nuestro sistema 
                 permite crear y gestionar torneos de pádel profesionales con brackets automáticos, 
@@ -28,9 +28,7 @@ export const SEOSection = () => {
                 En Paraguay, el pádel ha experimentado un crecimiento exponencial en los últimos años. 
                 FairPadel nace para cubrir la necesidad de una herramienta integral que simplifique la 
                 organización de torneos, desde las inscripciones hasta la gestión de resultados. 
-                Con más de <strong className="text-white">500 torneos creados</strong> y 
-                <strong className="text-white"> 10,000 jugadores activos</strong>, somos la comunidad 
-                más grande de pádel del país.
+                Somos una plataforma pensada por y para la comunidad de pádel paraguaya.
               </p>
               
               <p>
@@ -60,10 +58,10 @@ export const SEOSection = () => {
               </p>
               
               <p>
-                FairPadel opera en las principales ciudades de Paraguay incluyendo Asunción, 
-                Ciudad del Este, Encarnación, San Lorenzo, Luque y Lambaré. Nuestra red de 
-                <strong className="text-white"> más de 50 sedes registradas</strong> incluye los 
-                mejores clubes de pádel del país, todos ellos utilizando nuestra tecnología para 
+                FairPadel opera en Paraguay conectando jugadores de Asunción, 
+                Ciudad del Este, Encarnación, San Lorenzo, Luque y Lambaré. Nuestra red 
+                de sedes registradas está creciendo constantemente, uniendo a los 
+                mejores clubes de pádel del país con tecnología moderna para 
                 ofrecer la mejor experiencia a sus jugadores.
               </p>
             </div>
