@@ -14,7 +14,7 @@ const footerLinks = {
     { name: 'Sobre Nosotros', href: '/about' },
   ],
   soporte: [
-    { name: 'Contacto', href: '#' },
+    { name: 'Contacto', href: '/contacto' },
     { name: 'Términos de Servicio', href: '/terminos' },
   ],
 };
