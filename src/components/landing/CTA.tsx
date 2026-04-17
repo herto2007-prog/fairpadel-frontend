@@ -40,14 +40,14 @@ export const CTA = () => {
 
             {/* Subheadline */}
             <p className="text-body text-lg mb-10 max-w-2xl mx-auto">
-              Unite a los +500 organizadores que ya usan FairPadel. Creá tu primer torneo 
-              en minutos y viví la experiencia de tener todo bajo control.
+              Creá tu cuenta gratis y organizá tu primer torneo 
+              en minutos. Tené todo bajo control desde el primer día.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.a
-                href="https://fairpadel-frontend-production.up.railway.app/register"
+                href="/register"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary inline-flex items-center justify-center gap-2 text-lg group"
@@ -58,7 +58,7 @@ export const CTA = () => {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.a>
               <motion.a
-                href="https://wa.me/595981123456"
+                href="https://wa.me/595982342473"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-secondary inline-flex items-center justify-center gap-2 text-lg"

@@ -158,7 +158,7 @@ export const Features = () => {
             ¿Y eso no es todo? Tenemos muchas más funcionalidades para vos.
           </p>
           <motion.a
-            href="https://fairpadel-frontend-production.up.railway.app/register"
+            href="/register"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary inline-flex items-center gap-2"

@@ -17,7 +17,7 @@ const plans = [
       'Notificaciones de torneos y resultados',
     ],
     cta: 'Unirme a la comunidad',
-    ctaLink: 'https://www.fairpadel.com/register',
+    ctaLink: '/register',
     popular: false,
     gradient: 'from-gray-500 to-gray-600',
   },
@@ -115,7 +115,7 @@ export const Pricing = () => {
                 {/* Popular Badge */}
                 {plan.popular && (
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary to-red-600 text-white text-center py-2 text-sm font-semibold z-10">
-                    Más Popular • 70% eligen este
+                    Más Popular
                   </div>
                 )}
 

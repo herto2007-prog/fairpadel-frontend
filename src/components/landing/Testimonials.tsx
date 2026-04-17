@@ -4,25 +4,25 @@ import { FadeIn } from './AnimatedSection';
 
 const testimonials = [
   {
-    name: 'Carlos Martínez',
-    role: 'Organizador • Club PadelPY',
-    content: 'Antes usaba Excel y WhatsApp para organizar torneos. Era un caos. Con FairPadel, en 10 minutos tengo todo listo y los jugadores ven el fixture en tiempo real. Increíble.',
+    name: 'Organizador de Torneos',
+    role: '¿Sos organizador?',
+    content: 'Si organizás torneos de pádel, FairPadel te permite crear brackets automáticos, gestionar inscripciones y seguir resultados en tiempo real. Todo desde una sola plataforma.',
     rating: 5,
-    avatar: 'CM',
+    avatar: 'OT',
   },
   {
-    name: 'María González',
-    role: 'Jugadora • Categoría 4ta',
-    content: 'Me encanta poder ver mis partidos, resultados y ranking desde el celular. Las notificaciones me avisan cuando juego. Muy profesional todo.',
+    name: 'Jugador de Pádel',
+    role: '¿Sos jugador?',
+    content: 'Encontrá torneos en tu ciudad, inscribite con tu pareja, seguí tus resultados y mirá tu evolución en los rankings. Todo desde el celular.',
     rating: 5,
-    avatar: 'MG',
+    avatar: 'JP',
   },
   {
-    name: 'Roberto Silva',
-    role: 'Dueño • Sede Padel Zone',
-    content: 'Integramos FairPadel para gestionar alquileres y torneos. Los ingresos aumentaron 40% porque ahora todo está organizado y los clientes confían más.',
+    name: 'Dueño de Sede',
+    role: '¿Tenés canchas?',
+    content: 'Gestioná tus alquileres y torneos en un solo lugar. Ofrecé reservas online a tus clientes y organizá competencias para atraer más jugadores.',
     rating: 5,
-    avatar: 'RS',
+    avatar: 'DS',
   },
 ];
 
@@ -97,7 +97,7 @@ export const Testimonials = () => {
           ))}
         </div>
 
-        {/* Stats */}
+        {/* Value proposition */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -107,20 +107,20 @@ export const Testimonials = () => {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <p className="text-4xl font-bold text-gradient mb-2">98%</p>
-              <p className="text-gray-400 text-sm">Satisfacción</p>
+              <p className="text-2xl font-bold text-gradient mb-2">Brackets</p>
+              <p className="text-gray-400 text-sm">Automáticos</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-gradient mb-2">4.9</p>
-              <p className="text-gray-400 text-sm">Rating promedio</p>
+              <p className="text-2xl font-bold text-gradient mb-2">Rankings</p>
+              <p className="text-gray-400 text-sm">En tiempo real</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-gradient mb-2">85%</p>
-              <p className="text-gray-400 text-sm">Recomiendan</p>
+              <p className="text-2xl font-bold text-gradient mb-2">Reservas</p>
+              <p className="text-gray-400 text-sm">De canchas online</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-gradient mb-2">24/7</p>
-              <p className="text-gray-400 text-sm">Soporte</p>
+              <p className="text-2xl font-bold text-gradient mb-2">Torneos</p>
+              <p className="text-gray-400 text-sm">Simples de organizar</p>
             </div>
           </div>
         </motion.div>

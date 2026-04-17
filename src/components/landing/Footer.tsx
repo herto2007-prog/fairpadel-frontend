@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from 'lucide-react';
+import { Instagram, Facebook, Mail, MapPin, Phone } from 'lucide-react';
 
 const footerLinks = {
   producto: [
@@ -12,22 +12,16 @@ const footerLinks = {
   ],
   empresa: [
     { name: 'Sobre Nosotros', href: '/about' },
-    { name: 'Blog', href: '#' },
-    { name: 'Prensa', href: '#' },
-    { name: 'Trabajá con Nosotros', href: '#' },
   ],
   soporte: [
-    { name: 'Centro de Ayuda', href: '#' },
     { name: 'Contacto', href: '#' },
-    { name: 'Estado del Sistema', href: '#' },
     { name: 'Términos de Servicio', href: '#' },
   ],
 };
 
 const socialLinks = [
-  { name: 'Instagram', icon: Instagram, href: '#' },
-  { name: 'Facebook', icon: Facebook, href: '#' },
-  { name: 'Twitter', icon: Twitter, href: '#' },
+  { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/fairpadel/' },
+  { name: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/fairpadel' },
 ];
 
 export const Footer = () => {
@@ -72,8 +66,8 @@ export const Footer = () => {
               />
             </motion.a>
             <p className="text-gray-400 text-sm mb-6 max-w-xs">
-              La plataforma líder de gestión de torneos de pádel en Paraguay. 
-              Organizá, jugá, ganá.
+              Plataforma para organizar torneos de pádel en Paraguay. 
+              Brackets, rankings, reservas y más.
             </p>
             
             {/* Social Links */}

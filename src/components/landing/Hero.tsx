@@ -107,7 +107,7 @@ export const Hero = () => {
               <span className="text-gradient">FairPadel</span>
               <br />
               <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-semibold">
-                La plataforma #1 de pádel en Paraguay
+                La plataforma para organizar torneos de pádel
               </span>
             </motion.h1>
 
