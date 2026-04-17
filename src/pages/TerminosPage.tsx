@@ -144,8 +144,8 @@ export default function TerminosPage() {
                 <h2 className="text-xl font-bold text-white mb-3">10. Contacto</h2>
                 <p>
                   Para consultas sobre estos términos, podés contactarnos a{' '}
-                  <a href="mailto:hola@fairpadel.com" className="text-primary hover:underline">
-                    hola@fairpadel.com
+                  <a href="mailto:admin@fairpadel.com" className="text-primary hover:underline">
+                    admin@fairpadel.com
                   </a>{' '}
                   o a través de nuestros canales de redes sociales.
                 </p>

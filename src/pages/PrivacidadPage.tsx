@@ -129,8 +129,8 @@ export default function PrivacidadPage() {
                 </ul>
                 <p className="mt-2">
                   Para ejercer estos derechos, contactanos a{' '}
-                  <a href="mailto:hola@fairpadel.com" className="text-primary hover:underline">
-                    hola@fairpadel.com
+                  <a href="mailto:admin@fairpadel.com" className="text-primary hover:underline">
+                    admin@fairpadel.com
                   </a>.
                 </p>
               </div>
@@ -160,8 +160,8 @@ export default function PrivacidadPage() {
                 <p>
                   Si tenés preguntas sobre esta política o sobre el tratamiento de tus datos, 
                   podés escribirnos a{' '}
-                  <a href="mailto:hola@fairpadel.com" className="text-primary hover:underline">
-                    hola@fairpadel.com
+                  <a href="mailto:admin@fairpadel.com" className="text-primary hover:underline">
+                    admin@fairpadel.com
                   </a>.
                 </p>
               </div>
