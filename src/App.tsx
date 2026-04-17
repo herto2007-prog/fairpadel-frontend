@@ -14,6 +14,8 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 // Pages lazy
 const HomeDashboardPage = lazy(() => import('./pages/HomeDashboardPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const TerminosPage = lazy(() => import('./pages/TerminosPage'));
+const PrivacidadPage = lazy(() => import('./pages/PrivacidadPage'));
 const RegisterWizard = lazy(() => import('./features/auth/components/RegisterWizard').then(m => ({ default: m.RegisterWizard })));
 const VerifyEmailPage = lazy(() => import('./features/auth/pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
 const ForgotPasswordPage = lazy(() => import('./features/auth/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
@@ -125,6 +127,8 @@ function App() {
             {/* Landing - Pública */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/terminos" element={<TerminosPage />} />
+            <Route path="/privacidad" element={<PrivacidadPage />} />
 
             {/* Torneos Públicos - V2 */}
             <Route path="/torneos" element={<TorneosPublicListPage />} />

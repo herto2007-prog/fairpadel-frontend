@@ -15,7 +15,7 @@ const footerLinks = {
   ],
   soporte: [
     { name: 'Contacto', href: '#' },
-    { name: 'Términos de Servicio', href: '#' },
+    { name: 'Términos de Servicio', href: '/terminos' },
   ],
 };
 
@@ -163,12 +163,12 @@ export const Footer = () => {
             © {new Date().getFullYear()} FairPadel. Todos los derechos reservados.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-gray-500 hover:text-primary transition-colors text-sm">
+            <Link to="/privacidad" className="text-gray-500 hover:text-primary transition-colors text-sm">
               Privacidad
-            </a>
-            <a href="#" className="text-gray-500 hover:text-primary transition-colors text-sm">
+            </Link>
+            <Link to="/terminos" className="text-gray-500 hover:text-primary transition-colors text-sm">
               Términos
-            </a>
+            </Link>
             <a href="#" className="text-gray-500 hover:text-primary transition-colors text-sm">
               Cookies
             </a>
