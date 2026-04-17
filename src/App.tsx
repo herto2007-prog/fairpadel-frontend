@@ -163,9 +163,9 @@ function App() {
               {/* Dashboard - Experiencia Unificada */}
               <Route path="/dashboard" element={<HomeDashboardPage />} />
 
-              {/* Torneos - V2 Público */}
-              <Route path="/tournaments" element={<TorneosPublicListPage />} />
-              <Route path="/tournaments/:id" element={<TorneoPublicDetailPage />} />
+              {/* Redirecciones de rutas viejas */}
+              <Route path="/tournaments" element={<Navigate to="/torneos" replace />} />
+              <Route path="/tournaments/:id" element={<Navigate to="/torneos" replace />} />
 
               {/* Inscripciones (V1) */}
               <Route path="/inscripciones/my" element={<MisInscripcionesPage />} />

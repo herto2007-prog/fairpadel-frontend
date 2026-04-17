@@ -44,7 +44,7 @@ export function ActivoDashboard({ data }: Props) {
               </h2>
               <div className="space-y-3">
                 {torneosAbiertos.slice(0, 3).map(torneo => (
-                  <Link key={torneo.id} to={`/tournaments/${torneo.slug}`} className="flex items-center gap-4 p-4 bg-[#1a1f2e] rounded-xl hover:bg-[#232838] transition-colors">
+                  <Link key={torneo.id} to={`/t/${torneo.slug}`} className="flex items-center gap-4 p-4 bg-[#1a1f2e] rounded-xl hover:bg-[#232838] transition-colors">
                     {torneo.flyerUrl ? (
                       <img src={torneo.flyerUrl} alt="" className="w-16 h-16 rounded-lg object-cover" width="64" height="64" loading="lazy" />
                     ) : (
@@ -60,7 +60,7 @@ export function ActivoDashboard({ data }: Props) {
                   </Link>
                 ))}
               </div>
-              <Link to="/tournaments" className="block w-full text-center py-3 mt-4 bg-[#232838] hover:bg-[#2d3548] rounded-xl text-white transition-colors">
+              <Link to="/torneos" className="block w-full text-center py-3 mt-4 bg-[#232838] hover:bg-[#2d3548] rounded-xl text-white transition-colors">
                 Ver todos
               </Link>
             </motion.div>
@@ -71,7 +71,7 @@ export function ActivoDashboard({ data }: Props) {
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-[#151921] border border-[#232838] rounded-2xl p-6">
             <h3 className="text-sm font-medium text-gray-400 mb-4">ACCIONES</h3>
             <div className="space-y-2">
-              <QuickLink icon={Trophy} label="Buscar Torneos" href="/tournaments" />
+              <QuickLink icon={Trophy} label="Buscar Torneos" href="/torneos" />
               <QuickLink icon={Calendar} label="Mis Inscripciones" href="/mis-torneos" />
               <QuickLink icon={TrendingUp} label="Rankings" href="/rankings" />
               <QuickLink icon={Users} label="Jugadores" href="/jugadores" />

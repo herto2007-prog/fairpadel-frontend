@@ -144,7 +144,7 @@ export function NovatoDashboard({ data }: NovatoDashboardProps) {
                 <Trophy className="w-5 h-5 text-[#df2531]" />
                 Torneos Abiertos
               </h2>
-              <Link to="/tournaments" className="text-sm text-[#df2531] hover:underline">
+              <Link to="/torneos" className="text-sm text-[#df2531] hover:underline">
                 Ver todos
               </Link>
             </div>
@@ -176,7 +176,7 @@ export function NovatoDashboard({ data }: NovatoDashboardProps) {
                 <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>No hay torneos abiertos en este momento</p>
                 <Link
-                  to="/tournaments"
+                  to="/torneos"
                   className="inline-block mt-3 px-4 py-2 bg-[#df2531] rounded-lg text-white text-sm"
                 >
                   Explorar torneos
@@ -221,7 +221,7 @@ export function NovatoDashboard({ data }: NovatoDashboardProps) {
             <h3 className="text-sm font-medium text-gray-400 mb-4">ACCESOS RÁPIDOS</h3>
             <div className="space-y-2">
               <QuickLink icon={User} label="Editar Perfil" href="/perfil" />
-              <QuickLink icon={Trophy} label="Buscar Torneos" href="/tournaments" />
+              <QuickLink icon={Trophy} label="Buscar Torneos" href="/torneos" />
               <QuickLink icon={MapPin} label="Ver Sedes" href="/sedes" />
             </div>
           </motion.div>
@@ -254,7 +254,7 @@ interface TorneoCardProps {
 function TorneoCard({ torneo, urgente }: TorneoCardProps) {
   return (
     <Link
-      to={`/tournaments/${torneo.slug}`}
+      to={`/t/${torneo.slug}`}
       className={`flex items-center gap-4 p-4 rounded-xl border transition-all hover:border-[#df2531]/50 ${
         urgente ? 'bg-orange-500/10 border-orange-500/30' : 'bg-[#1a1f2e] border-[#232838]'
       }`}

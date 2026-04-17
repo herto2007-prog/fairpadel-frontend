@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // Items base para todos los usuarios
   const baseNavItems = [
-    { path: '/tournaments', label: 'Torneos', icon: Trophy },
+    { path: '/torneos', label: 'Torneos', icon: Trophy },
     { path: '/sedes', label: 'Canchas', icon: MapPin },
     { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
     { path: '/instructores', label: 'Instructores', icon: Users },

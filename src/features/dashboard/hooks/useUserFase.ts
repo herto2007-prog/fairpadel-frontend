@@ -101,7 +101,7 @@ export function generateChecklist(
       titulo: 'Inscribirse en primer torneo',
       descripcion: '¡Empieza tu camino en FairPadel!',
       completado: stats.torneosJugados > 0,
-      link: '/tournaments',
+      link: '/torneos',
     },
   ];
 
