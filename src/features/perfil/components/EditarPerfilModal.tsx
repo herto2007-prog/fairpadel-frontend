@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, MapPin, Camera, Lock, Instagram, Facebook, Loader2, Check } from 'lucide-react';
+import { X, User, MapPin, Camera, Lock, Instagram, Facebook, Loader2, Check, Calendar } from 'lucide-react';
 import { api } from '../../../services/api';
 import { PerfilJugador } from '../perfilService';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
+import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
 
 interface EditarPerfilModalProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
     ciudad: perfil.ciudad || '',
     pais: perfil.pais || 'Paraguay',
     telefono: perfil.telefono || '',
+    fechaNacimiento: perfil.edad ? '' : '', // No tenemos fechaNacimiento directo en PerfilJugador, pero la API la acepta
     instagram: perfil.instagram || '',
     facebook: perfil.facebook || '',
   });
@@ -39,6 +42,7 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState(perfil.fotoUrl);
   const [bannerPreview, setBannerPreview] = useState(perfil.bannerUrl);
+  const [avatarEditorImage, setAvatarEditorImage] = useState<string | null>(null);
 
   const handleUpdatePerfil = async () => {
     setLoading(true);
@@ -112,23 +116,39 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
     }
   };
 
+  const dataUrlToFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'foto' | 'banner') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview
     const reader = new FileReader();
     reader.onloadend = () => {
       if (type === 'foto') {
-        setFotoPreview(reader.result as string);
+        setAvatarEditorImage(reader.result as string);
       } else {
         setBannerPreview(reader.result as string);
+        handleFileUpload(file, 'banner');
       }
     };
     reader.readAsDataURL(file);
+  };
 
-    // Upload
-    handleFileUpload(file, type);
+  const handleAvatarSave = (dataUrl: string) => {
+    const file = dataUrlToFile(dataUrl, 'avatar.jpg');
+    setFotoPreview(dataUrl);
+    setAvatarEditorImage(null);
+    handleFileUpload(file, 'foto');
   };
 
   const tabs = [
@@ -221,11 +241,9 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
                       <MapPin className="w-4 h-4 inline mr-1" />
                       Ciudad
                     </label>
-                    <input
-                      type="text"
+                    <CityAutocomplete
                       value={formData.ciudad}
-                      onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#df2531]/50"
+                      onChange={(value) => setFormData({ ...formData, ciudad: value })}
                       placeholder="Tu ciudad"
                     />
                   </div>
@@ -249,6 +267,19 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
                     onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#df2531]/50"
                     placeholder="+595 981 123456"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-white/60 mb-2">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Fecha de Nacimiento
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.fechaNacimiento}
+                    onChange={(e) => setFormData({ ...formData, fechaNacimiento: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#df2531]/50 [color-scheme:dark]"
                   />
                 </div>
 
@@ -292,6 +323,14 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
             )}
 
             {/* Fotos Tab */}
+            {avatarEditorImage && (
+              <AvatarEditorModal
+                image={avatarEditorImage}
+                onSave={handleAvatarSave}
+                onCancel={() => setAvatarEditorImage(null)}
+              />
+            )}
+
             {activeTab === 'fotos' && (
               <div className="space-y-6">
                 {/* Foto de Perfil */}

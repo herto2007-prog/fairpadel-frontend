@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Trophy, MapPin, Calendar, TrendingUp, Award,
-  Share2, Settings, Camera, Edit3, Flame,
+  Camera, Edit3, Flame,
   Target, Star, MapPinned,
   Activity, Crown, Zap, Shield, Loader2, ArrowLeft, RefreshCw,
   GitBranch
@@ -397,7 +397,10 @@ export function PerfilPage() {
                       </div>
                     )}
                     {isMyProfile && (
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <div 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                      >
                         <Camera className="w-6 h-6 md:w-8 md:h-8 text-white" />
                       </div>
                     )}
@@ -416,7 +419,10 @@ export function PerfilPage() {
                       {perfil.nombre} {perfil.apellido}
                     </h1>
                     {isMyProfile && (
-                      <button className="p-2 text-white/40 hover:text-white transition-colors shrink-0">
+                      <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="p-2 text-white/40 hover:text-white transition-colors shrink-0"
+                      >
                         <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
                       </button>
                     )}
@@ -488,14 +494,7 @@ export function PerfilPage() {
                       Editar Perfil
                     </button>
                   )}
-                  <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all min-h-[44px] min-w-[44px]">
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  {isMyProfile && (
-                    <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all min-h-[44px] min-w-[44px]">
-                      <Settings className="w-4 h-4" />
-                    </button>
-                  )}
+                  {/* Botones Compartir y Ajustes eliminados hasta tener funcionalidad */}
                 </motion.div>
               </div>
 
@@ -521,16 +520,7 @@ export function PerfilPage() {
                   </button>
                 )}
                 <div className="flex items-center gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all min-h-[48px]">
-                    <Share2 className="w-4 h-4" />
-                    <span className="text-sm">Compartir</span>
-                  </button>
-                  {isMyProfile && (
-                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all min-h-[48px]">
-                      <Settings className="w-4 h-4" />
-                      <span className="text-sm">Ajustes</span>
-                    </button>
-                  )}
+                  {/* Botones Compartir y Ajustes eliminados hasta tener funcionalidad */}
                 </div>
               </div>
             </div>
