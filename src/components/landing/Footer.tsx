@@ -143,13 +143,13 @@ export const Footer = () => {
 
         {/* Contact Bar */}
         <div className="flex flex-wrap gap-6 py-8 border-t border-dark-200 mb-8">
-          <a href="mailto:hola@fairpadel.com" className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors text-sm">
+          <a href="mailto:admin@fairpadel.com" className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors text-sm">
             <Mail className="w-4 h-4" />
-            hola@fairpadel.com
+            admin@fairpadel.com
           </a>
-          <a href="tel:+595981123456" className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors text-sm">
+          <a href="tel:+595982342473" className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors text-sm">
             <Phone className="w-4 h-4" />
-            +595 981 123 456
+            +595 982 342 473
           </a>
           <span className="flex items-center gap-2 text-gray-400 text-sm">
             <MapPin className="w-4 h-4" />
