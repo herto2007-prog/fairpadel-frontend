@@ -132,10 +132,12 @@ function App() {
             <Route path="/privacidad" element={<PrivacidadPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
 
-            {/* Torneos Públicos - V2 */}
-            <Route path="/torneos" element={<TorneosPublicListPage />} />
-            <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
-            <Route path="/torneo/:id/fixture" element={<PublicBracketPage />} />
+            {/* Torneos Públicos - V2 (con navegación visible) */}
+            <Route element={<PublicLayout />}>
+              <Route path="/torneos" element={<TorneosPublicListPage />} />
+              <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
+              <Route path="/torneo/:id/fixture" element={<PublicBracketPage />} />
+            </Route>
 
             {/* Mockup Perfil - Temporal */}
             <Route path="/perfil-mockup" element={<PerfilMockupPage />} />
