@@ -1,16 +1,18 @@
 import { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
+    navigate('/');
   };
 
   // Items base para todos los usuarios
