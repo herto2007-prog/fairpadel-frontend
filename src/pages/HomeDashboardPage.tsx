@@ -949,29 +949,31 @@ export default function HomeDashboardPage() {
               </div>
             </motion.div>
 
-            {/* CTA a perfil completo */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-[#232838] to-[#1a1f2e] border border-[#2a3042] rounded-2xl p-5"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
-                  <User size={24} className="text-[#df2531]" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-white">Completa tu perfil</h4>
-                  <p className="text-xs text-gray-500 mt-0.5">Agrega foto, bio y redes sociales</p>
-                </div>
-              </div>
-              <Link
-                to="/perfil"
-                className="block w-full mt-4 py-2.5 bg-[#df2531] hover:bg-[#b91c24] text-white text-sm font-medium rounded-xl transition-colors text-center"
+            {/* CTA a perfil completo - solo si falta información */}
+            {perfil && (!perfil.fotoUrl || !perfil.bio || !perfil.ciudad || !perfil.telefono || !perfil.instagram || !perfil.facebook || !perfil.bannerUrl) && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-gradient-to-br from-[#232838] to-[#1a1f2e] border border-[#2a3042] rounded-2xl p-5"
               >
-                Editar Perfil
-              </Link>
-            </motion.div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#df2531]/20 flex items-center justify-center">
+                    <User size={24} className="text-[#df2531]" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-white">Completa tu perfil</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">Agrega foto, bio y redes sociales</p>
+                  </div>
+                </div>
+                <Link
+                  to="/perfil"
+                  className="block w-full mt-4 py-2.5 bg-[#df2531] hover:bg-[#b91c24] text-white text-sm font-medium rounded-xl transition-colors text-center"
+                >
+                  Editar Perfil
+                </Link>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
