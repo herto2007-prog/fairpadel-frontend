@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   DollarSign, Search, Plus, Trash2, CheckCircle2, XCircle, 
-  Wallet, AlertCircle
+  Wallet, AlertCircle, Pencil
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -71,13 +71,15 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'deudores' | 'pagados'>('todos');
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
   
-  // Modal registrar pago
+  // Modal registrar/editar pago
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false);
   const [jugadorSeleccionado, setJugadorSeleccionado] = useState<JugadorPago | null>(null);
+  const [pagoEditando, setPagoEditando] = useState<Pago | null>(null);
   const [montoPago, setMontoPago] = useState('');
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA'>('EFECTIVO');
   const [fechaPago, setFechaPago] = useState(() => new Date().toISOString().split('T')[0]);
   const [notaPago, setNotaPago] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadControlPagos();
@@ -113,6 +115,7 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
 
   const abrirModalPago = (jugador: JugadorPago) => {
     setJugadorSeleccionado(jugador);
+    setPagoEditando(null);
     setMontoPago(jugador.debe.toString());
     setMetodoPago('EFECTIVO');
     setFechaPago(new Date().toISOString().split('T')[0]);
@@ -120,24 +123,62 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
     setModalPagoAbierto(true);
   };
 
-  const registrarPago = async () => {
+  const abrirModalEditarPago = (jugador: JugadorPago, pago: Pago) => {
+    setJugadorSeleccionado(jugador);
+    setPagoEditando(pago);
+    setMontoPago(pago.monto.toString());
+    setMetodoPago(pago.metodo);
+    setFechaPago(pago.fecha);
+    setNotaPago(pago.nota || '');
+    setModalPagoAbierto(true);
+  };
+
+  const cerrarModalPago = () => {
+    setModalPagoAbierto(false);
+    setJugadorSeleccionado(null);
+    setPagoEditando(null);
+    setMontoPago('');
+    setMetodoPago('EFECTIVO');
+    setFechaPago(new Date().toISOString().split('T')[0]);
+    setNotaPago('');
+  };
+
+  const guardarPago = async () => {
     if (!jugadorSeleccionado || !montoPago) return;
     
+    setIsSubmitting(true);
+    
     try {
-      await api.post(`/admin/torneos/${tournamentId}/control-pagos`, {
-        inscripcionId: jugadorSeleccionado.inscripcionId,
-        jugadorId: jugadorSeleccionado.jugadorId,
-        monto: parseInt(montoPago, 10),
-        metodo: metodoPago,
-        fecha: fechaPago,
-        nota: notaPago || undefined,
-      });
+      if (pagoEditando) {
+        // Editar pago existente
+        await api.put(`/admin/torneos/${tournamentId}/control-pagos/${pagoEditando.id}`, {
+          monto: parseInt(montoPago, 10),
+          metodo: metodoPago,
+          fecha: fechaPago,
+          nota: notaPago || undefined,
+        });
+        
+        showSuccess('Pago actualizado', `Se actualizó el pago de ${jugadorSeleccionado.jugadorNombre}`);
+      } else {
+        // Registrar nuevo pago
+        await api.post(`/admin/torneos/${tournamentId}/control-pagos`, {
+          inscripcionId: jugadorSeleccionado.inscripcionId,
+          jugadorId: jugadorSeleccionado.jugadorId,
+          monto: parseInt(montoPago, 10),
+          metodo: metodoPago,
+          fecha: fechaPago,
+          nota: notaPago || undefined,
+        });
+        
+        showSuccess('Pago registrado', `Se registró el pago de ${jugadorSeleccionado.jugadorNombre}`);
+      }
       
-      setModalPagoAbierto(false);
-      showSuccess('Pago registrado', `Se registró el pago de ${jugadorSeleccionado.jugadorNombre}`);
+      cerrarModalPago();
       loadControlPagos();
     } catch (error: any) {
-      showError('Error', error.response?.data?.message || 'No se pudo registrar el pago');
+      showError('Error', error.response?.data?.message || 'No se pudo guardar el pago');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -310,21 +351,31 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
                             {jugador.pagos.length} pago{jugador.pagos.length > 1 ? 's' : ''}
                           </button>
                           {/* Tooltip con historial */}
-                          <div className="absolute right-0 top-full mt-2 w-64 bg-[#1a1f2e] border border-[#232838] rounded-xl p-3 hidden group-hover:block z-10">
+                          <div className="absolute right-0 top-full mt-2 w-72 bg-[#1a1f2e] border border-[#232838] rounded-xl p-3 hidden group-hover:block z-10">
                             <div className="text-xs text-gray-400 mb-2">Historial de pagos</div>
                             {jugador.pagos.map((pago) => (
                               <div key={pago.id} className="flex items-center justify-between py-1 border-b border-[#232838] last:border-0">
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <div className="text-sm text-white">Gs. {pago.monto.toLocaleString('es-PY')}</div>
                                   <div className="text-xs text-gray-500">{formatDatePY(pago.fecha)} - {pago.metodo}</div>
+                                  {pago.nota && <div className="text-xs text-gray-600 italic truncate">{pago.nota}</div>}
                                 </div>
-                                <button
-                                  onClick={() => eliminarPago(jugador, pago)}
-                                  className="p-1 text-red-400 hover:bg-red-500/10 rounded"
-                                  title="Eliminar pago"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <button
+                                    onClick={() => abrirModalEditarPago(jugador, pago)}
+                                    className="p-1 text-amber-400 hover:bg-amber-500/10 rounded"
+                                    title="Editar pago"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => eliminarPago(jugador, pago)}
+                                    className="p-1 text-red-400 hover:bg-red-500/10 rounded"
+                                    title="Eliminar pago"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -364,9 +415,11 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
             className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-md p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Registrar Pago</h3>
+              <h3 className="text-xl font-semibold text-white">
+                {pagoEditando ? 'Editar Pago' : 'Registrar Pago'}
+              </h3>
               <button
-                onClick={() => setModalPagoAbierto(false)}
+                onClick={cerrarModalPago}
                 className="p-2 text-gray-400 hover:text-white"
               >
                 <XCircle className="w-5 h-5" />
@@ -446,17 +499,25 @@ export function ControlPagosManager({ tournamentId, categorias, costoInscripcion
               {/* Botones */}
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => setModalPagoAbierto(false)}
-                  className="flex-1 py-3 border border-[#232838] text-gray-400 hover:text-white rounded-xl transition-colors"
+                  onClick={cerrarModalPago}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 border border-[#232838] text-gray-400 hover:text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={registrarPago}
-                  disabled={!montoPago || parseInt(montoPago) <= 0}
-                  className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+                  onClick={guardarPago}
+                  disabled={!montoPago || parseInt(montoPago) <= 0 || isSubmitting}
+                  className="flex-1 py-3 bg-[#df2531] hover:bg-[#df2531]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
-                  Registrar Pago
+                  {isSubmitting && (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                    />
+                  )}
+                  {pagoEditando ? 'Guardar Cambios' : 'Registrar Pago'}
                 </button>
               </div>
             </div>
