@@ -70,6 +70,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [vistaActiva, setVistaActiva] = useState<'inscripciones' | 'pagos'>('inscripciones');
   const [modalInscripcionManual, setModalInscripcionManual] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [modalFichaJugador, setModalFichaJugador] = useState<Inscripcion | null>(null);
   const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
   const [accionLoading, setAccionLoading] = useState<string | null>(null);
@@ -435,88 +436,26 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                         Gs. {insc.pagos.reduce((s, p) => s + p.monto, 0).toLocaleString('es-PY')}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="relative">
-                          <button
-                            onClick={() => setMenuAbierto(menuAbierto === insc.id ? null : insc.id)}
-                            disabled={accionLoading === insc.id}
-                            className="p-2 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors disabled:opacity-50"
-                            title="Más acciones"
-                          >
-                            {accionLoading === insc.id ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                className="w-4 h-4 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full"
-                              />
-                            ) : (
-                              <MoreVertical className="w-4 h-4" />
-                            )}
-                          </button>
-
-                          {/* Menú desplegable */}
-                          {menuAbierto === insc.id && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-10" 
-                                onClick={() => setMenuAbierto(null)}
-                              />
-                              <div className="absolute right-0 top-full mt-1 w-56 bg-[#1a1f2e] border border-[#232838] rounded-xl py-1 z-20 shadow-xl">
-                                {/* Ver ficha */}
-                                <button
-                                  onClick={() => { setModalFichaJugador(insc); setMenuAbierto(null); }}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
-                                >
-                                  <Eye className="w-4 h-4 text-blue-400" />
-                                  Ver ficha del jugador
-                                </button>
-
-                                {/* Editar inscripción */}
-                                <button
-                                  onClick={() => { setModalEditarInscripcion(insc); setMenuAbierto(null); }}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
-                                >
-                                  <Pencil className="w-4 h-4 text-amber-400" />
-                                  Editar inscripción
-                                </button>
-
-                                <div className="mx-3 my-1 border-t border-[#232838]" />
-
-                                {/* Confirmar */}
-                                {insc.estado !== 'CONFIRMADA' && (
-                                  <button
-                                    onClick={() => handleConfirmar(insc)}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
-                                  >
-                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                                    Confirmar inscripción
-                                  </button>
-                                )}
-
-                                {/* Cancelar */}
-                                {insc.estado !== 'CANCELADA' && (
-                                  <button
-                                    onClick={() => handleCancelar(insc)}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
-                                  >
-                                    <XCircle className="w-4 h-4 text-amber-400" />
-                                    Cancelar inscripción
-                                  </button>
-                                )}
-
-                                <div className="mx-3 my-1 border-t border-[#232838]" />
-
-                                {/* Eliminar */}
-                                <button
-                                  onClick={() => { handleEliminar(insc); setMenuAbierto(null); }}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 text-left transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Eliminar inscripción
-                                </button>
-                              </div>
-                            </>
+                        <button
+                          onClick={(e) => {
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            setMenuPosition({ top: rect.bottom + 4, left: rect.right - 224 });
+                            setMenuAbierto(menuAbierto === insc.id ? null : insc.id);
+                          }}
+                          disabled={accionLoading === insc.id}
+                          className="p-2 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors disabled:opacity-50"
+                          title="Más acciones"
+                        >
+                          {accionLoading === insc.id ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="w-4 h-4 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full"
+                            />
+                          ) : (
+                            <MoreVertical className="w-4 h-4" />
                           )}
-                        </div>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -651,6 +590,81 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
           onClose={() => setModalEditarInscripcion(null)}
           onSuccess={() => { loadInscripciones(); setModalEditarInscripcion(null); }}
         />
+      )}
+
+      {/* Menú flotante de acciones (fixed, fuera de la tabla para evitar recorte) */}
+      {menuAbierto && menuPosition && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMenuAbierto(null)}
+          />
+          <div
+            className="fixed w-56 bg-[#1a1f2e] border border-[#232838] rounded-xl py-1 z-50 shadow-xl"
+            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
+          >
+            {(() => {
+              const insc = todasLasInscripciones.find(i => i.id === menuAbierto);
+              if (!insc) return null;
+              return (
+                <>
+                  {/* Ver ficha */}
+                  <button
+                    onClick={() => { setModalFichaJugador(insc); setMenuAbierto(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                  >
+                    <Eye className="w-4 h-4 text-blue-400" />
+                    Ver ficha del jugador
+                  </button>
+
+                  {/* Editar inscripción */}
+                  <button
+                    onClick={() => { setModalEditarInscripcion(insc); setMenuAbierto(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-amber-400" />
+                    Editar inscripción
+                  </button>
+
+                  <div className="mx-3 my-1 border-t border-[#232838]" />
+
+                  {/* Confirmar */}
+                  {insc.estado !== 'CONFIRMADA' && (
+                    <button
+                      onClick={() => handleConfirmar(insc)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      Confirmar inscripción
+                    </button>
+                  )}
+
+                  {/* Cancelar */}
+                  {insc.estado !== 'CANCELADA' && (
+                    <button
+                      onClick={() => handleCancelar(insc)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                    >
+                      <XCircle className="w-4 h-4 text-amber-400" />
+                      Cancelar inscripción
+                    </button>
+                  )}
+
+                  <div className="mx-3 my-1 border-t border-[#232838]" />
+
+                  {/* Eliminar */}
+                  <button
+                    onClick={() => { handleEliminar(insc); setMenuAbierto(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 text-left transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar inscripción
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+        </>
       )}
     </div>
   );
