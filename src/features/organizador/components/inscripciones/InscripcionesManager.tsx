@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, Search, Plus, Download, 
-  Trash2, Phone, Mail, DollarSign
+  Trash2, Phone, Mail, DollarSign,
+  MoreVertical, Eye, CheckCircle, XCircle, Pencil
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -11,6 +12,7 @@ import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { ResumenStats } from './ResumenStats';
 import { ControlPagosManager } from './ControlPagosManager';
 import { ModalInscripcionManual } from './ModalInscripcionManual';
+import { ModalEditarInscripcion } from './ModalEditarInscripcion';
 import { formatDatePY } from '../../../../utils/date';
 
 // ═══════════════════════════════════════════════════════════
@@ -67,6 +69,10 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
   const [vistaActiva, setVistaActiva] = useState<'inscripciones' | 'pagos'>('inscripciones');
   const [modalInscripcionManual, setModalInscripcionManual] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+  const [modalFichaJugador, setModalFichaJugador] = useState<Inscripcion | null>(null);
+  const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
+  const [accionLoading, setAccionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadInscripciones();
@@ -173,6 +179,45 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       loadInscripciones();
     } catch (error) {
       showError('Error', 'No se pudo eliminar la inscripción');
+    }
+  };
+
+  // Confirmar inscripción
+  const handleConfirmar = async (inscripcion: Inscripcion) => {
+    setAccionLoading(inscripcion.id);
+    try {
+      await api.put(`/admin/torneos/${tournamentId}/inscripciones/${inscripcion.id}/confirmar`);
+      showSuccess('Inscripción confirmada', `${inscripcion.jugador1.nombre} ${inscripcion.jugador1.apellido} está confirmado`);
+      loadInscripciones();
+    } catch (error) {
+      showError('Error', 'No se pudo confirmar la inscripción');
+    } finally {
+      setAccionLoading(null);
+      setMenuAbierto(null);
+    }
+  };
+
+  // Cancelar inscripción
+  const handleCancelar = async (inscripcion: Inscripcion) => {
+    const confirmed = await confirm({
+      title: 'Cancelar inscripción',
+      message: `¿Cancelar la inscripción de ${inscripcion.jugador1.nombre} ${inscripcion.jugador1.apellido}?`,
+      confirmText: 'Cancelar inscripción',
+      cancelText: 'Volver',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+
+    setAccionLoading(inscripcion.id);
+    try {
+      await api.put(`/admin/torneos/${tournamentId}/inscripciones/${inscripcion.id}/cancelar`);
+      showSuccess('Inscripción cancelada', 'La inscripción fue cancelada correctamente');
+      loadInscripciones();
+    } catch (error) {
+      showError('Error', 'No se pudo cancelar la inscripción');
+    } finally {
+      setAccionLoading(null);
+      setMenuAbierto(null);
     }
   };
 
@@ -325,9 +370,9 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jugadores</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacto</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acción</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -340,36 +385,138 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                         {insc.categoriaNombre}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-sm text-white">
-                          {insc.jugador1.nombre} {insc.jugador1.apellido}
+                        {/* Jugador 1 */}
+                        <div className="flex items-start gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#df2531]/20 text-[#df2531] text-[10px] font-bold shrink-0 mt-0.5">1</span>
+                          <div>
+                            <div className="text-sm text-white font-medium">
+                              {insc.jugador1.nombre} {insc.jugador1.apellido}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              {insc.jugador1.telefono && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{insc.jugador1.telefono}</span>}
+                              {insc.jugador1.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{insc.jugador1.email}</span>}
+                            </div>
+                          </div>
                         </div>
-                        <div className={`text-sm ${insc.jugador2 ? 'text-gray-400' : 'text-amber-500'}`}>
-                          {insc.jugador2 ? 
-                            `${insc.jugador2.nombre} ${insc.jugador2.apellido}` : 
-                            'Sin pareja'}
+                        {/* Jugador 2 */}
+                        <div className="flex items-start gap-2 mt-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold shrink-0 mt-0.5">2</span>
+                          <div>
+                            {insc.jugador2 ? (
+                              <>
+                                <div className="text-sm text-white font-medium">
+                                  {insc.jugador2.nombre} {insc.jugador2.apellido}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  {insc.jugador2.telefono && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{insc.jugador2.telefono}</span>}
+                                  {insc.jugador2.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{insc.jugador2.email}</span>}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-amber-500">Sin pareja</div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
-                          {insc.jugador1.telefono || '-'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {insc.jugador1.email || '-'}
-                        </div>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                          insc.estado === 'CONFIRMADA' ? 'bg-emerald-500/20 text-emerald-400' :
+                          insc.estado === 'CANCELADA' ? 'bg-red-500/20 text-red-400' :
+                          insc.estado === 'PENDIENTE' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {insc.estado === 'CONFIRMADA' ? 'Confirmada' :
+                           insc.estado === 'CANCELADA' ? 'Cancelada' :
+                           insc.estado === 'PENDIENTE' ? 'Pendiente' :
+                           insc.estado}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-white">
                         Gs. {insc.pagos.reduce((s, p) => s + p.monto, 0).toLocaleString('es-PY')}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleEliminar(insc)}
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"
-                          title="Eliminar inscripción"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setMenuAbierto(menuAbierto === insc.id ? null : insc.id)}
+                            disabled={accionLoading === insc.id}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors disabled:opacity-50"
+                            title="Más acciones"
+                          >
+                            {accionLoading === insc.id ? (
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                className="w-4 h-4 border-2 border-[#df2531]/30 border-t-[#df2531] rounded-full"
+                              />
+                            ) : (
+                              <MoreVertical className="w-4 h-4" />
+                            )}
+                          </button>
+
+                          {/* Menú desplegable */}
+                          {menuAbierto === insc.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-10" 
+                                onClick={() => setMenuAbierto(null)}
+                              />
+                              <div className="absolute right-0 top-full mt-1 w-56 bg-[#1a1f2e] border border-[#232838] rounded-xl py-1 z-20 shadow-xl">
+                                {/* Ver ficha */}
+                                <button
+                                  onClick={() => { setModalFichaJugador(insc); setMenuAbierto(null); }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                                >
+                                  <Eye className="w-4 h-4 text-blue-400" />
+                                  Ver ficha del jugador
+                                </button>
+
+                                {/* Editar inscripción */}
+                                <button
+                                  onClick={() => { setModalEditarInscripcion(insc); setMenuAbierto(null); }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                                >
+                                  <Pencil className="w-4 h-4 text-amber-400" />
+                                  Editar inscripción
+                                </button>
+
+                                <div className="mx-3 my-1 border-t border-[#232838]" />
+
+                                {/* Confirmar */}
+                                {insc.estado !== 'CONFIRMADA' && (
+                                  <button
+                                    onClick={() => handleConfirmar(insc)}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                                  >
+                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                    Confirmar inscripción
+                                  </button>
+                                )}
+
+                                {/* Cancelar */}
+                                {insc.estado !== 'CANCELADA' && (
+                                  <button
+                                    onClick={() => handleCancelar(insc)}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-[#232838] hover:text-white text-left transition-colors"
+                                  >
+                                    <XCircle className="w-4 h-4 text-amber-400" />
+                                    Cancelar inscripción
+                                  </button>
+                                )}
+
+                                <div className="mx-3 my-1 border-t border-[#232838]" />
+
+                                {/* Eliminar */}
+                                <button
+                                  onClick={() => { handleEliminar(insc); setMenuAbierto(null); }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 text-left transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Eliminar inscripción
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -415,6 +562,95 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
             costoInscripcion={0}
           />
         </>
+      )}
+
+      {/* Modal: Ficha del Jugador */}
+      {modalFichaJugador && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Ficha del Jugador</h3>
+              <button onClick={() => setModalFichaJugador(null)} className="p-2 text-gray-400 hover:text-white">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Jugador 1 */}
+              <div className="bg-[#0B0E14] rounded-xl p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Jugador 1</div>
+                <div className="text-white font-medium text-lg">
+                  {modalFichaJugador.jugador1.nombre} {modalFichaJugador.jugador1.apellido}
+                </div>
+                <div className="mt-2 space-y-1 text-sm text-gray-400">
+                  {modalFichaJugador.jugador1.telefono && (
+                    <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-500" />{modalFichaJugador.jugador1.telefono}</div>
+                  )}
+                  {modalFichaJugador.jugador1.email && (
+                    <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-gray-500" />{modalFichaJugador.jugador1.email}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Jugador 2 */}
+              <div className="bg-[#0B0E14] rounded-xl p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Jugador 2</div>
+                {modalFichaJugador.jugador2 ? (
+                  <>
+                    <div className="text-white font-medium text-lg">
+                      {modalFichaJugador.jugador2.nombre} {modalFichaJugador.jugador2.apellido}
+                    </div>
+                    <div className="mt-2 space-y-1 text-sm text-gray-400">
+                      {modalFichaJugador.jugador2.telefono && (
+                        <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-500" />{modalFichaJugador.jugador2.telefono}</div>
+                      )}
+                      {modalFichaJugador.jugador2.email && (
+                        <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-gray-500" />{modalFichaJugador.jugador2.email}</div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-amber-500">Sin pareja asignada</div>
+                )}
+              </div>
+
+              {/* Info inscripción */}
+              <div className="bg-[#0B0E14] rounded-xl p-4">
+                <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Datos de la inscripción</div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">Categoría:</span> <span className="text-white">{modalFichaJugador.categoriaNombre}</span></div>
+                  <div><span className="text-gray-500">Estado:</span> <span className="text-white">{modalFichaJugador.estado}</span></div>
+                  <div><span className="text-gray-500">Fecha:</span> <span className="text-white">{formatDatePY(modalFichaJugador.createdAt)}</span></div>
+                  <div><span className="text-gray-500">Monto pagado:</span> <span className="text-white">Gs. {modalFichaJugador.pagos.reduce((s, p) => s + p.monto, 0).toLocaleString('es-PY')}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setModalFichaJugador(null)}
+                className="px-6 py-2.5 bg-[#232838] hover:bg-[#2d3447] text-white rounded-xl transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal: Editar Inscripción */}
+      {modalEditarInscripcion && (
+        <ModalEditarInscripcion
+          inscripcion={modalEditarInscripcion}
+          tournamentId={tournamentId}
+          categorias={data?.porCategoria || []}
+          onClose={() => setModalEditarInscripcion(null)}
+          onSuccess={() => { loadInscripciones(); setModalEditarInscripcion(null); }}
+        />
       )}
     </div>
   );
