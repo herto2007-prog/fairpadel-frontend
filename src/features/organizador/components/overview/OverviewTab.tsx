@@ -110,11 +110,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Header con estado y progreso */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#151921] border border-[#232838] rounded-2xl p-6"
-      >
+      <div className="bg-[#151921] border border-[#232838] rounded-2xl p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -173,15 +169,13 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
             <span className="text-white font-bold">{progreso.general}%</span>
           </div>
           <div className="h-3 bg-[#0B0E14] rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progreso.general}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
+            <div
               className={`h-full rounded-full ${
                 progreso.general >= 80 ? 'bg-green-500' :
                 progreso.general >= 50 ? 'bg-yellow-500' :
                 'bg-[#df2531]'
               }`}
+              style={{ width: `${progreso.general}%` }}
             />
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -197,7 +191,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -242,12 +236,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Tareas Pendientes */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-2 bg-[#151921] border border-[#232838] rounded-2xl p-6"
-        >
+        <div className="lg:col-span-2 bg-[#151921] border border-[#232838] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-white flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-[#df2531]" />
@@ -265,12 +254,9 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {tareasPendientes.map((tarea, index) => (
-                <motion.div
+              {tareasPendientes.map((tarea) => (
+                <div
                   key={tarea.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
                   className={`flex items-start gap-4 p-4 rounded-xl border ${getTareaBg(tarea.tipo)}`}
                 >
                   <div className="mt-0.5">{getTareaIcon(tarea.tipo)}</div>
@@ -287,19 +273,14 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
                       </button>
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Inscripciones por Categoria */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-[#151921] border border-[#232838] rounded-2xl p-6"
-        >
+        <div className="bg-[#151921] border border-[#232838] rounded-2xl p-6">
           <h3 className="font-bold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-500" />
             Por Categoria
@@ -330,7 +311,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           >
             Ver todas las inscripciones
           </button>
-        </motion.div>
+        </div>
 
         {/* Solicitar Circuito - Card propia */}
         <SolicitarCircuitoCard tournamentId={tournamentId} />
@@ -362,10 +343,9 @@ function StatCard({ icon: Icon, label, value, subtext, color, onClick }: StatCar
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
+    <div
       onClick={onClick}
-      className={`bg-[#151921] border border-[#232838] rounded-2xl p-5 ${onClick ? 'cursor-pointer' : ''}`}
+      className={`bg-[#151921] border border-[#232838] rounded-2xl p-5 hover:border-[#df2531]/30 transition-colors ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div>
@@ -377,6 +357,6 @@ function StatCard({ icon: Icon, label, value, subtext, color, onClick }: StatCar
           <Icon className="w-5 h-5" />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -70,7 +70,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [vistaActiva, setVistaActiva] = useState<'inscripciones' | 'pagos'>('inscripciones');
   const [modalInscripcionManual, setModalInscripcionManual] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; alignRight: boolean } | null>(null);
   const [modalFichaJugador, setModalFichaJugador] = useState<Inscripcion | null>(null);
   const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
   const [accionLoading, setAccionLoading] = useState<string | null>(null);
@@ -439,7 +439,15 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                         <button
                           onClick={(e) => {
                             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                            setMenuPosition({ top: rect.bottom + 4, left: rect.right - 224 });
+                            const menuWidth = 224;
+                            const padding = 16;
+                            // Si hay espacio a la derecha del botón, alinear derecha del menú con derecha del botón
+                            // Si no, alinear izquierda del menú con izquierda del botón
+                            const alignRight = rect.right + padding <= window.innerWidth;
+                            const left = alignRight
+                              ? Math.max(padding, rect.right - menuWidth)
+                              : Math.max(padding, rect.left);
+                            setMenuPosition({ top: rect.bottom + 4, left, alignRight });
                             setMenuAbierto(menuAbierto === insc.id ? null : insc.id);
                           }}
                           disabled={accionLoading === insc.id}
@@ -601,7 +609,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
           />
           <div
             className="fixed w-56 bg-[#1a1f2e] border border-[#232838] rounded-xl py-1 z-50 shadow-xl"
-            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
+            style={{ top: menuPosition.top, left: menuPosition.left }}
           >
             {(() => {
               const insc = todasLasInscripciones.find(i => i.id === menuAbierto);
