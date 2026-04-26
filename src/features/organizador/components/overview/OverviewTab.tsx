@@ -206,7 +206,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
         <StatCard
           icon={DollarSign}
           label="Ingresos"
-          value={`Gs. ${(inscripciones.ingresos / 1000000).toFixed(1)}M`}
+          value={`Gs. ${inscripciones.ingresos.toLocaleString('es-PY')}`}
           subtext={`${inscripciones.pendientesPago} pendientes pago`}
           color="green"
           onClick={() => onTabChange('inscripciones')}

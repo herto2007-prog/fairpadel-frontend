@@ -43,6 +43,27 @@ export function WhatsAppPreferencesCard({ perfil, onUpdate }: WhatsAppPreference
     }
   };
 
+  const handleSolicitarConsentimiento = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await perfilService.solicitarConsentimientoWhatsapp();
+
+      if (result.success) {
+        setSuccess(result.message);
+        onUpdate();
+      } else {
+        setError(result.message);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al solicitar consentimiento');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRevocarConsentimiento = async () => {
     if (!confirm('¿Estás seguro de que deseas dejar de recibir notificaciones por WhatsApp?')) {
       return;
@@ -254,14 +275,26 @@ export function WhatsAppPreferencesCard({ perfil, onUpdate }: WhatsAppPreference
         <div className="p-4 bg-white/5 rounded-xl">
           <div className="flex items-start gap-3">
             <MessageCircle className="w-5 h-5 text-white/40 mt-0.5" />
-            <div>
-              <p className="text-sm text-white/60">
-                No has activado las notificaciones por WhatsApp.{' '}
-                <a href="/perfil/editar" className="text-primary hover:underline">
-                  Edita tu perfil
-                </a>{' '}
-                para agregar tu número y activarlas.
+            <div className="flex-1">
+              <p className="text-sm text-white/60 mb-3">
+                No has activado las notificaciones por WhatsApp.
               </p>
+              {perfil.telefono ? (
+                <button
+                  onClick={handleSolicitarConsentimiento}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? 'Enviando...' : 'Activar notificaciones por WhatsApp'}
+                </button>
+              ) : (
+                <p className="text-sm text-white/60">
+                  <a href="/perfil/editar" className="text-primary hover:underline">
+                    Edita tu perfil
+                  </a>{' '}
+                  para agregar tu número y activarlas.
+                </p>
+              )}
             </div>
           </div>
         </div>

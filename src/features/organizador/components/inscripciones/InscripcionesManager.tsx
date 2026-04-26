@@ -70,7 +70,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [vistaActiva, setVistaActiva] = useState<'inscripciones' | 'pagos'>('inscripciones');
   const [modalInscripcionManual, setModalInscripcionManual] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; alignRight: boolean } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; alignRight: boolean; alignBottom: boolean } | null>(null);
   const [modalFichaJugador, setModalFichaJugador] = useState<Inscripcion | null>(null);
   const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
   const [accionLoading, setAccionLoading] = useState<string | null>(null);
@@ -440,14 +440,19 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                           onClick={(e) => {
                             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                             const menuWidth = 224;
+                            const menuHeight = 240; // altura estimada del menú completo
                             const padding = 16;
-                            // Si hay espacio a la derecha del botón, alinear derecha del menú con derecha del botón
-                            // Si no, alinear izquierda del menú con izquierda del botón
+                            // Horizontal: si hay espacio a la derecha, alinear derecha; si no, izquierda
                             const alignRight = rect.right + padding <= window.innerWidth;
                             const left = alignRight
                               ? Math.max(padding, rect.right - menuWidth)
                               : Math.max(padding, rect.left);
-                            setMenuPosition({ top: rect.bottom + 4, left, alignRight });
+                            // Vertical: si no hay espacio abajo, abrir hacia arriba
+                            const alignBottom = rect.bottom + menuHeight + padding > window.innerHeight;
+                            const top = alignBottom
+                              ? Math.max(padding, rect.top - menuHeight - 4)
+                              : rect.bottom + 4;
+                            setMenuPosition({ top, left, alignRight, alignBottom });
                             setMenuAbierto(menuAbierto === insc.id ? null : insc.id);
                           }}
                           disabled={accionLoading === insc.id}

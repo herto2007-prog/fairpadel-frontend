@@ -140,6 +140,14 @@ export const perfilService = {
   },
 
   /**
+   * Solicita consentimiento de WhatsApp para usuarios existentes
+   */
+  solicitarConsentimientoWhatsapp: async (): Promise<PreferenciasNotificacionResponse> => {
+    const response = await api.post('/users/profile/whatsapp/solicitar-consentimiento');
+    return response.data;
+  },
+
+  /**
    * Revoca el consentimiento de WhatsApp
    */
   revocarConsentimientoWhatsapp: async (): Promise<PreferenciasNotificacionResponse> => {
