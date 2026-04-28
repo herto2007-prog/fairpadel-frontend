@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw } from 'lucide-react';
+import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw, MessageCircle } from 'lucide-react';
 import { adminService, User } from '../../../services/adminService';
 
 const ROLES = [
@@ -18,6 +18,7 @@ export function UserRoleManager() {
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('TODOS');
   const [saving, setSaving] = useState<string | null>(null);
   const [soporteLoading, setSoporteLoading] = useState<string | null>(null);
+  const [whatsappLoading, setWhatsappLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -95,6 +96,69 @@ export function UserRoleManager() {
     } finally {
       setSoporteLoading(null);
       setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
+  const handleConfirmarWhatsApp = async (userId: string) => {
+    setWhatsappLoading(userId);
+    setMessage(null);
+    try {
+      const result = await adminService.confirmarConsentimientoWhatsapp(userId);
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message });
+        setUsers(users.map(u =>
+          u.id === userId ? { ...u, consentWhatsappStatus: 'CONFIRMADO' } : u
+        ));
+      } else {
+        setMessage({ type: 'error', text: result.message });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Error confirmando consentimiento' });
+    } finally {
+      setWhatsappLoading(null);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
+  const getWhatsappBadge = (user: User) => {
+    if (!user.telefono) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
+          <MessageCircle className="w-3 h-3" />
+          Sin teléfono
+        </span>
+      );
+    }
+    switch (user.consentWhatsappStatus) {
+      case 'CONFIRMADO':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+            <CheckCircle className="w-3 h-3" />
+            Activo
+          </span>
+        );
+      case 'PENDIENTE':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
+            <MessageCircle className="w-3 h-3" />
+            Pendiente
+          </span>
+        );
+      case 'RECHAZADO':
+      case 'REVOCADO':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+            <XCircle className="w-3 h-3" />
+            Inactivo
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
+            <MessageCircle className="w-3 h-3" />
+            No activado
+          </span>
+        );
     }
   };
 
@@ -187,7 +251,7 @@ export function UserRoleManager() {
 
       {/* Lista de usuarios */}
       <div className="glass rounded-3xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
           <table className="w-full">
             <thead className="bg-[#151921] border-b border-[#232838]">
               <tr>
@@ -196,6 +260,7 @@ export function UserRoleManager() {
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Documento</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Categoría</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Estado</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">WhatsApp</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Roles</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Soporte</th>
               </tr>
@@ -257,6 +322,9 @@ export function UserRoleManager() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
+                    {getWhatsappBadge(user)}
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex gap-2 flex-wrap">
                       {ROLES.map((role) => {
                         const hasRole = user.roles.includes(role.id);
@@ -282,7 +350,7 @@ export function UserRoleManager() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {user.estado === 'NO_VERIFICADO' && (
                         <button
                           onClick={() => handleResendVerification(user.email)}
@@ -311,6 +379,21 @@ export function UserRoleManager() {
                         )}
                         Reset pass
                       </button>
+                      {user.telefono && user.consentWhatsappStatus !== 'CONFIRMADO' && (
+                        <button
+                          onClick={() => handleConfirmarWhatsApp(user.id)}
+                          disabled={whatsappLoading === user.id}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                          title="Confirmar consentimiento de WhatsApp manualmente"
+                        >
+                          {whatsappLoading === user.id ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          )}
+                          WhatsApp
+                        </button>
+                      )}
                     </div>
                   </td>
                 </motion.tr>

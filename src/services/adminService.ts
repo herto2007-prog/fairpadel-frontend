@@ -5,6 +5,7 @@ export interface User {
   nombre: string;
   apellido: string;
   email: string;
+  telefono?: string;
   documento: string;
   estado: string;
   roles: string[];
@@ -12,6 +13,7 @@ export interface User {
   categoriaActual?: {
     nombre: string;
   };
+  consentWhatsappStatus?: string | null;
 }
 
 export interface UpdateRolesData {
@@ -126,7 +128,9 @@ export const adminService = {
     api.post('/auth/resend-verification', { email }).then(r => r.data),
   requestPasswordReset: (email: string) =>
     api.post('/auth/forgot-password', { email }).then(r => r.data),
-  
+  confirmarConsentimientoWhatsapp: (userId: string) =>
+    api.post(`/admin/users/${userId}/whatsapp/confirmar-consentimiento`).then(r => r.data),
+
   // SEDES
   getSedes: () => api.get('/admin/sedes').then(r => r.data),
   getSede: (id: string) => api.get(`/admin/sedes/${id}`).then(r => r.data),
