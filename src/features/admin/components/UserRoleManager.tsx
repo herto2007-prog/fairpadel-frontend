@@ -249,9 +249,36 @@ export function UserRoleManager() {
         </motion.div>
       )}
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-2xl p-6">
+          <p className="text-gray-400 text-sm mb-1">Total Usuarios</p>
+          <p className="text-3xl font-bold text-white">{users.length}</p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-gray-400 text-sm mb-1">Activos</p>
+          <p className="text-3xl font-bold text-green-400">
+            {users.filter(u => u.estado === 'ACTIVO').length}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-gray-400 text-sm mb-1">No Verificados</p>
+          <p className="text-3xl font-bold text-yellow-400">
+            {users.filter(u => u.estado === 'NO_VERIFICADO').length}
+          </p>
+        </div>
+        <div className="glass rounded-2xl p-6">
+          <p className="text-gray-400 text-sm mb-1">Administradores</p>
+          <p className="text-3xl font-bold text-white">
+            {users.filter(u => u.roles.includes('admin')).length}
+          </p>
+        </div>
+      </div>
+
       {/* Lista de usuarios */}
       <div className="glass rounded-3xl overflow-hidden">
-        <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+        <div className="max-h-[65vh] overflow-y-auto lg:max-h-none">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[#151921] border-b border-[#232838]">
               <tr>
@@ -400,6 +427,7 @@ export function UserRoleManager() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {filteredUsers.length === 0 && (
@@ -408,32 +436,6 @@ export function UserRoleManager() {
             <p className="text-gray-400">No se encontraron usuarios</p>
           </div>
         )}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">Total Usuarios</p>
-          <p className="text-3xl font-bold text-white">{users.length}</p>
-        </div>
-        <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">Activos</p>
-          <p className="text-3xl font-bold text-green-400">
-            {users.filter(u => u.estado === 'ACTIVO').length}
-          </p>
-        </div>
-        <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">No Verificados</p>
-          <p className="text-3xl font-bold text-yellow-400">
-            {users.filter(u => u.estado === 'NO_VERIFICADO').length}
-          </p>
-        </div>
-        <div className="glass rounded-2xl p-6">
-          <p className="text-gray-400 text-sm mb-1">Administradores</p>
-          <p className="text-3xl font-bold text-white">
-            {users.filter(u => u.roles.includes('admin')).length}
-          </p>
-        </div>
       </div>
     </div>
   );
