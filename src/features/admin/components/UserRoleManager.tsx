@@ -278,18 +278,18 @@ export function UserRoleManager() {
       {/* Lista de usuarios */}
       <div className="glass rounded-3xl overflow-hidden">
         <div className="max-h-[65vh] overflow-y-auto lg:max-h-none">
-          <div className="overflow-x-auto">
+          <div className="">
           <table className="w-full">
             <thead className="bg-[#151921] border-b border-[#232838]">
               <tr>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Usuario</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">ID</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Documento</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Categoría</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Estado</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">WhatsApp</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Roles</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">Soporte</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Usuario</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">ID</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Documento</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Categoría</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Estado</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">WhatsApp</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Roles</th>
+                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Soporte</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#232838]">
@@ -300,9 +300,9 @@ export function UserRoleManager() {
                   animate={{ opacity: 1 }}
                   className="hover:bg-[#151921]/50 transition-colors"
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden relative flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden relative flex-shrink-0">
                         {user.fotoUrl ? (
                           <img
                             src={user.fotoUrl}
@@ -323,9 +323,9 @@ export function UserRoleManager() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <code className="text-xs text-gray-400 bg-[#232838] px-2 py-1 rounded truncate max-w-[120px]">
+                      <code className="text-xs text-gray-400 bg-[#232838] px-2 py-1 rounded truncate max-w-[80px]">
                         {user.id}
                       </code>
                       <button
@@ -338,20 +338,20 @@ export function UserRoleManager() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-400">{user.documento}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <span className="px-3 py-1 bg-[#232838] rounded-full text-sm text-gray-300">
                       {user.categoriaActual?.nombre || 'Sin categoría'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <span className={`px-3 py-1 rounded-full text-sm border ${getEstadoBadge(user.estado)}`}>
                       {user.estado.replace(/_/g, ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     {getWhatsappBadge(user)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <div className="flex gap-2 flex-wrap">
                       {ROLES.map((role) => {
                         const hasRole = user.roles.includes(role.id);
@@ -376,13 +376,13 @@ export function UserRoleManager() {
                       })}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       {user.estado === 'NO_VERIFICADO' && (
                         <button
                           onClick={() => handleResendVerification(user.email)}
                           disabled={soporteLoading === `verify-${user.email}`}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
                           title="Reenviar email de verificación"
                         >
                           {soporteLoading === `verify-${user.email}` ? (
@@ -396,7 +396,7 @@ export function UserRoleManager() {
                       <button
                         onClick={() => handlePasswordReset(user.email)}
                         disabled={soporteLoading === `reset-${user.email}`}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 px-2 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
                         title="Enviar recuperación de contraseña"
                       >
                         {soporteLoading === `reset-${user.email}` ? (
@@ -410,7 +410,7 @@ export function UserRoleManager() {
                         <button
                           onClick={() => handleConfirmarWhatsApp(user.id)}
                           disabled={whatsappLoading === user.id}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
                           title="Confirmar consentimiento de WhatsApp manualmente"
                         >
                           {whatsappLoading === user.id ? (
