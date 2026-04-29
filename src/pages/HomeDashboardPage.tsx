@@ -767,6 +767,7 @@ function TorneosRecomendados({ torneos }: { torneos: TorneoConUrgencia[] }) {
 export default function HomeDashboardPage() {
   useNoIndex();
   useAuth(); // Verifica autenticación
+  const navigate = useNavigate();
   const [perfil, setPerfil] = useState<PerfilJugador | null>(null);
   const [torneos, setTorneos] = useState<TorneoConUrgencia[]>([]);
   const [mostrarCrearAmericano, setMostrarCrearAmericano] = useState(false);
@@ -1015,6 +1016,7 @@ export default function HomeDashboardPage() {
             torneoId={torneoCreado.id}
             torneoNombre={torneoCreado.nombre}
             onClose={() => setTorneoCreado(null)}
+            onGoToTournament={() => navigate(`/americano/${torneoCreado.id}`)}
           />
         )}
       </AnimatePresence>

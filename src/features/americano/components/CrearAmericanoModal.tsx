@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, Users } from 'lucide-react';
+import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, Users, HelpCircle, Info } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { americanoService, CreateAmericanoTorneoPayload } from '../../../services/americanoService';
 import { useToast } from '../../../components/ui/ToastProvider';
@@ -68,6 +68,21 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Info: qué es un americano */}
+          <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex gap-3">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-white/70 text-xs leading-relaxed">
+                En un <strong className="text-white">torneo americano</strong> las parejas rotan en cada ronda. 
+                Todos juegan con todos y nadie queda eliminado. Gana quien acumule más games al final.
+              </p>
+              <p className="text-white/40 text-xs mt-1">
+                Después de crearlo, compartí el link con tus amigos para que se inscriban. 
+                Una vez cerradas las inscripciones, configurás el modo de juego y empezás.
+              </p>
+            </div>
+          </div>
+
           {/* Nombre */}
           <div>
             <label className="text-white/50 text-xs font-medium mb-1.5 block">Nombre del torneo *</label>
@@ -89,7 +104,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
             <textarea
               value={formData.descripcion}
               onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              placeholder="Detalles del torneo..."
+              placeholder="Ej: Traer pelotas, empezamos puntual a las 9:00..."
               rows={2}
               className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors resize-none"
             />
@@ -107,6 +122,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
                 className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors [color-scheme:dark]"
               />
             </div>
+            <p className="text-white/30 text-xs mt-1">Día en que se juega el torneo.</p>
           </div>
 
           {/* Ciudad */}
@@ -117,11 +133,20 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
               onChange={(value) => setFormData({ ...formData, ciudad: value })}
               placeholder="Busca tu ciudad..."
             />
+            <p className="text-white/30 text-xs mt-1">Para que otros jugadores cercanos puedan encontrarlo.</p>
           </div>
 
           {/* Límite de inscripciones */}
           <div>
-            <label className="text-white/50 text-xs font-medium mb-1.5 block">Límite de inscripciones</label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-white/50 text-xs font-medium">Límite de inscripciones</label>
+              <div className="group relative">
+                <HelpCircle className="w-3 h-3 text-white/20 cursor-help" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#1a1f2e] border border-[#232838] rounded-lg text-white/60 text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+                  Si lo dejás vacío, no hay límite. El mínimo para jugar son 4 jugadores.
+                </div>
+              </div>
+            </div>
             <div className="relative">
               <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
               <input
@@ -150,7 +175,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
                 <Eye className="w-4 h-4" />
                 <div className="text-left">
                   <p className="text-sm font-medium">Público</p>
-                  <p className="text-xs opacity-60">Aparece en el listado</p>
+                  <p className="text-xs opacity-60">Cualquiera puede verlo y unirse</p>
                 </div>
               </button>
               <button
@@ -164,10 +189,15 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
                 <EyeOff className="w-4 h-4" />
                 <div className="text-left">
                   <p className="text-sm font-medium">Privado</p>
-                  <p className="text-xs opacity-60">Solo por link</p>
+                  <p className="text-xs opacity-60">Solo quien tenga el link</p>
                 </div>
               </button>
             </div>
+            <p className="text-white/30 text-xs mt-1.5">
+              {formData.visibilidad === 'publico' 
+                ? 'Aparecerá en el listado de torneos americanos para que cualquiera se una.'
+                : 'No aparecerá en listados. Solo los que reciban el link podrán entrar.'}
+            </p>
           </div>
         </div>
 

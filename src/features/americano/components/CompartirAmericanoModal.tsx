@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, MessageCircle, Check, Copy } from 'lucide-react';
+import { X, MessageCircle, Check, Copy, Users } from 'lucide-react';
 
 interface CompartirAmericanoModalProps {
   torneoId: string;
   torneoNombre: string;
   onClose: () => void;
+  onGoToTournament?: () => void;
 }
 
-export function CompartirAmericanoModal({ torneoId, torneoNombre, onClose }: CompartirAmericanoModalProps) {
+export function CompartirAmericanoModal({ torneoId, torneoNombre, onClose, onGoToTournament }: CompartirAmericanoModalProps) {
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/americano/${torneoId}`;
   const mensajeWhatsApp = `¡Hola! Te invito a jugar el torneo americano "${torneoNombre}" en FairPadel. Inscribite acá: ${url}`;
@@ -63,6 +64,15 @@ export function CompartirAmericanoModal({ torneoId, torneoNombre, onClose }: Com
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Info */}
+          <div className="bg-white/[0.03] rounded-lg p-3 flex gap-3">
+            <Users className="w-4 h-4 text-white/30 shrink-0 mt-0.5" />
+            <p className="text-white/40 text-xs leading-relaxed">
+              Tus amigos solo necesitan entrar al link e inscribirse. 
+              <strong className="text-white/60"> No necesitan pagar nada.</strong> Una vez que todos se sumen, vos como organizador cerrás inscripciones y empezás el torneo.
+            </p>
+          </div>
+
           {/* URL */}
           <div>
             <label className="text-white/50 text-xs font-medium mb-1.5 block">Link del torneo</label>
@@ -90,7 +100,10 @@ export function CompartirAmericanoModal({ torneoId, torneoNombre, onClose }: Com
 
           {/* Ir al torneo */}
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              onGoToTournament?.();
+            }}
             className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-xl transition-colors"
           >
             Ir a mi torneo

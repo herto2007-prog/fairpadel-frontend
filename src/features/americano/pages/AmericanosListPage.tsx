@@ -51,7 +51,8 @@ export function AmericanosListPage() {
               <h1 className="text-2xl font-bold text-white">Torneos Americanos</h1>
             </motion.div>
             <p className="text-white/50 text-sm">
-              Formato round-robin rotativo. Inscribite gratis, jugá con diferentes parejas y sumá puntos.
+              Formato round-robin rotativo. Inscribite gratis, jugá con diferentes parejas en cada ronda, 
+              y ganá sumando la mayor cantidad de games. Nadie queda eliminado.
             </p>
           </div>
           <button
@@ -207,6 +208,7 @@ export function AmericanosListPage() {
               torneoId={torneoCreado.id}
               torneoNombre={torneoCreado.nombre}
               onClose={() => setTorneoCreado(null)}
+              onGoToTournament={() => navigate(`/americano/${torneoCreado.id}`)}
             />
           )}
         </AnimatePresence>

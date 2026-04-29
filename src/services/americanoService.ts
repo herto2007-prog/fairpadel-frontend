@@ -136,6 +136,9 @@ export const americanoService = {
   configurarModo: (torneoId: string, payload: ModoJuegoConfig) =>
     api.post(`/americano/torneos/${torneoId}/configurar-modo`, payload).then(r => r.data),
 
+  eliminar: (torneoId: string) =>
+    api.delete(`/americano/torneos/${torneoId}`).then(r => r.data),
+
   // Inscripciones
   listarInscripciones: (torneoId: string) => 
     api.get(`/americano/torneos/${torneoId}/inscripciones`).then(r => r.data as InscripcionAmericano[]),

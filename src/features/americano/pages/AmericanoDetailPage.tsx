@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Users, Calendar, MapPin, ArrowLeft,
   UserPlus, Check, Medal, Target, Swords,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Info, Settings
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../../../features/auth/context/AuthContext';
-import { americanoService, AmericanoTorneo, ClasificacionItem, AmericanoRonda } from '../../../services/americanoService';
+import { americanoService, AmericanoTorneo, ClasificacionItem, AmericanoRonda, InscripcionAmericano } from '../../../services/americanoService';
 import { formatDatePYShort } from '../../../utils/date';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
+import { AmericanoManager } from '../../organizador/components/americano/AmericanoManager';
 
 export function AmericanoDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,12 +21,14 @@ export function AmericanoDetailPage() {
   
   const [torneo, setTorneo] = useState<AmericanoTorneo | null>(null);
   const [clasificacion, setClasificacion] = useState<ClasificacionItem[]>([]);
+  const [inscripciones, setInscripciones] = useState<InscripcionAmericano[]>([]);
   const [loading, setLoading] = useState(true);
   const [inscribiendo, setInscribiendo] = useState(false);
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [rondaExpandida, setRondaExpandida] = useState<string | null>(null);
-  const [tabActivo, setTabActivo] = useState<'info' | 'clasificacion' | 'rondas'>('info');
+  const [tabActivo, setTabActivo] = useState<'info' | 'clasificacion' | 'rondas' | 'inscriptos' | 'gestionar'>('info');
+  const { confirm, ...confirmState } = useConfirm();
 
   useEffect(() => {
     if (id) loadData();
@@ -33,12 +38,14 @@ export function AmericanoDetailPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const [torneoData, clasifData] = await Promise.all([
+      const [torneoData, clasifData, inscData] = await Promise.all([
         americanoService.getById(id),
         americanoService.getClasificacion(id),
+        americanoService.listarInscripciones(id),
       ]);
       setTorneo(torneoData);
       setClasificacion(clasifData);
+      setInscripciones(inscData);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al cargar el torneo');
     } finally {
@@ -51,6 +58,14 @@ export function AmericanoDetailPage() {
       navigate('/login', { state: { from: `/americano/${id}` } });
       return;
     }
+    const confirmed = await confirm({
+      title: 'Confirmar inscripción',
+      message: `¿Querés inscribirte en "${torneo?.nombre}"? Es gratis y no requiere pago.`,
+      confirmText: 'Inscribirme',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) return;
     try {
       setInscribiendo(true);
       setError('');
@@ -65,9 +80,8 @@ export function AmericanoDetailPage() {
     }
   };
 
-  const yaInscripto = torneo?.americanosRonda?.some(r => 
-    r.puntajes.some(p => p.jugador.id === user?.id)
-  );
+  const yaInscripto = inscripciones.some(i => i.jugador1.id === user?.id);
+  const isOrganizador = user?.id === torneo?.organizador?.id;
 
   if (loading) {
     return (
@@ -164,6 +178,15 @@ export function AmericanoDetailPage() {
             <p className="text-white/50 text-sm mb-4">{torneo.descripcion}</p>
           )}
 
+          {/* Explicación americano */}
+          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex gap-3 mb-4">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-white/50 text-xs leading-relaxed">
+              En este formato las <strong className="text-white/70">parejas rotan</strong> en cada ronda. 
+              Todos juegan con todos, nadie queda eliminado, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <InfoItem icon={<Calendar className="w-4 h-4" />} label="Fecha" value={`${formatDatePYShort(torneo.fechaInicio)} - ${formatDatePYShort(torneo.fechaFin)}`} />
             <InfoItem icon={<MapPin className="w-4 h-4" />} label="Ciudad" value={torneo.ciudad} />
@@ -197,16 +220,18 @@ export function AmericanoDetailPage() {
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white/[0.02] border border-white/5 rounded-xl p-1">
+        <div className="flex gap-1 mb-6 bg-white/[0.02] border border-white/5 rounded-xl p-1 overflow-x-auto">
           {[
             { key: 'info' as const, label: 'Info', icon: Trophy },
+            { key: 'inscriptos' as const, label: 'Inscriptos', icon: Users },
             { key: 'clasificacion' as const, label: 'Clasificación', icon: Medal },
             { key: 'rondas' as const, label: 'Rondas', icon: Swords },
+            ...(isOrganizador ? [{ key: 'gestionar' as const, label: 'Gestionar', icon: Settings }] : []),
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setTabActivo(tab.key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
                 tabActivo === tab.key
                   ? 'bg-primary/20 text-primary'
                   : 'text-white/40 hover:text-white/70'
@@ -258,6 +283,17 @@ export function AmericanoDetailPage() {
             </motion.div>
           )}
 
+          {tabActivo === 'inscriptos' && (
+            <motion.div
+              key="inscriptos"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <InscriptosList inscripciones={inscripciones} />
+            </motion.div>
+          )}
+
           {tabActivo === 'clasificacion' && (
             <motion.div
               key="clasificacion"
@@ -265,7 +301,24 @@ export function AmericanoDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <ClasificacionTable data={clasificacion} />
+              <ClasificacionTable
+                data={clasificacion.length > 0 ? clasificacion : inscripciones.map(i => ({
+                  jugadorId: i.jugador1.id,
+                  nombre: i.jugador1.nombre,
+                  apellido: i.jugador1.apellido,
+                  fotoUrl: i.jugador1.fotoUrl,
+                  puntosTotal: 0,
+                  partidosJugados: 0,
+                  partidosGanados: 0,
+                  partidosPerdidos: 0,
+                  setsGanados: 0,
+                  setsPerdidos: 0,
+                  gamesGanados: 0,
+                  gamesPerdidos: 0,
+                  diferenciaGames: 0,
+                }))}
+                preClasificacion={clasificacion.length === 0 && inscripciones.length > 0}
+              />
             </motion.div>
           )}
 
@@ -281,6 +334,9 @@ export function AmericanoDetailPage() {
                 <div className="text-center py-12">
                   <Swords className="w-10 h-10 text-white/20 mx-auto mb-3" />
                   <p className="text-white/40 text-sm">Aún no se iniciaron rondas</p>
+                  <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+                    El organizador iniciará las rondas cuando todos los inscriptos estén listos. Cada ronda arma nuevas parejas.
+                  </p>
                 </div>
               )}
               
@@ -294,7 +350,29 @@ export function AmericanoDetailPage() {
               ))}
             </motion.div>
           )}
+
+          {tabActivo === 'gestionar' && isOrganizador && id && (
+            <motion.div
+              key="gestionar"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <AmericanoManager tournamentId={id} />
+            </motion.div>
+          )}
         </AnimatePresence>
+
+        <ConfirmModal
+          isOpen={confirmState.isOpen}
+          onClose={confirmState.close}
+          onConfirm={confirmState.handleConfirm}
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmText={confirmState.confirmText}
+          cancelText={confirmState.cancelText}
+          variant={confirmState.variant}
+        />
       </div>
     </div>
   );
@@ -321,15 +399,20 @@ function ConfigItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ClasificacionTable({ data }: { data: ClasificacionItem[] }) {
+function ClasificacionTable({ data, preClasificacion = false }: { data: ClasificacionItem[]; preClasificacion?: boolean }) {
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
         <Medal className="w-10 h-10 text-white/20 mx-auto mb-3" />
         <p className="text-white/40 text-sm">Aún no hay clasificación</p>
+        <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+          La tabla muestra cuántos games acumuló cada jugador. A mayor cantidad de games ganados, mejor posición.
+        </p>
       </div>
     );
   }
+
+  const titulo = preClasificacion ? 'Pre-clasificación' : 'Clasificación';
 
   const posicionColor = (pos: number) => {
     if (pos === 0) return 'text-yellow-400';
@@ -340,6 +423,13 @@ function ClasificacionTable({ data }: { data: ClasificacionItem[] }) {
 
   return (
     <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+      {preClasificacion && (
+        <div className="px-4 py-2.5 bg-yellow-500/5 border-b border-white/5">
+          <p className="text-yellow-400/70 text-xs">
+            <strong className="text-yellow-400">{titulo}:</strong> Los jugadores aparecen con 0 puntos hasta que se inicien las rondas.
+          </p>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -485,6 +575,45 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function InscriptosList({ inscripciones }: { inscripciones: InscripcionAmericano[] }) {
+  if (inscripciones.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Users className="w-10 h-10 text-white/20 mx-auto mb-3" />
+        <p className="text-white/40 text-sm">Aún no hay inscriptos</p>
+        <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+          Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+      <p className="text-white/30 text-xs mb-4">{inscripciones.length} jugador{inscripciones.length !== 1 ? 'es' : ''} inscripto{inscripciones.length !== 1 ? 's' : ''}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {inscripciones.map((insc) => (
+          <div key={insc.id} className="flex items-center gap-3 bg-white/[0.03] rounded-lg p-3">
+            {insc.jugador1.fotoUrl ? (
+              <img src={insc.jugador1.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-sm">
+                {insc.jugador1.nombre[0]}
+              </div>
+            )}
+            <div>
+              <p className="text-white text-sm font-medium">{insc.jugador1.nombre} {insc.jugador1.apellido}</p>
+              <p className="text-white/30 text-xs">
+                {insc.jugador1.categoriaActual?.nombre || 'Sin categoría'}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

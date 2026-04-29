@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2
 } from 'lucide-react';
 import {
   americanoService,
@@ -12,12 +13,16 @@ import {
   InscripcionAmericano,
 } from '../../../../services/americanoService';
 import { useToast } from '../../../../components/ui/ToastProvider';
+import { ConfigurarModoModal } from './ConfigurarModoModal';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 interface AmericanoManagerProps {
   tournamentId: string;
 }
 
 export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
+  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const [torneo, setTorneo] = useState<AmericanoTorneo | null>(null);
   const [inscripciones, setInscripciones] = useState<InscripcionAmericano[]>([]);
@@ -31,6 +36,8 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     parejaA: { id: string; jugadores: string };
     parejaB: { id: string; jugadores: string };
   } | null>(null);
+  const [mostrarConfigModal, setMostrarConfigModal] = useState(false);
+  const { confirm, ...confirmState } = useConfirm();
 
   useEffect(() => {
     loadData();
@@ -112,6 +119,27 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     }
   };
 
+  const handleEliminar = async () => {
+    const confirmed = await confirm({
+      title: 'Eliminar torneo',
+      message: '¿Estás seguro de eliminar este torneo americano? Esta acción no se puede deshacer. Se borrarán todas las inscripciones, rondas y resultados.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      setAccionLoading('eliminar');
+      await americanoService.eliminar(tournamentId);
+      showSuccess('Torneo eliminado');
+      navigate('/americano');
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error eliminando torneo');
+    } finally {
+      setAccionLoading('');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -136,6 +164,19 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
 
   return (
     <div className="space-y-6">
+      {/* Info flujo organizador */}
+      {!modoConfigurado && (
+        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex gap-3">
+          <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-blue-400 text-xs font-medium">¿Cómo funciona?</p>
+            <p className="text-white/50 text-xs mt-1 leading-relaxed">
+              1. Tus amigos se inscriben · 2. Cerrás inscripciones y configurás el modo de juego · 3. Iniciás rondas y registrás resultados · 4. El sistema arma la clasificación automáticamente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<Users className="w-4 h-4" />} label="Inscriptos" value={inscripciones.length} />
@@ -146,16 +187,44 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
 
       {/* Banner: modo de juego no configurado */}
       {!modoConfigurado && inscripciones.length >= 4 && (
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-          <p className="text-yellow-400 text-sm font-medium">Modo de juego no configurado</p>
-          <p className="text-white/50 text-xs mt-1">
-            Cerrá las inscripciones y configurá el modo de juego antes de iniciar la primera ronda.
-          </p>
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-yellow-400 text-sm font-medium">Modo de juego no configurado</p>
+            <p className="text-white/50 text-xs mt-1">
+              Cerrá las inscripciones y configurá el modo de juego antes de iniciar la primera ronda.
+            </p>
+          </div>
+          <button
+            onClick={() => setMostrarConfigModal(true)}
+            className="shrink-0 px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 text-xs font-medium rounded-lg transition-colors"
+          >
+            Configurar
+          </button>
         </div>
       )}
 
       {/* Acciones principales */}
       <div className="flex flex-wrap gap-3">
+        {!modoConfigurado && inscripciones.length >= 4 && (
+          <button
+            onClick={() => setMostrarConfigModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-primary/40 text-white text-sm font-medium rounded-xl transition-colors"
+          >
+            <Settings className="w-4 h-4 text-primary" />
+            Configurar modo de juego
+          </button>
+        )}
+
+        {modoConfigurado && torneo?.americanosRonda?.length === 0 && (
+          <button
+            onClick={() => setMostrarConfigModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-primary/40 text-white/70 text-sm font-medium rounded-xl transition-colors"
+          >
+            <Settings className="w-4 h-4 text-white/40" />
+            Editar modo
+          </button>
+        )}
+
         {puedeIniciar && (
           <button
             onClick={handleIniciarRonda}
@@ -185,6 +254,19 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             Generar Siguiente Ronda
           </button>
         )}
+
+        <button
+          onClick={handleEliminar}
+          disabled={!!accionLoading}
+          className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-xl transition-colors disabled:opacity-50 ml-auto"
+        >
+          {accionLoading === 'eliminar' ? (
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+          Eliminar torneo
+        </button>
       </div>
 
       {/* Tabs */}
@@ -221,7 +303,10 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             {inscripciones.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-10 h-10 text-white/20 mx-auto mb-3" />
-                <p className="text-white/40 text-sm">No hay inscripciones</p>
+                <p className="text-white/40 text-sm">No hay inscripciones todavía</p>
+                <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+                  Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -259,7 +344,11 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
               <div className="text-center py-12">
                 <Swords className="w-10 h-10 text-white/20 mx-auto mb-3" />
                 <p className="text-white/40 text-sm">Aún no hay rondas</p>
-                <p className="text-white/30 text-xs mt-1">Iniciá la primera ronda para empezar</p>
+                <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+                  {modoConfigurado
+                    ? 'Tenés al menos 4 inscriptos. Podés iniciar la primera ronda y el sistema armará las parejas automáticamente.'
+                    : 'Primero tenés que configurar el modo de juego antes de poder iniciar rondas.'}
+                </p>
               </div>
             )}
 
@@ -290,10 +379,20 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
               <div className="text-center py-12">
                 <Trophy className="w-10 h-10 text-white/20 mx-auto mb-3" />
                 <p className="text-white/40 text-sm">Aún no hay clasificación</p>
+                <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+                  La tabla se actualiza automáticamente a medida que registrás resultados. Cada jugador suma los games que gana.
+                </p>
               </div>
             ) : (
-              <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <HelpCircle className="w-3.5 h-3.5 text-white/20" />
+                  <p className="text-white/30 text-xs">
+                    Cada jugador acumula los <strong className="text-white/50">games ganados</strong> de todos sus partidos. Gana quien tenga más games al final.
+                  </p>
+                </div>
+                <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#232838]">
                       <th className="text-left text-white/30 font-medium px-4 py-3 w-12">#</th>
@@ -333,6 +432,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                   </tbody>
                 </table>
               </div>
+            </div>
             )}
           </motion.div>
         )}
@@ -350,6 +450,28 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
           />
         )}
       </AnimatePresence>
+
+      {mostrarConfigModal && (
+        <ConfigurarModoModal
+          torneoId={tournamentId}
+          onClose={() => setMostrarConfigModal(false)}
+          onConfigured={() => {
+            setMostrarConfigModal(false);
+            loadData();
+          }}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
