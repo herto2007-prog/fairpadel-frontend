@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw, MessageCircle } from 'lucide-react';
+import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw, MessageCircle, Download } from 'lucide-react';
 import { adminService, User } from '../../../services/adminService';
 
 const ROLES = [
@@ -120,6 +120,52 @@ export function UserRoleManager() {
     }
   };
 
+  const exportarCSV = () => {
+    if (filteredUsers.length === 0) {
+      setMessage({ type: 'error', text: 'No hay usuarios para exportar' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    const headers = ['ID', 'Nombre', 'Apellido', 'Email', 'Teléfono', 'Documento', 'Estado', 'Categoría', 'Roles', 'WhatsApp'];
+
+    const escapeCSV = (value: string | undefined | null) => {
+      const str = String(value ?? '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const rows = filteredUsers.map(user => [
+      user.id,
+      user.nombre,
+      user.apellido,
+      user.email,
+      user.telefono ?? '',
+      user.documento,
+      user.estado,
+      user.categoriaActual?.nombre ?? 'Sin categoría',
+      user.roles.join(', '),
+      user.consentWhatsappStatus ?? 'No activado',
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.map(escapeCSV).join(','))].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `jugadores_fairpadel_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setMessage({ type: 'success', text: `${filteredUsers.length} jugadores exportados` });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
   const getWhatsappBadge = (user: User) => {
     if (!user.telefono) {
       return (
@@ -198,6 +244,14 @@ export function UserRoleManager() {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <button
+            onClick={() => exportarCSV()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] rounded-xl text-sm font-medium text-gray-300 hover:text-white hover:border-primary transition-colors"
+            title="Exportar usuarios filtrados a Excel"
+          >
+            <Download className="w-4 h-4" />
+            Exportar
+          </button>
           <div className="flex bg-[#151921] border border-[#232838] rounded-xl p-1">
             {(['TODOS', 'ACTIVO', 'NO_VERIFICADO'] as FiltroEstado[]).map((estado) => (
               <button

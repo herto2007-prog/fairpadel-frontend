@@ -138,7 +138,7 @@ export function InscripcionWizardPage() {
     const generoJugador = userProfile.genero;
     
     // No permitir categorías masculinas a jugadoras femeninas si es muy inferior
-    if (categoria.tipo === 'MASCULINO' && generoJugador === 'FEMENINO' && categoria.orden < ordenJugador + 1) {
+    if (categoria.tipo === 'MASCULINO' && generoJugador === 'FEMENINO' && categoria.orden > ordenJugador + 1) {
       return false;
     }
     
@@ -147,8 +147,8 @@ export function InscripcionWizardPage() {
       return false;
     }
     
-    // No permitir categoría inferior (ej: jugador 4ª no puede jugar 8ª)
-    if (categoria.orden < ordenJugador) {
+    // No permitir categoría inferior (ej: jugador 1ª no puede jugar 8ª)
+    if (categoria.orden > ordenJugador) {
       return false;
     }
     
