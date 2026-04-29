@@ -168,7 +168,7 @@ export function AmericanoDetailPage() {
             <InfoItem icon={<Calendar className="w-4 h-4" />} label="Fecha" value={`${formatDatePYShort(torneo.fechaInicio)} - ${formatDatePYShort(torneo.fechaFin)}`} />
             <InfoItem icon={<MapPin className="w-4 h-4" />} label="Ciudad" value={torneo.ciudad} />
             <InfoItem icon={<Users className="w-4 h-4" />} label="Inscriptos" value={`${torneo._count.inscripciones}`} />
-            <InfoItem icon={<Target className="w-4 h-4" />} label="Rondas" value={`${torneo.configAmericano?.rondaActual || 0}/${torneo.configAmericano?.numRondas || 4}`} />
+            <InfoItem icon={<Target className="w-4 h-4" />} label="Rondas" value={`${torneo.configAmericano?.rondaActual || 0}${torneo.configAmericano?.modoJuego?.numRondas && torneo.configAmericano.modoJuego.numRondas !== 'automatico' ? `/${torneo.configAmericano.modoJuego.numRondas}` : ''}`} />
           </div>
 
           {/* Mensajes */}
@@ -232,10 +232,10 @@ export function AmericanoDetailPage() {
               <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
                 <h3 className="text-white font-semibold mb-4">Configuración</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <ConfigItem label="Puntos por victoria" value={`+${torneo.configAmericano?.puntosPorVictoria || 3}`} />
-                  <ConfigItem label="Puntos por derrota" value={`+${torneo.configAmericano?.puntosPorDerrota || 1}`} />
-                  <ConfigItem label="Games por set" value={`${torneo.configAmericano?.gamesPorSet || 6}`} />
-                  <ConfigItem label="Total rondas" value={`${torneo.configAmericano?.numRondas || 4}`} />
+                    <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
+                  <ConfigItem label="Modo configurado" value={torneo.configAmericano?.modoJuegoConfigurado ? 'Sí' : 'Pendiente'} />
+                  <ConfigItem label="Visibilidad" value={torneo.configAmericano?.visibilidad === 'publico' ? 'Público' : 'Privado'} />
+                  <ConfigItem label="Inscripciones" value={`${torneo._count.inscripciones}${torneo.configAmericano?.limiteInscripciones ? `/${torneo.configAmericano.limiteInscripciones}` : ''}`} />
                 </div>
               </div>
 

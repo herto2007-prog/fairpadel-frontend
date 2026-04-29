@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, MapPin, Hash, Target } from 'lucide-react';
+import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, Users } from 'lucide-react';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { americanoService, CreateAmericanoTorneoPayload } from '../../../services/americanoService';
 import { useToast } from '../../../components/ui/ToastProvider';
 
@@ -12,16 +13,11 @@ interface CrearAmericanoModalProps {
 export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalProps) {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateAmericanoTorneoPayload & { visibilidad: string }>({
+  const [formData, setFormData] = useState<CreateAmericanoTorneoPayload>({
     nombre: '',
     descripcion: '',
-    fechaInicio: '',
-    fechaFin: '',
+    fecha: '',
     ciudad: '',
-    numRondas: 4,
-    puntosPorVictoria: 3,
-    puntosPorDerrota: 1,
-    gamesPorSet: 6,
     visibilidad: 'publico',
   });
 
@@ -38,7 +34,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
     }
   };
 
-  const canSubmit = formData.nombre && formData.ciudad && formData.fechaInicio && formData.fechaFin;
+  const canSubmit = formData.nombre && formData.ciudad && formData.fecha;
 
   return (
     <motion.div
@@ -53,7 +49,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#232838]">
@@ -63,7 +59,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
             </div>
             <div>
               <h2 className="text-white font-bold">Crear Torneo Americano</h2>
-              <p className="text-white/40 text-xs">Gratis · Round-robin rotativo</p>
+              <p className="text-white/40 text-xs">Configurá el modo de juego después de cerrar inscripciones</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
@@ -71,7 +67,6 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-5 space-y-4">
           {/* Nombre */}
           <div>
@@ -100,76 +95,42 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
             />
           </div>
 
-          {/* Fechas */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-white/50 text-xs font-medium mb-1.5 block">Fecha inicio *</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input
-                  type="date"
-                  value={formData.fechaInicio}
-                  onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors [color-scheme:dark]"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-white/50 text-xs font-medium mb-1.5 block">Fecha fin *</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                <input
-                  type="date"
-                  value={formData.fechaFin}
-                  onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors [color-scheme:dark]"
-                />
-              </div>
+          {/* Fecha */}
+          <div>
+            <label className="text-white/50 text-xs font-medium mb-1.5 block">Fecha del torneo *</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+              <input
+                type="date"
+                value={formData.fecha}
+                onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors [color-scheme:dark]"
+              />
             </div>
           </div>
 
           {/* Ciudad */}
           <div>
             <label className="text-white/50 text-xs font-medium mb-1.5 block">Ciudad *</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-              <input
-                type="text"
-                value={formData.ciudad}
-                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
-                placeholder="Ej: Asunción"
-                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
-              />
-            </div>
+            <CityAutocomplete
+              value={formData.ciudad}
+              onChange={(value) => setFormData({ ...formData, ciudad: value })}
+              placeholder="Busca tu ciudad..."
+            />
           </div>
 
-          {/* Configuración */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-3">
-            <p className="text-white/40 text-xs font-medium">Configuración del formato</p>
-            <div className="grid grid-cols-3 gap-3">
-              <ConfigInput
-                icon={<Hash className="w-3.5 h-3.5" />}
-                label="Rondas"
-                value={formData.numRondas || 4}
-                onChange={(v) => setFormData({ ...formData, numRondas: v })}
-                min={1}
-                max={10}
-              />
-              <ConfigInput
-                icon={<Target className="w-3.5 h-3.5" />}
-                label="Pts victoria"
-                value={formData.puntosPorVictoria || 3}
-                onChange={(v) => setFormData({ ...formData, puntosPorVictoria: v })}
-                min={1}
-                max={10}
-              />
-              <ConfigInput
-                icon={<Target className="w-3.5 h-3.5" />}
-                label="Games/set"
-                value={formData.gamesPorSet || 6}
-                onChange={(v) => setFormData({ ...formData, gamesPorSet: v })}
-                min={1}
-                max={10}
+          {/* Límite de inscripciones */}
+          <div>
+            <label className="text-white/50 text-xs font-medium mb-1.5 block">Límite de inscripciones</label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+              <input
+                type="number"
+                min={4}
+                value={formData.limiteInscripciones || ''}
+                onChange={(e) => setFormData({ ...formData, limiteInscripciones: e.target.value ? parseInt(e.target.value) : undefined })}
+                placeholder="Sin límite (mínimo 4)"
+                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
               />
             </div>
           </div>
@@ -233,31 +194,5 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
         </div>
       </motion.div>
     </motion.div>
-  );
-}
-
-function ConfigInput({ icon, label, value, onChange, min, max }: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-}) {
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 text-white/30 mb-1">
-        {icon}
-        <span className="text-xs">{label}</span>
-      </div>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || min)}
-        className="w-full bg-white/[0.03] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-primary outline-none transition-colors"
-      />
-    </div>
   );
 }

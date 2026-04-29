@@ -126,19 +126,33 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
 
   const rondaEnJuego = torneo?.americanosRonda?.find(r => r.estado === 'EN_JUEGO');
   const ultimaRonda = torneo?.americanosRonda?.[torneo.americanosRonda.length - 1];
-  const puedeIniciar = inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
-  const puedeSiguiente = ultimaRonda?.estado === 'FINALIZADA' && 
-    (torneo?.configAmericano?.rondaActual || 0) < (torneo?.configAmericano?.numRondas || 4);
+  const modoConfigurado = torneo?.configAmericano?.modoJuegoConfigurado ?? false;
+  const numRondasConfig = torneo?.configAmericano?.modoJuego?.numRondas ?? 4;
+  const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : 4);
+  
+  const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
+  const puedeSiguiente = modoConfigurado && ultimaRonda?.estado === 'FINALIZADA' && 
+    (torneo?.configAmericano?.rondaActual || 0) < numRondasMax;
 
   return (
     <div className="space-y-6">
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<Users className="w-4 h-4" />} label="Inscriptos" value={inscripciones.length} />
-        <StatCard icon={<Swords className="w-4 h-4" />} label="Rondas" value={`${torneo?.americanosRonda?.length || 0}/${torneo?.configAmericano?.numRondas || 4}`} />
+        <StatCard icon={<Swords className="w-4 h-4" />} label="Rondas" value={`${torneo?.americanosRonda?.length || 0}${modoConfigurado && numRondasConfig !== 'automatico' ? `/${numRondasConfig}` : ''}`} />
         <StatCard icon={<Trophy className="w-4 h-4" />} label="Ronda actual" value={torneo?.configAmericano?.rondaActual || 0} />
         <StatCard icon={<Flag className="w-4 h-4" />} label="Estado" value={rondaEnJuego ? 'En juego' : 'Esperando'} />
       </div>
+
+      {/* Banner: modo de juego no configurado */}
+      {!modoConfigurado && inscripciones.length >= 4 && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
+          <p className="text-yellow-400 text-sm font-medium">Modo de juego no configurado</p>
+          <p className="text-white/50 text-xs mt-1">
+            Cerrá las inscripciones y configurá el modo de juego antes de iniciar la primera ronda.
+          </p>
+        </div>
+      )}
 
       {/* Acciones principales */}
       <div className="flex flex-wrap gap-3">

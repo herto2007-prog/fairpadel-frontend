@@ -3,18 +3,23 @@ import { api } from './api';
 export interface CreateAmericanoTorneoPayload {
   nombre: string;
   descripcion?: string;
-  fechaInicio: string;
-  fechaFin: string;
-  fechaLimiteInscripcion?: string;
+  fecha: string;
   ciudad: string;
-  pais?: string;
-  sedeId?: string;
-  numRondas?: number;
-  puntosPorVictoria?: number;
-  puntosPorDerrota?: number;
-  gamesPorSet?: number;
-  flyerUrl?: string;
   visibilidad?: string;
+  limiteInscripciones?: number;
+}
+
+export interface ModoJuegoConfig {
+  tipoInscripcion: 'individual' | 'parejasFijas';
+  rotacion: 'automatica' | 'manual';
+  sistemaPuntos: 'games' | 'sets' | 'partido' | 'diferencia';
+  formatoPartido: 'tiempo' | 'games' | 'mejorDe3Sets';
+  valorObjetivo: number;
+  conTieBreak?: boolean;
+  categorias: 'sin' | 'con';
+  numRondas: number | string;
+  canchasSimultaneas?: number;
+  premios?: { puesto: string; descripcion: string }[];
 }
 
 export interface AmericanoTorneo {
@@ -29,12 +34,22 @@ export interface AmericanoTorneo {
   estado: string;
   formato: string;
   configAmericano: {
-    numRondas: number;
-    puntosPorVictoria: number;
-    puntosPorDerrota: number;
-    gamesPorSet: number;
-    rondaActual: number;
     visibilidad: string;
+    limiteInscripciones?: number;
+    modoJuegoConfigurado: boolean;
+    modoJuego?: {
+      tipoInscripcion: 'individual' | 'parejasFijas';
+      rotacion: 'automatica' | 'manual';
+      sistemaPuntos: 'games' | 'sets' | 'partido' | 'diferencia';
+      formatoPartido: 'tiempo' | 'games' | 'mejorDe3Sets';
+      valorObjetivo: number;
+      conTieBreak?: boolean;
+      categorias: 'sin' | 'con';
+      numRondas: number | string;
+      canchasSimultaneas?: number;
+      premios?: { puesto: string; descripcion: string }[];
+    };
+    rondaActual: number;
   } | null;
   organizador: {
     id: string;
@@ -117,6 +132,9 @@ export const americanoService = {
   
   crear: (payload: CreateAmericanoTorneoPayload) => 
     api.post('/americano/torneos', payload).then(r => r.data as AmericanoTorneo),
+  
+  configurarModo: (torneoId: string, payload: ModoJuegoConfig) =>
+    api.post(`/americano/torneos/${torneoId}/configurar-modo`, payload).then(r => r.data),
 
   // Inscripciones
   listarInscripciones: (torneoId: string) => 
