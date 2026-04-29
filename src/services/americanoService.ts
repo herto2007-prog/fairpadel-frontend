@@ -14,6 +14,7 @@ export interface CreateAmericanoTorneoPayload {
   puntosPorDerrota?: number;
   gamesPorSet?: number;
   flyerUrl?: string;
+  visibilidad?: string;
 }
 
 export interface AmericanoTorneo {
@@ -33,6 +34,7 @@ export interface AmericanoTorneo {
     puntosPorDerrota: number;
     gamesPorSet: number;
     rondaActual: number;
+    visibilidad: string;
   } | null;
   organizador: {
     id: string;

@@ -8,6 +8,8 @@ import {
   Info, MessageSquare, Trophy as TrophyIcon,
   UserPlus, Gamepad2, CreditCard
 } from 'lucide-react';
+import { CrearAmericanoModal } from '../features/americano/components/CrearAmericanoModal';
+import { CompartirAmericanoModal } from '../features/americano/components/CompartirAmericanoModal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
@@ -767,6 +769,8 @@ export default function HomeDashboardPage() {
   useAuth(); // Verifica autenticación
   const [perfil, setPerfil] = useState<PerfilJugador | null>(null);
   const [torneos, setTorneos] = useState<TorneoConUrgencia[]>([]);
+  const [mostrarCrearAmericano, setMostrarCrearAmericano] = useState(false);
+  const [torneoCreado, setTorneoCreado] = useState<{ id: string; nombre: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = useCallback(async () => {
@@ -911,6 +915,30 @@ export default function HomeDashboardPage() {
               )}
             </motion.div>
 
+            {/* Card destacada: Crear Americano */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 rounded-2xl p-5"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/30 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Torneo Americano</h3>
+                  <p className="text-white/50 text-xs">Crea y comparte con amigos · Gratis</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarCrearAmericano(true)}
+                className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Crear torneo americano
+              </button>
+            </motion.div>
+
             {/* Acceso rápido a acciones */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -922,6 +950,7 @@ export default function HomeDashboardPage() {
               <div className="space-y-2">
                 {[
                   { icono: Trophy, label: 'Buscar Torneos', link: '/torneos', color: 'text-[#df2531]' },
+                  { icono: Sparkles, label: 'Torneos Americanos', link: '/americano', color: 'text-yellow-400' },
                   { icono: Calendar, label: 'Mis Reservas', link: '/mis-reservas', color: 'text-blue-500' },
                   { icono: Users, label: 'Ver Rankings', link: '/rankings', color: 'text-purple-500' },
                   { icono: MapPin, label: 'Buscar Sedes', link: '/sedes', color: 'text-green-500' },
@@ -969,6 +998,26 @@ export default function HomeDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Modales Americano */}
+      <AnimatePresence>
+        {mostrarCrearAmericano && (
+          <CrearAmericanoModal
+            onClose={() => setMostrarCrearAmericano(false)}
+            onCreated={(torneo) => {
+              setMostrarCrearAmericano(false);
+              setTorneoCreado(torneo);
+            }}
+          />
+        )}
+        {torneoCreado && (
+          <CompartirAmericanoModal
+            torneoId={torneoCreado.id}
+            torneoNombre={torneoCreado.nombre}
+            onClose={() => setTorneoCreado(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

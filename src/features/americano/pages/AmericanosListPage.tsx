@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Users, Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import { Trophy, Users, Calendar, MapPin, ArrowRight, Sparkles, Plus, Eye, EyeOff } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { americanoService, AmericanoTorneo } from '../../../services/americanoService';
+import { CrearAmericanoModal } from '../components/CrearAmericanoModal';
+import { CompartirAmericanoModal } from '../components/CompartirAmericanoModal';
 import { formatDatePYShort } from '../../../utils/date';
 
 export function AmericanosListPage() {
@@ -11,6 +13,8 @@ export function AmericanosListPage() {
   const [torneos, setTorneos] = useState<AmericanoTorneo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mostrarCrear, setMostrarCrear] = useState(false);
+  const [torneoCreado, setTorneoCreado] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     loadTorneos();
@@ -34,21 +38,39 @@ export function AmericanosListPage() {
       
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 mb-2"
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 mb-2"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold text-white">Torneos Americanos</h1>
+            </motion.div>
+            <p className="text-white/50 text-sm">
+              Formato round-robin rotativo. Inscribite gratis, jugá con diferentes parejas y sumá puntos.
+            </p>
+          </div>
+          <button
+            onClick={() => setMostrarCrear(true)}
+            className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-xl transition-colors"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">Torneos Americanos</h1>
-          </motion.div>
-          <p className="text-white/50 text-sm">
-            Formato round-robin rotativo. Inscribite gratis, jugá con diferentes parejas y sumá puntos.
-          </p>
+            <Plus className="w-4 h-4" />
+            Crear torneo
+          </button>
         </div>
+
+        {/* Botón mobile */}
+        <button
+          onClick={() => setMostrarCrear(true)}
+          className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl mb-6"
+        >
+          <Plus className="w-4 h-4" />
+          Crear torneo americano
+        </button>
 
         {/* Loading */}
         {loading && (
@@ -94,9 +116,23 @@ export function AmericanosListPage() {
               >
                 {/* Badge formato */}
                 <div className="flex items-center justify-between mb-3">
-                  <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded-full">
-                    Americano
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded-full">
+                      Americano
+                    </span>
+                    {torneo.configAmericano?.visibilidad === 'privado' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/10 text-white/50 text-xs rounded-full">
+                        <EyeOff className="w-3 h-3" />
+                        Privado
+                      </span>
+                    )}
+                    {torneo.configAmericano?.visibilidad === 'publico' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-white/10 text-white/50 text-xs rounded-full">
+                        <Eye className="w-3 h-3" />
+                        Público
+                      </span>
+                    )}
+                  </div>
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     torneo.estado === 'EN_CURSO' 
                       ? 'bg-green-500/20 text-green-400' 
@@ -153,6 +189,27 @@ export function AmericanosListPage() {
             ))}
           </div>
         )}
+
+        {/* Modales */}
+        <AnimatePresence>
+          {mostrarCrear && (
+            <CrearAmericanoModal
+              onClose={() => setMostrarCrear(false)}
+              onCreated={(torneo) => {
+                setMostrarCrear(false);
+                setTorneoCreado(torneo);
+                loadTorneos();
+              }}
+            />
+          )}
+          {torneoCreado && (
+            <CompartirAmericanoModal
+              torneoId={torneoCreado.id}
+              torneoNombre={torneoCreado.nombre}
+              onClose={() => setTorneoCreado(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
