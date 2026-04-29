@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, Users, HelpCircle, Info } from 'lucide-react';
+import { X, Sparkles, Eye, EyeOff, Trophy, Calendar, Users, HelpCircle, Info, UserPlus, UsersRound } from 'lucide-react';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { americanoService, CreateAmericanoTorneoPayload } from '../../../services/americanoService';
 import { useToast } from '../../../components/ui/ToastProvider';
@@ -19,6 +19,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
     fecha: '',
     ciudad: '',
     visibilidad: 'publico',
+    tipoInscripcion: 'individual',
   });
 
   const handleSubmit = async () => {
@@ -158,6 +159,46 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
                 className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
               />
             </div>
+          </div>
+
+          {/* Tipo de inscripción */}
+          <div>
+            <label className="text-white/50 text-xs font-medium mb-1.5 block">Modalidad de inscripción</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setFormData({ ...formData, tipoInscripcion: 'individual' })}
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  formData.tipoInscripcion === 'individual'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-white/[0.03] border-[#232838] text-white/50 hover:text-white/70'
+                }`}
+              >
+                <UserPlus className="w-4 h-4" />
+                <div className="text-left">
+                  <p className="text-sm font-medium">Individual</p>
+                  <p className="text-xs opacity-60">Cada uno se inscribe solo, las parejas rotan</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setFormData({ ...formData, tipoInscripcion: 'parejasFijas' })}
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  formData.tipoInscripcion === 'parejasFijas'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-white/[0.03] border-[#232838] text-white/50 hover:text-white/70'
+                }`}
+              >
+                <UsersRound className="w-4 h-4" />
+                <div className="text-left">
+                  <p className="text-sm font-medium">Parejas fijas</p>
+                  <p className="text-xs opacity-60">Se inscriben en pareja, juegan siempre juntos</p>
+                </div>
+              </button>
+            </div>
+            <p className="text-white/30 text-xs mt-1.5">
+              {formData.tipoInscripcion === 'individual'
+                ? 'El sistema arma parejas diferentes en cada ronda. Todos juegan con todos.'
+                : 'Cada jugador debe traer a su compañero. Las parejas no cambian durante el torneo.'}
+            </p>
           </div>
 
           {/* Visibilidad */}

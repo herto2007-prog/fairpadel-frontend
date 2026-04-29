@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Users, Calendar, MapPin, ArrowLeft,
   UserPlus, Check, Medal, Target, Swords,
-  ChevronDown, ChevronUp, Info, Settings
+  ChevronDown, ChevronUp, Info, Settings, Search, X
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../../../features/auth/context/AuthContext';
 import { americanoService, AmericanoTorneo, ClasificacionItem, AmericanoRonda, InscripcionAmericano } from '../../../services/americanoService';
+import { api } from '../../../services/api';
 import { formatDatePYShort } from '../../../utils/date';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
@@ -29,6 +30,11 @@ export function AmericanoDetailPage() {
   const [rondaExpandida, setRondaExpandida] = useState<string | null>(null);
   const [tabActivo, setTabActivo] = useState<'info' | 'clasificacion' | 'rondas' | 'inscriptos' | 'gestionar'>('info');
   const { confirm, ...confirmState } = useConfirm();
+  const [modalPareja, setModalPareja] = useState(false);
+  const [busquedaPareja, setBusquedaPareja] = useState('');
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<{ id: string; nombre: string; apellido: string; fotoUrl: string | null }[]>([]);
+  const [buscandoPareja, setBuscandoPareja] = useState(false);
+  const [parejaSeleccionada, setParejaSeleccionada] = useState<{ id: string; nombre: string; apellido: string } | null>(null);
 
   useEffect(() => {
     if (id) loadData();
@@ -53,14 +59,24 @@ export function AmericanoDetailPage() {
     }
   };
 
-  const handleInscribirse = async () => {
+  const handleInscribirse = async (jugador2Id?: string) => {
     if (!isAuthenticated || !user || !id) {
       navigate('/login', { state: { from: `/americano/${id}` } });
       return;
     }
+
+    const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
+
+    if (esParejasFijas && !jugador2Id) {
+      setModalPareja(true);
+      return;
+    }
+
     const confirmed = await confirm({
       title: 'Confirmar inscripción',
-      message: `¿Querés inscribirte en "${torneo?.nombre}"? Es gratis y no requiere pago.`,
+      message: esParejasFijas
+        ? `¿Querés inscribirte en "${torneo?.nombre}" con ${parejaSeleccionada?.nombre} ${parejaSeleccionada?.apellido}?`
+        : `¿Querés inscribirte en "${torneo?.nombre}"? Es gratis y no requiere pago.`,
       confirmText: 'Inscribirme',
       cancelText: 'Cancelar',
       variant: 'info',
@@ -69,14 +85,31 @@ export function AmericanoDetailPage() {
     try {
       setInscribiendo(true);
       setError('');
-      await americanoService.inscribir(id, user.id);
+      await americanoService.inscribir(id, user.id, jugador2Id);
       setMensaje('¡Inscripción exitosa!');
+      setModalPareja(false);
+      setParejaSeleccionada(null);
+      setBusquedaPareja('');
+      setResultadosBusqueda([]);
       await loadData();
       setTimeout(() => setMensaje(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al inscribirse');
     } finally {
       setInscribiendo(false);
+    }
+  };
+
+  const buscarPareja = async () => {
+    if (!busquedaPareja.trim()) return;
+    try {
+      setBuscandoPareja(true);
+      const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10`);
+      setResultadosBusqueda(res.data?.jugadores || res.data || []);
+    } catch {
+      setResultadosBusqueda([]);
+    } finally {
+      setBuscandoPareja(false);
     }
   };
 
@@ -149,7 +182,7 @@ export function AmericanoDetailPage() {
             
             {!yaInscripto && torneo.estado !== 'FINALIZADO' && (
               <button
-                onClick={handleInscribirse}
+                onClick={() => handleInscribirse()}
                 disabled={inscribiendo}
                 className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
@@ -162,7 +195,7 @@ export function AmericanoDetailPage() {
                 ) : (
                   <UserPlus className="w-4 h-4" />
                 )}
-                Inscribirme
+                {torneo.configAmericano?.tipoInscripcion === 'parejasFijas' ? 'Inscribirme con mi pareja' : 'Inscribirme'}
               </button>
             )}
             
@@ -260,6 +293,7 @@ export function AmericanoDetailPage() {
                     <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
                   <ConfigItem label="Modo configurado" value={torneo.configAmericano?.modoJuegoConfigurado ? 'Sí' : 'Pendiente'} />
                   <ConfigItem label="Visibilidad" value={torneo.configAmericano?.visibilidad === 'publico' ? 'Público' : 'Privado'} />
+                  <ConfigItem label="Modalidad" value={torneo.configAmericano?.tipoInscripcion === 'parejasFijas' ? 'Parejas fijas' : 'Individual'} />
                   <ConfigItem label="Inscripciones" value={`${torneo._count.inscripciones}${torneo.configAmericano?.limiteInscripciones ? `/${torneo.configAmericano.limiteInscripciones}` : ''}`} />
                 </div>
               </div>
@@ -359,6 +393,91 @@ export function AmericanoDetailPage() {
               exit={{ opacity: 0, y: -10 }}
             >
               <AmericanoManager tournamentId={id} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal para seleccionar pareja (parejas fijas) */}
+        <AnimatePresence>
+          {modalPareja && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setModalPareja(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-md"
+              >
+                <div className="flex items-center justify-between p-5 border-b border-[#232838]">
+                  <div>
+                    <h3 className="text-white font-bold">Inscribirme con mi pareja</h3>
+                    <p className="text-white/40 text-xs">Buscá a tu compañero por nombre</p>
+                  </div>
+                  <button onClick={() => setModalPareja(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                    <X className="w-5 h-5 text-white/40" />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={busquedaPareja}
+                      onChange={(e) => setBusquedaPareja(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && buscarPareja()}
+                      placeholder="Nombre o apellido del compañero..."
+                      className="flex-1 bg-white/[0.03] border border-[#232838] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
+                    />
+                    <button
+                      onClick={buscarPareja}
+                      disabled={buscandoPareja || !busquedaPareja.trim()}
+                      className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {buscandoPareja ? (
+                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  {resultadosBusqueda.length > 0 && (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {resultadosBusqueda.map((j) => (
+                        <button
+                          key={j.id}
+                          onClick={() => {
+                            setParejaSeleccionada({ id: j.id, nombre: j.nombre, apellido: j.apellido });
+                            handleInscribirse(j.id);
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-[#232838] hover:border-primary/40 transition-colors text-left"
+                        >
+                          {j.fotoUrl ? (
+                            <img src={j.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-sm">
+                              {j.nombre[0]}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white text-sm font-medium">{j.nombre} {j.apellido}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {resultadosBusqueda.length === 0 && busquedaPareja.trim() && !buscandoPareja && (
+                    <p className="text-white/30 text-xs text-center">No se encontraron jugadores con ese nombre.</p>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

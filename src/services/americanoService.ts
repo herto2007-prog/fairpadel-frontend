@@ -7,6 +7,7 @@ export interface CreateAmericanoTorneoPayload {
   ciudad: string;
   visibilidad?: string;
   limiteInscripciones?: number;
+  tipoInscripcion?: 'individual' | 'parejasFijas';
 }
 
 export interface ModoJuegoConfig {
@@ -50,6 +51,8 @@ export interface AmericanoTorneo {
       premios?: { puesto: string; descripcion: string }[];
     };
     rondaActual: number;
+    inscripcionesAbiertas: boolean;
+    tipoInscripcion: 'individual' | 'parejasFijas';
   } | null;
   organizador: {
     id: string;
@@ -139,12 +142,15 @@ export const americanoService = {
   eliminar: (torneoId: string) =>
     api.delete(`/americano/torneos/${torneoId}`).then(r => r.data),
 
+  cerrarInscripciones: (torneoId: string) =>
+    api.post(`/americano/torneos/${torneoId}/cerrar-inscripciones`).then(r => r.data),
+
   // Inscripciones
   listarInscripciones: (torneoId: string) => 
     api.get(`/americano/torneos/${torneoId}/inscripciones`).then(r => r.data as InscripcionAmericano[]),
   
-  inscribir: (torneoId: string, jugadorId: string) => 
-    api.post(`/americano/torneos/${torneoId}/inscribir`, { jugadorId }).then(r => r.data),
+  inscribir: (torneoId: string, jugadorId: string, jugador2Id?: string) => 
+    api.post(`/americano/torneos/${torneoId}/inscribir`, { jugadorId, jugador2Id }).then(r => r.data),
   
   desinscribir: (torneoId: string, jugadorId: string) => 
     api.post(`/americano/torneos/${torneoId}/desinscribir`, { jugadorId }).then(r => r.data),

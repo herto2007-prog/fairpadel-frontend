@@ -119,6 +119,27 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     }
   };
 
+  const handleCerrarInscripciones = async () => {
+    const confirmed = await confirm({
+      title: 'Cerrar inscripciones',
+      message: '¿Estás seguro de cerrar las inscripciones? Los jugadores no podrán inscribirse más. Podés reabrirlas desde el panel de gestión.',
+      confirmText: 'Cerrar inscripciones',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+    try {
+      setAccionLoading('cerrar');
+      await americanoService.cerrarInscripciones(tournamentId);
+      showSuccess('Inscripciones cerradas');
+      await loadData();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error cerrando inscripciones');
+    } finally {
+      setAccionLoading('');
+    }
+  };
+
   const handleEliminar = async () => {
     const confirmed = await confirm({
       title: 'Eliminar torneo',
@@ -158,6 +179,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const numRondasConfig = torneo?.configAmericano?.modoJuego?.numRondas ?? 4;
   const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : 4);
   
+  const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
   const puedeSiguiente = modoConfigurado && ultimaRonda?.estado === 'FINALIZADA' && 
     (torneo?.configAmericano?.rondaActual || 0) < numRondasMax;
@@ -171,7 +193,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
           <div>
             <p className="text-blue-400 text-xs font-medium">¿Cómo funciona?</p>
             <p className="text-white/50 text-xs mt-1 leading-relaxed">
-              1. Tus amigos se inscriben · 2. Cerrás inscripciones y configurás el modo de juego · 3. Iniciás rondas y registrás resultados · 4. El sistema arma la clasificación automáticamente.
+              1. Tus amigos se inscriben · 2. Cerrás inscripciones cuando quieras · 3. Configurás el modo de juego · 4. Iniciás rondas y registrás resultados · 5. El sistema arma la clasificación automáticamente.
             </p>
           </div>
         </div>
@@ -191,7 +213,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
           <div>
             <p className="text-yellow-400 text-sm font-medium">Modo de juego no configurado</p>
             <p className="text-white/50 text-xs mt-1">
-              Cerrá las inscripciones y configurá el modo de juego antes de iniciar la primera ronda.
+              Configurá el modo de juego antes de iniciar la primera ronda.
             </p>
           </div>
           <button
@@ -223,6 +245,28 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             <Settings className="w-4 h-4 text-white/40" />
             Editar modo
           </button>
+        )}
+
+        {inscripcionesAbiertas && (
+          <button
+            onClick={handleCerrarInscripciones}
+            disabled={!!accionLoading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-yellow-500/40 text-yellow-400/80 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+          >
+            {accionLoading === 'cerrar' ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full" />
+            ) : (
+              <Flag className="w-4 h-4" />
+            )}
+            Cerrar inscripciones
+          </button>
+        )}
+
+        {!inscripcionesAbiertas && !modoConfigurado && (
+          <span className="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm">
+            <Flag className="w-4 h-4" />
+            Inscripciones cerradas
+          </span>
         )}
 
         {puedeIniciar && (
