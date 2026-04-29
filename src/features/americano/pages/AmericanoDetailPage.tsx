@@ -665,6 +665,43 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
                 </div>
               </div>
 
+              {/* Partidos de la ronda */}
+              {ronda.partidos.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-white/30 text-xs font-medium mb-2">Partidos</p>
+                  <div className="space-y-2">
+                    {ronda.partidos.map((partido) => (
+                      <div
+                        key={partido.id}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                          partido.estado === 'FINALIZADO'
+                            ? 'bg-green-500/5 border border-green-500/10'
+                            : 'bg-white/[0.03]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-white/40 text-[10px] font-medium bg-white/5 px-1.5 py-0.5 rounded">
+                            C{partido.cancha}
+                          </span>
+                          <span className="text-white/70 text-xs">
+                            {partido.parejaA.jugador1.nombre} + {partido.parejaA.jugador2.nombre}
+                          </span>
+                          <span className="text-white/30 text-xs">vs</span>
+                          <span className="text-white/70 text-xs">
+                            {partido.parejaB.jugador1.nombre} + {partido.parejaB.jugador2.nombre}
+                          </span>
+                        </div>
+                        {partido.estado === 'FINALIZADO' && partido.sets && (
+                          <span className="text-green-400 text-xs font-medium ml-2">
+                            {partido.sets.map(s => `${s.gamesEquipoA}-${s.gamesEquipoB}`).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Puntajes de la ronda */}
               {ronda.puntajes.length > 0 && (
                 <div>

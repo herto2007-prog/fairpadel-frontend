@@ -181,7 +181,9 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   
   const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
-  const puedeSiguiente = modoConfigurado && ultimaRonda?.estado === 'FINALIZADA' && 
+  const partidosPendientesUltimaRonda = ultimaRonda?.partidos?.filter(p => p.estado === 'PENDIENTE').length ?? 0;
+  const puedeSiguiente = modoConfigurado && ultimaRonda && 
+    (ultimaRonda.estado === 'FINALIZADA' || partidosPendientesUltimaRonda <= 1) &&
     (torneo?.configAmericano?.rondaActual || 0) < numRondasMax;
 
   return (
@@ -615,34 +617,64 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
                 </div>
               </div>
 
-              {/* Registrar resultados */}
-              {ronda.estado === 'EN_JUEGO' && ronda.parejas.length >= 2 && (
+              {/* Partidos de la ronda */}
+              {ronda.partidos.length > 0 && (
                 <div>
-                  <p className="text-white/30 text-xs font-medium mb-2">Registrar resultado</p>
+                  <p className="text-white/30 text-xs font-medium mb-2">
+                    {ronda.estado === 'EN_JUEGO' ? 'Registrar resultado' : 'Partidos'}
+                  </p>
                   <div className="space-y-2">
-                    {generarPartidos(ronda.parejas).map(([pA, pB], idx) => (
-                      <button
-                        key={idx}
-                        onClick={() =>
-                          onRegistrarResultado(
-                            { id: pA.id, jugadores: `${pA.jugador1.nombre} + ${pA.jugador2.nombre}` },
-                            { id: pB.id, jugadores: `${pB.jugador1.nombre} + ${pB.jugador2.nombre}` }
-                          )
-                        }
-                        className="w-full flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.06] rounded-lg px-4 py-3 transition-colors"
+                    {ronda.partidos.map((partido) => (
+                      <div
+                        key={partido.id}
+                        className={`w-full flex items-center justify-between rounded-lg px-4 py-3 transition-colors ${
+                          partido.estado === 'FINALIZADO'
+                            ? 'bg-green-500/5 border border-green-500/10'
+                            : ronda.estado === 'EN_JUEGO'
+                              ? 'bg-white/[0.03] hover:bg-white/[0.06]'
+                              : 'bg-white/[0.03]'
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <Swords className="w-4 h-4 text-white/20" />
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <Swords className="w-4 h-4 text-white/20" />
+                            <span className="text-white/40 text-[10px] font-medium bg-white/5 px-1.5 py-0.5 rounded">
+                              C{partido.cancha}
+                            </span>
+                          </div>
                           <span className="text-white/70 text-xs">
-                            {pA.jugador1.nombre} + {pA.jugador2.nombre}
+                            {partido.parejaA.jugador1.nombre} + {partido.parejaA.jugador2.nombre}
                           </span>
                           <span className="text-white/30 text-xs">vs</span>
                           <span className="text-white/70 text-xs">
-                            {pB.jugador1.nombre} + {pB.jugador2.nombre}
+                            {partido.parejaB.jugador1.nombre} + {partido.parejaB.jugador2.nombre}
                           </span>
                         </div>
-                        <Plus className="w-4 h-4 text-primary" />
-                      </button>
+                        <div className="flex items-center gap-2">
+                          {partido.estado === 'FINALIZADO' && partido.sets && (
+                            <span className="text-green-400 text-xs font-medium">
+                              {partido.sets.map(s => `${s.gamesEquipoA}-${s.gamesEquipoB}`).join(', ')}
+                            </span>
+                          )}
+                          {partido.estado === 'FINALIZADO' ? (
+                            <Check className="w-4 h-4 text-green-400" />
+                          ) : ronda.estado === 'EN_JUEGO' ? (
+                            <button
+                              onClick={() =>
+                                onRegistrarResultado(
+                                  { id: partido.parejaA.id, jugadores: `${partido.parejaA.jugador1.nombre} + ${partido.parejaA.jugador2.nombre}` },
+                                  { id: partido.parejaB.id, jugadores: `${partido.parejaB.jugador1.nombre} + ${partido.parejaB.jugador2.nombre}` }
+                                )
+                              }
+                              className="text-primary hover:text-primary/80 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-white/20 text-[10px]">Pendiente</span>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -679,17 +711,6 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
       </AnimatePresence>
     </div>
   );
-}
-
-// Genera combinaciones de partidos entre parejas (round-robin simple)
-function generarPartidos(parejas: AmericanoRonda['parejas']): [typeof parejas[0], typeof parejas[0]][] {
-  const partidos: [typeof parejas[0], typeof parejas[0]][] = [];
-  for (let i = 0; i < parejas.length; i++) {
-    for (let j = i + 1; j < parejas.length; j++) {
-      partidos.push([parejas[i], parejas[j]]);
-    }
-  }
-  return partidos;
 }
 
 interface ResultadoModalProps {

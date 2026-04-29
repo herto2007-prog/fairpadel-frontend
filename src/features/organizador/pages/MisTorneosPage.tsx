@@ -19,6 +19,7 @@ interface Tournament {
   fechaInicio: string;
   fechaFin: string;
   costoInscripcion: number;
+  formato?: string;
   sedePrincipal?: {
     nombre: string;
     ciudad: string;
@@ -107,11 +108,11 @@ export function MisTorneosPage() {
 
           <div className="space-y-3">
             <a
-              href={`/mis-torneos/${createdTorneo.id}/gestionar`}
+              href={createdTorneo.formato === 'americano' ? `/americano/${createdTorneo.id}` : `/mis-torneos/${createdTorneo.id}/gestionar`}
               className="flex items-center justify-center gap-2 w-full py-4 bg-[#df2531] hover:bg-[#df2531]/90 text-white rounded-xl font-medium transition-all"
             >
               <Trophy className="w-5 h-5" />
-              Gestionar Torneo
+              {createdTorneo.formato === 'americano' ? 'Ver torneo americano' : 'Gestionar Torneo'}
               <ChevronRight className="w-5 h-5" />
             </a>
             <button
@@ -272,10 +273,10 @@ export function MisTorneosPage() {
                         </span>
                       </div>
                       <a
-                        href={`/mis-torneos/${torneo.id}/gestionar`}
+                        href={torneo.formato === 'americano' ? `/americano/${torneo.id}` : `/mis-torneos/${torneo.id}/gestionar`}
                         className="flex items-center gap-1 text-[#df2531] hover:text-white text-sm font-medium transition-colors"
                       >
-                        Gestionar
+                        {torneo.formato === 'americano' ? 'Ver torneo' : 'Gestionar'}
                         <ChevronRight className="w-4 h-4" />
                       </a>
                     </div>

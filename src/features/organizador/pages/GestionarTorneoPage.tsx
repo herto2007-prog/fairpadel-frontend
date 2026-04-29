@@ -74,6 +74,10 @@ export function GestionarTorneoPage() {
     try {
       const { data } = await api.get(`/admin/torneos/${id}`);
       if (data) {
+        if (data.formato === 'americano') {
+          navigate(`/americano/${id}`, { replace: true });
+          return;
+        }
         setTorneo(data);
       }
     } catch (error) {

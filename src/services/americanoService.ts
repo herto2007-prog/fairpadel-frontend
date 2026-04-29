@@ -70,6 +70,15 @@ export interface AmericanoTorneo {
   };
 }
 
+export interface AmericanoPartido {
+  id: string;
+  parejaA: AmericanoPareja;
+  parejaB: AmericanoPareja;
+  cancha: number;
+  estado: string;
+  sets: { gamesEquipoA: number; gamesEquipoB: number }[] | null;
+}
+
 export interface AmericanoRonda {
   id: string;
   numero: number;
@@ -78,6 +87,7 @@ export interface AmericanoRonda {
   fechaFin: string | null;
   parejas: AmericanoPareja[];
   puntajes: AmericanoPuntaje[];
+  partidos: AmericanoPartido[];
 }
 
 export interface AmericanoPareja {
