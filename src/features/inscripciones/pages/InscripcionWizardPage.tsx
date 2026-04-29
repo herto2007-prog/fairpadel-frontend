@@ -132,7 +132,13 @@ export function InscripcionWizardPage() {
 
   // Validar si el jugador puede inscribirse en una categoría
   const puedeInscribirseEnCategoria = (categoria: any): boolean => {
-    if (!userProfile?.categoria) return true; // Si no tiene categoría, permitir (validación manual)
+    // MIXTO y SUMAS: siempre permitir selección, el backend valida con la pareja
+    if (categoria.tipoCategoria === 'MIXTO' || categoria.tipoCategoria === 'SUMAS') {
+      return true;
+    }
+
+    // STANDARD: validación clásica de género/nivel
+    if (!userProfile?.categoria) return true;
     
     const ordenJugador = userProfile.categoria.orden;
     const generoJugador = userProfile.genero;
@@ -392,9 +398,25 @@ export function InscripcionWizardPage() {
                       >
                         <div className="flex items-center gap-3">
                           <span className={`w-2 h-2 rounded-full ${cat.tipo === 'FEMENINO' ? 'bg-pink-400' : 'bg-blue-400'}`} />
-                          <div className="text-left">
-                            <p className="text-sm font-medium">{cat.nombre}</p>
-                            <p className="text-xs text-white/40">{cat.tipo === 'FEMENINO' ? 'Damas' : 'Caballeros'}</p>
+                          <div className="text-left flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium">{cat.nombre}</p>
+                              {cat.tipoCategoria === 'MIXTO' && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                  Mixto
+                                </span>
+                              )}
+                              {cat.tipoCategoria === 'SUMAS' && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                  Suma
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-white/40">
+                              {cat.tipoCategoria === 'MIXTO' ? 'Pareja: 1 hombre + 1 mujer' : 
+                               cat.tipoCategoria === 'SUMAS' ? `Pareja: mismo género, suma objetivo` : 
+                               cat.tipo === 'FEMENINO' ? 'Damas' : 'Caballeros'}
+                            </p>
                             {!puedeSeleccionar && (
                               <p className="text-xs text-yellow-500/70">No disponible para tu perfil</p>
                             )}
