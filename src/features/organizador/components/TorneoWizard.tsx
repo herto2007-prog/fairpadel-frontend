@@ -34,6 +34,7 @@ interface Categoria {
   nombre: string;
   tipo: 'MASCULINO' | 'FEMENINO';
   orden: number;
+  tipoCategoria?: 'STANDARD' | 'MIXTO' | 'SUMAS';
 }
 
 interface Sede {
@@ -195,8 +196,10 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     }
   };
 
-  const categoriasMasculinas = categorias.filter(c => c.tipo === 'MASCULINO').sort((a, b) => a.orden - b.orden);
-  const categoriasFemeninas = categorias.filter(c => c.tipo === 'FEMENINO').sort((a, b) => a.orden - b.orden);
+  const caballerosStandard = categorias.filter(c => c.tipo === 'MASCULINO' && c.tipoCategoria === 'STANDARD').sort((a, b) => a.orden - b.orden);
+  const damasStandard = categorias.filter(c => c.tipo === 'FEMENINO' && c.tipoCategoria === 'STANDARD').sort((a, b) => a.orden - b.orden);
+  const mixtos = categorias.filter(c => c.tipoCategoria === 'MIXTO').sort((a, b) => a.orden - b.orden);
+  const sumas = categorias.filter(c => c.tipoCategoria === 'SUMAS').sort((a, b) => a.orden - b.orden);
 
   return (
     <div className="min-h-screen bg-dark py-4 px-4 relative overflow-hidden">
@@ -280,8 +283,10 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
               <Step4Categorias 
                 formData={formData}
                 updateField={updateField}
-                categoriasMasculinas={categoriasMasculinas}
-                categoriasFemeninas={categoriasFemeninas}
+                caballerosStandard={caballerosStandard}
+                damasStandard={damasStandard}
+                mixtos={mixtos}
+                sumas={sumas}
               />
             )}
             {step === 5 && (
@@ -707,19 +712,60 @@ function Step3Flyer({
 function Step4Categorias({ 
   formData,
   updateField,
-  categoriasMasculinas,
-  categoriasFemeninas
+  caballerosStandard,
+  damasStandard,
+  mixtos,
+  sumas
 }: { 
   formData: TorneoFormData;
   updateField: (field: keyof TorneoFormData, value: any) => void;
-  categoriasMasculinas: Categoria[];
-  categoriasFemeninas: Categoria[];
+  caballerosStandard: Categoria[];
+  damasStandard: Categoria[];
+  mixtos: Categoria[];
+  sumas: Categoria[];
 }) {
   const toggleCategoria = (id: string) => {
     const newIds = formData.categoriaIds.includes(id)
       ? formData.categoriaIds.filter(cid => cid !== id)
       : [...formData.categoriaIds, id];
     updateField('categoriaIds', newIds);
+  };
+
+  const renderGrupo = (titulo: string, items: Categoria[], iconColor: string) => {
+    if (items.length === 0) return null;
+    return (
+      <div>
+        <h3 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
+          <Users className={`w-3 h-3 ${iconColor}`} />
+          {titulo}
+        </h3>
+        <div className="grid grid-cols-3 gap-2">
+          {items.map((cat) => {
+            const isSelected = formData.categoriaIds.includes(cat.id);
+            return (
+              <button
+                key={cat.id}
+                onClick={() => toggleCategoria(cat.id)}
+                className={`
+                  py-2 px-1 rounded-lg border text-center transition-all text-xs
+                  ${isSelected 
+                    ? 'border-primary bg-primary/10 text-white' 
+                    : 'border-white/10 hover:border-white/20 text-white/50'
+                  }
+                `}
+              >
+                {cat.nombre}
+                {isSelected && (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-0.5">
+                    <Check className="w-3 h-3 text-primary mx-auto" />
+                  </motion.div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -734,75 +780,10 @@ function Step4Categorias({
         </p>
       </div>
 
-      {/* Caballeros */}
-      {categoriasMasculinas.length > 0 && (
-        <div>
-          <h3 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-            <Users className="w-3 h-3 text-blue-400" />
-            Caballeros
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            {categoriasMasculinas.map((cat) => {
-              const isSelected = formData.categoriaIds.includes(cat.id);
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => toggleCategoria(cat.id)}
-                  className={`
-                    py-2 px-1 rounded-lg border text-center transition-all text-xs
-                    ${isSelected 
-                      ? 'border-primary bg-primary/10 text-white' 
-                      : 'border-white/10 hover:border-white/20 text-white/50'
-                    }
-                  `}
-                >
-                  {cat.nombre}
-                  {isSelected && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-0.5">
-                      <Check className="w-3 h-3 text-primary mx-auto" />
-                    </motion.div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Damas */}
-      {categoriasFemeninas.length > 0 && (
-        <div>
-          <h3 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-            <Users className="w-3 h-3 text-pink-400" />
-            Damas
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            {categoriasFemeninas.map((cat) => {
-              const isSelected = formData.categoriaIds.includes(cat.id);
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => toggleCategoria(cat.id)}
-                  className={`
-                    py-2 px-1 rounded-lg border text-center transition-all text-xs
-                    ${isSelected 
-                      ? 'border-primary bg-primary/10 text-white' 
-                      : 'border-white/10 hover:border-white/20 text-white/50'
-                    }
-                  `}
-                >
-                  {cat.nombre}
-                  {isSelected && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-0.5">
-                      <Check className="w-3 h-3 text-primary mx-auto" />
-                    </motion.div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {renderGrupo('Caballeros', caballerosStandard, 'text-blue-400')}
+      {renderGrupo('Damas', damasStandard, 'text-pink-400')}
+      {renderGrupo('Mixtos', mixtos, 'text-purple-400')}
+      {renderGrupo('Sumas', sumas, 'text-amber-400')}
 
       <p className="text-[10px] text-white/30 text-center">
         Puedes seleccionar varias categorías
