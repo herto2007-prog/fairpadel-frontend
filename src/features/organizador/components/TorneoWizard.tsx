@@ -199,7 +199,8 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const caballerosStandard = categorias.filter(c => c.tipo === 'MASCULINO' && c.tipoCategoria === 'STANDARD').sort((a, b) => a.orden - b.orden);
   const damasStandard = categorias.filter(c => c.tipo === 'FEMENINO' && c.tipoCategoria === 'STANDARD').sort((a, b) => a.orden - b.orden);
   const mixtos = categorias.filter(c => c.tipoCategoria === 'MIXTO').sort((a, b) => a.orden - b.orden);
-  const sumas = categorias.filter(c => c.tipoCategoria === 'SUMAS').sort((a, b) => a.orden - b.orden);
+  const sumasDamas = categorias.filter(c => c.tipoCategoria === 'SUMAS' && c.tipo === 'FEMENINO').sort((a, b) => a.orden - b.orden);
+  const sumasCaballeros = categorias.filter(c => c.tipoCategoria === 'SUMAS' && c.tipo === 'MASCULINO').sort((a, b) => a.orden - b.orden);
 
   return (
     <div className="min-h-screen bg-dark py-4 px-4 relative overflow-hidden">
@@ -286,7 +287,8 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
                 caballerosStandard={caballerosStandard}
                 damasStandard={damasStandard}
                 mixtos={mixtos}
-                sumas={sumas}
+                sumasDamas={sumasDamas}
+                sumasCaballeros={sumasCaballeros}
               />
             )}
             {step === 5 && (
@@ -715,14 +717,16 @@ function Step4Categorias({
   caballerosStandard,
   damasStandard,
   mixtos,
-  sumas
+  sumasDamas,
+  sumasCaballeros
 }: { 
   formData: TorneoFormData;
   updateField: (field: keyof TorneoFormData, value: any) => void;
   caballerosStandard: Categoria[];
   damasStandard: Categoria[];
   mixtos: Categoria[];
-  sumas: Categoria[];
+  sumasDamas: Categoria[];
+  sumasCaballeros: Categoria[];
 }) {
   const toggleCategoria = (id: string) => {
     const newIds = formData.categoriaIds.includes(id)
@@ -783,7 +787,8 @@ function Step4Categorias({
       {renderGrupo('Caballeros', caballerosStandard, 'text-blue-400')}
       {renderGrupo('Damas', damasStandard, 'text-pink-400')}
       {renderGrupo('Mixtos', mixtos, 'text-purple-400')}
-      {renderGrupo('Sumas', sumas, 'text-amber-400')}
+      {renderGrupo('Sumas Damas', sumasDamas, 'text-amber-400')}
+      {renderGrupo('Sumas Caballeros', sumasCaballeros, 'text-orange-400')}
 
       <p className="text-[10px] text-white/30 text-center">
         Puedes seleccionar varias categorías
