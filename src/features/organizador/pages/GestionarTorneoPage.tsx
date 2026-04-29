@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Trophy, LayoutDashboard, Users, 
-  GitBranch, Database 
+  GitBranch, Database, Sparkles
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
 
@@ -14,6 +14,7 @@ import { BracketManager } from '../components/bracket';
 import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
 
 import { AuditoriaManager } from '../components/auditoria/AuditoriaManager';
+import { AmericanoManager } from '../components/americano/AmericanoManager';
 import { api } from '../../../services/api';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
@@ -24,9 +25,10 @@ interface Torneo {
   estado: string;
   fechaInicio?: string;
   fechaFin?: string;
+  formato?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'auditoria';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'auditoria' | 'americano';
 
 interface TabConfig {
   id: TabType;
@@ -89,9 +91,14 @@ export function GestionarTorneoPage() {
       icon: Users,
       badge: stats.inscripcionesPendientes > 0 ? stats.inscripcionesPendientes : undefined,
     },
-    { id: 'canchasSorteo', label: 'Canchas y Sorteo', icon: Trophy },
-    { id: 'bracket', label: 'Fixture', icon: GitBranch },
-    { id: 'auditoria', label: 'Auditoria', icon: Database },
+    ...(torneo?.formato === 'americano'
+      ? [{ id: 'americano' as TabType, label: 'Americano', icon: Sparkles }]
+      : [
+          { id: 'canchasSorteo' as TabType, label: 'Canchas y Sorteo', icon: Trophy },
+          { id: 'bracket' as TabType, label: 'Fixture', icon: GitBranch },
+          { id: 'auditoria' as TabType, label: 'Auditoria', icon: Database },
+        ]
+    ),
   ];
 
   if (loading) {
@@ -182,6 +189,10 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'auditoria' && id && (
           <AuditoriaManager tournamentId={id} />
+        )}
+
+        {activeTab === 'americano' && id && (
+          <AmericanoManager tournamentId={id} />
         )}
       </div>
     </div>

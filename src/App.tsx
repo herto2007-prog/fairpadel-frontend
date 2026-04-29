@@ -28,6 +28,10 @@ const TorneoPublicDetailPage = lazy(() => import('./features/tournaments/pages/T
 const InscripcionWizardPage = lazy(() => import('./features/inscripciones/pages/InscripcionWizardPage').then(m => ({ default: m.InscripcionWizardPage })));
 const PublicBracketPage = lazy(() => import('./pages/PublicBracketPage').then(m => ({ default: m.PublicBracketPage })));
 
+// Torneos Americano
+const AmericanosListPage = lazy(() => import('./features/americano/pages/AmericanosListPage').then(m => ({ default: m.AmericanosListPage })));
+const AmericanoDetailPage = lazy(() => import('./features/americano/pages/AmericanoDetailPage').then(m => ({ default: m.AmericanoDetailPage })));
+
 // Inscripciones (V1)
 const MisInscripcionesPage = lazy(() => import('./features/inscripciones/pages/MisInscripcionesPage'));
 
@@ -137,6 +141,8 @@ function App() {
               <Route path="/torneos" element={<TorneosPublicListPage />} />
               <Route path="/t/:slug" element={<TorneoPublicDetailPage />} />
               <Route path="/torneo/:id/fixture" element={<PublicBracketPage />} />
+              <Route path="/americano" element={<AmericanosListPage />} />
+              <Route path="/americano/:id" element={<AmericanoDetailPage />} />
             </Route>
 
             {/* Mockup Perfil - Temporal */}
