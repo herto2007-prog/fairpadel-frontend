@@ -594,7 +594,7 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
           </span>
           <div className="text-left">
             <p className="text-white text-sm font-medium">Ronda {ronda.numero}</p>
-            <p className="text-white/30 text-xs">{ronda.parejas.length} parejas</p>
+            <p className="text-white/30 text-xs">{(ronda.parejas ?? []).length} parejas</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -632,22 +632,22 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
               <div>
                 <p className="text-white/30 text-xs font-medium mb-2">Parejas formadas</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {ronda.parejas.map((pareja) => (
+                  {(ronda.parejas ?? []).map((pareja) => (
                     <div key={pareja.id} className="bg-white/[0.03] rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <div className="flex -space-x-1.5">
-                          {[pareja.jugador1, pareja.jugador2].map((j, i) => (
-                            j.fotoUrl ? (
+                          {[pareja.jugador1, pareja.jugador2].filter(Boolean).map((j, i) => (
+                            j?.fotoUrl ? (
                               <img key={i} src={j.fotoUrl} alt="" className="w-5 h-5 rounded-full object-cover border border-[#151921]" />
                             ) : (
                               <div key={i} className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white/50 text-xs border border-[#151921]">
-                                {j.nombre[0]}
+                                {j?.nombre?.[0] ?? '?'}
                               </div>
                             )
                           ))}
                         </div>
                         <span className="text-white/70 text-xs">
-                          {pareja.jugador1.nombre} + {pareja.jugador2.nombre}
+                          {pareja.jugador1?.nombre ?? '?'} + {pareja.jugador2?.nombre ?? '?'}
                         </span>
                       </div>
                     </div>
@@ -681,15 +681,15 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
                             </span>
                           </div>
                           <span className="text-white/70 text-xs">
-                            {partido.parejaA.jugador1.nombre} + {partido.parejaA.jugador2.nombre}
+                            {partido.parejaA?.jugador1?.nombre ?? '?'} + {partido.parejaA?.jugador2?.nombre ?? '?'}
                           </span>
                           <span className="text-white/30 text-xs">vs</span>
                           <span className="text-white/70 text-xs">
-                            {partido.parejaB.jugador1.nombre} + {partido.parejaB.jugador2.nombre}
+                            {partido.parejaB?.jugador1?.nombre ?? '?'} + {partido.parejaB?.jugador2?.nombre ?? '?'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          {partido.estado === 'FINALIZADO' && partido.sets && (
+                          {partido.estado === 'FINALIZADO' && partido.sets && Array.isArray(partido.sets) && (
                             <span className="text-green-400 text-xs font-medium">
                               {partido.sets.map(s => `${s.gamesEquipoA}-${s.gamesEquipoB}`).join(', ')}
                             </span>
@@ -700,8 +700,8 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
                             <button
                               onClick={() =>
                                 onRegistrarResultado(
-                                  { id: partido.parejaA.id, jugadores: `${partido.parejaA.jugador1.nombre} + ${partido.parejaA.jugador2.nombre}` },
-                                  { id: partido.parejaB.id, jugadores: `${partido.parejaB.jugador1.nombre} + ${partido.parejaB.jugador2.nombre}` }
+                                  { id: partido.parejaA?.id ?? '', jugadores: `${partido.parejaA?.jugador1?.nombre ?? '?'} + ${partido.parejaA?.jugador2?.nombre ?? '?'}` },
+                                  { id: partido.parejaB?.id ?? '', jugadores: `${partido.parejaB?.jugador1?.nombre ?? '?'} + ${partido.parejaB?.jugador2?.nombre ?? '?'}` }
                                 )
                               }
                               className="text-primary hover:text-primary/80 transition-colors"
@@ -719,23 +719,23 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
               )}
 
               {/* Puntajes */}
-              {ronda.puntajes.length > 0 && (
+              {(ronda.puntajes ?? []).length > 0 && (
                 <div>
                   <p className="text-white/30 text-xs font-medium mb-2">Puntajes de la ronda</p>
                   <div className="space-y-1">
-                    {ronda.puntajes
+                    {(ronda.puntajes ?? [])
                       .sort((a, b) => b.puntos - a.puntos)
                       .map((p) => (
                         <div key={p.id} className="flex items-center justify-between bg-white/[0.03] rounded-lg px-3 py-2">
                           <div className="flex items-center gap-2">
-                            {p.jugador.fotoUrl ? (
+                            {p.jugador?.fotoUrl ? (
                               <img src={p.jugador.fotoUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
                             ) : (
                               <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white/50 text-xs">
-                                {p.jugador.nombre[0]}
+                                {p.jugador?.nombre?.[0] ?? '?'}
                               </div>
                             )}
-                            <span className="text-white/70 text-xs">{p.jugador.nombre} {p.jugador.apellido}</span>
+                            <span className="text-white/70 text-xs">{p.jugador?.nombre} {p.jugador?.apellido}</span>
                           </div>
                           <span className="text-[#df2531] text-sm font-bold">{p.puntos} pts</span>
                         </div>

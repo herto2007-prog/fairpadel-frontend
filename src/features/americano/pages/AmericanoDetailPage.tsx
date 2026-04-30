@@ -613,7 +613,7 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
           <div className="text-left">
             <p className="text-white text-sm font-medium">Ronda {ronda.numero}</p>
             <p className="text-white/30 text-xs">
-              {ronda.parejas.length} parejas · {ronda.puntajes.length} jugadores
+              {(ronda.parejas ?? []).length} parejas · {(ronda.puntajes ?? []).length} jugadores
             </p>
           </div>
         </div>
@@ -645,21 +645,21 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
               <div className="mb-4">
                 <p className="text-white/30 text-xs font-medium mb-2">Parejas</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {ronda.parejas.map((pareja) => (
+                  {(ronda.parejas ?? []).map((pareja) => (
                     <div key={pareja.id} className="bg-white/[0.03] rounded-lg p-3 flex items-center gap-3">
                       <div className="flex -space-x-2">
-                        {[pareja.jugador1, pareja.jugador2].map((j, i) => (
-                          j.fotoUrl ? (
+                        {[pareja.jugador1, pareja.jugador2].filter(Boolean).map((j, i) => (
+                          j?.fotoUrl ? (
                             <img key={i} src={j.fotoUrl} alt="" className="w-6 h-6 rounded-full object-cover border-2 border-dark" />
                           ) : (
                             <div key={i} className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white/50 text-xs border-2 border-dark">
-                              {j.nombre[0]}
+                              {j?.nombre?.[0] ?? '?'}
                             </div>
                           )
                         ))}
                       </div>
                       <span className="text-white/70 text-xs">
-                        {pareja.jugador1.nombre} + {pareja.jugador2.nombre}
+                        {pareja.jugador1?.nombre ?? '?'} + {pareja.jugador2?.nombre ?? '?'}
                       </span>
                     </div>
                   ))}
@@ -685,14 +685,14 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
                             C{partido.cancha}
                           </span>
                           <span className="text-white/70 text-xs">
-                            {partido.parejaA.jugador1.nombre} + {partido.parejaA.jugador2.nombre}
+                            {partido.parejaA?.jugador1?.nombre ?? '?'} + {partido.parejaA?.jugador2?.nombre ?? '?'}
                           </span>
                           <span className="text-white/30 text-xs">vs</span>
                           <span className="text-white/70 text-xs">
-                            {partido.parejaB.jugador1.nombre} + {partido.parejaB.jugador2.nombre}
+                            {partido.parejaB?.jugador1?.nombre ?? '?'} + {partido.parejaB?.jugador2?.nombre ?? '?'}
                           </span>
                         </div>
-                        {partido.estado === 'FINALIZADO' && partido.sets && (
+                        {partido.estado === 'FINALIZADO' && partido.sets && Array.isArray(partido.sets) && (
                           <span className="text-green-400 text-xs font-medium ml-2">
                             {partido.sets.map(s => `${s.gamesEquipoA}-${s.gamesEquipoB}`).join(', ')}
                           </span>
