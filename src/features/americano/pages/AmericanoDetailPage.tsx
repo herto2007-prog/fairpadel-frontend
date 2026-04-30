@@ -666,11 +666,11 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
               </div>
 
               {/* Partidos de la ronda */}
-              {ronda.partidos.length > 0 && (
+              {(ronda.partidos ?? []).length > 0 && (
                 <div className="mb-4">
                   <p className="text-white/30 text-xs font-medium mb-2">Partidos</p>
                   <div className="space-y-2">
-                    {ronda.partidos.map((partido) => (
+                    {(ronda.partidos ?? []).map((partido) => (
                       <div
                         key={partido.id}
                         className={`flex items-center justify-between rounded-lg px-3 py-2 ${

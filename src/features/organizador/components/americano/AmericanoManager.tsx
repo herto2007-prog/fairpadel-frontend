@@ -181,7 +181,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   
   const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
-  const partidosPendientesUltimaRonda = ultimaRonda?.partidos?.filter(p => p.estado === 'PENDIENTE').length ?? 0;
+  const partidosPendientesUltimaRonda = (ultimaRonda?.partidos ?? []).filter(p => p.estado === 'PENDIENTE').length;
   const puedeSiguiente = modoConfigurado && ultimaRonda && 
     (ultimaRonda.estado === 'FINALIZADA' || partidosPendientesUltimaRonda <= 1) &&
     (torneo?.configAmericano?.rondaActual || 0) < numRondasMax;
@@ -618,13 +618,13 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
               </div>
 
               {/* Partidos de la ronda */}
-              {ronda.partidos.length > 0 && (
+              {(ronda.partidos ?? []).length > 0 && (
                 <div>
                   <p className="text-white/30 text-xs font-medium mb-2">
                     {ronda.estado === 'EN_JUEGO' ? 'Registrar resultado' : 'Partidos'}
                   </p>
                   <div className="space-y-2">
-                    {ronda.partidos.map((partido) => (
+                    {(ronda.partidos ?? []).map((partido) => (
                       <div
                         key={partido.id}
                         className={`w-full flex items-center justify-between rounded-lg px-4 py-3 transition-colors ${
