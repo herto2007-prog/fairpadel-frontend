@@ -290,11 +290,12 @@ export function AmericanoDetailPage() {
               <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
                 <h3 className="text-white font-semibold mb-4">Configuración</h3>
                 <div className="grid grid-cols-2 gap-4">
-                    <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
+                  <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
                   <ConfigItem label="Modo configurado" value={torneo.configAmericano?.modoJuegoConfigurado ? 'Sí' : 'Pendiente'} />
                   <ConfigItem label="Visibilidad" value={torneo.configAmericano?.visibilidad === 'publico' ? 'Público' : 'Privado'} />
                   <ConfigItem label="Modalidad" value={torneo.configAmericano?.tipoInscripcion === 'parejasFijas' ? 'Parejas fijas' : 'Individual'} />
                   <ConfigItem label="Inscripciones" value={`${torneo._count.inscripciones}${torneo.configAmericano?.limiteInscripciones ? `/${torneo.configAmericano.limiteInscripciones}` : ''}`} />
+                  <ConfigItem label="Canchas" value={`${torneo.configAmericano?.modoJuego?.canchasSimultaneas ?? 1}`} />
                 </div>
               </div>
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target
 } from 'lucide-react';
 import {
   americanoService,
@@ -202,11 +202,12 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard icon={<Users className="w-4 h-4" />} label="Inscriptos" value={inscripciones.length} />
         <StatCard icon={<Swords className="w-4 h-4" />} label="Rondas" value={`${torneo?.americanosRonda?.length || 0}${modoConfigurado && numRondasConfig !== 'automatico' ? `/${numRondasConfig}` : ''}`} />
         <StatCard icon={<Trophy className="w-4 h-4" />} label="Ronda actual" value={torneo?.configAmericano?.rondaActual || 0} />
         <StatCard icon={<Flag className="w-4 h-4" />} label="Estado" value={rondaEnJuego ? 'En juego' : 'Esperando'} />
+        <StatCard icon={<Target className="w-4 h-4" />} label="Canchas" value={torneo?.configAmericano?.modoJuego?.canchasSimultaneas ?? 1} />
       </div>
 
       {/* Banner: modo de juego no configurado */}
@@ -500,6 +501,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       {mostrarConfigModal && (
         <ConfigurarModoModal
           torneoId={tournamentId}
+          configInicial={torneo?.configAmericano?.modoJuego}
           onClose={() => setMostrarConfigModal(false)}
           onConfigured={() => {
             setMostrarConfigModal(false);

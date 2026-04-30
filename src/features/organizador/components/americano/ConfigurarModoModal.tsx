@@ -6,6 +6,7 @@ import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface Props {
   torneoId: string;
+  configInicial?: Partial<ModoJuegoConfig>;
   onClose: () => void;
   onConfigured: () => void;
 }
@@ -32,24 +33,24 @@ const opciones = {
   ],
 };
 
-export function ConfigurarModoModal({ torneoId, onClose, onConfigured }: Props) {
+export function ConfigurarModoModal({ torneoId, configInicial, onClose, onConfigured }: Props) {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState<ModoJuegoConfig>({
-    tipoInscripcion: 'individual',
-    rotacion: 'automatica',
-    sistemaPuntos: 'games',
-    formatoPartido: 'games',
-    valorObjetivo: 6,
-    conTieBreak: true,
-    categorias: 'sin',
-    numRondas: 4,
-    canchasSimultaneas: 1,
-    premios: [],
+    tipoInscripcion: configInicial?.tipoInscripcion ?? 'individual',
+    rotacion: configInicial?.rotacion ?? 'automatica',
+    sistemaPuntos: configInicial?.sistemaPuntos ?? 'games',
+    formatoPartido: configInicial?.formatoPartido ?? 'games',
+    valorObjetivo: configInicial?.valorObjetivo ?? 6,
+    conTieBreak: configInicial?.conTieBreak ?? true,
+    categorias: configInicial?.categorias ?? 'sin',
+    numRondas: configInicial?.numRondas ?? 4,
+    canchasSimultaneas: configInicial?.canchasSimultaneas ?? 1,
+    premios: configInicial?.premios ?? [],
   });
 
-  const [premios, setPremios] = useState<{ puesto: string; descripcion: string }[]>([]);
+  const [premios, setPremios] = useState<{ puesto: string; descripcion: string }[]>(configInicial?.premios ?? []);
 
   const update = <K extends keyof ModoJuegoConfig>(key: K, value: ModoJuegoConfig[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
