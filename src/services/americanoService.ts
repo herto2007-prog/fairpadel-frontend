@@ -152,6 +152,9 @@ export const americanoService = {
   eliminar: (torneoId: string) =>
     api.delete(`/americano/torneos/${torneoId}`).then(r => r.data),
 
+  reiniciar: (torneoId: string) =>
+    api.post(`/americano/torneos/${torneoId}/reiniciar`).then(r => r.data),
+
   cerrarInscripciones: (torneoId: string) =>
     api.post(`/americano/torneos/${torneoId}/cerrar-inscripciones`).then(r => r.data),
 

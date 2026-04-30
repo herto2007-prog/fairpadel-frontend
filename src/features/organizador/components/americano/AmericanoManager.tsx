@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw
 } from 'lucide-react';
 import {
   americanoService,
@@ -135,6 +135,27 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       await loadData();
     } catch (err: any) {
       showError(err.response?.data?.message || 'Error cerrando inscripciones');
+    } finally {
+      setAccionLoading('');
+    }
+  };
+
+  const handleReiniciar = async () => {
+    const confirmed = await confirm({
+      title: 'Reiniciar torneo',
+      message: '¿Estás seguro de reiniciar este torneo? Se eliminarán TODAS las rondas, partidos, parejas y puntajes. Las inscripciones se mantienen. Volverás a la pantalla de inicio para armar nuevas rondas.',
+      confirmText: 'Reiniciar todo',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+    try {
+      setAccionLoading('reiniciar');
+      await americanoService.reiniciar(tournamentId);
+      showSuccess('Torneo reiniciado. Podés volver a iniciar la primera ronda.');
+      await loadData();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error reiniciando torneo');
     } finally {
       setAccionLoading('');
     }
@@ -299,6 +320,21 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
               <SkipForward className="w-4 h-4" />
             )}
             Generar Siguiente Ronda
+          </button>
+        )}
+
+        {torneo?.americanosRonda && torneo.americanosRonda.length > 0 && (
+          <button
+            onClick={handleReiniciar}
+            disabled={!!accionLoading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 text-orange-400 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+          >
+            {accionLoading === 'reiniciar' ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full" />
+            ) : (
+              <RotateCcw className="w-4 h-4" />
+            )}
+            Reiniciar todo
           </button>
         )}
 
