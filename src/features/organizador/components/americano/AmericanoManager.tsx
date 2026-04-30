@@ -227,7 +227,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard icon={<Users className="w-4 h-4" />} label="Inscriptos" value={inscripciones.length} />
-        <StatCard icon={<Swords className="w-4 h-4" />} label="Rondas" value={`${torneo?.americanosRonda?.length || 0}${modoConfigurado && numRondasConfig !== 'automatico' ? `/${numRondasConfig}` : ''}`} />
+        <StatCard icon={<Swords className="w-4 h-4" />} label="Rondas" value={`${torneo?.americanosRonda?.length || 0}${modoConfigurado ? (numRondasConfig === 'automatico' ? '/Auto' : `/${numRondasConfig}`) : ''}`} />
         <StatCard icon={<Trophy className="w-4 h-4" />} label="Ronda actual" value={torneo?.configAmericano?.rondaActual || 0} />
         <StatCard icon={<Flag className="w-4 h-4" />} label="Estado" value={rondaEnJuego ? 'En juego' : 'Esperando'} />
         <StatCard icon={<Target className="w-4 h-4" />} label="Canchas" value={torneo?.configAmericano?.modoJuego?.canchasSimultaneas ?? 1} />

@@ -235,7 +235,7 @@ export function AmericanoDetailPage() {
             <InfoItem icon={<Calendar className="w-4 h-4" />} label="Fecha" value={`${formatDatePYShort(torneo.fechaInicio)} - ${formatDatePYShort(torneo.fechaFin)}`} />
             <InfoItem icon={<MapPin className="w-4 h-4" />} label="Ciudad" value={torneo.ciudad} />
             <InfoItem icon={<Users className="w-4 h-4" />} label="Inscriptos" value={`${torneo._count.inscripciones}`} />
-            <InfoItem icon={<Target className="w-4 h-4" />} label="Rondas" value={`${torneo.configAmericano?.rondaActual || 0}${torneo.configAmericano?.modoJuego?.numRondas && torneo.configAmericano.modoJuego.numRondas !== 'automatico' ? `/${torneo.configAmericano.modoJuego.numRondas}` : ''}`} />
+            <InfoItem icon={<Target className="w-4 h-4" />} label="Rondas" value={`${torneo.configAmericano?.rondaActual || 0}${torneo.configAmericano?.modoJuego?.numRondas ? (torneo.configAmericano.modoJuego.numRondas === 'automatico' ? '/Auto' : `/${torneo.configAmericano.modoJuego.numRondas}`) : ''}`} />
           </div>
 
           {/* Mensajes */}
