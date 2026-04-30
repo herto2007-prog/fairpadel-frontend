@@ -198,6 +198,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const rondaEnJuego = torneo?.americanosRonda?.find(r => r.estado === 'EN_JUEGO');
   const ultimaRonda = torneo?.americanosRonda?.[torneo.americanosRonda.length - 1];
   const modoConfigurado = torneo?.configAmericano?.modoJuegoConfigurado ?? false;
+  const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
   const numRondasConfig = torneo?.configAmericano?.modoJuego?.numRondas ?? 4;
   const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : 4);
   
@@ -389,26 +390,55 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                 <Users className="w-10 h-10 text-white/20 mx-auto mb-3" />
                 <p className="text-white/40 text-sm">No hay inscripciones todavía</p>
                 <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
-                  Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.
+                  {esParejasFijas
+                    ? 'Compartí el link del torneo para que las parejas se inscriban. Cada jugador se inscribe con su compañero.'
+                    : 'Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.'}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {inscripciones.map((insc) => (
-                  <div key={insc.id} className="bg-[#151921] border border-[#232838] rounded-xl p-4 flex items-center gap-3">
-                    {insc.jugador1.fotoUrl ? (
-                      <img src={insc.jugador1.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <div key={insc.id} className="bg-[#151921] border border-[#232838] rounded-xl p-4">
+                    {esParejasFijas && insc.jugador2 ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex -space-x-2">
+                          {insc.jugador1.fotoUrl ? (
+                            <img src={insc.jugador1.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-[#151921]" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs font-medium border-2 border-[#151921]">
+                              {insc.jugador1.nombre[0]}
+                            </div>
+                          )}
+                          {insc.jugador2.fotoUrl ? (
+                            <img src={insc.jugador2.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-[#151921]" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs font-medium border-2 border-[#151921]">
+                              {insc.jugador2.nombre[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">{insc.jugador1.nombre} + {insc.jugador2.nombre}</p>
+                          <p className="text-white/30 text-xs">Pareja fija</p>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium">
-                        {insc.jugador1.nombre[0]}
+                      <div className="flex items-center gap-3">
+                        {insc.jugador1.fotoUrl ? (
+                          <img src={insc.jugador1.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium">
+                            {insc.jugador1.nombre[0]}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-white text-sm font-medium">{insc.jugador1.nombre} {insc.jugador1.apellido}</p>
+                          <p className="text-white/30 text-xs">
+                            {insc.jugador1.categoriaActual?.nombre || 'Sin categoría'}
+                          </p>
+                        </div>
                       </div>
                     )}
-                    <div>
-                      <p className="text-white text-sm font-medium">{insc.jugador1.nombre} {insc.jugador1.apellido}</p>
-                      <p className="text-white/30 text-xs">
-                        {insc.jugador1.categoriaActual?.nombre || 'Sin categoría'}
-                      </p>
-                    </div>
                   </div>
                 ))}
               </div>

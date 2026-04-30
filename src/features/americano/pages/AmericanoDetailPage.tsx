@@ -59,13 +59,13 @@ export function AmericanoDetailPage() {
     }
   };
 
+  const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
+
   const handleInscribirse = async (jugador2Id?: string) => {
     if (!isAuthenticated || !user || !id) {
       navigate('/login', { state: { from: `/americano/${id}` } });
       return;
     }
-
-    const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
 
     if (esParejasFijas && !jugador2Id) {
       setModalPareja(true);
@@ -178,6 +178,12 @@ export function AmericanoDetailPage() {
                 </span>
               </div>
               <h1 className="text-xl font-bold text-white">{torneo.nombre}</h1>
+              {esParejasFijas && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-xs font-medium mt-1">
+                  <Users className="w-3 h-3" />
+                  Parejas fijas
+                </span>
+              )}
             </div>
             
             {!yaInscripto && torneo.estado !== 'FINALIZADO' && (
@@ -325,7 +331,7 @@ export function AmericanoDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <InscriptosList inscripciones={inscripciones} />
+              <InscriptosList inscripciones={inscripciones} esParejasFijas={esParejasFijas} />
             </motion.div>
           )}
 
@@ -736,14 +742,16 @@ function RondaCard({ ronda, expandida, onToggle }: { ronda: AmericanoRonda; expa
   );
 }
 
-function InscriptosList({ inscripciones }: { inscripciones: InscripcionAmericano[] }) {
+function InscriptosList({ inscripciones, esParejasFijas }: { inscripciones: InscripcionAmericano[]; esParejasFijas?: boolean }) {
   if (inscripciones.length === 0) {
     return (
       <div className="text-center py-12">
         <Users className="w-10 h-10 text-white/20 mx-auto mb-3" />
         <p className="text-white/40 text-sm">Aún no hay inscriptos</p>
         <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
-          Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.
+          {esParejasFijas
+            ? 'Compartí el link del torneo para que las parejas se inscriban. Cada jugador se inscribe con su compañero.'
+            : 'Compartí el link del torneo para que tus amigos se sumen. Cada uno se inscribe individualmente.'}
         </p>
       </div>
     );
@@ -751,23 +759,54 @@ function InscriptosList({ inscripciones }: { inscripciones: InscripcionAmericano
 
   return (
     <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
-      <p className="text-white/30 text-xs mb-4">{inscripciones.length} jugador{inscripciones.length !== 1 ? 'es' : ''} inscripto{inscripciones.length !== 1 ? 's' : ''}</p>
+      <p className="text-white/30 text-xs mb-4">
+        {esParejasFijas
+          ? `${inscripciones.length} pareja${inscripciones.length !== 1 ? 's' : ''} inscripta${inscripciones.length !== 1 ? 's' : ''}`
+          : `${inscripciones.length} jugador${inscripciones.length !== 1 ? 'es' : ''} inscripto${inscripciones.length !== 1 ? 's' : ''}`}
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {inscripciones.map((insc) => (
           <div key={insc.id} className="flex items-center gap-3 bg-white/[0.03] rounded-lg p-3">
-            {insc.jugador1.fotoUrl ? (
-              <img src={insc.jugador1.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+            {esParejasFijas && insc.jugador2 ? (
+              <>
+                <div className="flex -space-x-2">
+                  {insc.jugador1.fotoUrl ? (
+                    <img src={insc.jugador1.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-[#151921]" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs font-medium border-2 border-[#151921]">
+                      {insc.jugador1.nombre[0]}
+                    </div>
+                  )}
+                  {insc.jugador2.fotoUrl ? (
+                    <img src={insc.jugador2.fotoUrl} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-[#151921]" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs font-medium border-2 border-[#151921]">
+                      {insc.jugador2.nombre[0]}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-white text-sm font-medium">{insc.jugador1.nombre} + {insc.jugador2.nombre}</p>
+                  <p className="text-white/30 text-xs">Pareja fija</p>
+                </div>
+              </>
             ) : (
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-sm">
-                {insc.jugador1.nombre[0]}
-              </div>
+              <>
+                {insc.jugador1.fotoUrl ? (
+                  <img src={insc.jugador1.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-sm">
+                    {insc.jugador1.nombre[0]}
+                  </div>
+                )}
+                <div>
+                  <p className="text-white text-sm font-medium">{insc.jugador1.nombre} {insc.jugador1.apellido}</p>
+                  <p className="text-white/30 text-xs">
+                    {insc.jugador1.categoriaActual?.nombre || 'Sin categoría'}
+                  </p>
+                </div>
+              </>
             )}
-            <div>
-              <p className="text-white text-sm font-medium">{insc.jugador1.nombre} {insc.jugador1.apellido}</p>
-              <p className="text-white/30 text-xs">
-                {insc.jugador1.categoriaActual?.nombre || 'Sin categoría'}
-              </p>
-            </div>
           </div>
         ))}
       </div>
