@@ -11,6 +11,7 @@ import {
   AmericanoRonda,
   ClasificacionItem,
   InscripcionAmericano,
+  ModoJuegoConfig,
 } from '../../../../services/americanoService';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { ConfigurarModoModal } from './ConfigurarModoModal';
@@ -527,6 +528,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
           <ResultadoModal
             parejaA={resultadoModal.parejaA}
             parejaB={resultadoModal.parejaB}
+            modoJuego={torneo?.configAmericano?.modoJuego ?? undefined}
             onSubmit={(sets) => handleRegistrarResultado(resultadoModal.rondaId, resultadoModal.parejaA.id, resultadoModal.parejaB.id, sets)}
             onCancel={() => setResultadoModal(null)}
             loading={accionLoading === 'resultado'}
@@ -754,20 +756,51 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
 interface ResultadoModalProps {
   parejaA: { id: string; jugadores: string };
   parejaB: { id: string; jugadores: string };
+  modoJuego?: ModoJuegoConfig;
   onSubmit: (sets: { gamesEquipoA: number; gamesEquipoB: number }[]) => void;
   onCancel: () => void;
   loading: boolean;
 }
 
-function ResultadoModal({ parejaA, parejaB, onSubmit, onCancel, loading }: ResultadoModalProps) {
-  const [sets, setSets] = useState([{ gamesEquipoA: 6, gamesEquipoB: 4 }]);
+function ResultadoModal({ parejaA, parejaB, modoJuego, onSubmit, onCancel, loading }: ResultadoModalProps) {
+  const formato = modoJuego?.formatoPartido ?? 'games';
+  const valorObjetivo = modoJuego?.valorObjetivo ?? 6;
+  const defaultGamesA = formato === 'games' ? valorObjetivo : 6;
+  const defaultGamesB = formato === 'games' ? Math.max(0, valorObjetivo - 2) : 4;
 
-  const addSet = () => setSets([...sets, { gamesEquipoA: 0, gamesEquipoB: 0 }]);
-  const removeSet = (idx: number) => setSets(sets.filter((_, i) => i !== idx));
+  const [sets, setSets] = useState([{ gamesEquipoA: defaultGamesA, gamesEquipoB: defaultGamesB }]);
+
+  const addSet = () => {
+    if (formato === 'games' || formato === 'tiempo') return;
+    if (sets.length >= 3) return;
+    setSets([...sets, { gamesEquipoA: 0, gamesEquipoB: 0 }]);
+  };
+  const removeSet = (idx: number) => {
+    if (formato === 'games' || formato === 'tiempo') return;
+    setSets(sets.filter((_, i) => i !== idx));
+  };
   const updateSet = (idx: number, field: 'gamesEquipoA' | 'gamesEquipoB', value: number) => {
     const newSets = [...sets];
     newSets[idx][field] = value;
     setSets(newSets);
+  };
+
+  const esMejorDe3 = formato === 'mejorDe3Sets';
+  const setsGanadosA = sets.filter(s => s.gamesEquipoA > s.gamesEquipoB).length;
+  const setsGanadosB = sets.filter(s => s.gamesEquipoB > s.gamesEquipoA).length;
+  const alguienGano2Sets = setsGanadosA >= 2 || setsGanadosB >= 2;
+  const puedeAgregarSet = esMejorDe3 && sets.length < 3 && !alguienGano2Sets;
+
+  const labelFila = (idx: number) => {
+    if (formato === 'games') return 'Games';
+    if (formato === 'tiempo') return 'Resultado';
+    return `Set ${idx + 1}`;
+  };
+
+  const hintText = () => {
+    if (formato === 'games') return `Partido a ${valorObjetivo} games`;
+    if (formato === 'tiempo') return `Registrá los games de cada equipo al finalizar el tiempo`;
+    return `Mejor de 3 sets (cada set a 6 games${modoJuego?.conTieBreak ? ' con tie-break' : ''})`;
   };
 
   return (
@@ -786,20 +819,21 @@ function ResultadoModal({ parejaA, parejaB, onSubmit, onCancel, loading }: Resul
         className="bg-[#151921] border border-[#232838] rounded-2xl p-6 w-full max-w-md"
       >
         <h3 className="text-white font-bold text-lg mb-1">Registrar Resultado</h3>
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-[#df2531] text-sm">{parejaA.jugadores}</span>
           <span className="text-white/30 text-xs">vs</span>
           <span className="text-blue-400 text-sm">{parejaB.jugadores}</span>
         </div>
+        <p className="text-white/40 text-[10px] mb-6">{hintText()}</p>
 
         <div className="space-y-3 mb-6">
           {sets.map((set, idx) => (
             <div key={idx} className="flex items-center gap-3">
-              <span className="text-white/30 text-xs w-10">Set {idx + 1}</span>
+              <span className="text-white/30 text-xs w-14 shrink-0">{labelFila(idx)}</span>
               <input
                 type="number"
                 min={0}
-                max={20}
+                max={99}
                 value={set.gamesEquipoA}
                 onChange={(e) => updateSet(idx, 'gamesEquipoA', parseInt(e.target.value) || 0)}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
@@ -808,12 +842,12 @@ function ResultadoModal({ parejaA, parejaB, onSubmit, onCancel, loading }: Resul
               <input
                 type="number"
                 min={0}
-                max={20}
+                max={99}
                 value={set.gamesEquipoB}
                 onChange={(e) => updateSet(idx, 'gamesEquipoB', parseInt(e.target.value) || 0)}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
               />
-              {sets.length > 1 && (
+              {esMejorDe3 && sets.length > 1 && (
                 <button onClick={() => removeSet(idx)} className="text-white/20 hover:text-red-400 transition-colors">
                   ×
                 </button>
@@ -822,13 +856,15 @@ function ResultadoModal({ parejaA, parejaB, onSubmit, onCancel, loading }: Resul
           ))}
         </div>
 
-        <button
-          onClick={addSet}
-          className="w-full flex items-center justify-center gap-2 py-2 text-white/40 hover:text-white text-sm transition-colors mb-6"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar set
-        </button>
+        {puedeAgregarSet && (
+          <button
+            onClick={addSet}
+            className="w-full flex items-center justify-center gap-2 py-2 text-white/40 hover:text-white text-sm transition-colors mb-6"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar set
+          </button>
+        )}
 
         <div className="flex gap-3">
           <button
