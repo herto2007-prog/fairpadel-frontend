@@ -105,7 +105,11 @@ export function AmericanoDetailPage() {
     try {
       setBuscandoPareja(true);
       const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10`);
-      setResultadosBusqueda(res.data?.jugadores || res.data || []);
+      const jugadores = res.data?.jugadores || res.data || [];
+      // Excluir al usuario logueado y a jugadores ya inscriptos
+      const yaInscritosIds = new Set(inscripciones.flatMap(i => [i.jugador1.id, i.jugador2?.id].filter(Boolean)));
+      const filtrados = jugadores.filter((j: any) => j.id !== user?.id && !yaInscritosIds.has(j.id));
+      setResultadosBusqueda(filtrados);
     } catch {
       setResultadosBusqueda([]);
     } finally {
@@ -113,7 +117,7 @@ export function AmericanoDetailPage() {
     }
   };
 
-  const yaInscripto = inscripciones.some(i => i.jugador1.id === user?.id);
+  const yaInscripto = inscripciones.some(i => i.jugador1.id === user?.id || i.jugador2?.id === user?.id);
   const isOrganizador = user?.id === torneo?.organizador?.id;
 
   if (loading) {
@@ -221,8 +225,9 @@ export function AmericanoDetailPage() {
           <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex gap-3 mb-4">
             <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <p className="text-white/50 text-xs leading-relaxed">
-              En este formato las <strong className="text-white/70">parejas rotan</strong> en cada ronda. 
-              Todos juegan con todos, nadie queda eliminado, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.
+              {esParejasFijas
+                ? <>En este formato las <strong className="text-white/70">parejas son fijas</strong>. Siempre jugás con tu compañero, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.</>
+                : <>En este formato las <strong className="text-white/70">parejas rotan</strong> en cada ronda. Todos juegan con todos, nadie queda eliminado, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.</>}
             </p>
           </div>
 

@@ -179,7 +179,7 @@ export const americanoService = {
     api.post(`/americano/torneos/${torneoId}/rondas/${rondaId}/finalizar`).then(r => r.data),
   
   getRonda: (rondaId: string) => 
-    api.get(`/americano/torneos/torneos/rondas/${rondaId}`).then(r => r.data as AmericanoRonda),
+    api.get(`/americano/torneos/rondas/${rondaId}`).then(r => r.data as AmericanoRonda),
 
   // Resultados y clasificación
   getClasificacion: (torneoId: string) => 

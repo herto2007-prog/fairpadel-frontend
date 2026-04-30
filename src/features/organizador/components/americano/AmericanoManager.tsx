@@ -200,7 +200,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const modoConfigurado = torneo?.configAmericano?.modoJuegoConfigurado ?? false;
   const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
   const numRondasConfig = torneo?.configAmericano?.modoJuego?.numRondas ?? 4;
-  const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : 4);
+  const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : parseInt(numRondasConfig as string, 10) || 4);
   
   const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
