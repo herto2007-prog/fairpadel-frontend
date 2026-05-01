@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil
 } from 'lucide-react';
 import {
   americanoService,
@@ -36,6 +36,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     rondaId: string;
     parejaA: { id: string; jugadores: string };
     parejaB: { id: string; jugadores: string };
+    setsIniciales?: { gamesEquipoA: number; gamesEquipoB: number }[];
   } | null>(null);
   const [mostrarConfigModal, setMostrarConfigModal] = useState(false);
   const { confirm, ...confirmState } = useConfirm();
@@ -157,6 +158,27 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       await loadData();
     } catch (err: any) {
       showError(err.response?.data?.message || 'Error reiniciando torneo');
+    } finally {
+      setAccionLoading('');
+    }
+  };
+
+  const handleEliminarInscripcion = async (jugadorId: string, nombre: string) => {
+    const confirmed = await confirm({
+      title: 'Eliminar inscripción',
+      message: `¿Estás seguro de eliminar a "${nombre}"? ${esParejasFijas ? 'Se eliminará la pareja completa.' : ''}`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      setAccionLoading('eliminar-insc');
+      await americanoService.desinscribir(tournamentId, jugadorId);
+      showSuccess('Inscripción eliminada');
+      await loadData();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error eliminando inscripción');
     } finally {
       setAccionLoading('');
     }
@@ -398,7 +420,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {inscripciones.map((insc) => (
-                  <div key={insc.id} className="bg-[#151921] border border-[#232838] rounded-xl p-4">
+                  <div key={insc.id} className="bg-[#151921] border border-[#232838] rounded-xl p-4 flex items-center justify-between gap-2">
                     {esParejasFijas && insc.jugador2 ? (
                       <div className="flex items-center gap-3">
                         <div className="flex -space-x-2">
@@ -438,6 +460,16 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                           </p>
                         </div>
                       </div>
+                    )}
+                    {torneo?.americanosRonda?.length === 0 && (
+                      <button
+                        onClick={() => handleEliminarInscripcion(insc.jugador1.id, `${insc.jugador1.nombre}${insc.jugador2 ? ` + ${insc.jugador2.nombre}` : ''}`)}
+                        disabled={accionLoading === 'eliminar-insc'}
+                        className="text-white/20 hover:text-red-400 transition-colors p-1"
+                        title="Eliminar inscripción"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
                 ))}
@@ -559,6 +591,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             parejaA={resultadoModal.parejaA}
             parejaB={resultadoModal.parejaB}
             modoJuego={torneo?.configAmericano?.modoJuego ?? undefined}
+            setsIniciales={resultadoModal.setsIniciales}
             onSubmit={(sets) => handleRegistrarResultado(resultadoModal.rondaId, resultadoModal.parejaA.id, resultadoModal.parejaB.id, sets)}
             onCancel={() => setResultadoModal(null)}
             loading={accionLoading === 'resultado'}
@@ -609,7 +642,7 @@ interface RondaGestionCardProps {
   expandida: boolean;
   onToggle: () => void;
   onFinalizar: () => void;
-  onRegistrarResultado: (parejaA: { id: string; jugadores: string }, parejaB: { id: string; jugadores: string }) => void;
+  onRegistrarResultado: (parejaA: { id: string; jugadores: string }, parejaB: { id: string; jugadores: string }, setsIniciales?: { gamesEquipoA: number; gamesEquipoB: number }[]) => void;
   accionLoading: string;
 }
 
@@ -727,7 +760,22 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
                             </span>
                           )}
                           {partido.estado === 'FINALIZADO' ? (
-                            <Check className="w-4 h-4 text-green-400" />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() =>
+                                  onRegistrarResultado(
+                                    { id: partido.parejaA?.id ?? '', jugadores: `${partido.parejaA?.jugador1?.nombre ?? '?'} + ${partido.parejaA?.jugador2?.nombre ?? '?'}` },
+                                    { id: partido.parejaB?.id ?? '', jugadores: `${partido.parejaB?.jugador1?.nombre ?? '?'} + ${partido.parejaB?.jugador2?.nombre ?? '?'}` },
+                                    partido.sets as { gamesEquipoA: number; gamesEquipoB: number }[]
+                                  )
+                                }
+                                className="text-white/30 hover:text-primary transition-colors"
+                                title="Editar resultado"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <Check className="w-4 h-4 text-green-400" />
+                            </div>
                           ) : ronda.estado === 'EN_JUEGO' ? (
                             <button
                               onClick={() =>
@@ -787,18 +835,27 @@ interface ResultadoModalProps {
   parejaA: { id: string; jugadores: string };
   parejaB: { id: string; jugadores: string };
   modoJuego?: ModoJuegoConfig;
+  setsIniciales?: { gamesEquipoA: number; gamesEquipoB: number }[];
   onSubmit: (sets: { gamesEquipoA: number; gamesEquipoB: number }[]) => void;
   onCancel: () => void;
   loading: boolean;
 }
 
-function ResultadoModal({ parejaA, parejaB, modoJuego, onSubmit, onCancel, loading }: ResultadoModalProps) {
+function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, onCancel, loading }: ResultadoModalProps) {
   const formato = modoJuego?.formatoPartido ?? 'games';
   const valorObjetivo = modoJuego?.valorObjetivo ?? 6;
   const defaultGamesA = formato === 'games' ? valorObjetivo : 6;
   const defaultGamesB = formato === 'games' ? Math.max(0, valorObjetivo - 2) : 4;
 
-  const [sets, setSets] = useState([{ gamesEquipoA: defaultGamesA, gamesEquipoB: defaultGamesB }]);
+  const [sets, setSets] = useState(setsIniciales && setsIniciales.length > 0 ? setsIniciales : [{ gamesEquipoA: defaultGamesA, gamesEquipoB: defaultGamesB }]);
+
+  useEffect(() => {
+    if (setsIniciales && setsIniciales.length > 0) {
+      setSets(setsIniciales);
+    } else {
+      setSets([{ gamesEquipoA: defaultGamesA, gamesEquipoB: defaultGamesB }]);
+    }
+  }, [setsIniciales, defaultGamesA, defaultGamesB]);
 
   const addSet = () => {
     if (formato === 'games' || formato === 'tiempo') return;
@@ -848,7 +905,7 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, onSubmit, onCancel, loadi
         onClick={(e) => e.stopPropagation()}
         className="bg-[#151921] border border-[#232838] rounded-2xl p-6 w-full max-w-md"
       >
-        <h3 className="text-white font-bold text-lg mb-1">Registrar Resultado</h3>
+        <h3 className="text-white font-bold text-lg mb-1">{setsIniciales ? 'Editar Resultado' : 'Registrar Resultado'}</h3>
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[#df2531] text-sm">{parejaA.jugadores}</span>
           <span className="text-white/30 text-xs">vs</span>
