@@ -50,7 +50,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg"
+        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#232838]">
@@ -68,7 +68,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Info: qué es un americano */}
           <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex gap-3">
             <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
