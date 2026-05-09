@@ -1021,6 +1021,7 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
                 max={99}
                 value={puntosA}
                 onChange={(e) => setPuntosA(parseInt(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
               />
               <span className="text-white/30">-</span>
@@ -1030,6 +1031,7 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
                 max={99}
                 value={puntosB}
                 onChange={(e) => setPuntosB(parseInt(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
               />
             </div>
@@ -1049,6 +1051,7 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
                     max={99}
                     value={set.gamesEquipoA}
                     onChange={(e) => updateSet(idx, 'gamesEquipoA', parseInt(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
                   />
                   <span className="text-white/30">-</span>
@@ -1058,6 +1061,7 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
                     max={99}
                     value={set.gamesEquipoB}
                     onChange={(e) => updateSet(idx, 'gamesEquipoB', parseInt(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
                   />
                   {esMejorDe3 && sets.length > 1 && (

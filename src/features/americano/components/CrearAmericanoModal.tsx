@@ -155,6 +155,7 @@ export function CrearAmericanoModal({ onClose, onCreated }: CrearAmericanoModalP
                 min={4}
                 value={formData.limiteInscripciones || ''}
                 onChange={(e) => setFormData({ ...formData, limiteInscripciones: e.target.value ? parseInt(e.target.value) : undefined })}
+                onFocus={(e) => e.target.select()}
                 placeholder="Sin límite (mínimo 4)"
                 className="w-full bg-white/[0.03] border border-[#232838] rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
               />

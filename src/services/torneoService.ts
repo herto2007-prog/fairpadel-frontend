@@ -97,4 +97,13 @@ export const torneoService = {
     const response = await api.get(`/t/${slug}`);
     return response.data;
   },
+
+  /**
+   * Obtiene todas las categorías del sistema
+   * GET /tournaments/categories
+   */
+  getCategories: async (): Promise<Array<{ id: string; nombre: string; tipo: string; orden: number }>> => {
+    const response = await api.get('/tournaments/categories');
+    return response.data;
+  },
 };

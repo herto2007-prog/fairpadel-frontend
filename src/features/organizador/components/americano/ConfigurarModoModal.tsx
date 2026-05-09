@@ -197,6 +197,7 @@ export function ConfigurarModoModal({ torneoId, configInicial, onClose, onConfig
                   min={1}
                   value={form.valorObjetivo}
                   onChange={e => update('valorObjetivo', parseInt(e.target.value) || 1)}
+                  onFocus={(e) => e.target.select()}
                   className="w-full bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary/50"
                 />
                 <p className="text-white/30 text-[10px] mt-1">
@@ -231,6 +232,7 @@ export function ConfigurarModoModal({ torneoId, configInicial, onClose, onConfig
                 max={20}
                 value={form.canchasSimultaneas}
                 onChange={e => update('canchasSimultaneas', parseInt(e.target.value) || 1)}
+                onFocus={(e) => e.target.select()}
                 className="w-full bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary/50"
               />
               <p className="text-white/30 text-[10px] mt-1">Cuántos partidos se juegan al mismo tiempo en cada ronda.</p>

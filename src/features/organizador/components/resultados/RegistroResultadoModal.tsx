@@ -310,6 +310,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                     max="7"
                     value={formData.set1Pareja1}
                     onChange={(e) => setFormData({ ...formData, set1Pareja1: parseInt(e.target.value) || 0 })}
+                    onFocus={(e) => e.target.select()}
                     className="w-16 h-12 bg-[#0B0E14] border border-white/10 rounded-lg text-center text-xl font-bold text-white focus:border-[#df2531] focus:outline-none"
                   />
                   <span className="text-gray-500">-</span>
@@ -319,6 +320,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                     max="7"
                     value={formData.set1Pareja2}
                     onChange={(e) => setFormData({ ...formData, set1Pareja2: parseInt(e.target.value) || 0 })}
+                    onFocus={(e) => e.target.select()}
                     className="w-16 h-12 bg-[#0B0E14] border border-white/10 rounded-lg text-center text-xl font-bold text-white focus:border-[#df2531] focus:outline-none"
                   />
                 </div>
@@ -334,6 +336,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                     max="7"
                     value={formData.set2Pareja1}
                     onChange={(e) => setFormData({ ...formData, set2Pareja1: parseInt(e.target.value) || 0 })}
+                    onFocus={(e) => e.target.select()}
                     className="w-16 h-12 bg-[#0B0E14] border border-white/10 rounded-lg text-center text-xl font-bold text-white focus:border-[#df2531] focus:outline-none"
                   />
                   <span className="text-gray-500">-</span>
@@ -343,6 +346,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                     max="7"
                     value={formData.set2Pareja2}
                     onChange={(e) => setFormData({ ...formData, set2Pareja2: parseInt(e.target.value) || 0 })}
+                    onFocus={(e) => e.target.select()}
                     className="w-16 h-12 bg-[#0B0E14] border border-white/10 rounded-lg text-center text-xl font-bold text-white focus:border-[#df2531] focus:outline-none"
                   />
                 </div>
@@ -403,6 +407,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                   placeholder="Duración (minutos)"
                   value={formData.duracionMinutos || ''}
                   onChange={(e) => setFormData({ ...formData, duracionMinutos: parseInt(e.target.value) || undefined })}
+                  onFocus={(e) => e.target.select()}
                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-[#df2531] focus:outline-none"
                 />
               </div>
@@ -537,6 +542,7 @@ export function RegistroResultadoModal({ isOpen, onClose, match, mode = 'create'
                         placeholder="Duración hasta el momento (minutos)"
                         value={formEspecial.duracionMinutos || ''}
                         onChange={(e) => setFormEspecial({ ...formEspecial, duracionMinutos: parseInt(e.target.value) || undefined })}
+                        onFocus={(e) => e.target.select()}
                         className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-[#df2531] focus:outline-none"
                       />
                     </div>

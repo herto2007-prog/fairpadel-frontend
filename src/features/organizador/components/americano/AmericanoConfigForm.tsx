@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Controller, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import {
   Settings,
@@ -9,6 +10,7 @@ import {
   LayoutGrid,
   Award,
 } from 'lucide-react';
+import { torneoService } from '../../../../services/torneoService';
 
 // ─── Types ───
 export type FormatoAmericano =
@@ -42,7 +44,7 @@ interface Props {
 }
 
 // ─── Constants ───
-const CATEGORIAS = ['1RA', '2DA', '3RA', '4TA', '5TA', '6TA', '7MA'];
+// Categorías se cargan dinámicamente desde el backend
 
 const SISTEMAS_PUNTOS = [
   { value: 'games', label: 'Games acumulados', desc: 'Cada jugador suma los games ganados.' },
@@ -130,6 +132,17 @@ function getPreviewGrupos(
 
 // ─── Main component ───
 export function AmericanoConfigForm({ control, watch, setValue, errors, formatoAmericano }: Props) {
+  const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string }>>([]);
+
+  useEffect(() => {
+    torneoService.getCategories().then((cats: Array<{ id: string; nombre: string }>) => {
+      setCategoriasSistema(cats);
+    }).catch(() => {
+      setCategoriasSistema([]);
+    });
+  }, []);
+
+  const nombresCategorias = categoriasSistema.map((c) => c.nombre);
   const generos = (watch('generosHabilitados') as string[]) || [];
   const categorias = (watch('categoriasHabilitadas') as string[]) || [];
   const combinacionesSumas = (watch('combinacionesSumas') as WizardStep2Data['combinacionesSumas']) || [];
@@ -146,7 +159,8 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
 
   const addSuma = () => {
     const current = (watch('combinacionesSumas') as WizardStep2Data['combinacionesSumas']) || [];
-    setValue('combinacionesSumas', [...current, { categoriaA: CATEGORIAS[0], categoriaB: CATEGORIAS[0] }]);
+    const first = nombresCategorias[0] || '';
+    setValue('combinacionesSumas', [...current, { categoriaA: first, categoriaB: first }]);
   };
 
   const removeSuma = (idx: number) => {
@@ -162,7 +176,8 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
 
   const addMixta = () => {
     const current = (watch('combinacionesMixtas') as WizardStep2Data['combinacionesMixtas']) || [];
-    setValue('combinacionesMixtas', [...current, { categoriaMujer: CATEGORIAS[0], categoriaHombre: CATEGORIAS[0] }]);
+    const first = nombresCategorias[0] || '';
+    setValue('combinacionesMixtas', [...current, { categoriaMujer: first, categoriaHombre: first }]);
   };
 
   const removeMixta = (idx: number) => {
@@ -198,7 +213,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
               render={({ field }) => (
                 <select
                   {...field}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
                   {SISTEMAS_PUNTOS.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -215,7 +230,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
               render={({ field }) => (
                 <select
                   {...field}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
                   {FORMATOS_PARTIDO.map((f) => (
                     <option key={f.value} value={f.value}>{f.label}</option>
@@ -238,7 +253,8 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   type="number"
                   min={1}
                   onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                  onFocus={(e) => e.target.select()}
+                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 />
               )}
             />
@@ -252,7 +268,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 <select
                   value={field.value === 'automatico' ? 'automatico' : String(field.value)}
                   onChange={(e) => field.onChange(e.target.value === 'automatico' ? 'automatico' : parseInt(e.target.value))}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
                   <option value="3">3 rondas</option>
                   <option value="4">4 rondas</option>
@@ -275,7 +291,8 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   min={1}
                   max={20}
                   onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                  onFocus={(e) => e.target.select()}
+                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 />
               )}
             />
@@ -373,7 +390,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
             control={control}
             render={({ field }) => (
               <div className="flex flex-wrap gap-2">
-                {CATEGORIAS.map((c) => {
+                {nombresCategorias.map((c) => {
                   const checked = (field.value || []).includes(c);
                   return (
                     <label
@@ -426,9 +443,9 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 <select
                   value={comb.categoriaA}
                   onChange={(e) => updateSuma(idx, 'categoriaA', e.target.value)}
-                  className="flex-1 bg-white/[0.03] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {CATEGORIAS.map((c) => (
+                  {nombresCategorias.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -436,9 +453,9 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 <select
                   value={comb.categoriaB}
                   onChange={(e) => updateSuma(idx, 'categoriaB', e.target.value)}
-                  className="flex-1 bg-white/[0.03] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {CATEGORIAS.map((c) => (
+                  {nombresCategorias.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -482,9 +499,9 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 <select
                   value={comb.categoriaMujer}
                   onChange={(e) => updateMixta(idx, 'categoriaMujer', e.target.value)}
-                  className="flex-1 bg-white/[0.03] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {CATEGORIAS.map((c) => (
+                  {nombresCategorias.map((c) => (
                     <option key={c} value={c}>F-{c}</option>
                   ))}
                 </select>
@@ -492,9 +509,9 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 <select
                   value={comb.categoriaHombre}
                   onChange={(e) => updateMixta(idx, 'categoriaHombre', e.target.value)}
-                  className="flex-1 bg-white/[0.03] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
+                  className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {CATEGORIAS.map((c) => (
+                  {nombresCategorias.map((c) => (
                     <option key={c} value={c}>M-{c}</option>
                   ))}
                 </select>
