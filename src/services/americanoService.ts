@@ -13,14 +13,25 @@ export interface CreateAmericanoTorneoPayload {
 export interface ModoJuegoConfig {
   tipoInscripcion: 'individual' | 'parejasFijas';
   rotacion: 'automatica' | 'manual';
-  sistemaPuntos: 'games' | 'sets' | 'partido' | 'diferencia';
-  formatoPartido: 'tiempo' | 'games' | 'mejorDe3Sets';
+  sistemaPuntos: 'games' | 'sets' | 'partido' | 'diferencia' | 'puntosFijos';
+  formatoPartido: 'tiempo' | 'games' | 'mejorDe3Sets' | 'puntosFijos';
   valorObjetivo: number;
   conTieBreak?: boolean;
   categorias: 'sin' | 'con';
   numRondas: number | string;
   canchasSimultaneas?: number;
   premios?: { puesto: string; descripcion: string }[];
+  formatoAmericano?: 'clasico' | 'parejasSinCat' | 'parejasConCat' | 'porCategorias' | 'sumas' | 'mixto';
+  generosHabilitados?: string[];
+  categoriasHabilitadas?: string[];
+  combinacionesSuma?: any[];
+  combinacionesMixto?: any[];
+}
+
+export interface AmericanoGrupo {
+  id: string;
+  nombre: string;
+  tipo: string | null;
 }
 
 export interface AmericanoTorneo {
@@ -53,6 +64,11 @@ export interface AmericanoTorneo {
     rondaActual: number;
     inscripcionesAbiertas: boolean;
     tipoInscripcion: 'individual' | 'parejasFijas';
+    formatoAmericano?: 'clasico' | 'parejasSinCat' | 'parejasConCat' | 'porCategorias' | 'sumas' | 'mixto';
+    generosHabilitados?: string[];
+    categoriasHabilitadas?: string[];
+    combinacionesSuma?: any[];
+    combinacionesMixto?: any[];
   } | null;
   organizador: {
     id: string;
@@ -64,6 +80,7 @@ export interface AmericanoTorneo {
     id: string;
     nombre: string;
   } | null;
+  americanosGrupo: AmericanoGrupo[];
   americanosRonda: AmericanoRonda[];
   _count: {
     inscripciones: number;
@@ -85,6 +102,8 @@ export interface AmericanoRonda {
   estado: string;
   fechaInicio: string | null;
   fechaFin: string | null;
+  grupoId: string | null;
+  grupo: AmericanoGrupo | null;
   parejas: AmericanoPareja[];
   puntajes: AmericanoPuntaje[];
   partidos: AmericanoPartido[];
@@ -115,8 +134,9 @@ export interface AmericanoPuntaje {
 
 export interface InscripcionAmericano {
   id: string;
-  jugador1: { id: string; nombre: string; apellido: string; fotoUrl: string | null; categoriaActual: { nombre: string } | null };
-  jugador2: { id: string; nombre: string; apellido: string; fotoUrl: string | null } | null;
+  jugador1: { id: string; nombre: string; apellido: string; fotoUrl: string | null; categoriaActual: { nombre: string } | null; genero: 'MASCULINO' | 'FEMENINO' | null };
+  jugador2: { id: string; nombre: string; apellido: string; fotoUrl: string | null; categoriaActual: { nombre: string } | null; genero: 'MASCULINO' | 'FEMENINO' | null } | null;
+  grupo: AmericanoGrupo | null;
   estado: string;
   createdAt: string;
 }
@@ -135,6 +155,12 @@ export interface ClasificacionItem {
   gamesGanados: number;
   gamesPerdidos: number;
   diferenciaGames: number;
+}
+
+export interface ClasificacionGrupo {
+  grupoId: string;
+  grupoNombre: string;
+  clasificacion: ClasificacionItem[];
 }
 
 export const americanoService = {
@@ -157,6 +183,9 @@ export const americanoService = {
 
   cerrarInscripciones: (torneoId: string) =>
     api.post(`/americano/torneos/${torneoId}/cerrar-inscripciones`).then(r => r.data),
+
+  reabrirInscripciones: (torneoId: string) =>
+    api.post(`/americano/torneos/${torneoId}/reabrir-inscripciones`).then(r => r.data),
 
   // Inscripciones
   listarInscripciones: (torneoId: string) => 
@@ -186,11 +215,13 @@ export const americanoService = {
     api.get(`/americano/torneos/${torneoId}/clasificacion`).then(r => r.data as ClasificacionItem[]),
   
   registrarResultado: (
-    torneoId: string, 
-    rondaId: string, 
-    parejaAId: string, 
-    parejaBId: string, 
-    sets: { gamesEquipoA: number; gamesEquipoB: number }[]
-  ) => 
-    api.post(`/americano/torneos/${torneoId}/rondas/${rondaId}/resultado`, { parejaAId, parejaBId, sets }).then(r => r.data),
+    torneoId: string,
+    rondaId: string,
+    parejaAId: string,
+    parejaBId: string,
+    sets?: { gamesEquipoA: number; gamesEquipoB: number }[],
+    puntosA?: number,
+    puntosB?: number,
+  ) =>
+    api.post(`/americano/torneos/${torneoId}/rondas/${rondaId}/resultado`, { parejaAId, parejaBId, sets, puntosA, puntosB }).then(r => r.data),
 };

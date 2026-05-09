@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil, Coffee
 } from 'lucide-react';
 import {
   americanoService,
@@ -70,7 +70,13 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
       showSuccess('Primera ronda iniciada');
       await loadData();
     } catch (err: any) {
-      showError(err.response?.data?.message || 'Error iniciando ronda');
+      const data = err.response?.data;
+      if (data?.code === 'GRUPOS_INSUFICIENTES' && Array.isArray(data?.grupos)) {
+        const lista = data.grupos.map((g: any) => `• ${g.nombre}: ${g.inscriptos} inscriptos (mínimo ${g.minimo})`).join('\n');
+        showError(`${data.message}\n${lista}`);
+      } else {
+        showError(data?.message || 'Error iniciando ronda');
+      }
     } finally {
       setAccionLoading('');
     }
@@ -106,16 +112,31 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     rondaId: string,
     parejaAId: string,
     parejaBId: string,
-    sets: { gamesEquipoA: number; gamesEquipoB: number }[]
+    sets?: { gamesEquipoA: number; gamesEquipoB: number }[],
+    puntosA?: number,
+    puntosB?: number,
   ) => {
     try {
       setAccionLoading('resultado');
-      await americanoService.registrarResultado(tournamentId, rondaId, parejaAId, parejaBId, sets);
+      await americanoService.registrarResultado(tournamentId, rondaId, parejaAId, parejaBId, sets, puntosA, puntosB);
       showSuccess('Resultado registrado');
       setResultadoModal(null);
       await loadData();
     } catch (err: any) {
       showError(err.response?.data?.message || 'Error registrando resultado');
+    } finally {
+      setAccionLoading('');
+    }
+  };
+
+  const handleReabrirInscripciones = async () => {
+    try {
+      setAccionLoading('reabrir');
+      await americanoService.reabrirInscripciones(tournamentId);
+      showSuccess('Inscripciones reabiertas');
+      await loadData();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Error reabriendo inscripciones');
     } finally {
       setAccionLoading('');
     }
@@ -310,7 +331,22 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
           </button>
         )}
 
-        {!inscripcionesAbiertas && !modoConfigurado && (
+        {!inscripcionesAbiertas && torneo?.americanosRonda?.length === 0 && (
+          <button
+            onClick={handleReabrirInscripciones}
+            disabled={!!accionLoading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-green-500/40 text-green-400/80 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+          >
+            {accionLoading === 'reabrir' ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-green-400/30 border-t-green-400 rounded-full" />
+            ) : (
+              <RotateCcw className="w-4 h-4" />
+            )}
+            Reabrir inscripciones
+          </button>
+        )}
+
+        {!inscripcionesAbiertas && modoConfigurado && (
           <span className="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm">
             <Flag className="w-4 h-4" />
             Inscripciones cerradas
@@ -592,7 +628,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
             parejaB={resultadoModal.parejaB}
             modoJuego={torneo?.configAmericano?.modoJuego ?? undefined}
             setsIniciales={resultadoModal.setsIniciales}
-            onSubmit={(sets) => handleRegistrarResultado(resultadoModal.rondaId, resultadoModal.parejaA.id, resultadoModal.parejaB.id, sets)}
+            onSubmit={(sets, puntosA, puntosB) => handleRegistrarResultado(resultadoModal.rondaId, resultadoModal.parejaA.id, resultadoModal.parejaB.id, sets, puntosA, puntosB)}
             onCancel={() => setResultadoModal(null)}
             loading={accionLoading === 'resultado'}
           />
@@ -646,7 +682,23 @@ interface RondaGestionCardProps {
   accionLoading: string;
 }
 
+function calcularBye(ronda: AmericanoRonda): { tipo: 'pareja' | 'jugador'; items: any[] } | null {
+  const parejasEnPartidos = new Set(ronda.partidos.flatMap(p => [p.parejaA?.id, p.parejaB?.id].filter(Boolean)));
+  const parejasEnBye = ronda.parejas.filter(p => !parejasEnPartidos.has(p.id));
+  if (parejasEnBye.length > 0) {
+    return { tipo: 'pareja', items: parejasEnBye };
+  }
+  const jugadoresEnParejas = new Set(ronda.parejas.flatMap(p => [p.jugador1?.id, p.jugador2?.id].filter(Boolean)));
+  const jugadoresEnBye = ronda.puntajes.filter(p => !jugadoresEnParejas.has(p.jugador.id)).map(p => p.jugador);
+  if (jugadoresEnBye.length > 0) {
+    return { tipo: 'jugador', items: jugadoresEnBye };
+  }
+  return null;
+}
+
 function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrarResultado, accionLoading }: RondaGestionCardProps) {
+  const bye = calcularBye(ronda);
+
   return (
     <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-hidden">
       <button
@@ -663,6 +715,12 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {bye && (
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] rounded-full">
+              <Coffee className="w-3 h-3" />
+              Descansa
+            </span>
+          )}
           {ronda.estado === 'EN_JUEGO' && (
             <button
               onClick={(e) => { e.stopPropagation(); onFinalizar(); }}
@@ -693,6 +751,30 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 space-y-4">
+              {/* Bye */}
+              {bye && (
+                <div>
+                  <p className="text-white/30 text-xs font-medium mb-2">Descansa esta ronda</p>
+                  <div className="flex items-center gap-2">
+                    {bye.tipo === 'pareja' ? (
+                      bye.items.map((pareja: any) => (
+                        <div key={pareja.id} className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/10 rounded-lg px-3 py-2">
+                          <Coffee className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-amber-400/80 text-xs">{pareja.jugador1?.nombre} + {pareja.jugador2?.nombre}</span>
+                        </div>
+                      ))
+                    ) : (
+                      bye.items.map((jugador: any) => (
+                        <div key={jugador.id} className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/10 rounded-lg px-3 py-2">
+                          <Coffee className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-amber-400/80 text-xs">{jugador.nombre} {jugador.apellido}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Parejas */}
               <div>
                 <p className="text-white/30 text-xs font-medium mb-2">Parejas formadas</p>
@@ -836,7 +918,7 @@ interface ResultadoModalProps {
   parejaB: { id: string; jugadores: string };
   modoJuego?: ModoJuegoConfig;
   setsIniciales?: { gamesEquipoA: number; gamesEquipoB: number }[];
-  onSubmit: (sets: { gamesEquipoA: number; gamesEquipoB: number }[]) => void;
+  onSubmit: (sets: { gamesEquipoA: number; gamesEquipoB: number }[], puntosA?: number, puntosB?: number) => void;
   onCancel: () => void;
   loading: boolean;
 }
@@ -847,7 +929,11 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
   const defaultGamesA = formato === 'games' ? valorObjetivo : 6;
   const defaultGamesB = formato === 'games' ? Math.max(0, valorObjetivo - 2) : 4;
 
+  const esPuntosFijos = formato === 'puntosFijos';
+
   const [sets, setSets] = useState(setsIniciales && setsIniciales.length > 0 ? setsIniciales : [{ gamesEquipoA: defaultGamesA, gamesEquipoB: defaultGamesB }]);
+  const [puntosA, setPuntosA] = useState(8);
+  const [puntosB, setPuntosB] = useState(8);
 
   useEffect(() => {
     if (setsIniciales && setsIniciales.length > 0) {
@@ -858,12 +944,12 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
   }, [setsIniciales, defaultGamesA, defaultGamesB]);
 
   const addSet = () => {
-    if (formato === 'games' || formato === 'tiempo') return;
+    if (formato === 'games' || formato === 'tiempo' || esPuntosFijos) return;
     if (sets.length >= 3) return;
     setSets([...sets, { gamesEquipoA: 0, gamesEquipoB: 0 }]);
   };
   const removeSet = (idx: number) => {
-    if (formato === 'games' || formato === 'tiempo') return;
+    if (formato === 'games' || formato === 'tiempo' || esPuntosFijos) return;
     setSets(sets.filter((_, i) => i !== idx));
   };
   const updateSet = (idx: number, field: 'gamesEquipoA' | 'gamesEquipoB', value: number) => {
@@ -885,10 +971,22 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
   };
 
   const hintText = () => {
+    if (esPuntosFijos) return `Formato puntos fijos. La suma debe ser exactamente ${valorObjetivo}.`;
     if (formato === 'games') return `Partido a ${valorObjetivo} games`;
     if (formato === 'tiempo') return `Registrá los games de cada equipo al finalizar el tiempo`;
     return `Mejor de 3 sets (cada set a 6 games${modoJuego?.conTieBreak ? ' con tie-break' : ''})`;
   };
+
+  const handleGuardar = () => {
+    if (esPuntosFijos) {
+      onSubmit([], puntosA, puntosB);
+    } else {
+      onSubmit(sets);
+    }
+  };
+
+  const sumaPuntos = puntosA + puntosB;
+  const sumaValida = sumaPuntos === valorObjetivo;
 
   return (
     <motion.div
@@ -913,16 +1011,16 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
         </div>
         <p className="text-white/40 text-[10px] mb-6">{hintText()}</p>
 
-        <div className="space-y-3 mb-6">
-          {sets.map((set, idx) => (
-            <div key={idx} className="flex items-center gap-3">
-              <span className="text-white/30 text-xs w-14 shrink-0">{labelFila(idx)}</span>
+        {esPuntosFijos ? (
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-white/30 text-xs w-14 shrink-0">Puntos</span>
               <input
                 type="number"
                 min={0}
                 max={99}
-                value={set.gamesEquipoA}
-                onChange={(e) => updateSet(idx, 'gamesEquipoA', parseInt(e.target.value) || 0)}
+                value={puntosA}
+                onChange={(e) => setPuntosA(parseInt(e.target.value) || 0)}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
               />
               <span className="text-white/30">-</span>
@@ -930,27 +1028,57 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
                 type="number"
                 min={0}
                 max={99}
-                value={set.gamesEquipoB}
-                onChange={(e) => updateSet(idx, 'gamesEquipoB', parseInt(e.target.value) || 0)}
+                value={puntosB}
+                onChange={(e) => setPuntosB(parseInt(e.target.value) || 0)}
                 className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
               />
-              {esMejorDe3 && sets.length > 1 && (
-                <button onClick={() => removeSet(idx)} className="text-white/20 hover:text-red-400 transition-colors">
-                  ×
-                </button>
-              )}
             </div>
-          ))}
-        </div>
+            <p className={`text-xs text-center ${sumaValida ? 'text-green-400' : 'text-red-400'}`}>
+              Suma: {sumaPuntos} / {valorObjetivo} {sumaValida ? '✓' : '→ debe ser exactamente ' + valorObjetivo}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3 mb-6">
+              {sets.map((set, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <span className="text-white/30 text-xs w-14 shrink-0">{labelFila(idx)}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    value={set.gamesEquipoA}
+                    onChange={(e) => updateSet(idx, 'gamesEquipoA', parseInt(e.target.value) || 0)}
+                    className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
+                  />
+                  <span className="text-white/30">-</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    value={set.gamesEquipoB}
+                    onChange={(e) => updateSet(idx, 'gamesEquipoB', parseInt(e.target.value) || 0)}
+                    className="flex-1 bg-white/[0.05] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm text-center focus:border-[#df2531] outline-none"
+                  />
+                  {esMejorDe3 && sets.length > 1 && (
+                    <button onClick={() => removeSet(idx)} className="text-white/20 hover:text-red-400 transition-colors">
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
 
-        {puedeAgregarSet && (
-          <button
-            onClick={addSet}
-            className="w-full flex items-center justify-center gap-2 py-2 text-white/40 hover:text-white text-sm transition-colors mb-6"
-          >
-            <Plus className="w-4 h-4" />
-            Agregar set
-          </button>
+            {puedeAgregarSet && (
+              <button
+                onClick={addSet}
+                className="w-full flex items-center justify-center gap-2 py-2 text-white/40 hover:text-white text-sm transition-colors mb-6"
+              >
+                <Plus className="w-4 h-4" />
+                Agregar set
+              </button>
+            )}
+          </>
         )}
 
         <div className="flex gap-3">
@@ -961,8 +1089,8 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
             Cancelar
           </button>
           <button
-            onClick={() => onSubmit(sets)}
-            disabled={loading}
+            onClick={handleGuardar}
+            disabled={loading || (esPuntosFijos && !sumaValida)}
             className="flex-1 py-2.5 bg-[#df2531] text-white text-sm rounded-xl hover:bg-[#df2531]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (

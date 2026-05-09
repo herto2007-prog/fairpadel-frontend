@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Users, Calendar, MapPin, ArrowRight, Sparkles, Plus, Eye, EyeOff } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { americanoService, AmericanoTorneo } from '../../../services/americanoService';
-import { CrearAmericanoModal } from '../components/CrearAmericanoModal';
+import { AmericanoCreateWizard } from '../components/AmericanoCreateWizard';
 import { CompartirAmericanoModal } from '../components/CompartirAmericanoModal';
 import { formatDatePYShort } from '../../../utils/date';
 
@@ -194,7 +194,7 @@ export function AmericanosListPage() {
         {/* Modales */}
         <AnimatePresence>
           {mostrarCrear && (
-            <CrearAmericanoModal
+            <AmericanoCreateWizard
               onClose={() => setMostrarCrear(false)}
               onCreated={(torneo) => {
                 setMostrarCrear(false);

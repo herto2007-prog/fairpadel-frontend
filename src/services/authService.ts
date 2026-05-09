@@ -16,6 +16,8 @@ export interface LoginResponse {
     estado: string;
     roles: string[];
     fotoUrl?: string;
+    genero?: string;
+    categoria?: { id: string; nombre: string } | null;
   };
 }
 

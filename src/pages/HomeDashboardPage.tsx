@@ -8,7 +8,7 @@ import {
   Info, MessageSquare, Trophy as TrophyIcon,
   UserPlus, Gamepad2, CreditCard
 } from 'lucide-react';
-import { CrearAmericanoModal } from '../features/americano/components/CrearAmericanoModal';
+import { AmericanoCreateWizard } from '../features/americano/components/AmericanoCreateWizard';
 import { CompartirAmericanoModal } from '../features/americano/components/CompartirAmericanoModal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
@@ -1003,7 +1003,7 @@ export default function HomeDashboardPage() {
       {/* Modales Americano */}
       <AnimatePresence>
         {mostrarCrearAmericano && (
-          <CrearAmericanoModal
+          <AmericanoCreateWizard
             onClose={() => setMostrarCrearAmericano(false)}
             onCreated={(torneo) => {
               setMostrarCrearAmericano(false);
