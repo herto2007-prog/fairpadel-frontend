@@ -132,7 +132,7 @@ function getPreviewGrupos(
 
 // ─── Main component ───
 export function AmericanoConfigForm({ control, watch, setValue, errors, formatoAmericano }: Props) {
-  const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string; orden: number }>>([]);
+  const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string; tipo: string; orden: number }>>([]);
 
   useEffect(() => {
     torneoService.getCategories('STANDARD').then((cats) => {
@@ -393,33 +393,71 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
             name="categoriasHabilitadas"
             control={control}
             render={({ field }) => (
-              <div className="flex flex-wrap gap-2">
-                {nombresCategorias.map((c) => {
-                  const checked = (field.value || []).includes(c);
-                  return (
-                    <label
-                      key={c}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
-                        checked
-                          ? 'bg-violet-500/10 border-violet-500/30 text-violet-400'
-                          : 'bg-white/[0.03] border-[#232838] text-white/40 hover:text-white/60'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="hidden"
-                        checked={checked}
-                        onChange={(e) => {
-                          const vals = new Set(field.value || []);
-                          if (e.target.checked) vals.add(c);
-                          else vals.delete(c);
-                          field.onChange(Array.from(vals));
-                        }}
-                      />
-                      {c}
-                    </label>
-                  );
-                })}
+              <div className="space-y-3">
+                {/* Masculino */}
+                <div>
+                  <p className="text-white/40 text-[10px] font-medium uppercase tracking-wider mb-1.5">Masculino</p>
+                  <div className="flex flex-wrap gap-2">
+                    {nombresCategorias.filter((c) => categoriasSistema.find((cs) => cs.nombre === c)?.tipo === 'MASCULINO').map((c) => {
+                      const checked = (field.value || []).includes(c);
+                      return (
+                        <label
+                          key={c}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                            checked
+                              ? 'bg-violet-500/10 border-violet-500/30 text-violet-400'
+                              : 'bg-white/[0.03] border-[#232838] text-white/40 hover:text-white/60'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={checked}
+                            onChange={(e) => {
+                              const vals = new Set(field.value || []);
+                              if (e.target.checked) vals.add(c);
+                              else vals.delete(c);
+                              field.onChange(Array.from(vals));
+                            }}
+                          />
+                          {c}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Femenino */}
+                <div>
+                  <p className="text-white/40 text-[10px] font-medium uppercase tracking-wider mb-1.5">Femenino</p>
+                  <div className="flex flex-wrap gap-2">
+                    {nombresCategorias.filter((c) => categoriasSistema.find((cs) => cs.nombre === c)?.tipo === 'FEMENINO').map((c) => {
+                      const checked = (field.value || []).includes(c);
+                      return (
+                        <label
+                          key={c}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                            checked
+                              ? 'bg-violet-500/10 border-violet-500/30 text-violet-400'
+                              : 'bg-white/[0.03] border-[#232838] text-white/40 hover:text-white/60'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={checked}
+                            onChange={(e) => {
+                              const vals = new Set(field.value || []);
+                              if (e.target.checked) vals.add(c);
+                              else vals.delete(c);
+                              field.onChange(Array.from(vals));
+                            }}
+                          />
+                          {c}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           />
