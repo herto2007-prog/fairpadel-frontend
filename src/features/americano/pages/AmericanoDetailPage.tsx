@@ -724,17 +724,22 @@ export function AmericanoDetailPage() {
                     return (
                       <div>
                         <label className="block text-white/40 text-xs mb-1.5">Seleccioná la categoría en la que querés competir</label>
-                        <select
-                          value={categoriaSeleccionadaId || ''}
-                          onChange={(e) => setCategoriaSeleccionadaId(e.target.value || null)}
-                          className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
-                        >
-                          {categoriasHabilitadas.map((cat) => (
-                            <option key={cat.id} value={cat.id} disabled={!cat.elegible} className={cat.elegible ? 'text-white' : 'text-white/30'}>
-                              {cat.nombre}{!cat.elegible ? ` — ${cat.razon}` : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={categoriaSeleccionadaId || ''}
+                            onChange={(e) => setCategoriaSeleccionadaId(e.target.value || null)}
+                            style={{ colorScheme: 'dark' }}
+                            className="w-full appearance-none bg-[#1a1f2e] border border-[#232838] rounded-xl px-4 py-2.5 pr-10 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-colors"
+                          >
+                            <option value="" disabled className="bg-[#1a1f2e] text-white/50">Seleccioná una categoría</option>
+                            {categoriasHabilitadas.map((cat) => (
+                              <option key={cat.id} value={cat.id} disabled={!cat.elegible} className={!cat.elegible ? 'bg-[#1a1f2e] text-white/30' : 'bg-[#1a1f2e] text-white'}>
+                                {cat.nombre}{!cat.elegible ? ` — ${cat.razon}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                        </div>
                       </div>
                     );
                   })()}
