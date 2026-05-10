@@ -707,6 +707,13 @@ export function AmericanoDetailPage() {
                         </div>
                       );
                     }
+                    if (categoriasHabilitadas.length === 0 && !cargandoCategorias) {
+                      return (
+                        <div className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                          No hay categorías habilitadas para este torneo.
+                        </div>
+                      );
+                    }
                     if (categoriasHabilitadas.length === 1) {
                       return (
                         <div className="text-xs text-white/40 bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2">
