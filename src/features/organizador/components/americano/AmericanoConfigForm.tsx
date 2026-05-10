@@ -80,7 +80,8 @@ function getPreviewGrupos(
   generos: string[],
   categorias: string[],
   sumas: { categoriaA: string; categoriaB: string }[],
-  mixtas: { categoriaMujer: string; categoriaHombre: string }[]
+  mixtas: { categoriaMujer: string; categoriaHombre: string }[],
+  categoriasSistema: Array<{ nombre: string; tipo: string }>,
 ): { id: string; label: string; color: string }[] {
   switch (formato) {
     case 'clasico':
@@ -92,17 +93,16 @@ function getPreviewGrupos(
         color: g === 'MASCULINO' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-pink-500/10 text-pink-400 border-pink-500/20',
       }));
     case 'parejasConCat': {
-      const out: { id: string; label: string; color: string }[] = [];
-      for (const g of generos) {
-        for (const c of categorias) {
-          out.push({
-            id: `${g}-${c}`,
-            label: `${g === 'MASCULINO' ? 'Masc.' : 'Fem.'} ${c}`,
-            color: g === 'MASCULINO' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-          });
-        }
-      }
-      return out;
+      return categorias.map((c) => {
+        const catTipo = categoriasSistema.find((cs) => cs.nombre === c)?.tipo;
+        return {
+          id: c,
+          label: c,
+          color: catTipo === 'MASCULINO'
+            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+            : 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+        };
+      });
     }
     case 'porCategorias':
       return categorias.map((c) => ({
@@ -159,7 +159,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
   const showMixto = formatoAmericano === 'mixto';
   const showPreview = formatoAmericano !== 'clasico';
 
-  const previewGrupos = getPreviewGrupos(formatoAmericano, generos, categorias, combinacionesSumas, combinacionesMixtas);
+  const previewGrupos = getPreviewGrupos(formatoAmericano, generos, categorias, combinacionesSumas, combinacionesMixtas, categoriasSistema);
 
   const addSuma = () => {
     const current = (watch('combinacionesSumas') as WizardStep2Data['combinacionesSumas']) || [];
