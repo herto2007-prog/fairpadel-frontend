@@ -63,6 +63,9 @@ interface CityAutocompleteProps {
   onChange: (value: string) => void;
   placeholder?: string;
   label?: string;
+  hideLabel?: boolean;
+  inputClassName?: string;
+  dropdownClassName?: string;
 }
 
 export const CityAutocomplete = ({
@@ -70,6 +73,9 @@ export const CityAutocomplete = ({
   onChange,
   placeholder = 'Buscar ciudad...',
   label = 'Ciudad',
+  hideLabel = false,
+  inputClassName = '',
+  dropdownClassName = '',
 }: CityAutocompleteProps) => {
   const [inputValue, setInputValue] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
@@ -168,7 +174,7 @@ export const CityAutocomplete = ({
 
   return (
     <div ref={containerRef} className="relative">
-      {label && (
+      {label && !hideLabel && (
         <label className="block text-sm font-medium text-gray-400 mb-2">
           {label}
         </label>
@@ -184,7 +190,7 @@ export const CityAutocomplete = ({
           onChange={handleInputChange}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+          className={`w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-10 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all ${inputClassName}`}
           placeholder={placeholder}
           autoComplete="off"
         />
@@ -227,7 +233,7 @@ export const CityAutocomplete = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-gray-700 overflow-hidden z-50"
+            className={`absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-gray-700 overflow-hidden z-50 ${dropdownClassName}`}
           >
             <ul className="max-h-64 overflow-y-auto py-2">
               {filteredCities.map((city, index) => {
@@ -276,7 +282,7 @@ export const CityAutocomplete = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-gray-700 p-4 text-center z-50"
+            className={`absolute top-full left-0 right-0 mt-2 glass rounded-xl border border-gray-700 p-4 text-center z-50 ${dropdownClassName}`}
           >
             <p className="text-gray-400 text-sm">No se encontró "{inputValue}"</p>
             <p className="text-gray-500 text-xs mt-1">Selecciona una ciudad de la lista</p>

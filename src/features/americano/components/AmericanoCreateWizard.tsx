@@ -667,7 +667,9 @@ function Step1Formato({
                 <CityAutocomplete
                   value={field.value}
                   onChange={field.onChange}
-                  label={undefined}
+                  hideLabel
+                  inputClassName="bg-white/[0.03] border-[#232838] py-2.5 text-sm placeholder:text-white/20 focus:ring-0"
+                  dropdownClassName="bg-[#151921] border-[#232838]"
                   placeholder="Ej: Asunción"
                 />
               )}
