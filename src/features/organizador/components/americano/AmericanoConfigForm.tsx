@@ -135,7 +135,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
   const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string; orden: number }>>([]);
 
   useEffect(() => {
-    torneoService.getCategories().then((cats) => {
+    torneoService.getCategories('STANDARD').then((cats) => {
       setCategoriasSistema(cats);
     }).catch(() => {
       setCategoriasSistema([]);
