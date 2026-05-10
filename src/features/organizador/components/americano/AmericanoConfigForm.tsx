@@ -132,17 +132,21 @@ function getPreviewGrupos(
 
 // ─── Main component ───
 export function AmericanoConfigForm({ control, watch, setValue, errors, formatoAmericano }: Props) {
-  const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string; orden: number }>>([]);
 
   useEffect(() => {
-    torneoService.getCategories().then((cats: Array<{ id: string; nombre: string }>) => {
+    torneoService.getCategories().then((cats) => {
       setCategoriasSistema(cats);
     }).catch(() => {
       setCategoriasSistema([]);
     });
   }, []);
 
-  const nombresCategorias = categoriasSistema.map((c) => c.nombre);
+  // Orden de mayor a menor (1ª → Principiante) para mejor UX
+  const nombresCategorias = categoriasSistema
+    .slice()
+    .sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0))
+    .map((c) => c.nombre);
   const generos = (watch('generosHabilitados') as string[]) || [];
   const categorias = (watch('categoriasHabilitadas') as string[]) || [];
   const combinacionesSumas = (watch('combinacionesSumas') as WizardStep2Data['combinacionesSumas']) || [];
@@ -312,7 +316,7 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
               />
               <div>
                 <span className="text-white text-sm">Incluir tie-break</span>
-                <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se define a 7 puntos.</p>
+                <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se juega un tie-break a 7 puntos (con diferencia de 2) para definir el ganador del set.</p>
               </div>
             </label>
           )}

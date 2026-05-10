@@ -248,7 +248,7 @@ export function ConfigurarModoModal({ torneoId, configInicial, onClose, onConfig
               />
               <div>
                 <span className="text-white text-sm">Incluir tie-break</span>
-                <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se define con un juego especial a 7 puntos.</p>
+                <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se juega un tie-break a 7 puntos (con diferencia de 2) para definir el ganador del set.</p>
               </div>
             </label>
 
