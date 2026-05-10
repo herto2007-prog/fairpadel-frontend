@@ -112,7 +112,7 @@ export function AmericanoDetailPage() {
     if (!busquedaPareja.trim()) return;
     try {
       setBuscandoPareja(true);
-      const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10`);
+      const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10&_t=${Date.now()}`);
       console.log('[DEBUG buscarPareja] API response:', res.data);
       const jugadores = res.data?.data || res.data?.jugadores || res.data || [];
       console.log('[DEBUG buscarPareja] jugadores parseados:', jugadores.length, jugadores);
