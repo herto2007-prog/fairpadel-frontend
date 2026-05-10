@@ -76,6 +76,8 @@ export interface AmericanoTorneo {
     apellido: string;
     fotoUrl: string | null;
   };
+  coorganizadores?: { userId: string }[];
+  puedeGestionar?: boolean;
   sedePrincipal: {
     id: string;
     nombre: string;

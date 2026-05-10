@@ -184,7 +184,7 @@ export function AmericanoDetailPage() {
   };
 
   const yaInscripto = inscripciones.some(i => i.jugador1.id === user?.id || i.jugador2?.id === user?.id);
-  const isOrganizador = user?.id === torneo?.organizador?.id;
+  const puedeGestionar = torneo?.puedeGestionar ?? false;
 
   const copiarLink = async () => {
     try {
@@ -365,7 +365,7 @@ export function AmericanoDetailPage() {
             { key: 'inscriptos' as const, label: 'Inscriptos', icon: Users },
             { key: 'clasificacion' as const, label: 'Clasificación', icon: Medal },
             { key: 'rondas' as const, label: 'Rondas', icon: Swords },
-            ...(isOrganizador ? [{ key: 'gestionar' as const, label: 'Gestionar', icon: Settings }] : []),
+            ...(puedeGestionar ? [{ key: 'gestionar' as const, label: 'Gestionar', icon: Settings }] : []),
           ].map((tab) => (
             <button
               key={tab.key}
@@ -392,54 +392,58 @@ export function AmericanoDetailPage() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-4"
             >
-              {/* Config del americano */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
-                <h3 className="text-white font-semibold mb-4">Configuración</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
-                  <ConfigItem label="Modo configurado" value={torneo.configAmericano?.modoJuegoConfigurado ? 'Sí' : 'Pendiente'} />
-                  <ConfigItem label="Visibilidad" value={torneo.configAmericano?.visibilidad === 'publico' ? 'Público' : 'Privado'} />
-                  <ConfigItem label="Modalidad" value={torneo.configAmericano?.tipoInscripcion === 'parejasFijas' ? 'Parejas fijas' : 'Individual'} />
-                  <ConfigItem label="Inscripciones" value={`${torneo._count.inscripciones}${torneo.configAmericano?.limiteInscripciones ? `/${torneo.configAmericano.limiteInscripciones}` : ''}`} />
-                  <ConfigItem label="Canchas" value={`${torneo.configAmericano?.modoJuego?.canchasSimultaneas ?? 1}`} />
-                </div>
-              </div>
-
-              {/* Link para compartir */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-primary" />
-                  Link para compartir
-                </h3>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-white/[0.03] border border-white/5 rounded-lg px-3 py-2.5 text-white/50 text-sm truncate select-all">
-                    {typeof window !== 'undefined' ? window.location.href : `https://fairpadel.com/americano/${id}`}
+              {puedeGestionar && (
+                <>
+                  {/* Config del americano */}
+                  <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                    <h3 className="text-white font-semibold mb-4">Configuración</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <ConfigItem label="Rondas jugadas" value={`${torneo.configAmericano?.rondaActual || 0}`} />
+                      <ConfigItem label="Modo configurado" value={torneo.configAmericano?.modoJuegoConfigurado ? 'Sí' : 'Pendiente'} />
+                      <ConfigItem label="Visibilidad" value={torneo.configAmericano?.visibilidad === 'publico' ? 'Público' : 'Privado'} />
+                      <ConfigItem label="Modalidad" value={torneo.configAmericano?.tipoInscripcion === 'parejasFijas' ? 'Parejas fijas' : 'Individual'} />
+                      <ConfigItem label="Inscripciones" value={`${torneo._count.inscripciones}${torneo.configAmericano?.limiteInscripciones ? `/${torneo.configAmericano.limiteInscripciones}` : ''}`} />
+                      <ConfigItem label="Canchas" value={`${torneo.configAmericano?.modoJuego?.canchasSimultaneas ?? 1}`} />
+                    </div>
                   </div>
-                  <button
-                    onClick={copiarLink}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      linkCopiado
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20'
-                    }`}
-                  >
-                    {linkCopiado ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copiar
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className="text-white/30 text-xs mt-2">
-                  Compartí este link con tus amigos para que se inscriban al torneo.
-                </p>
-              </div>
+
+                  {/* Link para compartir */}
+                  <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                    <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                      <Link2 className="w-4 h-4 text-primary" />
+                      Link para compartir
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-white/[0.03] border border-white/5 rounded-lg px-3 py-2.5 text-white/50 text-sm truncate select-all">
+                        {typeof window !== 'undefined' ? window.location.href : `https://fairpadel.com/americano/${id}`}
+                      </div>
+                      <button
+                        onClick={copiarLink}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                          linkCopiado
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20'
+                        }`}
+                      >
+                        {linkCopiado ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copiado
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copiar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-white/30 text-xs mt-2">
+                      Compartí este link con tus amigos para que se inscriban al torneo.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* Organizador */}
               <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
@@ -546,7 +550,7 @@ export function AmericanoDetailPage() {
             </motion.div>
           )}
 
-          {tabActivo === 'gestionar' && isOrganizador && id && (
+          {tabActivo === 'gestionar' && puedeGestionar && id && (
             <motion.div
               key="gestionar"
               initial={{ opacity: 0, y: 10 }}
