@@ -6,7 +6,7 @@ import {
   UserPlus, Check, Medal, Target, Swords,
   ChevronDown, ChevronUp, Settings, Search, X,
   Copy, Link2, Coffee, PartyPopper,
-  Shield, AlertTriangle, LayoutGrid,
+  Shield, AlertTriangle, LayoutGrid, ChevronRight,
 } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../../../features/auth/context/AuthContext';
@@ -16,6 +16,7 @@ import { formatDatePYShort } from '../../../utils/date';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { AmericanoManager } from '../../organizador/components/americano/AmericanoManager';
+import { cn } from '../../../lib/utils';
 
 export function AmericanoDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +35,7 @@ export function AmericanoDetailPage() {
   const { confirm, ...confirmState } = useConfirm();
   const [modalPareja, setModalPareja] = useState(false);
   const [busquedaPareja, setBusquedaPareja] = useState('');
-  const [resultadosBusqueda, setResultadosBusqueda] = useState<{ id: string; nombre: string; apellido: string; fotoUrl: string | null; genero: string | null; categoriaActual: { nombre: string } | null }[]>([]);
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<{ id: string; nombre: string; apellido: string; fotoUrl: string | null; genero: string | null; categoriaActual: { nombre: string } | null; compatible: boolean; razon?: string }[]>([]);
   const [buscandoPareja, setBuscandoPareja] = useState(false);
   const [parejaSeleccionada, setParejaSeleccionada] = useState<{ id: string; nombre: string; apellido: string } | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -115,67 +116,104 @@ export function AmericanoDetailPage() {
       const jugadores = res.data?.data || res.data?.jugadores || res.data || [];
       // Excluir al usuario logueado y a jugadores ya inscriptos
       const yaInscritosIds = new Set(inscripciones.flatMap(i => [i.jugador1.id, i.jugador2?.id].filter(Boolean)));
-      let filtrados = jugadores.filter((j: any) => j.id !== user?.id && !yaInscritosIds.has(j.id));
 
-      // Filtrar según formato del torneo
       const config = torneo?.configAmericano;
       const formato = config?.formatoAmericano;
       const miGenero = user?.genero;
       const miCat = user?.categoria?.nombre;
 
-      if (formato === 'parejasSinCat') {
-        const generosHab = config?.generosHabilitados || [];
-        filtrados = filtrados.filter((j: any) => miGenero && generosHab.includes(miGenero) && j.genero === miGenero);
-      } else if (formato === 'parejasConCat') {
-        const generosHab = config?.generosHabilitados || [];
-        filtrados = filtrados.filter((j: any) =>
-          miGenero && generosHab.includes(miGenero) && j.genero === miGenero && j.categoriaActual?.nombre === miCat
-        );
-      } else if (formato === 'sumas') {
-        const combos = config?.combinacionesSuma || [];
-        filtrados = filtrados.filter((j: any) => {
-          const partnerCat = j.categoriaActual?.nombre;
-          if (!miCat || !partnerCat) return false;
-          return combos.some((c: any) => {
-            const parts = typeof c === 'string'
-              ? c.split(/[+\/ ,]/).map((s: string) => s.trim())
-              : c.cat1 && c.cat2
-              ? [c.cat1, c.cat2]
-              : c.categoriaA && c.categoriaB
-              ? [c.categoriaA, c.categoriaB]
-              : [];
-            return parts.includes(miCat) && parts.includes(partnerCat);
-          });
-        });
-      } else if (formato === 'mixto') {
-        const combos = config?.combinacionesMixto || [];
-        filtrados = filtrados.filter((j: any) => {
+      const conCompatibilidad = jugadores
+        .filter((j: any) => j.id !== user?.id && !yaInscritosIds.has(j.id))
+        .map((j: any) => {
           const partnerGenero = j.genero;
           const partnerCat = j.categoriaActual?.nombre;
-          if (!miGenero || !miCat || !partnerGenero || !partnerCat) return false;
-          if (miGenero === partnerGenero) return false;
-          return combos.some((c: any) => {
-            if (typeof c === 'string') {
-              const parts = c.split(/\/|,/).map((s: string) => s.trim());
-              const femPart = parts.find((p: string) => p.toUpperCase().startsWith('F'));
-              const mascPart = parts.find((p: string) => p.toUpperCase().startsWith('M'));
-              const femCat = femPart ? femPart.replace(/^F[-\s]*/i, '').trim() : '';
-              const mascCat = mascPart ? mascPart.replace(/^M[-\s]*/i, '').trim() : '';
-              return miGenero === 'FEMENINO'
-                ? femCat === miCat && mascCat === partnerCat
-                : mascCat === miCat && femCat === partnerCat;
-            }
-            if (c.categoriaMujer && c.categoriaHombre) {
-              return miGenero === 'FEMENINO'
-                ? c.categoriaMujer === miCat && c.categoriaHombre === partnerCat
-                : c.categoriaHombre === miCat && c.categoriaMujer === partnerCat;
-            }
-            return false;
-          });
-        });
-      }
 
-      setResultadosBusqueda(filtrados);
+          // Si no tiene género o categoría definidos
+          if (!partnerGenero) {
+            return { ...j, compatible: false, razon: 'El jugador no tiene género definido en su perfil' };
+          }
+
+          if (formato === 'parejasSinCat') {
+            const generosHab = config?.generosHabilitados || [];
+            if (miGenero && !generosHab.includes(miGenero)) {
+              return { ...j, compatible: false, razon: `Tu género (${miGenero}) no está habilitado en este torneo` };
+            }
+            if (partnerGenero !== miGenero) {
+              return { ...j, compatible: false, razon: `Género diferente: ${partnerGenero}` };
+            }
+            return { ...j, compatible: true };
+          }
+
+          if (formato === 'parejasConCat') {
+            const generosHab = config?.generosHabilitados || [];
+            if (miGenero && !generosHab.includes(miGenero)) {
+              return { ...j, compatible: false, razon: `Tu género (${miGenero}) no está habilitado en este torneo` };
+            }
+            if (partnerGenero !== miGenero) {
+              return { ...j, compatible: false, razon: `Género diferente: ${partnerGenero}` };
+            }
+            if (partnerCat !== miCat) {
+              return { ...j, compatible: false, razon: `Categoría diferente: ${partnerCat || 'Sin categoría'}` };
+            }
+            return { ...j, compatible: true };
+          }
+
+          if (formato === 'sumas') {
+            const combos = config?.combinacionesSuma || [];
+            if (!miCat || !partnerCat) {
+              return { ...j, compatible: false, razon: !miCat ? 'No tenés categoría definida' : 'El jugador no tiene categoría definida' };
+            }
+            const esValido = combos.some((c: any) => {
+              const parts = typeof c === 'string'
+                ? c.split(/[+\/ ,]/).map((s: string) => s.trim())
+                : c.cat1 && c.cat2
+                ? [c.cat1, c.cat2]
+                : c.categoriaA && c.categoriaB
+                ? [c.categoriaA, c.categoriaB]
+                : [];
+              return parts.includes(miCat) && parts.includes(partnerCat);
+            });
+            if (!esValido) {
+              return { ...j, compatible: false, razon: `Combinación de sumas no válida (${partnerCat} no combina con ${miCat})` };
+            }
+            return { ...j, compatible: true };
+          }
+
+          if (formato === 'mixto') {
+            if (!miGenero || !miCat || !partnerGenero || !partnerCat) {
+              return { ...j, compatible: false, razon: !miGenero ? 'No tenés género definido' : !miCat ? 'No tenés categoría definida' : 'El jugador no tiene género/categoría definido' };
+            }
+            if (miGenero === partnerGenero) {
+              return { ...j, compatible: false, razon: 'Debe ser del género opuesto' };
+            }
+            const esValido = (config?.combinacionesMixto || []).some((c: any) => {
+              if (typeof c === 'string') {
+                const parts = c.split(/\/|,/).map((s: string) => s.trim());
+                const femPart = parts.find((p: string) => p.toUpperCase().startsWith('F'));
+                const mascPart = parts.find((p: string) => p.toUpperCase().startsWith('M'));
+                const femCat = femPart ? femPart.replace(/^F[-\s]*/i, '').trim() : '';
+                const mascCat = mascPart ? mascPart.replace(/^M[-\s]*/i, '').trim() : '';
+                return miGenero === 'FEMENINO'
+                  ? femCat === miCat && mascCat === partnerCat
+                  : mascCat === miCat && femCat === partnerCat;
+              }
+              if (c.categoriaMujer && c.categoriaHombre) {
+                return miGenero === 'FEMENINO'
+                  ? c.categoriaMujer === miCat && c.categoriaHombre === partnerCat
+                  : c.categoriaHombre === miCat && c.categoriaMujer === partnerCat;
+              }
+              return false;
+            });
+            if (!esValido) {
+              return { ...j, compatible: false, razon: `Combinación mixta no válida (${partnerCat})` };
+            }
+            return { ...j, compatible: true };
+          }
+
+          return { ...j, compatible: true };
+        });
+
+      setResultadosBusqueda(conCompatibilidad);
     } catch {
       setResultadosBusqueda([]);
     } finally {
@@ -638,19 +676,25 @@ export function AmericanoDetailPage() {
                   {resultadosBusqueda.length > 0 && (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {resultadosBusqueda.map((j) => (
-                        <button
+                        <div
                           key={j.id}
                           onClick={() => {
+                            if (!j.compatible) return;
                             setParejaSeleccionada({ id: j.id, nombre: j.nombre, apellido: j.apellido });
                             handleInscribirse(j.id);
                           }}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-[#232838] hover:border-primary/40 transition-colors text-left"
+                          className={cn(
+                            'w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors',
+                            j.compatible
+                              ? 'bg-white/[0.03] border-[#232838] hover:border-primary/40 cursor-pointer'
+                              : 'bg-white/[0.02] border-[#232838]/50 opacity-60 cursor-not-allowed'
+                          )}
                         >
                           {j.fotoUrl ? (
                             <img src={j.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-sm">
-                              {j.nombre[0]}
+                              {j.nombre?.[0]}
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
@@ -662,16 +706,24 @@ export function AmericanoDetailPage() {
                                   {j.categoriaActual.nombre}
                                 </span>
                               )}
+                              {!j.compatible && j.razon && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400/80 border border-red-500/20">
+                                  {j.razon}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        </button>
+                          {j.compatible && (
+                            <ChevronRight className="w-4 h-4 text-white/20 shrink-0" />
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
 
                   {resultadosBusqueda.length === 0 && busquedaPareja.trim() && !buscandoPareja && (
                     <div className="text-center">
-                      <p className="text-white/30 text-xs">No se encontraron jugadores compatibles.</p>
+                      <p className="text-white/30 text-xs">No se encontraron jugadores.</p>
                       {torneo?.configAmericano?.formatoAmericano && (
                         <p className="text-white/20 text-[10px] mt-1">
                           {torneo.configAmericano.formatoAmericano === 'parejasSinCat' && 'Tu pareja debe tener el mismo género que vos.'}
