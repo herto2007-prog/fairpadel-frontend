@@ -445,22 +445,26 @@ export function AmericanoDetailPage() {
                 </>
               )}
 
-              {/* Categorías / Grupos habilitados — siempre visible */}
-              {torneo.americanosGrupo.length > 0 && (
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
-                  <h3 className="text-white font-semibold mb-3">Categorías habilitadas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {torneo.americanosGrupo.map((g) => (
-                      <span
-                        key={g.id}
-                        className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20"
-                      >
-                        {g.nombre}
-                      </span>
-                    ))}
+              {/* Categorías habilitadas — siempre visible */}
+              {(() => {
+                const cats = torneo.configAmericano?.categoriasHabilitadas;
+                if (!cats?.length) return null;
+                return (
+                  <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                    <h3 className="text-white font-semibold mb-3">Categorías habilitadas</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {cats.map((cat) => (
+                        <span
+                          key={cat}
+                          className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20"
+                        >
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Organizador — solo gestores */}
               {puedeGestionar && (
