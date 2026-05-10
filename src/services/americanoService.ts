@@ -193,8 +193,11 @@ export const americanoService = {
   listarInscripciones: (torneoId: string) => 
     api.get(`/americano/torneos/${torneoId}/inscripciones`).then(r => r.data as InscripcionAmericano[]),
   
-  inscribir: (torneoId: string, jugadorId: string, jugador2Id?: string) => 
-    api.post(`/americano/torneos/${torneoId}/inscribir`, { jugadorId, jugador2Id }).then(r => r.data),
+  getCategoriasHabilitadas: (torneoId: string) =>
+    api.get(`/americano/torneos/${torneoId}/categorias-habilitadas`).then(r => r.data as { success: boolean; categorias: Array<{ id: string; nombre: string; orden: number; tipo: string; elegible: boolean; razon?: string }> }),
+
+  inscribir: (torneoId: string, jugadorId: string, jugador2Id?: string, categoryId?: string) => 
+    api.post(`/americano/torneos/${torneoId}/inscribir`, { jugadorId, jugador2Id, categoryId }).then(r => r.data),
   
   desinscribir: (torneoId: string, jugadorId: string) => 
     api.post(`/americano/torneos/${torneoId}/desinscribir`, { jugadorId }).then(r => r.data),

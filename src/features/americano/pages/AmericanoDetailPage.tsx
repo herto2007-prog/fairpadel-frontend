@@ -39,6 +39,9 @@ export function AmericanoDetailPage() {
   const [buscandoPareja, setBuscandoPareja] = useState(false);
   const [parejaSeleccionada, setParejaSeleccionada] = useState<{ id: string; nombre: string; apellido: string } | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [categoriasHabilitadas, setCategoriasHabilitadas] = useState<Array<{ id: string; nombre: string; orden: number; tipo: string; elegible: boolean; razon?: string }>>([]);
+  const [categoriaSeleccionadaId, setCategoriaSeleccionadaId] = useState<string | null>(null);
+  const [cargandoCategorias, setCargandoCategorias] = useState(false);
   const [grupoInscriptos, setGrupoInscriptos] = useState<string>('todos');
   const [grupoClasificacion, setGrupoClasificacion] = useState<string>('todos');
   const [grupoRondas, setGrupoRondas] = useState<string>('todos');
@@ -47,6 +50,30 @@ export function AmericanoDetailPage() {
     if (id) loadData();
     if (isAuthenticated) refreshUser();
   }, [id, isAuthenticated]);
+
+  useEffect(() => {
+    if (modalPareja && id) {
+      cargarCategoriasHabilitadas();
+    }
+  }, [modalPareja, id]);
+
+  const cargarCategoriasHabilitadas = async () => {
+    if (!id) return;
+    try {
+      setCargandoCategorias(true);
+      const res = await americanoService.getCategoriasHabilitadas(id);
+      const cats = res.categorias || [];
+      setCategoriasHabilitadas(cats);
+      // Auto-seleccionar la primera elegible (preferentemente la del usuario)
+      const catUsuario = cats.find((c: any) => c.elegible && c.nombre === user?.categoria?.nombre);
+      const primeraElegible = cats.find((c: any) => c.elegible);
+      setCategoriaSeleccionadaId(catUsuario?.id || primeraElegible?.id || null);
+    } catch (err) {
+      console.error('Error cargando categorías habilitadas:', err);
+    } finally {
+      setCargandoCategorias(false);
+    }
+  };
 
   const loadData = async () => {
     if (!id) return;
@@ -69,7 +96,7 @@ export function AmericanoDetailPage() {
 
   const esParejasFijas = torneo?.configAmericano?.tipoInscripcion === 'parejasFijas';
 
-  const handleInscribirse = async (jugador2Id?: string) => {
+  const handleInscribirse = async (jugador2Id?: string, categoryId?: string) => {
     if (!isAuthenticated || !user || !id) {
       navigate('/login', { state: { from: `/americano/${id}` } });
       return;
@@ -93,12 +120,13 @@ export function AmericanoDetailPage() {
     try {
       setInscribiendo(true);
       setError('');
-      await americanoService.inscribir(id, user.id, jugador2Id);
+      await americanoService.inscribir(id, user.id, jugador2Id, categoryId || undefined);
       setMensaje('¡Inscripción exitosa!');
       setModalPareja(false);
       setParejaSeleccionada(null);
       setBusquedaPareja('');
       setResultadosBusqueda([]);
+      setCategoriaSeleccionadaId(null);
       await loadData();
       setTimeout(() => setMensaje(''), 3000);
     } catch (err: any) {
@@ -661,6 +689,49 @@ export function AmericanoDetailPage() {
                 </div>
 
                 <div className="p-5 space-y-4">
+                  {/* Selector de categoría (solo si aplica) */}
+                  {(() => {
+                    const formato = torneo?.configAmericano?.formatoAmericano;
+                    if (formato === 'sumas' || formato === 'mixto') {
+                      return (
+                        <div className="text-xs text-white/40 bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2">
+                          Categoría asignada automáticamente según tu perfil y el de tu pareja.
+                        </div>
+                      );
+                    }
+                    if (categoriasHabilitadas.length === 0 && cargandoCategorias) {
+                      return (
+                        <div className="flex items-center gap-2 text-white/40 text-xs">
+                          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full" />
+                          Cargando categorías...
+                        </div>
+                      );
+                    }
+                    if (categoriasHabilitadas.length === 1) {
+                      return (
+                        <div className="text-xs text-white/40 bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2">
+                          Categoría: <span className="text-white/60 font-medium">{categoriasHabilitadas[0].nombre}</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div>
+                        <label className="block text-white/40 text-xs mb-1.5">Seleccioná la categoría en la que querés competir</label>
+                        <select
+                          value={categoriaSeleccionadaId || ''}
+                          onChange={(e) => setCategoriaSeleccionadaId(e.target.value || null)}
+                          className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-4 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                        >
+                          {categoriasHabilitadas.map((cat) => (
+                            <option key={cat.id} value={cat.id} disabled={!cat.elegible} className={cat.elegible ? 'text-white' : 'text-white/30'}>
+                              {cat.nombre}{!cat.elegible ? ` — ${cat.razon}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -691,7 +762,7 @@ export function AmericanoDetailPage() {
                           onClick={() => {
                             if (!j.compatible) return;
                             setParejaSeleccionada({ id: j.id, nombre: j.nombre, apellido: j.apellido });
-                            handleInscribirse(j.id);
+                            handleInscribirse(j.id, categoriaSeleccionadaId || undefined);
                           }}
                           className={cn(
                             'w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors',
