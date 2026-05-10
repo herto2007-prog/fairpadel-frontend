@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { americanoService } from '../../../services/americanoService';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { AmericanoConfigForm } from '../../organizador/components/americano/AmericanoConfigForm';
 
 // ─── Types ───
@@ -663,11 +664,11 @@ function Step1Formato({
               name="ciudad"
               control={control}
               render={({ field }) => (
-                <input
-                  {...field}
-                  type="text"
+                <CityAutocomplete
+                  value={field.value}
+                  onChange={field.onChange}
+                  label={undefined}
                   placeholder="Ej: Asunción"
-                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
                 />
               )}
             />
