@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Users, Calendar, MapPin, ArrowLeft,
   UserPlus, Check, Medal, Target, Swords,
-  ChevronDown, ChevronUp, Info, Settings, Search, X,
+  ChevronDown, ChevronUp, Settings, Search, X,
   Copy, Link2, Coffee, PartyPopper,
   Shield, AlertTriangle, LayoutGrid,
 } from 'lucide-react';
@@ -20,7 +20,7 @@ import { AmericanoManager } from '../../organizador/components/americano/America
 export function AmericanoDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUser } = useAuth();
   
   const [torneo, setTorneo] = useState<AmericanoTorneo | null>(null);
   const [clasificacion, setClasificacion] = useState<ClasificacionItem[]>([]);
@@ -44,7 +44,8 @@ export function AmericanoDetailPage() {
 
   useEffect(() => {
     if (id) loadData();
-  }, [id]);
+    if (isAuthenticated) refreshUser();
+  }, [id, isAuthenticated]);
 
   const loadData = async () => {
     if (!id) return;
@@ -320,16 +321,6 @@ export function AmericanoDetailPage() {
           {torneo.descripcion && (
             <p className="text-white/50 text-sm mb-4">{torneo.descripcion}</p>
           )}
-
-          {/* Explicación americano */}
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex gap-3 mb-4">
-            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <p className="text-white/50 text-xs leading-relaxed">
-              {esParejasFijas
-                ? <>En este formato las <strong className="text-white/70">parejas son fijas</strong>. Siempre jugás con tu compañero, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.</>
-                : <>En este formato las <strong className="text-white/70">parejas rotan</strong> en cada ronda. Todos juegan con todos, nadie queda eliminado, y <strong className="text-white/70">gana quien acumule más games</strong> al final del torneo.</>}
-            </p>
-          </div>
 
           {!yaInscripto && torneo.estado !== 'FINALIZADO' && (
             <PerfilAlert torneo={torneo} user={user} />
@@ -685,23 +676,38 @@ export function AmericanoDetailPage() {
   );
 }
 
-const FORMATO_BADGES: Record<string, { label: string; bg: string; text: string }> = {
-  clasico: { label: 'Clásico', bg: 'bg-blue-500/20', text: 'text-blue-400' },
-  parejasSinCat: { label: 'Parejas sin cat.', bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
-  parejasConCat: { label: 'Parejas con cat.', bg: 'bg-amber-500/20', text: 'text-amber-400' },
-  porCategorias: { label: 'Por categorías', bg: 'bg-violet-500/20', text: 'text-violet-400' },
-  sumas: { label: 'Sumas', bg: 'bg-rose-500/20', text: 'text-rose-400' },
-  mixto: { label: 'Mixto', bg: 'bg-pink-500/20', text: 'text-pink-400' },
+const FORMATO_BADGES: Record<string, { label: string; bg: string; text: string; tooltip: string }> = {
+  clasico: { label: 'Clásico', bg: 'bg-blue-500/20', text: 'text-blue-400', tooltip: 'Todos juegan con todos. Parejas rotan cada ronda.' },
+  parejasSinCat: { label: 'Parejas sin cat.', bg: 'bg-emerald-500/20', text: 'text-emerald-400', tooltip: 'Parejas fijas separadas por género.' },
+  parejasConCat: { label: 'Parejas con cat.', bg: 'bg-amber-500/20', text: 'text-amber-400', tooltip: 'Parejas fijas separadas por género y categoría.' },
+  porCategorias: { label: 'Por categorías', bg: 'bg-violet-500/20', text: 'text-violet-400', tooltip: 'Grupos por categoría. Parejas rotan dentro de cada grupo.' },
+  sumas: { label: 'Sumas', bg: 'bg-rose-500/20', text: 'text-rose-400', tooltip: 'Suma de puntos individuales por ronda.' },
+  mixto: { label: 'Mixto', bg: 'bg-pink-500/20', text: 'text-pink-400', tooltip: 'Parejas mixtas (hombre + mujer) rotan cada ronda.' },
 };
 
 function FormatoBadge({ config }: { config: any }) {
   const formato = config?.formatoAmericano || 'clasico';
   const info = FORMATO_BADGES[formato];
+  const [showTip, setShowTip] = useState(false);
   if (!info) return null;
   return (
-    <span className={`px-2 py-0.5 text-xs rounded-full ${info.bg} ${info.text}`}>
-      {info.label}
-    </span>
+    <div className="relative inline-block">
+      <span
+        className={`px-2 py-0.5 text-xs rounded-full cursor-help ${info.bg} ${info.text}`}
+        onMouseEnter={() => setShowTip(true)}
+        onMouseLeave={() => setShowTip(false)}
+      >
+        {info.label}
+      </span>
+      {showTip && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 whitespace-nowrap">
+          <div className="bg-[#1a1f2e] border border-[#232838] rounded-lg px-2.5 py-1.5 text-white/70 text-xs shadow-xl">
+            {info.tooltip}
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1f2e] border-l border-t border-[#232838] rotate-45" />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1076,24 +1082,23 @@ function PerfilAlert({ torneo, user }: { torneo: AmericanoTorneo; user: any }) {
   const faltaCategoria = requiereCategoria && !user?.categoria;
   if (!faltaGenero && !faltaCategoria) return null;
   return (
-    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start gap-3">
-      <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-      <div>
-        <p className="text-red-400 text-sm font-medium">Completá tu perfil para inscribirte</p>
-        <p className="text-red-400/60 text-xs mt-0.5">
+    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-3 mb-4">
+      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-amber-400 text-xs font-medium">
           {faltaGenero && faltaCategoria
-            ? 'Este torneo requiere género y categoría en tu perfil.'
+            ? 'Necesitás género y categoría en tu perfil para inscribirte'
             : faltaGenero
-            ? 'Este torneo requiere que tengas género en tu perfil.'
-            : 'Este torneo requiere que tengas categoría en tu perfil.'}
+            ? 'Necesitás género en tu perfil para inscribirte'
+            : 'Necesitás categoría en tu perfil para inscribirte'}
         </p>
-        <button
-          onClick={() => window.location.href = '/perfil'}
-          className="text-red-400 text-xs font-medium underline mt-1 hover:text-red-300"
-        >
-          Ir a mi perfil
-        </button>
       </div>
+      <button
+        onClick={() => window.location.href = '/perfil'}
+        className="text-amber-400 text-xs font-medium underline hover:text-amber-300 shrink-0"
+      >
+        Completar
+      </button>
     </div>
   );
 }
