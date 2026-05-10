@@ -214,7 +214,8 @@ export function AmericanoDetailPage() {
         });
 
       setResultadosBusqueda(conCompatibilidad);
-    } catch {
+    } catch (err: any) {
+      console.error('Error buscando pareja:', err);
       setResultadosBusqueda([]);
     } finally {
       setBuscandoPareja(false);
@@ -643,7 +644,7 @@ export function AmericanoDetailPage() {
                 <div className="flex items-center justify-between p-5 border-b border-[#232838]">
                   <div>
                     <h3 className="text-white font-bold">Inscribirme con mi pareja</h3>
-                    <p className="text-white/40 text-xs">Buscá a tu compañero por nombre</p>
+                    <p className="text-white/40 text-xs">Buscá a tu compañero por nombre, apellido o documento</p>
                   </div>
                   <button onClick={() => setModalPareja(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
                     <X className="w-5 h-5 text-white/40" />
