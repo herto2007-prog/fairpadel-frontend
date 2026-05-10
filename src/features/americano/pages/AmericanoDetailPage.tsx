@@ -112,9 +112,14 @@ export function AmericanoDetailPage() {
     if (!busquedaPareja.trim()) return;
     try {
       setBuscandoPareja(true);
-      const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10&_t=${Date.now()}`);
+      const res = await api.get(`/inscripciones/public/buscar-pareja?nombre=${encodeURIComponent(busquedaPareja)}`);
       console.log('[DEBUG buscarPareja] API response:', res.data);
-      const jugadores = res.data?.data || res.data?.jugadores || res.data || [];
+      const jugadoresRaw = res.data?.jugadores || res.data?.data || [];
+      // Normalizar formato del endpoint de inscripciones (categoria → categoriaActual)
+      const jugadores = jugadoresRaw.map((j: any) => ({
+        ...j,
+        categoriaActual: j.categoriaActual || j.categoria,
+      }));
       console.log('[DEBUG buscarPareja] jugadores parseados:', jugadores.length, jugadores);
       // Excluir al usuario logueado y a jugadores ya inscriptos
       const yaInscritosIds = new Set(inscripciones.flatMap(i => [i.jugador1.id, i.jugador2?.id].filter(Boolean)));
