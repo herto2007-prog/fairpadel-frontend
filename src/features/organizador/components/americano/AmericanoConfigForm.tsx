@@ -487,9 +487,16 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   onChange={(e) => updateSuma(idx, 'categoriaA', e.target.value)}
                   className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {nombresCategorias.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  <optgroup label="Masculino">
+                    {categoriasSistema.filter((c) => c.tipo === 'MASCULINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Femenino">
+                    {categoriasSistema.filter((c) => c.tipo === 'FEMENINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
                 </select>
                 <span className="text-white/30 text-sm">+</span>
                 <select
@@ -497,9 +504,16 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   onChange={(e) => updateSuma(idx, 'categoriaB', e.target.value)}
                   className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {nombresCategorias.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  <optgroup label="Masculino">
+                    {categoriasSistema.filter((c) => c.tipo === 'MASCULINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Femenino">
+                    {categoriasSistema.filter((c) => c.tipo === 'FEMENINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
                 </select>
                 <button
                   type="button"
@@ -543,9 +557,11 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   onChange={(e) => updateMixta(idx, 'categoriaMujer', e.target.value)}
                   className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {nombresCategorias.map((c) => (
-                    <option key={c} value={c}>F-{c}</option>
-                  ))}
+                  <optgroup label="Femenino">
+                    {categoriasSistema.filter((c) => c.tipo === 'FEMENINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
                 </select>
                 <span className="text-white/30 text-sm">+</span>
                 <select
@@ -553,9 +569,11 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                   onChange={(e) => updateMixta(idx, 'categoriaHombre', e.target.value)}
                   className="flex-1 bg-[#151921] border border-[#232838] rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
-                  {nombresCategorias.map((c) => (
-                    <option key={c} value={c}>M-{c}</option>
-                  ))}
+                  <optgroup label="Masculino">
+                    {categoriasSistema.filter((c) => c.tipo === 'MASCULINO').sort((a, b) => (b.orden ?? 0) - (a.orden ?? 0)).map((c) => (
+                      <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </optgroup>
                 </select>
                 <button
                   type="button"
