@@ -113,14 +113,18 @@ export function AmericanoDetailPage() {
     try {
       setBuscandoPareja(true);
       const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10`);
+      console.log('[DEBUG buscarPareja] API response:', res.data);
       const jugadores = res.data?.data || res.data?.jugadores || res.data || [];
+      console.log('[DEBUG buscarPareja] jugadores parseados:', jugadores.length, jugadores);
       // Excluir al usuario logueado y a jugadores ya inscriptos
       const yaInscritosIds = new Set(inscripciones.flatMap(i => [i.jugador1.id, i.jugador2?.id].filter(Boolean)));
+      console.log('[DEBUG buscarPareja] yaInscritosIds:', Array.from(yaInscritosIds));
 
       const config = torneo?.configAmericano;
       const formato = config?.formatoAmericano;
       const miGenero = user?.genero;
       const miCat = user?.categoria?.nombre;
+      console.log('[DEBUG buscarPareja] user?.id:', user?.id, 'miGenero:', miGenero, 'miCat:', miCat);
 
       const conCompatibilidad = jugadores
         .filter((j: any) => j.id !== user?.id && !yaInscritosIds.has(j.id))
