@@ -222,8 +222,8 @@ function getDefaultValues(): WizardData {
 
 // ─── Step validation fields ───
 const STEP_REQUIRED: Record<number, (keyof WizardData)[]> = {
-  1: ['formatoAmericano'],
-  2: ['nombre', 'fecha', 'ciudad'],
+  1: ['formatoAmericano', 'nombre', 'fecha', 'ciudad'],
+  2: ['sistemaPuntos', 'formatoPartido', 'valorObjetivo'],
   3: [],
 };
 
@@ -602,7 +602,7 @@ export function AmericanoCreateWizard({ onClose, onCreated }: Props) {
   );
 }
 
-// ─── Step 1: Formato ───
+// ─── Step 1: Formato y Datos Básicos ───
 function Step1Formato({
   control,
   errors,
@@ -611,7 +611,121 @@ function Step1Formato({
   errors: any;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Datos básicos */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-white/50 text-xs font-medium mb-1.5 block">
+            Nombre del torneo <span className="text-red-400">*</span>
+          </label>
+          <Controller
+            name="nombre"
+            control={control}
+            render={({ field }) => (
+              <input
+                {...field}
+                type="text"
+                placeholder="Ej: Torneo Americano Verano 2026"
+                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
+              />
+            )}
+          />
+          {errors.nombre && (
+            <p className="text-red-400 text-xs mt-1">{errors.nombre.message as string}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-white/50 text-xs font-medium mb-1.5 block">
+              Fecha <span className="text-red-400">*</span>
+            </label>
+            <Controller
+              name="fecha"
+              control={control}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="date"
+                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                />
+              )}
+            />
+            {errors.fecha && (
+              <p className="text-red-400 text-xs mt-1">{errors.fecha.message as string}</p>
+            )}
+          </div>
+          <div>
+            <label className="text-white/50 text-xs font-medium mb-1.5 block">
+              Ciudad <span className="text-red-400">*</span>
+            </label>
+            <Controller
+              name="ciudad"
+              control={control}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="Ej: Asunción"
+                  className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
+                />
+              )}
+            />
+            {errors.ciudad && (
+              <p className="text-red-400 text-xs mt-1">{errors.ciudad.message as string}</p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-white/50 text-xs font-medium mb-1.5 block">Descripción (opcional)</label>
+          <Controller
+            name="descripcion"
+            control={control}
+            render={({ field }) => (
+              <textarea
+                {...field}
+                rows={2}
+                placeholder="Cuéntale a los jugadores qué hace especial este torneo..."
+                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors resize-none"
+              />
+            )}
+          />
+        </div>
+
+        <Controller
+          name="visibilidad"
+          control={control}
+          render={({ field }) => (
+            <div className="flex gap-3">
+              {[
+                { value: 'publico', label: 'Público', desc: 'Visible para todos' },
+                { value: 'privado', label: 'Privado', desc: 'Solo con link' },
+              ].map((v) => (
+                <button
+                  key={v.value}
+                  type="button"
+                  onClick={() => field.onChange(v.value)}
+                  className={`flex-1 text-left p-3 rounded-xl border transition-all ${
+                    field.value === v.value
+                      ? 'bg-primary/10 border-primary/30 ring-1 ring-primary'
+                      : 'bg-white/[0.02] border-[#232838] hover:border-[#2d3550]'
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${field.value === v.value ? 'text-white' : 'text-white/70'}`}>
+                    {v.label}
+                  </span>
+                  <p className="text-white/30 text-[10px] mt-0.5">{v.desc}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        />
+      </div>
+
+      <div className="h-px bg-[#232838]" />
+
+      {/* Formato */}
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex gap-3">
         <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         <p className="text-white/70 text-xs leading-relaxed">
