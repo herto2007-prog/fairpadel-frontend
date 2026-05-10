@@ -112,7 +112,7 @@ export function AmericanoDetailPage() {
     try {
       setBuscandoPareja(true);
       const res = await api.get(`/users/buscar?q=${encodeURIComponent(busquedaPareja)}&limit=10`);
-      const jugadores = res.data?.jugadores || res.data || [];
+      const jugadores = res.data?.data || res.data?.jugadores || res.data || [];
       // Excluir al usuario logueado y a jugadores ya inscriptos
       const yaInscritosIds = new Set(inscripciones.flatMap(i => [i.jugador1.id, i.jugador2?.id].filter(Boolean)));
       let filtrados = jugadores.filter((j: any) => j.id !== user?.id && !yaInscritosIds.has(j.id));
@@ -619,7 +619,7 @@ export function AmericanoDetailPage() {
                       value={busquedaPareja}
                       onChange={(e) => setBusquedaPareja(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && buscarPareja()}
-                      placeholder="Nombre o apellido del compañero..."
+                      placeholder="Nombre, apellido o documento del compañero..."
                       className="flex-1 bg-white/[0.03] border border-[#232838] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors"
                     />
                     <button
