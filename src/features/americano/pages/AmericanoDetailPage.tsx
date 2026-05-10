@@ -445,22 +445,41 @@ export function AmericanoDetailPage() {
                 </>
               )}
 
-              {/* Organizador */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
-                <h3 className="text-white font-semibold mb-3">Organizador</h3>
-                <div className="flex items-center gap-3">
-                  {torneo.organizador.fotoUrl ? (
-                    <img src={torneo.organizador.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium">
-                      {torneo.organizador.nombre[0]}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-white text-sm font-medium">{torneo.organizador.nombre} {torneo.organizador.apellido}</p>
+              {/* Categorías / Grupos habilitados — siempre visible */}
+              {torneo.americanosGrupo.length > 0 && (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                  <h3 className="text-white font-semibold mb-3">Categorías habilitadas</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {torneo.americanosGrupo.map((g) => (
+                      <span
+                        key={g.id}
+                        className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-lg border border-primary/20"
+                      >
+                        {g.nombre}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Organizador — solo gestores */}
+              {puedeGestionar && (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5">
+                  <h3 className="text-white font-semibold mb-3">Organizador</h3>
+                  <div className="flex items-center gap-3">
+                    {torneo.organizador.fotoUrl ? (
+                      <img src={torneo.organizador.fotoUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-medium">
+                        {torneo.organizador.nombre[0]}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white text-sm font-medium">{torneo.organizador.nombre} {torneo.organizador.apellido}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
