@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Play, SkipForward, Flag, Trophy,
-  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil, Coffee
+  Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil, Coffee, Zap
 } from 'lucide-react';
 import {
   americanoService,
@@ -15,6 +15,7 @@ import {
 } from '../../../../services/americanoService';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { ConfigurarModoModal } from './ConfigurarModoModal';
+import { ResultadoBatchModal } from './ResultadoBatchModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
@@ -32,6 +33,7 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const [accionLoading, setAccionLoading] = useState<string>('');
   const [tabActivo, setTabActivo] = useState<'inscriptos' | 'rondas' | 'clasificacion'>('inscriptos');
   const [rondaExpandida, setRondaExpandida] = useState<string | null>(null);
+  const [resultadoBatchRonda, setResultadoBatchRonda] = useState<AmericanoRonda | null>(null);
   const [resultadoModal, setResultadoModal] = useState<{
     rondaId: string;
     parejaA: { id: string; jugadores: string };
@@ -541,8 +543,9 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                 expandida={rondaExpandida === ronda.id}
                 onToggle={() => setRondaExpandida(rondaExpandida === ronda.id ? null : ronda.id)}
                 onFinalizar={() => handleFinalizarRonda(ronda.id)}
-                onRegistrarResultado={(parejaA, parejaB) =>
-                  setResultadoModal({ rondaId: ronda.id, parejaA, parejaB })
+                onCargaRapida={() => setResultadoBatchRonda(ronda)}
+                onRegistrarResultado={(parejaA, parejaB, setsIniciales) =>
+                  setResultadoModal({ rondaId: ronda.id, parejaA, parejaB, setsIniciales })
                 }
                 accionLoading={accionLoading}
               />
@@ -635,6 +638,22 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
         )}
       </AnimatePresence>
 
+      {/* Modal de carga masiva */}
+      <AnimatePresence>
+        {resultadoBatchRonda && (
+          <ResultadoBatchModal
+            torneoId={tournamentId}
+            ronda={resultadoBatchRonda}
+            modoJuego={torneo?.configAmericano?.modoJuego ?? undefined}
+            onSaved={() => {
+              setResultadoBatchRonda(null);
+              loadData();
+            }}
+            onCancel={() => setResultadoBatchRonda(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {mostrarConfigModal && (
         <ConfigurarModoModal
           torneoId={tournamentId}
@@ -678,6 +697,7 @@ interface RondaGestionCardProps {
   expandida: boolean;
   onToggle: () => void;
   onFinalizar: () => void;
+  onCargaRapida: () => void;
   onRegistrarResultado: (parejaA: { id: string; jugadores: string }, parejaB: { id: string; jugadores: string }, setsIniciales?: { gamesEquipoA: number; gamesEquipoB: number }[]) => void;
   accionLoading: string;
 }
@@ -696,7 +716,7 @@ function calcularBye(ronda: AmericanoRonda): { tipo: 'pareja' | 'jugador'; items
   return null;
 }
 
-function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrarResultado, accionLoading }: RondaGestionCardProps) {
+function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapida, onRegistrarResultado, accionLoading }: RondaGestionCardProps) {
   const bye = calcularBye(ronda);
 
   return (
@@ -722,13 +742,22 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onRegistrar
             </span>
           )}
           {ronda.estado === 'EN_JUEGO' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onFinalizar(); }}
-              disabled={accionLoading === `finalizar-${ronda.id}`}
-              className="px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50"
-            >
-              {accionLoading === `finalizar-${ronda.id}` ? '...' : 'Finalizar'}
-            </button>
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onCargaRapida(); }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-primary/20 text-primary text-xs font-medium rounded-lg hover:bg-primary/30 transition-colors"
+              >
+                <Zap className="w-3 h-3" />
+                Carga rápida
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onFinalizar(); }}
+                disabled={accionLoading === `finalizar-${ronda.id}`}
+                className="px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50"
+              >
+                {accionLoading === `finalizar-${ronda.id}` ? '...' : 'Finalizar'}
+              </button>
+            </>
           )}
           <span className={`px-2 py-0.5 text-xs rounded-full ${
             ronda.estado === 'EN_JUEGO' ? 'bg-green-500/20 text-green-400' :
