@@ -576,15 +576,15 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                     Cada jugador acumula los <strong className="text-white/50">games ganados</strong> de todos sus partidos. Gana quien tenga más games al final.
                   </p>
                 </div>
-                <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-x-auto">
+                  <table className="w-full text-sm min-w-[500px]">
                   <thead>
                     <tr className="border-b border-[#232838]">
                       <th className="text-left text-white/30 font-medium px-4 py-3 w-12">#</th>
                       <th className="text-left text-white/30 font-medium px-4 py-3">Jugador</th>
                       <th className="text-right text-white/30 font-medium px-4 py-3">Pts</th>
-                      <th className="text-right text-white/30 font-medium px-4 py-3">PJ</th>
-                      <th className="text-right text-white/30 font-medium px-4 py-3">PG</th>
+                      <th className="text-right text-white/30 font-medium px-4 py-3 hidden sm:table-cell">PJ</th>
+                      <th className="text-right text-white/30 font-medium px-4 py-3 hidden sm:table-cell">PG</th>
                       <th className="text-right text-white/30 font-medium px-4 py-3">Diff</th>
                     </tr>
                   </thead>
@@ -603,12 +603,12 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
                                 {item.nombre[0]}
                               </div>
                             )}
-                            <span className="text-white font-medium">{item.nombre} {item.apellido}</span>
+                            <span className="text-white font-medium whitespace-nowrap">{item.nombre} {item.apellido}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right font-bold text-[#df2531]">{item.puntosTotal}</td>
-                        <td className="px-4 py-3 text-right text-white/50">{item.partidosJugados}</td>
-                        <td className="px-4 py-3 text-right text-white/50">{item.partidosGanados}</td>
+                        <td className="px-4 py-3 text-right text-white/50 hidden sm:table-cell">{item.partidosJugados}</td>
+                        <td className="px-4 py-3 text-right text-white/50 hidden sm:table-cell">{item.partidosGanados}</td>
                         <td className={`px-4 py-3 text-right font-medium ${item.diferenciaGames >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {item.diferenciaGames > 0 ? '+' : ''}{item.diferenciaGames}
                         </td>
@@ -723,10 +723,10 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
     <div className="bg-[#151921] border border-[#232838] rounded-xl overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors"
+        className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-2 hover:bg-white/[0.02] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="w-8 h-8 rounded-lg bg-[#df2531]/20 text-[#df2531] text-sm font-bold flex items-center justify-center">
+          <span className="w-8 h-8 rounded-lg bg-[#df2531]/20 text-[#df2531] text-sm font-bold flex items-center justify-center shrink-0">
             {ronda.numero}
           </span>
           <div className="text-left">
@@ -734,9 +734,9 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
             <p className="text-white/30 text-xs">{(ronda.parejas ?? []).length} parejas</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
           {bye && (
-            <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] rounded-full">
+            <span className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full">
               <Coffee className="w-3 h-3" />
               Descansa
             </span>
@@ -745,21 +745,22 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); onCargaRapida(); }}
-                className="flex items-center gap-1 px-3 py-1.5 bg-primary/20 text-primary text-xs font-medium rounded-lg hover:bg-primary/30 transition-colors"
+                className="flex items-center gap-1 px-3 py-2 bg-primary/20 text-primary text-xs font-medium rounded-lg hover:bg-primary/30 transition-colors min-h-[36px]"
               >
-                <Zap className="w-3 h-3" />
-                Carga rápida
+                <Zap className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Carga rápida</span>
+                <span className="sm:hidden">Rápida</span>
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onFinalizar(); }}
                 disabled={accionLoading === `finalizar-${ronda.id}`}
-                className="px-3 py-1.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50"
+                className="px-3 py-2 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50 min-h-[36px]"
               >
                 {accionLoading === `finalizar-${ronda.id}` ? '...' : 'Finalizar'}
               </button>
             </>
           )}
-          <span className={`px-2 py-0.5 text-xs rounded-full ${
+          <span className={`px-2 py-1 text-xs rounded-full ${
             ronda.estado === 'EN_JUEGO' ? 'bg-green-500/20 text-green-400' :
             ronda.estado === 'FINALIZADA' ? 'bg-white/10 text-white/50' :
             'bg-yellow-500/20 text-yellow-400'
@@ -841,7 +842,7 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
                     {(ronda.partidos ?? []).map((partido) => (
                       <div
                         key={partido.id}
-                        className={`w-full flex items-center justify-between rounded-lg px-4 py-3 transition-colors ${
+                        className={`w-full flex flex-col sm:flex-row sm:items-center justify-between rounded-lg px-4 py-3 gap-2 transition-colors ${
                           partido.estado === 'FINALIZADO'
                             ? 'bg-green-500/5 border border-green-500/10'
                             : ronda.estado === 'EN_JUEGO'
@@ -849,10 +850,10 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
                               : 'bg-white/[0.03]'
                         }`}
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 flex-wrap flex-1">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <Swords className="w-4 h-4 text-white/20" />
-                            <span className="text-white/40 text-[10px] font-medium bg-white/5 px-1.5 py-0.5 rounded">
+                            <span className="text-white/40 text-xs font-medium bg-white/5 px-1.5 py-0.5 rounded">
                               C{partido.cancha}
                             </span>
                           </div>
@@ -864,7 +865,7 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
                             {partido.parejaB?.jugador1?.nombre ?? '?'} + {partido.parejaB?.jugador2?.nombre ?? '?'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
                           {partido.estado === 'FINALIZADO' && partido.sets && Array.isArray(partido.sets) && (
                             <span className="text-green-400 text-xs font-medium">
                               {partido.sets.map(s => `${s.gamesEquipoA}-${s.gamesEquipoB}`).join(', ')}
@@ -880,10 +881,10 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
                                     partido.sets as { gamesEquipoA: number; gamesEquipoB: number }[]
                                   )
                                 }
-                                className="text-white/30 hover:text-primary transition-colors"
+                                className="text-white/30 hover:text-primary transition-colors p-2 -mr-2 rounded-lg hover:bg-white/5 min-w-[44px] min-h-[44px] flex items-center justify-center"
                                 title="Editar resultado"
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-4 h-4" />
                               </button>
                               <Check className="w-4 h-4 text-green-400" />
                             </div>
@@ -895,9 +896,9 @@ function RondaGestionCard({ ronda, expandida, onToggle, onFinalizar, onCargaRapi
                                   { id: partido.parejaB?.id ?? '', jugadores: `${partido.parejaB?.jugador1?.nombre ?? '?'} + ${partido.parejaB?.jugador2?.nombre ?? '?'}` }
                                 )
                               }
-                              className="text-primary hover:text-primary/80 transition-colors"
+                              className="text-primary hover:text-primary/80 transition-colors p-2 -mr-2 rounded-lg hover:bg-white/5 min-w-[44px] min-h-[44px] flex items-center justify-center"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-5 h-5" />
                             </button>
                           ) : (
                             <span className="text-white/20 text-[10px]">Pendiente</span>

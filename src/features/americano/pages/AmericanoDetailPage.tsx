@@ -325,8 +325,8 @@ export function AmericanoDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/[0.02] border border-white/5 rounded-xl p-6 mb-6"
         >
-          <div className="flex items-start justify-between mb-4">
-            <div>
+          <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-3">
+            <div className="min-w-0">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded-full">
                   Americano
@@ -357,7 +357,7 @@ export function AmericanoDetailPage() {
               <button
                 onClick={() => handleInscribirse()}
                 disabled={inscribiendo}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 w-full sm:w-auto min-h-[44px]"
               >
                 {inscribiendo ? (
                   <motion.div
@@ -676,14 +676,14 @@ export function AmericanoDetailPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-md"
+                className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-sm sm:max-w-md"
               >
                 <div className="flex items-center justify-between p-5 border-b border-[#232838]">
                   <div>
                     <h3 className="text-white font-bold">Inscribirme con mi pareja</h3>
                     <p className="text-white/40 text-xs">Buscá a tu compañero por nombre, apellido o documento</p>
                   </div>
-                  <button onClick={() => setModalPareja(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                  <button onClick={() => setModalPareja(false)} className="p-3 -mr-1 hover:bg-white/5 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <X className="w-5 h-5 text-white/40" />
                   </button>
                 </div>
@@ -777,7 +777,7 @@ export function AmericanoDetailPage() {
                             handleInscribirse(j.id, categoriaSeleccionadaId || undefined);
                           }}
                           className={cn(
-                            'w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors',
+                            'w-full flex items-center gap-3 p-3 min-h-[44px] rounded-xl border text-left transition-colors',
                             j.compatible
                               ? 'bg-white/[0.03] border-[#232838] hover:border-primary/40 cursor-pointer'
                               : 'bg-white/[0.02] border-[#232838]/50 opacity-60 cursor-not-allowed'
@@ -1433,9 +1433,9 @@ function BadgeGenero({ genero }: { genero: string }) {
 
 function Podium({ data }: { data: ClasificacionItem[] }) {
   const posiciones = [
-    { idx: 1, label: '2°', color: 'text-gray-300', bg: 'from-gray-500/20 to-gray-400/10', border: 'border-gray-500/20', h: 'h-24' },
-    { idx: 0, label: '1°', color: 'text-yellow-400', bg: 'from-yellow-500/20 to-yellow-400/10', border: 'border-yellow-500/20', h: 'h-32' },
-    { idx: 2, label: '3°', color: 'text-amber-600', bg: 'from-amber-700/20 to-amber-600/10', border: 'border-amber-700/20', h: 'h-20' },
+    { idx: 1, label: '2°', color: 'text-gray-300', bg: 'from-gray-500/20 to-gray-400/10', border: 'border-gray-500/20', h: 'h-20 sm:h-24' },
+    { idx: 0, label: '1°', color: 'text-yellow-400', bg: 'from-yellow-500/20 to-yellow-400/10', border: 'border-yellow-500/20', h: 'h-28 sm:h-32' },
+    { idx: 2, label: '3°', color: 'text-amber-600', bg: 'from-amber-700/20 to-amber-600/10', border: 'border-amber-700/20', h: 'h-16 sm:h-20' },
   ];
 
   return (
@@ -1450,7 +1450,7 @@ function Podium({ data }: { data: ClasificacionItem[] }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: pos.idx * 0.1 }}
-              className={`flex flex-col items-center justify-end w-24 ${pos.h} bg-gradient-to-b ${pos.bg} border ${pos.border} rounded-t-xl p-3`}
+              className={`flex flex-col items-center justify-end w-20 sm:w-24 ${pos.h} bg-gradient-to-b ${pos.bg} border ${pos.border} rounded-t-xl p-2 sm:p-3`}
             >
               <span className={`text-lg font-bold ${pos.color}`}>{pos.label}</span>
               {item.fotoUrl ? (
