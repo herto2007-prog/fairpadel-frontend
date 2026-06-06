@@ -8,12 +8,48 @@ export interface User {
   telefono?: string;
   documento: string;
   estado: string;
+  genero?: 'MASCULINO' | 'FEMENINO';
+  ciudad?: string;
+  fechaNacimiento?: string;
   roles: string[];
   fotoUrl?: string;
   categoriaActual?: {
+    id: string;
     nombre: string;
   };
   consentWhatsappStatus?: string | null;
+}
+
+export interface UpdateUserAdminData {
+  categoriaActualId?: string;
+  telefono?: string;
+  ciudad?: string;
+  fechaNacimiento?: string;
+  genero?: 'MASCULINO' | 'FEMENINO';
+  estado?: string;
+  motivoCambioCategoria?: string;
+}
+
+export interface InscripcionActiva {
+  id: string;
+  estado: string;
+  tournament: { id: string; nombre: string; estado: string; fechaInicio: string };
+  category: { id: string; nombre: string };
+  jugador1: { id: string; nombre: string; apellido: string };
+  jugador2?: { id: string; nombre: string; apellido: string };
+}
+
+export interface HistorialCategoriaItem {
+  id: string;
+  userId: string;
+  categoriaAnteriorId: string | null;
+  categoriaNuevaId: string;
+  tipo: string;
+  motivo: string;
+  realizadoPor: string | null;
+  createdAt: string;
+  categoriaAnterior: { id: string; nombre: string } | null;
+  categoriaNueva: { id: string; nombre: string };
 }
 
 export interface UpdateRolesData {
@@ -130,6 +166,12 @@ export const adminService = {
     api.post('/auth/forgot-password', { email }).then(r => r.data),
   confirmarConsentimientoWhatsapp: (userId: string) =>
     api.post(`/admin/users/${userId}/whatsapp/confirmar-consentimiento`).then(r => r.data),
+  updateUser: (userId: string, data: UpdateUserAdminData) =>
+    api.put(`/admin/users/${userId}`, data).then(r => r.data),
+  getUserInscripcionesActivas: (userId: string) =>
+    api.get(`/admin/users/${userId}/inscripciones-activas`).then(r => r.data),
+  getUserHistorialCategorias: (userId: string) =>
+    api.get(`/admin/users/${userId}/historial-categorias`).then(r => r.data),
 
   // SEDES
   getSedes: () => api.get('/admin/sedes').then(r => r.data),

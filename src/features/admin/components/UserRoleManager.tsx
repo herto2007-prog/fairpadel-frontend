@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw, MessageCircle, Download } from 'lucide-react';
+import { Search, UserCheck, Shield, Users, CheckCircle, XCircle, Copy, Mail, Key, RefreshCw, MessageCircle, Download, Pencil } from 'lucide-react';
 import { adminService, User } from '../../../services/adminService';
+import { EditarJugadorModal } from './EditarJugadorModal';
 
 const ROLES = [
   { id: 'jugador', label: 'Jugador', color: 'bg-blue-500', icon: UserCheck },
@@ -20,6 +21,8 @@ export function UserRoleManager() {
   const [soporteLoading, setSoporteLoading] = useState<string | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -475,6 +478,14 @@ export function UserRoleManager() {
                           WhatsApp
                         </button>
                       )}
+                      <button
+                        onClick={() => { setSelectedUser(user); setEditModalOpen(true); }}
+                        className="flex items-center gap-1 px-2 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg text-xs font-medium transition-colors"
+                        title="Editar jugador"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Editar
+                      </button>
                     </div>
                   </td>
                 </motion.tr>
@@ -491,6 +502,17 @@ export function UserRoleManager() {
           </div>
         )}
       </div>
+
+      {selectedUser && (
+        <EditarJugadorModal
+          isOpen={editModalOpen}
+          onClose={() => { setEditModalOpen(false); setSelectedUser(null); }}
+          user={selectedUser}
+          onUpdate={(updatedUser) => {
+            setUsers(users.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+          }}
+        />
+      )}
     </div>
   );
 }
