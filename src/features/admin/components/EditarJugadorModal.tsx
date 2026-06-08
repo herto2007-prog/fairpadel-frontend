@@ -22,7 +22,7 @@ type TabId = 'perfil' | 'categoria' | 'inscripciones' | 'historial';
 const TABS: { id: TabId; label: string; icon: typeof User }[] = [
   { id: 'perfil', label: 'Perfil', icon: User },
   { id: 'categoria', label: 'Categoría', icon: Trophy },
-  { id: 'inscripciones', label: 'Inscripciones', icon: CalendarDays },
+  { id: 'inscripciones', label: 'En curso', icon: CalendarDays },
   { id: 'historial', label: 'Historial', icon: ClipboardList },
 ];
 
@@ -404,7 +404,7 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                 {inscripciones.length === 0 ? (
                   <div className="text-center py-8 text-gray-400 text-sm">
                     <CalendarDays className="w-10 h-10 mx-auto mb-2 text-gray-600" />
-                    No tiene inscripciones activas
+                    No tiene inscripciones en torneos en curso
                   </div>
                 ) : (
                   inscripciones.map((ins) => (
