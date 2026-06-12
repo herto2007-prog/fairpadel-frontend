@@ -191,41 +191,23 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
     setCerrandoGrupo(true);
     try {
-      // Cerrar todas las categorías seleccionadas en paralelo
-      const promises = categoriasACerrar.map(c => 
-        api.post(`/admin/categorias/${c.id}/cerrar-inscripciones`)
-      );
-      
-      const results = await Promise.allSettled(promises);
-      
-      // Verificar que cada respuesta tenga data.success = true
-      let exitosos = 0;
-      let fallidos = 0;
-      let errores: string[] = [];
-      
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          // Verificar que el backend retornó success: true
-          if (result.value.data?.success) {
-            exitosos++;
-          } else {
-            fallidos++;
-            errores.push(result.value.data?.message || `Categoría ${index + 1}: Error desconocido`);
-          }
-        } else {
-          fallidos++;
-          errores.push(result.reason?.response?.data?.message || `Categoría ${index + 1}: Error de conexión`);
-        }
+      // Cierre por lotes: una sola llamada, una sola transacción en el backend
+      const { data } = await api.post(`/admin/torneos/${tournamentId}/categorias/cerrar-lote`, {
+        categoriaIds: categoriasACerrar.map(c => c.id),
       });
 
-      if (exitosos > 0) {
-        showSuccess('Inscripciones cerradas', `${exitosos} categorías cerradas exitosamente`);
+      const cerradas: any[] = data?.cerradas || [];
+      const omitidas: any[] = data?.omitidas || [];
+
+      if (cerradas.length > 0) {
+        showSuccess('Inscripciones cerradas', `${cerradas.length} categorías cerradas exitosamente`);
       }
-      if (fallidos > 0) {
-        const mensajeError = errores.length > 0 
-          ? errores.slice(0, 3).join('\n') + (errores.length > 3 ? `\n... y ${errores.length - 3} más` : '')
-          : `${fallidos} categorías no pudieron cerrarse`;
-        showError('Error', mensajeError);
+      if (omitidas.length > 0) {
+        const detalle = omitidas
+          .slice(0, 3)
+          .map((o: any) => `${o.nombre || 'Categoría'}: ${o.motivo}`)
+          .join('\n') + (omitidas.length > 3 ? `\n... y ${omitidas.length - 3} más` : '');
+        showError('Algunas categorías no se cerraron', detalle);
       }
 
       limpiarSeleccion();
