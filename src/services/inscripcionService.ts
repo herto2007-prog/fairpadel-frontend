@@ -22,4 +22,23 @@ export const inscripcionService = {
   create: (data: any) => api.post('/inscripciones', data).then(r => r.data),
   confirmar: (id: string) => api.post(`/inscripciones/${id}/confirmar`).then(r => r.data),
   cancelar: (id: string) => api.post(`/inscripciones/${id}/cancelar`).then(r => r.data),
+
+  // Descarga el Excel de inscripciones del torneo (Fase 7 - reportes).
+  // El backend devuelve el archivo; acá disparamos la descarga en el navegador.
+  descargarInscripcionesExcel: async (tournamentId: string) => {
+    const res = await api.get(`/reportes/torneos/${tournamentId}/inscripciones`, {
+      responseType: 'blob',
+    });
+    const cd = (res.headers['content-disposition'] as string) || '';
+    const match = cd.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : 'inscripciones.xlsx';
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

@@ -6,6 +6,7 @@ import {
   MoreVertical, Eye, CheckCircle, XCircle, Pencil
 } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { inscripcionService } from '../../../../services/inscripcionService';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
@@ -74,6 +75,7 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [modalFichaJugador, setModalFichaJugador] = useState<Inscripcion | null>(null);
   const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
   const [accionLoading, setAccionLoading] = useState<string | null>(null);
+  const [excelLoading, setExcelLoading] = useState(false);
 
   useEffect(() => {
     loadInscripciones();
@@ -160,6 +162,20 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
     link.href = URL.createObjectURL(blob);
     link.download = `inscripciones_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  };
+
+  // Descarga el Excel completo (server-side: todas las inscripciones del torneo)
+  const handleExportarExcel = async () => {
+    try {
+      setExcelLoading(true);
+      await inscripcionService.descargarInscripcionesExcel(tournamentId);
+      showSuccess('Excel descargado', 'El reporte de inscripciones se generó correctamente');
+    } catch (error) {
+      console.error('Error generando Excel:', error);
+      showError('Error', 'No se pudo generar el Excel de inscripciones');
+    } finally {
+      setExcelLoading(false);
+    }
   };
 
   // Eliminar inscripción
@@ -334,7 +350,17 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                   className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-[#232838] text-white rounded-xl text-sm transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  Exportar
+                  CSV
+                </button>
+
+                {/* Exportar Excel (completo, server-side) */}
+                <button
+                  onClick={handleExportarExcel}
+                  disabled={excelLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-[#232838] text-white rounded-xl text-sm transition-colors disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  {excelLoading ? 'Generando...' : 'Excel'}
                 </button>
 
                 {/* Inscripción manual */}
