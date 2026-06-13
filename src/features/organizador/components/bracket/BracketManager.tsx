@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy, Download } from 'lucide-react';
 import { api } from '../../../../services/api';
+import { matchService } from '../../../../services/matchService';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -50,6 +51,20 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [publicando, setPublicando] = useState(false);
   const [bracketPublicado, setBracketPublicado] = useState(false);
   const [urlPublica, setUrlPublica] = useState<string | null>(null);
+  const [descargandoExcel, setDescargandoExcel] = useState(false);
+
+  const handleDescargarPartidosExcel = async () => {
+    try {
+      setDescargandoExcel(true);
+      await matchService.descargarPartidosExcel(tournamentId);
+      showSuccess('Excel descargado', 'El reporte de partidos se generó correctamente');
+    } catch (error) {
+      console.error('Error generando Excel de partidos:', error);
+      showError('Error', 'No se pudo generar el Excel de partidos');
+    } finally {
+      setDescargandoExcel(false);
+    }
+  };
 
   useEffect(() => {
     loadCategorias();
@@ -421,6 +436,14 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                 Ver público
               </a>
             )}
+            <button
+              onClick={handleDescargarPartidosExcel}
+              disabled={descargandoExcel}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] text-white hover:bg-[#232838] border border-[#232838] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {descargandoExcel ? 'Generando...' : 'Partidos (Excel)'}
+            </button>
             <button
               onClick={() => {
                 console.log('[Re-Sortear] Botón clickeado');
