@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, LayoutDashboard, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard, MessageCircle } from 'lucide-react';
+import { Shield, Building2, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
 import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
-import { TorneosPendientesManager } from '../components/TorneosPendientesManager';
 import { CircuitosManager } from '../components/CircuitosManager';
 import { AscensosManager } from '../components/AscensosManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
 import { SuscripcionesManager } from '../components/SuscripcionesManager';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'torneos' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones' | 'whatsapp';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones' | 'whatsapp';
 
 export function AdminPage() {
   useNoIndex();
@@ -22,9 +21,8 @@ export function AdminPage() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: 'fairpadel' as AdminTab, label: 'FairPadel', icon: LayoutDashboard, color: 'bg-emerald-500' },
+    { id: 'fairpadel' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-emerald-500' },
     { id: 'whatsapp' as AdminTab, label: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500' },
-    { id: 'torneos' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-red-500' },
     { id: 'circuitos' as AdminTab, label: 'Circuitos', icon: Route, color: 'bg-purple-500' },
     { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: TrendingUp, color: 'bg-amber-500' },
     { id: 'suscripciones' as AdminTab, label: 'Suscripciones', icon: CreditCard, color: 'bg-cyan-500' },
@@ -123,7 +121,6 @@ export function AdminPage() {
           {activeTab === 'sedes' && <SedesManager />}
           {activeTab === 'modalidades' && <ModalidadesManager />}
           {activeTab === 'fairpadel' && <FairpadelPanel />}
-          {activeTab === 'torneos' && <TorneosPendientesManager />}
           {activeTab === 'circuitos' && <CircuitosManager />}
           {activeTab === 'ascensos' && <AscensosManager />}
           {activeTab === 'duenos' && <SedesDuenosManager />}

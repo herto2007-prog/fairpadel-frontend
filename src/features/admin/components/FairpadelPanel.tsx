@@ -19,6 +19,7 @@ import { torneoV2Service } from '../../../services/torneoV2Service';
 import { formatCurrency } from '../../../utils/currency';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
+import { TorneosPendientesManager } from './TorneosPendientesManager';
 
 
 interface DashboardStats {
@@ -58,7 +59,7 @@ interface ConfigItem {
 }
 
 export function FairpadelPanel() {
-  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'config' | 'comisiones'>('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'aprobar' | 'config' | 'comisiones'>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [torneosComisiones, setTorneosComisiones] = useState<TorneoBloqueado[]>([]);
   const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'por_cobrar' | 'verificar' | 'pagados' | 'exonerados'>('todos');
@@ -488,6 +489,12 @@ export function FairpadelPanel() {
           onClick={() => setActiveSubTab('dashboard')}
         />
         <SubTabButton
+          label="Por aprobar"
+          icon={Trophy}
+          active={activeSubTab === 'aprobar'}
+          onClick={() => setActiveSubTab('aprobar')}
+        />
+        <SubTabButton
           label={`Cuentas por cobrar ${stats && stats.torneosPorCobrar > 0 ? `(${stats.torneosPorCobrar})` : ''}`}
           icon={DollarSign}
           active={activeSubTab === 'comisiones'}
@@ -525,6 +532,7 @@ export function FairpadelPanel() {
       ) : (
         <>
           {activeSubTab === 'dashboard' && renderDashboard()}
+          {activeSubTab === 'aprobar' && <TorneosPendientesManager />}
           {activeSubTab === 'config' && renderConfig()}
           {activeSubTab === 'comisiones' && renderComisiones()}
         </>
