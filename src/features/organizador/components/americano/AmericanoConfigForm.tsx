@@ -9,6 +9,7 @@ import {
   Info,
   LayoutGrid,
   Award,
+  ChevronDown,
 } from 'lucide-react';
 import { torneoService } from '../../../../services/torneoService';
 
@@ -51,15 +52,21 @@ const SISTEMAS_PUNTOS = [
   { value: 'sets', label: 'Sets ganados', desc: 'Se cuenta cuántos sets ganó cada uno.' },
   { value: 'partido', label: 'Victorias', desc: '+3 por ganar, +1 por perder.' },
   { value: 'diferencia', label: 'Diferencia de games', desc: 'Games ganados - perdidos.' },
-  { value: 'puntosFijos', label: 'Puntos fijos', desc: 'Partido a 16, 24 o 32 puntos totales.' },
 ];
 
+// Formatos simples para el modo casual (puntosFijos queda fuera por ser confuso).
 const FORMATOS_PARTIDO = [
-  { value: 'tiempo', label: 'Por tiempo', desc: 'Tiempo fijo (ej: 15 min).' },
-  { value: 'games', label: 'Por games', desc: 'Primero en llegar a X games.' },
-  { value: 'mejorDe3Sets', label: 'Mejor de 3 sets', desc: 'Formato tradicional.' },
-  { value: 'puntosFijos', label: 'Puntos fijos', desc: 'Partido a puntaje fijo total.' },
+  { value: 'games', label: 'Por games', desc: 'El primero en llegar a X games gana. Lo más común y rápido.' },
+  { value: 'tiempo', label: 'Por tiempo', desc: 'Se juega un tiempo fijo (ej: 15 min) y gana quien hizo más games.' },
+  { value: 'mejorDe3Sets', label: 'Mejor de 3 sets', desc: 'Formato tradicional de partido.' },
 ];
+
+// Valor objetivo por defecto según el formato de partido elegido.
+const VALOR_OBJETIVO_DEFAULT: Record<string, number> = {
+  games: 6,
+  tiempo: 15,
+  mejorDe3Sets: 2,
+};
 
 // ─── Card wrapper ───
 function Card({ title, icon, children, className = '' }: { title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }) {
@@ -133,6 +140,7 @@ function getPreviewGrupos(
 // ─── Main component ───
 export function AmericanoConfigForm({ control, watch, setValue, errors, formatoAmericano }: Props) {
   const [categoriasSistema, setCategoriasSistema] = useState<Array<{ id: string; nombre: string; tipo: string; orden: number }>>([]);
+  const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
 
   useEffect(() => {
     torneoService.getCategories('STANDARD').then((cats) => {
@@ -206,26 +214,9 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
 
   return (
     <div className="space-y-4">
-      {/* ─── Configuración General ─── */}
-      <Card title="Configuración General" icon={<Settings className="w-3.5 h-3.5" />}>
+      {/* ─── ¿Cómo se juega? (núcleo simple) ─── */}
+      <Card title="¿Cómo se juega?" icon={<Settings className="w-3.5 h-3.5" />}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-white/50 text-xs font-medium mb-1.5 block">Sistema de puntos</label>
-            <Controller
-              name="sistemaPuntos"
-              control={control}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
-                >
-                  {SISTEMAS_PUNTOS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              )}
-            />
-          </div>
           <div>
             <label className="text-white/50 text-xs font-medium mb-1.5 block">Formato de partido</label>
             <Controller
@@ -233,7 +224,12 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
               control={control}
               render={({ field }) => (
                 <select
-                  {...field}
+                  value={field.value}
+                  onChange={(e) => {
+                    field.onChange(e.target.value);
+                    // Default inteligente: ajustá el valor objetivo según el formato.
+                    setValue('valorObjetivo', VALOR_OBJETIVO_DEFAULT[e.target.value] ?? 6);
+                  }}
                   className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
                 >
                   {FORMATOS_PARTIDO.map((f) => (
@@ -242,10 +238,10 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 </select>
               )}
             />
+            <p className="text-white/30 text-[10px] mt-1">
+              {FORMATOS_PARTIDO.find((f) => f.value === formatoPartido)?.desc}
+            </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="text-white/50 text-xs font-medium mb-1.5 block">{valorObjetivoLabel}</label>
             <Controller
@@ -262,81 +258,123 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                 />
               )}
             />
-          </div>
-          <div>
-            <label className="text-white/50 text-xs font-medium mb-1.5 block">Rondas</label>
-            <Controller
-              name="numRondas"
-              control={control}
-              render={({ field }) => (
-                <select
-                  value={field.value === 'automatico' ? 'automatico' : String(field.value)}
-                  onChange={(e) => field.onChange(e.target.value === 'automatico' ? 'automatico' : parseInt(e.target.value))}
-                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
-                >
-                  <option value="3">3 rondas</option>
-                  <option value="4">4 rondas</option>
-                  <option value="5">5 rondas</option>
-                  <option value="6">6 rondas</option>
-                  <option value="automatico">Automático</option>
-                </select>
-              )}
-            />
-          </div>
-          <div>
-            <label className="text-white/50 text-xs font-medium mb-1.5 block">Canchas</label>
-            <Controller
-              name="canchasSimultaneas"
-              control={control}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="number"
-                  min={1}
-                  max={20}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                  onFocus={(e) => e.target.select()}
-                  className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
-                />
-              )}
-            />
+            <p className="text-white/30 text-[10px] mt-1">
+              {formatoPartido === 'games'
+                ? 'Ej: 6 games, como el pádel tradicional.'
+                : formatoPartido === 'tiempo'
+                ? 'Ej: 15 minutos por partido.'
+                : 'Ej: 2 sets para ganar.'}
+            </p>
           </div>
         </div>
 
-        <Controller
-          name="conTieBreak"
-          control={control}
-          render={({ field }) => (
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
-                className="w-4 h-4 rounded border-[#232838] bg-[#151921] text-primary focus:ring-primary/20"
-              />
+        {/* Toggle de opciones avanzadas */}
+        <button
+          type="button"
+          onClick={() => setMostrarAvanzado((v) => !v)}
+          className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs font-medium transition-colors pt-1"
+        >
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mostrarAvanzado ? 'rotate-180' : ''}`} />
+          Opciones avanzadas (puntaje, rondas, canchas, premios)
+        </button>
+
+        {mostrarAvanzado && (
+          <div className="space-y-4 pt-3 border-t border-[#232838]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <span className="text-white text-sm">Incluir tie-break</span>
-                <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se juega un tie-break a 7 puntos (con diferencia de 2) para definir el ganador del set.</p>
+                <label className="text-white/50 text-xs font-medium mb-1.5 block">Sistema de puntos</label>
+                <Controller
+                  name="sistemaPuntos"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                    >
+                      {SISTEMAS_PUNTOS.map((s) => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+                  )}
+                />
+                <p className="text-white/30 text-[10px] mt-1">Cómo se arma la tabla de posiciones. Por defecto: games acumulados.</p>
               </div>
-            </label>
-          )}
-        />
+              <div>
+                <label className="text-white/50 text-xs font-medium mb-1.5 block">Rondas</label>
+                <Controller
+                  name="numRondas"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      value={field.value === 'automatico' ? 'automatico' : String(field.value)}
+                      onChange={(e) => field.onChange(e.target.value === 'automatico' ? 'automatico' : parseInt(e.target.value))}
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                    >
+                      <option value="3">3 rondas</option>
+                      <option value="4">4 rondas</option>
+                      <option value="5">5 rondas</option>
+                      <option value="6">6 rondas</option>
+                      <option value="automatico">Automático</option>
+                    </select>
+                  )}
+                />
+              </div>
+              <div>
+                <label className="text-white/50 text-xs font-medium mb-1.5 block">Canchas</label>
+                <Controller
+                  name="canchasSimultaneas"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="number"
+                      min={1}
+                      max={20}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm focus:border-primary outline-none transition-colors"
+                    />
+                  )}
+                />
+              </div>
+            </div>
 
-        <div>
-          <label className="text-white/50 text-xs font-medium mb-1.5 block">Premios (opcional)</label>
-          <Controller
-            name="premiosTexto"
-            control={control}
-            render={({ field }) => (
-              <textarea
-                {...field}
-                rows={2}
-                placeholder="1°: Medalla + bebida&#10;2°: Medalla"
-                className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors resize-none"
+            <Controller
+              name="conTieBreak"
+              control={control}
+              render={({ field }) => (
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    className="w-4 h-4 rounded border-[#232838] bg-[#151921] text-primary focus:ring-primary/20"
+                  />
+                  <div>
+                    <span className="text-white text-sm">Incluir tie-break</span>
+                    <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se juega un tie-break a 7 puntos (con diferencia de 2) para definir el ganador del set.</p>
+                  </div>
+                </label>
+              )}
+            />
+
+            <div>
+              <label className="text-white/50 text-xs font-medium mb-1.5 block">Premios (opcional)</label>
+              <Controller
+                name="premiosTexto"
+                control={control}
+                render={({ field }) => (
+                  <textarea
+                    {...field}
+                    rows={2}
+                    placeholder="1°: Medalla + bebida&#10;2°: Medalla"
+                    className="w-full bg-white/[0.03] border border-[#232838] rounded-xl px-3 py-2.5 text-white text-sm placeholder:text-white/20 focus:border-primary outline-none transition-colors resize-none"
+                  />
+                )}
               />
-            )}
-          />
-        </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* ─── Géneros ─── */}

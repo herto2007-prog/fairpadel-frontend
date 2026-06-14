@@ -167,7 +167,10 @@ export interface ClasificacionGrupo {
 
 export const americanoService = {
   // Torneos
-  listar: () => api.get('/americano/torneos').then(r => r.data as AmericanoTorneo[]),
+  listar: (finalizados = false) =>
+    api
+      .get('/americano/torneos', { params: finalizados ? { finalizados: '1' } : {} })
+      .then(r => r.data as AmericanoTorneo[]),
   
   getById: (id: string) => api.get(`/americano/torneos/${id}`).then(r => r.data as AmericanoTorneo),
   

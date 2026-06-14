@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import { VerificacionEmailBanner } from '../VerificacionEmailBanner';
 
@@ -19,6 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // Items base para todos los usuarios
   const baseNavItems = [
     { path: '/torneos', label: 'Torneos', icon: Trophy },
+    { path: '/americano', label: 'Americano', icon: Sparkles },
     { path: '/sedes', label: 'Canchas', icon: MapPin },
     { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
     { path: '/instructores', label: 'Instructores', icon: Users },
