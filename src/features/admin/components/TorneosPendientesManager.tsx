@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Calendar, MapPin, User, CheckCircle, XCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { api } from '../../../services/api';
 import { formatDatePY } from '../../../utils/date';
+import { formatCurrency } from '../../../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -33,6 +34,10 @@ interface TorneoPendiente {
   }>;
   _count: {
     inscripciones: number;
+  };
+  deudaOrganizador?: {
+    torneos: number;
+    monto: number;
   };
 }
 
@@ -251,6 +256,15 @@ export function TorneosPendientesManager() {
                         {torneo.organizador.nombre} {torneo.organizador.apellido}
                       </div>
                     </div>
+
+                    {torneo.deudaOrganizador && torneo.deudaOrganizador.torneos > 0 && (
+                      <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>
+                          Este organizador adeuda <strong>{formatCurrency(torneo.deudaOrganizador.monto)}</strong> de {torneo.deudaOrganizador.torneos} torneo(s) anterior(es).
+                        </span>
+                      </div>
+                    )}
 
                     {torneo.categorias.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-3">
