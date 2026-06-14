@@ -26,6 +26,7 @@ interface DashboardStats {
   totalTorneos: number;
   torneosActivos: number;
   torneosPorCobrar: number;
+  torneosPorAprobar: number;
   totalJugadores: number;
   comisionPendienteTotal: number;
   ingresosMes: number;
@@ -170,27 +171,29 @@ export function FairpadelPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Trophy}
-          label="Total Torneos"
-          value={stats?.totalTorneos || 0}
-          color="bg-blue-500"
-        />
-        <StatCard
-          icon={Users}
-          label="Jugadores"
-          value={stats?.totalJugadores || 0}
-          color="bg-emerald-500"
+          label="Por aprobar"
+          value={stats?.torneosPorAprobar || 0}
+          color="bg-red-500"
+          onClick={() => setActiveSubTab('aprobar')}
         />
         <StatCard
           icon={DollarSign}
           label="Por cobrar"
           value={stats?.torneosPorCobrar || 0}
           color="bg-amber-500"
+          onClick={() => { setFiltroComisiones('por_cobrar'); setActiveSubTab('comisiones'); }}
         />
         <StatCard
           icon={DollarSign}
           label="Ingresos del Mes"
           value={formatCurrency(stats?.ingresosMes || 0)}
-          color="bg-amber-500"
+          color="bg-emerald-500"
+        />
+        <StatCard
+          icon={Users}
+          label="Jugadores"
+          value={stats?.totalJugadores || 0}
+          color="bg-blue-500"
         />
       </div>
 
@@ -343,8 +346,22 @@ export function FairpadelPanel() {
           <p className="text-slate-400">No hay torneos que coincidan con el filtro seleccionado</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {torneosComisiones.map((torneo) => (
+        <div className="space-y-6">
+          {agruparComisionesPorOrganizador(torneosComisiones).map((grupo) => (
+            <div key={grupo.key} className="space-y-3">
+              <div className="flex items-center justify-between px-1 pt-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium text-white">{grupo.nombre}</span>
+                  <span className="text-slate-500">· {grupo.torneos.length} torneo(s)</span>
+                </div>
+                {grupo.totalAdeudado > 0 && (
+                  <span className="text-sm font-semibold text-amber-400">
+                    Adeuda: {formatCurrency(grupo.totalAdeudado)}
+                  </span>
+                )}
+              </div>
+              {grupo.torneos.map((torneo) => (
             <motion.div
               key={torneo.id}
               initial={{ opacity: 0, y: 10 }}
@@ -464,6 +481,8 @@ export function FairpadelPanel() {
                 </div>
               </div>
             </motion.div>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -552,21 +571,58 @@ export function FairpadelPanel() {
   );
 }
 
+// Agrupa las comisiones por organizador, con el total que cada uno adeuda
+// (por cobrar + comprobante subido). Pensado para cobrar/dar descuentos por
+// organizador (ver modelo de comisión).
+function agruparComisionesPorOrganizador(lista: TorneoBloqueado[]) {
+  const mapa = new Map<
+    string,
+    { key: string; nombre: string; torneos: TorneoBloqueado[]; totalAdeudado: number }
+  >();
+  const ADEUDA = ['POR_COBRAR', 'PENDIENTE_VERIFICACION'];
+
+  for (const t of lista) {
+    const org = t.organizador;
+    const key = org.email || `${org.nombre} ${org.apellido}`;
+    if (!mapa.has(key)) {
+      mapa.set(key, {
+        key,
+        nombre: `${org.nombre} ${org.apellido}`.trim() || org.email,
+        torneos: [],
+        totalAdeudado: 0,
+      });
+    }
+    const grupo = mapa.get(key)!;
+    grupo.torneos.push(t);
+    if (ADEUDA.includes(t.comision.estado)) {
+      grupo.totalAdeudado += t.comision.montoEstimado || 0;
+    }
+  }
+
+  // Los que más adeudan primero.
+  return Array.from(mapa.values()).sort((a, b) => b.totalAdeudado - a.totalAdeudado);
+}
+
 // Sub-componentes
 
-function StatCard({ 
-  icon: Icon, 
-  label, 
-  value, 
+function StatCard({
+  icon: Icon,
+  label,
+  value,
   color,
-}: { 
-  icon: React.ElementType; 
-  label: string; 
-  value: string | number; 
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
   color: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="glass rounded-2xl p-6 border border-slate-700">
+    <div
+      onClick={onClick}
+      className={`glass rounded-2xl p-6 border border-slate-700 ${onClick ? 'cursor-pointer hover:border-emerald-500/40 transition-colors' : ''}`}
+    >
       <div className="flex items-center gap-4">
         <div className={`w-12 h-12 ${color} bg-opacity-20 rounded-xl flex items-center justify-center`}>
           <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
