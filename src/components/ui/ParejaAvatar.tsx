@@ -21,6 +21,7 @@ const sizeConfig = {
     border: 'border-2',
     overlap: '-ml-2',
     icon: 'w-3 h-3',
+    text: 'text-xs',
   },
   md: {
     container: 'w-16 h-10',
@@ -28,6 +29,7 @@ const sizeConfig = {
     border: 'border-2',
     overlap: '-ml-3',
     icon: 'w-4 h-4',
+    text: 'text-sm',
   },
   lg: {
     container: 'w-20 h-12',
@@ -35,6 +37,7 @@ const sizeConfig = {
     border: 'border-[3px]',
     overlap: '-ml-4',
     icon: 'w-5 h-5',
+    text: 'text-base',
   },
 };
 
@@ -66,7 +69,7 @@ export function ParejaAvatar({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#df2531]/20 to-[#df2531]/5">
-            <span className="text-[#df2531] font-medium text-xs">
+            <span className={`text-[#df2531] font-medium ${config.text}`}>
               {jugador1?.nombre?.[0]?.toUpperCase() || '?'}
             </span>
           </div>
@@ -85,7 +88,7 @@ export function ParejaAvatar({
           />
         ) : jugador2 ? (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#df2531]/20 to-[#df2531]/5">
-            <span className="text-[#df2531] font-medium text-xs">
+            <span className={`text-[#df2531] font-medium ${config.text}`}>
               {jugador2.nombre?.[0]?.toUpperCase() || '?'}
             </span>
           </div>

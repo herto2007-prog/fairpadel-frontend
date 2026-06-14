@@ -256,10 +256,10 @@ function PartidoCard({
         <div className={`flex-1 flex items-center gap-3 ${partido.ganador?.id === partido.inscripcion1?.id ? 'text-green-400' : 'text-white'}`}>
           {partido.inscripcion1 ? (
             <>
-              <ParejaAvatar 
+              <ParejaAvatar
                 jugador1={partido.inscripcion1.jugador1}
                 jugador2={partido.inscripcion1.jugador2}
-                size="sm"
+                size="md"
               />
               <div className="min-w-0">
                 <div className="font-medium truncate">
@@ -305,10 +305,10 @@ function PartidoCard({
                   {partido.inscripcion2.jugador2.nombre} {partido.inscripcion2.jugador2.apellido}
                 </div>
               </div>
-              <ParejaAvatar 
+              <ParejaAvatar
                 jugador1={partido.inscripcion2.jugador1}
                 jugador2={partido.inscripcion2.jugador2}
-                size="sm"
+                size="md"
               />
             </>
           ) : (
