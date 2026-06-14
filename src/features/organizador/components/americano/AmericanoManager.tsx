@@ -2,7 +2,7 @@ import { useEffect, useState, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users, Play, SkipForward, Flag, Trophy,
+  Users, Play, Flag, Trophy,
   Swords, ChevronDown, ChevronUp, Plus, Check, Info, HelpCircle, Settings, Trash2, Target, RotateCcw, Pencil, Coffee, Zap
 } from 'lucide-react';
 import {
@@ -268,8 +268,10 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const pasosGuia: { label: string; Icon: typeof Users; hint: string; accion: { txt: string; fn: () => void } | null }[] = [
     {
       label: 'Inscriben', Icon: Users,
-      hint: 'Compartí el link para que se anoten. Necesitás al menos 4 jugadores para empezar.',
-      accion: inscripcionesAbiertas && inscripciones.length >= 4 ? { txt: 'Cerrar inscripciones', fn: handleCerrarInscripciones } : null,
+      hint: inscripciones.length >= 4
+        ? 'Ya tenés suficientes. Cuando estén todos, cerrá las inscripciones.'
+        : `Compartí el link para que se anoten. Necesitás al menos 4 (van ${inscripciones.length}).`,
+      accion: { txt: 'Cerrar inscripciones', fn: handleCerrarInscripciones },
     },
     {
       label: 'Cerrar', Icon: Flag,
@@ -284,9 +286,11 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
     {
       label: 'Cargar', Icon: Swords,
       hint: puedeSiguiente
-        ? 'Cargá los resultados de la ronda (de un toque) y generá la siguiente.'
+        ? 'Ya cargaste la ronda. Generá la siguiente cuando quieran seguir jugando.'
         : 'Cargá los resultados de cada partido con los botones rápidos, en la pestaña Rondas.',
-      accion: { txt: 'Ir a las rondas', fn: () => setTabActivo('rondas') },
+      accion: puedeSiguiente
+        ? { txt: 'Generar siguiente ronda', fn: handleSiguienteRonda }
+        : { txt: 'Ir a las rondas', fn: () => setTabActivo('rondas') },
     },
     {
       label: 'Listo', Icon: Trophy,
@@ -368,14 +372,14 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
         </div>
       )}
 
-      {/* Acciones principales */}
-      <div className="flex flex-wrap gap-3">
+      {/* Acciones secundarias / administración (las principales viven en la guía de arriba) */}
+      <div className="flex flex-wrap items-center gap-2">
         {!modoConfigurado && inscripciones.length >= 4 && (
           <button
             onClick={() => setMostrarConfigModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-primary/40 text-white text-sm font-medium rounded-xl transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-[#151921] border border-[#232838] hover:border-primary/40 text-white/70 text-xs font-medium rounded-lg transition-colors"
           >
-            <Settings className="w-4 h-4 text-primary" />
+            <Settings className="w-3.5 h-3.5 text-primary" />
             Configurar modo de juego
           </button>
         )}
@@ -383,107 +387,42 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
         {modoConfigurado && torneo?.americanosRonda?.length === 0 && (
           <button
             onClick={() => setMostrarConfigModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-primary/40 text-white/70 text-sm font-medium rounded-xl transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-[#151921] border border-[#232838] hover:border-white/20 text-white/50 text-xs font-medium rounded-lg transition-colors"
           >
-            <Settings className="w-4 h-4 text-white/40" />
+            <Settings className="w-3.5 h-3.5 text-white/40" />
             Editar modo
           </button>
         )}
 
-        {inscripcionesAbiertas && (
-          <button
-            onClick={handleCerrarInscripciones}
-            disabled={!!accionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-yellow-500/40 text-yellow-400/80 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {accionLoading === 'cerrar' ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full" />
-            ) : (
-              <Flag className="w-4 h-4" />
-            )}
-            Cerrar inscripciones
-          </button>
-        )}
-
-        {!inscripcionesAbiertas && torneo?.americanosRonda?.length === 0 && (
-          <button
-            onClick={handleReabrirInscripciones}
-            disabled={!!accionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#151921] border border-[#232838] hover:border-green-500/40 text-green-400/80 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {accionLoading === 'reabrir' ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-green-400/30 border-t-green-400 rounded-full" />
-            ) : (
-              <RotateCcw className="w-4 h-4" />
-            )}
-            Reabrir inscripciones
-          </button>
-        )}
-
-        {!inscripcionesAbiertas && modoConfigurado && (
-          <span className="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm">
-            <Flag className="w-4 h-4" />
-            Inscripciones cerradas
-          </span>
-        )}
-
-        {puedeIniciar && (
-          <button
-            onClick={handleIniciarRonda}
-            disabled={!!accionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {accionLoading === 'iniciar' ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            Iniciar 1ª Ronda
-          </button>
-        )}
-
-        {puedeSiguiente && (
-          <button
-            onClick={handleSiguienteRonda}
-            disabled={!!accionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {accionLoading === 'siguiente' ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
-            ) : (
-              <SkipForward className="w-4 h-4" />
-            )}
-            Generar Siguiente Ronda
-          </button>
-        )}
-
-        {torneo?.americanosRonda && torneo.americanosRonda.length > 0 && (
-          <button
-            onClick={handleReiniciar}
-            disabled={!!accionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 text-orange-400 text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-          >
-            {accionLoading === 'reiniciar' ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full" />
-            ) : (
-              <RotateCcw className="w-4 h-4" />
-            )}
-            Reiniciar todo
-          </button>
-        )}
-
-        <button
-          onClick={handleEliminar}
-          disabled={!!accionLoading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-xl transition-colors disabled:opacity-50 ml-auto"
-        >
-          {accionLoading === 'eliminar' ? (
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full" />
-          ) : (
-            <Trash2 className="w-4 h-4" />
+        <div className="ml-auto flex items-center gap-2">
+          {torneo?.americanosRonda && torneo.americanosRonda.length > 0 && (
+            <button
+              onClick={handleReiniciar}
+              disabled={!!accionLoading}
+              className="flex items-center gap-1.5 px-3 py-2 text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/10 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              {accionLoading === 'reiniciar' ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3.5 h-3.5 border-2 border-orange-400/30 border-t-orange-400 rounded-full" />
+              ) : (
+                <RotateCcw className="w-3.5 h-3.5" />
+              )}
+              Reiniciar
+            </button>
           )}
-          Eliminar torneo
-        </button>
+
+          <button
+            onClick={handleEliminar}
+            disabled={!!accionLoading}
+            className="flex items-center gap-1.5 px-3 py-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+          >
+            {accionLoading === 'eliminar' ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-3.5 h-3.5 border-2 border-red-400/30 border-t-red-400 rounded-full" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
+            Eliminar
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

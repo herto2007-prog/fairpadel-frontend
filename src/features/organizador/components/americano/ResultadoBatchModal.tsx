@@ -223,7 +223,7 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={e => e.stopPropagation()}
-        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#232838] shrink-0">
@@ -260,30 +260,40 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                   'border-[#232838] bg-white/[0.02]'
                 }`}
               >
-                <div className="flex items-center gap-4 flex-wrap">
-                  {/* Cancha */}
-                  <div className="shrink-0 w-12 text-center">
-                    <span className="text-white/30 text-[10px] font-medium bg-white/5 px-2 py-1 rounded">
-                      C{partido.cancha}
-                    </span>
+                {/* Cabecera: cancha + estado */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-white/40 text-[10px] font-medium bg-white/5 px-2 py-1 rounded">
+                    Cancha {partido.cancha}
+                  </span>
+                  <div className="shrink-0 flex items-center">
+                    {form.guardando ? (
+                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                    ) : form.guardado ? (
+                      <span className="flex items-center gap-1 text-green-400 text-[10px]"><CheckCircle2 className="w-4 h-4" /> Guardado</span>
+                    ) : form.error ? (
+                      <span title={form.error}><AlertCircle className="w-4 h-4 text-red-400" /></span>
+                    ) : partido.estado === 'FINALIZADO' ? (
+                      <span className="text-[10px] text-green-400/60">Cargado · editar</span>
+                    ) : (
+                      <span className="text-[10px] text-white/20">Sin cargar</span>
+                    )}
                   </div>
+                </div>
 
-                  {/* Pareja A */}
-                  <div className="min-w-[140px] text-right">
-                    <p className="text-white text-sm font-medium">{jugadoresLabel(partido, 'A')}</p>
-                  </div>
+                {/* Equipos + marcador */}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
+                  <p className="text-white text-sm font-medium text-right truncate">{jugadoresLabel(partido, 'A')}</p>
 
-                  {/* Inputs */}
-                  <div className="flex-1 min-w-[200px]">
+                  <div className="shrink-0">
                     {esPuntosFijos ? (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1.5">
                         <input
                           type="number"
                           min={0}
                           max={99}
                           value={form.puntosA}
                           onChange={e => updateForm(partido.id, prev => ({ ...prev, puntosA: parseInt(e.target.value) || 0 }))}
-                          className="w-16 bg-white/[0.05] border border-[#232838] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
+                          className="w-12 bg-white/[0.05] border border-[#232838] rounded-lg px-1 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
                         />
                         <span className="text-white/30">-</span>
                         <input
@@ -292,23 +302,23 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                           max={99}
                           value={form.puntosB}
                           onChange={e => updateForm(partido.id, prev => ({ ...prev, puntosB: parseInt(e.target.value) || 0 }))}
-                          className="w-16 bg-white/[0.05] border border-[#232838] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
+                          className="w-12 bg-white/[0.05] border border-[#232838] rounded-lg px-1 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
                         />
                       </div>
                     ) : (
                       <div className="space-y-1.5">
                         {form.sets.map((set, idx) => (
-                          <div key={idx} className="flex items-center justify-center gap-2">
-                            <span className="text-white/30 text-[10px] w-10 text-right">
-                              {esMejorDe3 ? `Set ${idx + 1}` : esGames ? `Games` : 'Resultado'}
-                            </span>
+                          <div key={idx} className="flex items-center justify-center gap-1.5">
+                            {esMejorDe3 && (
+                              <span className="text-white/30 text-[10px] w-9 text-right shrink-0">Set {idx + 1}</span>
+                            )}
                             <input
                               type="number"
                               min={0}
                               max={99}
                               value={set.gamesEquipoA}
                               onChange={e => updateSet(partido.id, idx, 'gamesEquipoA', parseInt(e.target.value) || 0)}
-                              className="w-14 bg-white/[0.05] border border-[#232838] rounded-lg px-2 py-1 text-white text-sm text-center focus:border-primary outline-none"
+                              className="w-12 bg-white/[0.05] border border-[#232838] rounded-lg px-1 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
                             />
                             <span className="text-white/30">-</span>
                             <input
@@ -317,12 +327,12 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                               max={99}
                               value={set.gamesEquipoB}
                               onChange={e => updateSet(partido.id, idx, 'gamesEquipoB', parseInt(e.target.value) || 0)}
-                              className="w-14 bg-white/[0.05] border border-[#232838] rounded-lg px-2 py-1 text-white text-sm text-center focus:border-primary outline-none"
+                              className="w-12 bg-white/[0.05] border border-[#232838] rounded-lg px-1 py-1.5 text-white text-sm text-center focus:border-primary outline-none"
                             />
                             {esMejorDe3 && form.sets.length > 1 && (
                               <button
                                 onClick={() => removeSet(partido.id, idx)}
-                                className="text-white/20 hover:text-red-400 transition-colors"
+                                className="text-white/20 hover:text-red-400 transition-colors shrink-0"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -332,7 +342,7 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                         {esMejorDe3 && puedeAgregarSet(form) && (
                           <button
                             onClick={() => addSet(partido.id)}
-                            className="flex items-center gap-1 text-primary text-xs hover:text-primary/80 transition-colors mt-1"
+                            className="flex items-center gap-1 text-primary text-xs hover:text-primary/80 transition-colors mt-1 mx-auto"
                           >
                             <Plus className="w-3 h-3" /> Agregar set
                           </button>
@@ -341,25 +351,7 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                     )}
                   </div>
 
-                  {/* Pareja B */}
-                  <div className="min-w-[140px]">
-                    <p className="text-white text-sm font-medium">{jugadoresLabel(partido, 'B')}</p>
-                  </div>
-
-                  {/* Estado / Error */}
-                  <div className="shrink-0 w-8 flex justify-center">
-                    {form.guardando ? (
-                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                    ) : form.guardado ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                    ) : form.error ? (
-                      <span title={form.error}><AlertCircle className="w-4 h-4 text-red-400" /></span>
-                    ) : partido.estado === 'FINALIZADO' ? (
-                      <span className="text-[10px] text-green-400/60">Editar</span>
-                    ) : (
-                      <span className="text-[10px] text-white/20">Nuevo</span>
-                    )}
-                  </div>
+                  <p className="text-white text-sm font-medium truncate">{jugadoresLabel(partido, 'B')}</p>
                 </div>
 
                 {esGames && !form.guardado && (
