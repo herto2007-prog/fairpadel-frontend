@@ -24,7 +24,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
-  const [publicando, setPublicando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const [bracketPublicado, setBracketPublicado] = useState(false);
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
@@ -49,25 +49,25 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
     }
   };
 
-  const handlePublicar = async () => {
+  const handleEnviarAprobacion = async () => {
     const ok = await confirm({
-      title: 'Publicar torneo',
+      title: 'Enviar a aprobación',
       message:
-        'El torneo se hará público: aparecerá en el listado y los jugadores podrán inscribirse. ¿Continuar?',
-      confirmText: 'Publicar',
+        'El torneo se enviará a FairPadel para su aprobación. Cuando lo aprueben, quedará público y abierto a inscripciones. ¿Continuar?',
+      confirmText: 'Enviar a aprobación',
       cancelText: 'Cancelar',
       variant: 'info',
     });
     if (!ok) return;
     try {
-      setPublicando(true);
-      await overviewService.publicarTorneo(tournamentId);
-      showSuccess('Torneo publicado', 'Ya pueden inscribirse los jugadores.');
+      setEnviando(true);
+      await overviewService.enviarAprobacion(tournamentId);
+      showSuccess('Enviado a aprobación', 'Te avisamos cuando FairPadel lo apruebe.');
       await loadOverview();
     } catch (error: any) {
-      showError('Error', error.response?.data?.message || 'No se pudo publicar el torneo');
+      showError('Error', error.response?.data?.message || 'No se pudo enviar a aprobación');
     } finally {
-      setPublicando(false);
+      setEnviando(false);
     }
   };
 
@@ -246,11 +246,11 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
       <RoadmapTorneo
         data={data}
         bracketPublicado={bracketPublicado}
-        publicando={publicando}
+        enviando={enviando}
         finalizando={finalizando}
         copied={copied}
         onTabChange={onTabChange}
-        onPublicarTorneo={handlePublicar}
+        onEnviarAprobacion={handleEnviarAprobacion}
         onFinalizar={handleFinalizar}
         onCopyLink={handleCopyLink}
       />

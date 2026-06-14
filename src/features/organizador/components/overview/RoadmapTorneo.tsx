@@ -30,11 +30,11 @@ interface Paso {
 interface RoadmapTorneoProps {
   data: OverviewData;
   bracketPublicado: boolean;
-  publicando: boolean;
+  enviando: boolean;
   finalizando: boolean;
   copied: boolean;
   onTabChange: (tab: string) => void;
-  onPublicarTorneo: () => void;
+  onEnviarAprobacion: () => void;
   onFinalizar: () => void;
   onCopyLink: () => void;
 }
@@ -42,11 +42,11 @@ interface RoadmapTorneoProps {
 export function RoadmapTorneo({
   data,
   bracketPublicado,
-  publicando,
+  enviando,
   finalizando,
   copied,
   onTabChange,
-  onPublicarTorneo,
+  onEnviarAprobacion,
   onFinalizar,
   onCopyLink,
 }: RoadmapTorneoProps) {
@@ -58,7 +58,10 @@ export function RoadmapTorneo({
   const fixtureOk = req('fixture');
   const dispOk = req('disponibilidad');
   const inscrOk = req('inscripciones');
-  const publicado = torneo.estado !== 'BORRADOR';
+  // El torneo sale público SOLO cuando el admin lo aprueba.
+  const yaPublico = !['BORRADOR', 'PENDIENTE_APROBACION', 'RECHAZADO'].includes(torneo.estado);
+  const pendienteAprob = torneo.estado === 'PENDIENTE_APROBACION';
+  const rechazado = torneo.estado === 'RECHAZADO';
   const finalizado = torneo.estadoProceso === 'finalizado';
   const enFase = ['programacion', 'en_curso'].includes(torneo.estadoProceso);
   const confirmadas = inscripciones.confirmadas;
@@ -73,13 +76,24 @@ export function RoadmapTorneo({
     {
       key: 'abrir',
       titulo: 'Abrir inscripciones',
-      sub: publicado
+      sub: yaPublico
         ? 'Tu torneo ya es público y recibe inscriptos'
-        : 'Publicá el torneo para que aparezca y la gente se anote',
-      done: publicado,
-      cta: !publicado
-        ? [{ label: 'Publicar torneo', icon: Send, onClick: onPublicarTorneo, primary: true, loading: publicando }]
-        : undefined,
+        : pendienteAprob
+          ? 'Esperando aprobación de FairPadel ⏳'
+          : rechazado
+            ? 'No fue aprobado. Ajustá lo necesario y reenvialo'
+            : 'Cuando esté listo, enviálo a aprobación de FairPadel',
+      done: yaPublico,
+      cta:
+        pendienteAprob || yaPublico
+          ? undefined
+          : [{
+              label: rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',
+              icon: Send,
+              onClick: onEnviarAprobacion,
+              primary: true,
+              loading: enviando,
+            }],
     },
     {
       key: 'inscriptos',

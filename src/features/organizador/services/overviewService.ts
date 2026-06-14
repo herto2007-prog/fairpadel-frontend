@@ -101,11 +101,12 @@ export const overviewService = {
   },
 
   /**
-   * Publica un torneo en BORRADOR (lo abre a inscripciones y avisa a los
-   * suscriptores de la ciudad). Lo usa el paso "Abrir inscripciones" del roadmap.
+   * Envía el torneo (BORRADOR o RECHAZADO) a aprobación del admin. NO publica:
+   * lo deja PENDIENTE_APROBACION. El admin lo aprueba y recién ahí sale público.
+   * Lo usa el paso "Abrir inscripciones" del roadmap.
    */
-  publicarTorneo: async (tournamentId: string): Promise<void> => {
-    await api.put(`/admin/torneos/${tournamentId}/publicar`);
+  enviarAprobacion: async (tournamentId: string): Promise<void> => {
+    await api.post(`/admin/torneos/${tournamentId}/enviar-aprobacion`);
   },
 
   /**
