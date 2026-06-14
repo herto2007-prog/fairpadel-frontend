@@ -412,6 +412,12 @@ export function AmericanoCreateWizard({ onClose, onCreated }: Props) {
   const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
   const onSubmit = async (data: WizardData) => {
+    // Anti doble-submit: si ya hay una creación en curso, ignorar.
+    if (loading) return;
+
+    // Para el rollback: si el torneo se crea pero la configuración falla,
+    // lo borramos para no dejar torneos huérfanos sin configurar.
+    let torneoCreadoId: string | null = null;
     try {
       setLoading(true);
 
@@ -427,6 +433,7 @@ export function AmericanoCreateWizard({ onClose, onCreated }: Props) {
       };
 
       const torneo = await americanoService.crear(createPayload);
+      torneoCreadoId = torneo.id;
 
       // 2. Configurar modo de juego
       const premiosArray = data.premiosTexto
@@ -462,6 +469,14 @@ export function AmericanoCreateWizard({ onClose, onCreated }: Props) {
       showSuccess('Torneo creado y configurado');
       onCreated(torneo);
     } catch (err: any) {
+      // Rollback: deshacer el torneo a medio crear (best-effort).
+      if (torneoCreadoId) {
+        try {
+          await americanoService.eliminar(torneoCreadoId);
+        } catch {
+          /* si el borrado falla, no empeoramos el error original */
+        }
+      }
       showError(err.response?.data?.message || 'Error al crear el torneo');
     } finally {
       setLoading(false);
