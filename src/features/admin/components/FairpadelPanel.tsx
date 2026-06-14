@@ -144,24 +144,6 @@ export function FairpadelPanel() {
     }
   };
 
-  const bloquearTorneo = async (id: string) => {
-    const confirmed = await confirm({
-      title: 'Bloquear torneo',
-      message: '¿Estás seguro de bloquear este torneo? El organizador no podrá avanzar con el torneo hasta pagar la comisión.',
-      confirmText: 'Bloquear',
-      cancelText: 'Cancelar',
-      variant: 'danger',
-    });
-    if (!confirmed) return;
-    try {
-      await torneoV2Service.bloquearTorneo(id);
-      setMessage({ type: 'success', text: 'Torneo bloqueado correctamente' });
-      await loadAllData();
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error bloqueando torneo' });
-    }
-  };
-
   const exonerarTorneo = async (id: string) => {
     const confirmed = await confirm({
       title: 'Exonerar torneo',
@@ -574,21 +556,12 @@ export function FairpadelPanel() {
                   <div className="flex flex-wrap gap-2 justify-end">
                     {torneo.comision.estado !== 'PAGADO' && torneo.comision.estado !== 'EXONERADO' && (
                       <>
-                        {!torneo.comision.bloqueoActivo && (
-                          <button
-                            onClick={() => bloquearTorneo(torneo.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
-                          >
-                            <Lock className="w-4 h-4" />
-                            Bloquear
-                          </button>
-                        )}
                         <button
                           onClick={() => liberarTorneo(torneo.id, torneo.comision.montoEstimado)}
                           className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
                         >
                           <Unlock className="w-4 h-4" />
-                          {torneo.comision.bloqueoActivo ? 'Liberar' : 'Marcar pagado'}
+                          Marcar pagado
                         </button>
                         <button
                           onClick={() => exonerarTorneo(torneo.id)}
