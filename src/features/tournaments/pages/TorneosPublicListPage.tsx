@@ -8,6 +8,7 @@ import {
 import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { formatDatePYShort } from '../../../utils/date';
+import { AlertaCiudadCTA } from '../components/AlertaCiudadCTA';
 
 interface Torneo {
   id: string;
@@ -341,6 +342,9 @@ export function TorneosPublicListPage() {
                   Crear un americano gratis
                 </Link>
               </div>
+
+              {/* CTA: avisarme cuando haya torneos en mi ciudad */}
+              <AlertaCiudadCTA ciudadInicial={filtros.ciudad} />
             </motion.div>
           ) : (
             <>
