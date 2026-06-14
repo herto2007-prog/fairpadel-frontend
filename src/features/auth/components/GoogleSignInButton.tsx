@@ -2,6 +2,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { GOOGLE_CLIENT_ID } from '../../../config/google';
 
 interface Props {
   onError?: (mensaje: string) => void;
@@ -15,9 +16,8 @@ interface Props {
 export function GoogleSignInButton({ onError }: Props) {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-  if (!clientId) return null;
+  if (!GOOGLE_CLIENT_ID) return null;
 
   return (
     <div className="flex justify-center">
