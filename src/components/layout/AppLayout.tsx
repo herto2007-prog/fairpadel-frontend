@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
+import { VerificacionEmailBanner } from '../VerificacionEmailBanner';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -248,6 +249,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
+
+      {/* Aviso suave de verificación de email (no bloqueante) */}
+      <VerificacionEmailBanner />
 
       {/* Main Content */}
       <main>{children}</main>
