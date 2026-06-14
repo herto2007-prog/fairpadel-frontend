@@ -611,6 +611,7 @@ function Step1Formato({
   control: Control<WizardData>;
   errors: any;
 }) {
+  const [mostrarAvanzados, setMostrarAvanzados] = useState(false);
   return (
     <div className="space-y-5">
       {/* Datos básicos */}
@@ -732,69 +733,89 @@ function Step1Formato({
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 flex gap-3">
         <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         <p className="text-white/70 text-xs leading-relaxed">
-          Elegí el formato que se adapta a tu torneo. Cada opción define cómo se agrupan los jugadores y si las parejas rotan o son fijas.
+          El formato <strong className="text-white/90">Clásico</strong> es el más simple: todos juegan con todos y las parejas
+          rotan en cada ronda. Si querés grupos por género, categoría o parejas fijas, abrí los formatos avanzados.
         </p>
       </div>
 
       <Controller
         name="formatoAmericano"
         control={control}
-        render={({ field }) => (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FORMATOS.map((f) => {
-              const selected = field.value === f.id;
-              const Icon = f.icon;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => field.onChange(f.id)}
-                  className={`relative text-left p-4 rounded-xl border transition-all ${
-                    selected
-                      ? `${f.bgColor} ${f.borderColor} ring-1 ring-offset-0 ring-offset-[#151921] ${f.color.replace('text-', 'ring-')}`
-                      : 'bg-white/[0.02] border-[#232838] hover:border-[#2d3550] hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        selected ? f.bgColor : 'bg-white/5'
+        render={({ field }) => {
+          // Mostrar solo "Clásico" por defecto; el resto detrás del toggle (evita parálisis de elección).
+          const seleccionAvanzada = field.value !== 'clasico';
+          const visibles = mostrarAvanzados || seleccionAvanzada
+            ? FORMATOS
+            : FORMATOS.filter((f) => f.id === 'clasico');
+          return (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {visibles.map((f) => {
+                  const selected = field.value === f.id;
+                  const Icon = f.icon;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => field.onChange(f.id)}
+                      className={`relative text-left p-4 rounded-xl border transition-all ${
+                        selected
+                          ? `${f.bgColor} ${f.borderColor} ring-1 ring-offset-0 ring-offset-[#151921] ${f.color.replace('text-', 'ring-')}`
+                          : 'bg-white/[0.02] border-[#232838] hover:border-[#2d3550] hover:bg-white/[0.04]'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 ${selected ? f.color : 'text-white/30'}`} />
-                    </div>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        f.badge === 'Individual'
-                          ? 'bg-blue-500/10 text-blue-400'
-                          : 'bg-emerald-500/10 text-emerald-400'
-                      }`}
-                    >
-                      {f.badge}
-                    </span>
-                  </div>
-                  <h3
-                    className={`text-sm font-semibold mb-1 ${
-                      selected ? 'text-white' : 'text-white/80'
-                    }`}
-                  >
-                    {f.nombre}
-                  </h3>
-                  <p className="text-white/40 text-xs leading-relaxed">{f.desc}</p>
+                      <div className="flex items-start justify-between mb-2">
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            selected ? f.bgColor : 'bg-white/5'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 ${selected ? f.color : 'text-white/30'}`} />
+                        </div>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            f.badge === 'Individual'
+                              ? 'bg-blue-500/10 text-blue-400'
+                              : 'bg-emerald-500/10 text-emerald-400'
+                          }`}
+                        >
+                          {f.badge}
+                        </span>
+                      </div>
+                      <h3
+                        className={`text-sm font-semibold mb-1 ${
+                          selected ? 'text-white' : 'text-white/80'
+                        }`}
+                      >
+                        {f.nombre}
+                      </h3>
+                      <p className="text-white/40 text-xs leading-relaxed">{f.desc}</p>
 
-                  {selected && (
-                    <motion.div
-                      layoutId="check-formato"
-                      className="absolute top-3 right-3"
-                    >
-                      <Check className={`w-4 h-4 ${f.color}`} />
-                    </motion.div>
-                  )}
+                      {selected && (
+                        <motion.div
+                          layoutId="check-formato"
+                          className="absolute top-3 right-3"
+                        >
+                          <Check className={`w-4 h-4 ${f.color}`} />
+                        </motion.div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {!mostrarAvanzados && !seleccionAvanzada && (
+                <button
+                  type="button"
+                  onClick={() => setMostrarAvanzados(true)}
+                  className="w-full py-2.5 text-sm text-white/50 hover:text-white/80 border border-dashed border-[#232838] hover:border-[#2d3550] rounded-xl transition-colors"
+                >
+                  Mostrar formatos avanzados (por género, categoría, parejas fijas…)
                 </button>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        }}
       />
       {errors.formatoAmericano && (
         <p className="text-red-400 text-xs">{errors.formatoAmericano.message as string}</p>

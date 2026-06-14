@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Trophy, Users, Calendar, MapPin, ArrowRight, Sparkles, Plus, Eye, EyeOff } from 'lucide-react';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { americanoService, AmericanoTorneo } from '../../../services/americanoService';
@@ -10,6 +10,7 @@ import { formatDatePYShort } from '../../../utils/date';
 
 export function AmericanosListPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [torneos, setTorneos] = useState<AmericanoTorneo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,6 +20,15 @@ export function AmericanosListPage() {
   useEffect(() => {
     loadTorneos();
   }, []);
+
+  // Abrir el wizard automáticamente cuando se llega con ?crear=1 (ej: desde el empty state de /torneos)
+  useEffect(() => {
+    if (searchParams.get('crear') === '1') {
+      setMostrarCrear(true);
+      searchParams.delete('crear');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const loadTorneos = async () => {
     try {
