@@ -99,4 +99,22 @@ export const overviewService = {
     const response = await api.post(`/admin/torneos/${tournamentId}/finalizar`);
     return response.data.comision;
   },
+
+  /**
+   * Publica un torneo en BORRADOR (lo abre a inscripciones y avisa a los
+   * suscriptores de la ciudad). Lo usa el paso "Abrir inscripciones" del roadmap.
+   */
+  publicarTorneo: async (tournamentId: string): Promise<void> => {
+    await api.put(`/admin/torneos/${tournamentId}/publicar`);
+  },
+
+  /**
+   * Indica si el cuadro (bracket) ya es visible para los jugadores. Sirve para
+   * el paso "Publicar el cuadro" del roadmap: el cuadro puede estar armado pero
+   * todavía en borrador invisible.
+   */
+  getBracketPublicado: async (tournamentId: string): Promise<boolean> => {
+    const { data } = await api.get(`/admin/torneos/${tournamentId}/estado-publicacion`);
+    return data?.torneo?.bracketPublicado ?? data?.publicado ?? false;
+  },
 };

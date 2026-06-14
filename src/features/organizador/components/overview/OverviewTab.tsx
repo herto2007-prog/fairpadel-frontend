@@ -9,6 +9,7 @@ import {
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
 import { formatDatePY } from '../../../../utils/date';
 import { SolicitarCircuitoCard } from './SolicitarCircuitoCard';
+import { RoadmapTorneo } from './RoadmapTorneo';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -23,6 +24,8 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
+  const [publicando, setPublicando] = useState(false);
+  const [bracketPublicado, setBracketPublicado] = useState(false);
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
@@ -33,12 +36,38 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   const loadOverview = async () => {
     try {
       setLoading(true);
-      const overview = await overviewService.getOverview(tournamentId);
+      const [overview, publicado] = await Promise.all([
+        overviewService.getOverview(tournamentId),
+        overviewService.getBracketPublicado(tournamentId).catch(() => false),
+      ]);
       setData(overview);
+      setBracketPublicado(publicado);
     } catch (error) {
       console.error('Error cargando overview:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePublicar = async () => {
+    const ok = await confirm({
+      title: 'Publicar torneo',
+      message:
+        'El torneo se hará público: aparecerá en el listado y los jugadores podrán inscribirse. ¿Continuar?',
+      confirmText: 'Publicar',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!ok) return;
+    try {
+      setPublicando(true);
+      await overviewService.publicarTorneo(tournamentId);
+      showSuccess('Torneo publicado', 'Ya pueden inscribirse los jugadores.');
+      await loadOverview();
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudo publicar el torneo');
+    } finally {
+      setPublicando(false);
     }
   };
 
@@ -101,6 +130,22 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
     }
   };
 
+  // Las tareas usan links históricos (configuracion/disponibilidad/comision…)
+  // que no coinciden con las pestañas reales. Traducimos a pestañas que existen.
+  const tabsValidas = ['overview', 'inscripciones', 'canchasSorteo', 'bracket', 'auditoria'];
+  const mapLinkATab = (link: string): string | null => {
+    const mapa: Record<string, string> = {
+      inscripciones: 'inscripciones',
+      bracket: 'bracket',
+      fixture: 'bracket',
+      disponibilidad: 'canchasSorteo',
+      configuracion: 'canchasSorteo',
+      sede: 'canchasSorteo',
+    };
+    const destino = mapa[link] ?? link;
+    return tabsValidas.includes(destino) ? destino : null;
+  };
+
   const getTareaIcon = (tipo: TareaPendiente['tipo']) => {
     switch (tipo) {
       case 'urgente': return <Flame className="w-5 h-5 text-red-500" />;
@@ -150,18 +195,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(torneo.estadoProceso)}`}>
                 {getEstadoLabel(torneo.estadoProceso)}
               </span>
-              {['programacion', 'en_curso'].includes(torneo.estadoProceso) && (
-                <button
-                  onClick={handleFinalizar}
-                  disabled={finalizando}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
-                  title="Marcar el torneo como terminado y calcular la comisión"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {finalizando ? 'Finalizando…' : 'Marcar terminado'}
-                </button>
-              )}
-              {/* Nota: Ya no mostramos fecha de cierre. Las inscripciones se cierran manualmente. */}
+              {/* Finalizar vive ahora en el roadmap (paso "Jugar y finalizar"). */}
             </div>
             <h2 className="text-xl font-bold text-white">{torneo.nombre}</h2>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
@@ -206,36 +240,20 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           </div>
         </div>
 
-        {/* Barra de progreso */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Progreso del torneo</span>
-            <span className="text-white font-bold">{progreso.general}%</span>
-          </div>
-          <div className="h-3 bg-[#0B0E14] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                progreso.general >= 80 ? 'bg-green-500' :
-                progreso.general >= 50 ? 'bg-yellow-500' :
-                'bg-[#df2531]'
-              }`}
-              style={{ width: `${progreso.general}%` }}
-            />
-          </div>
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            {progreso.detalle.map((req) => (
-              <span key={req.nombre} className={`flex items-center gap-1 ${req.completado ? 'text-green-500' : ''}`}>
-                {req.completado ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                {req.nombre === 'flyer' ? 'Flyer' :
-                 req.nombre === 'sede' ? 'Sede' :
-                 req.nombre === 'fixture' ? 'Fixture' :
-                 req.nombre === 'disponibilidad' ? 'Canchas' :
-                 'Inscripciones'}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
+
+      {/* Roadmap — Centro de mando: dónde estoy, qué hice, qué sigue */}
+      <RoadmapTorneo
+        data={data}
+        bracketPublicado={bracketPublicado}
+        publicando={publicando}
+        finalizando={finalizando}
+        copied={copied}
+        onTabChange={onTabChange}
+        onPublicarTorneo={handlePublicar}
+        onFinalizar={handleFinalizar}
+        onCopyLink={handleCopyLink}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -261,7 +279,6 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
           value={`${progreso.checklist}%`}
           subtext="Tareas completadas"
           color="purple"
-          onClick={() => onTabChange('checklist')}
         />
         <StatCard
           icon={Trophy}
@@ -307,9 +324,9 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
                   <div className="flex-1">
                     <h4 className="font-medium text-white">{tarea.titulo}</h4>
                     <p className="text-sm text-gray-400 mt-1">{tarea.descripcion}</p>
-                    {tarea.accion && (
+                    {tarea.accion && mapLinkATab(tarea.accion.link) && (
                       <button
-                        onClick={() => onTabChange(tarea.accion!.link)}
+                        onClick={() => onTabChange(mapLinkATab(tarea.accion!.link)!)}
                         className="mt-3 text-sm text-[#df2531] hover:underline flex items-center gap-1"
                       >
                         {tarea.accion.texto}
