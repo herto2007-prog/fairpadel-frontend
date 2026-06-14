@@ -9,6 +9,9 @@ import {
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
 import { formatDatePY } from '../../../../utils/date';
 import { SolicitarCircuitoCard } from './SolicitarCircuitoCard';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
+import { useToast } from '../../../../components/ui/ToastProvider';
 
 interface OverviewTabProps {
   tournamentId: string;
@@ -19,6 +22,9 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
+  const { confirm, ...confirmState } = useConfirm();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadOverview();
@@ -33,6 +39,33 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
       console.error('Error cargando overview:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFinalizar = async () => {
+    const ok = await confirm({
+      title: 'Marcar torneo como terminado',
+      message:
+        'Se cerrará el torneo y se calculará la comisión de FairPadel según los jugadores que realmente jugaron. Esto no se puede deshacer. ¿Continuar?',
+      confirmText: 'Marcar terminado',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    try {
+      setFinalizando(true);
+      const comision = await overviewService.finalizarTorneo(tournamentId);
+      showSuccess(
+        'Torneo finalizado',
+        comision.monto > 0
+          ? `Comisión a abonar: Gs ${comision.monto.toLocaleString('es-PY')} (${comision.jugaronCount} jugadores).`
+          : 'El torneo fue marcado como terminado.',
+      );
+      await loadOverview();
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudo finalizar el torneo');
+    } finally {
+      setFinalizando(false);
     }
   };
 
@@ -117,6 +150,17 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(torneo.estadoProceso)}`}>
                 {getEstadoLabel(torneo.estadoProceso)}
               </span>
+              {['programacion', 'en_curso'].includes(torneo.estadoProceso) && (
+                <button
+                  onClick={handleFinalizar}
+                  disabled={finalizando}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                  title="Marcar el torneo como terminado y calcular la comisión"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {finalizando ? 'Finalizando…' : 'Marcar terminado'}
+                </button>
+              )}
               {/* Nota: Ya no mostramos fecha de cierre. Las inscripciones se cierran manualmente. */}
             </div>
             <h2 className="text-xl font-bold text-white">{torneo.nombre}</h2>
@@ -316,6 +360,17 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
         {/* Solicitar Circuito - Card propia */}
         <SolicitarCircuitoCard tournamentId={tournamentId} />
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }

@@ -88,4 +88,15 @@ export const overviewService = {
     const response = await api.get(`/admin/torneos/${tournamentId}/overview`);
     return response.data.data;
   },
+
+  /**
+   * Marca el torneo como terminado. Fija la comisión a cobrar (jugadores que
+   * jugaron × tarifa) y avisa al organizador. No bloquea nada.
+   */
+  finalizarTorneo: async (
+    tournamentId: string,
+  ): Promise<{ jugaronCount: number; monto: number }> => {
+    const response = await api.post(`/admin/torneos/${tournamentId}/finalizar`);
+    return response.data.comision;
+  },
 };
