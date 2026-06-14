@@ -56,9 +56,16 @@ const CODIGOS_PAIS = [
   { codigo: '+56', pais: 'Chile', bandera: '🇨🇱' },
 ];
 
+// Categorías oficiales por género (nombres tal cual existen en la BD).
+// El nuevo registro mínimo no pide categoría; se elige acá al inscribirse.
+const CATEGORIAS_POR_GENERO: Record<'MASCULINO' | 'FEMENINO', string[]> = {
+  MASCULINO: ['1ª Categoría', '2ª Categoría', '3ª Categoría', '4ª Categoría', '5ª Categoría', '6ª Categoría', '7ª Categoría', '8ª Categoría', 'Principiante'],
+  FEMENINO: ['1ª Categoría Femenina', '2ª Categoría Femenina', '3ª Categoría Femenina', '4ª Categoría Femenina', '5ª Categoría Femenina', '6ª Categoría Femenina', '7ª Categoría Femenina', '8ª Categoría Femenina', 'Principiante Femenino'],
+};
+
 export function InscripcionWizardPage() {
   useNoIndex();
-  const { showError, showWarning } = useToast();
+  const { showError, showWarning, showSuccess } = useToast();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -81,6 +88,10 @@ export function InscripcionWizardPage() {
   const [buscando, setBuscando] = useState(false);
   const [mostrarFormNuevo, setMostrarFormNuevo] = useState(false);
 
+  // Just-in-time: completar datos de competidor si el perfil está incompleto
+  const [datosCompletar, setDatosCompletar] = useState({ documento: '', genero: '' as '' | 'MASCULINO' | 'FEMENINO', categoria: '' });
+  const [guardandoDatos, setGuardandoDatos] = useState(false);
+
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -89,7 +100,8 @@ export function InscripcionWizardPage() {
         
         if (isAuthenticated) {
           const { data: profileData } = await api.get('/auth/me');
-          if (profileData.success) setUserProfile(profileData.user);
+          // /auth/me devuelve { user } (sin campo success)
+          if (profileData?.user) setUserProfile(profileData.user);
         } else {
           localStorage.setItem('redirectAfterLogin', `/t/${slug}/inscribirse`);
           navigate('/login');
@@ -195,6 +207,30 @@ export function InscripcionWizardPage() {
     }
   };
 
+  // Guarda los datos de competidor faltantes (just-in-time) y recarga el perfil
+  const guardarDatosCompetidor = async () => {
+    const payload: any = {};
+    if (!userProfile?.documento) payload.documento = datosCompletar.documento.trim();
+    if (!userProfile?.genero) payload.genero = datosCompletar.genero;
+    if (!userProfile?.categoria) payload.categoria = datosCompletar.categoria;
+
+    setGuardandoDatos(true);
+    try {
+      const { data } = await api.put('/users/profile/completar-datos', payload);
+      if (data?.datosCompletos) {
+        const { data: profileData } = await api.get('/auth/me');
+        if (profileData?.user) setUserProfile(profileData.user);
+        showSuccess('Datos guardados', 'Ya podés inscribirte al torneo');
+      } else {
+        showError('Faltan datos', 'Completá todos los campos para continuar');
+      }
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudieron guardar los datos');
+    } finally {
+      setGuardandoDatos(false);
+    }
+  };
+
   const formatPrecio = (precio: number) => {
     return new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(precio);
   };
@@ -209,6 +245,105 @@ export function InscripcionWizardPage() {
   }
 
   if (!torneo) return null;
+
+  // Just-in-time: si el perfil no tiene documento/género/categoría, pedirlos
+  // antes de dejar inscribir (registro mínimo => se completan recién acá).
+  const perfilIncompleto = !!userProfile && !(userProfile.documento && userProfile.genero && userProfile.categoria);
+  if (perfilIncompleto) {
+    const generoEfectivo = (userProfile.genero || datosCompletar.genero) as '' | 'MASCULINO' | 'FEMENINO';
+    const faltaDoc = !userProfile.documento;
+    const faltaGenero = !userProfile.genero;
+    const faltaCategoria = !userProfile.categoria;
+    const catOptions = generoEfectivo ? CATEGORIAS_POR_GENERO[generoEfectivo] : [];
+    const puedeGuardar =
+      (!faltaDoc || datosCompletar.documento.trim().length > 0) &&
+      (!faltaGenero || !!datosCompletar.genero) &&
+      (!faltaCategoria || (!!datosCompletar.categoria && !!generoEfectivo));
+
+    return (
+      <div className="min-h-screen bg-dark text-white font-light relative overflow-hidden">
+        <BackgroundEffects variant="subtle" showGrid={true} />
+        <header className="border-b border-white/5 bg-dark/80 backdrop-blur-md sticky top-0 z-50 relative">
+          <div className="max-w-md mx-auto px-4 py-3">
+            <Link to={`/t/${slug}`} className="flex items-center gap-2 text-white/40 hover:text-white transition-colors text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              Volver
+            </Link>
+          </div>
+        </header>
+
+        <main className="max-w-md mx-auto px-4 py-8 relative z-10">
+          <h1 className="text-xl font-medium mb-1">Completá tus datos</h1>
+          <p className="text-sm text-white/40 mb-6">Una vez, para poder inscribirte a torneos.</p>
+
+          <div className="space-y-5">
+            {faltaDoc && (
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Documento / Cédula</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={datosCompletar.documento}
+                  onChange={(e) => setDatosCompletar(p => ({ ...p, documento: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="Solo números"
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 transition-colors"
+                />
+              </div>
+            )}
+
+            {faltaGenero && (
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Género</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['MASCULINO', 'FEMENINO'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setDatosCompletar(p => ({ ...p, genero: g, categoria: '' }))}
+                      className={`py-2.5 px-4 rounded-lg border text-sm transition-all ${
+                        datosCompletar.genero === g
+                          ? g === 'FEMENINO' ? 'border-pink-500/50 bg-pink-500/10 text-pink-300' : 'border-blue-500/50 bg-blue-500/10 text-blue-300'
+                          : 'border-white/10 text-white/50 hover:border-white/30'
+                      }`}
+                    >
+                      {g === 'MASCULINO' ? 'Masculino' : 'Femenino'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {faltaCategoria && (
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-2">Tu categoría</label>
+                <select
+                  value={datosCompletar.categoria}
+                  onChange={(e) => setDatosCompletar(p => ({ ...p, categoria: e.target.value }))}
+                  disabled={!generoEfectivo}
+                  className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors disabled:opacity-40"
+                >
+                  <option value="" className="bg-[#0a0b0f]">{generoEfectivo ? 'Seleccioná tu categoría' : 'Elegí tu género primero'}</option>
+                  {catOptions.map((c) => (
+                    <option key={c} value={c} className="bg-[#0a0b0f]">{c}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-white/30 mt-2">Si recién empezás, elegí Principiante. Ascendés ganando torneos.</p>
+              </div>
+            )}
+
+            <button
+              onClick={guardarDatosCompetidor}
+              disabled={!puedeGuardar || guardandoDatos}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500/80 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              {guardandoDatos ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Guardar y continuar
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const canProceed = () => {
     switch (currentStep) {
