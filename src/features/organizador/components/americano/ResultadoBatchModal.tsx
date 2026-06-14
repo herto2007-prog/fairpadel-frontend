@@ -9,6 +9,7 @@ import {
   ModoJuegoConfig,
   americanoService,
 } from '../../../../services/americanoService';
+import { QuickScoreChips } from './QuickScore';
 
 interface Props {
   torneoId: string;
@@ -360,6 +361,26 @@ export function ResultadoBatchModal({ torneoId, ronda, modoJuego, onSaved, onCan
                     )}
                   </div>
                 </div>
+
+                {esGames && !form.guardado && (
+                  <div className="mt-3 pt-3 border-t border-[#232838]/60">
+                    <QuickScoreChips
+                      objetivo={valorObjetivo}
+                      conTieBreak={modoJuego?.conTieBreak}
+                      labelA={jugadoresLabel(partido, 'A')}
+                      labelB={jugadoresLabel(partido, 'B')}
+                      current={{ a: form.sets[0]?.gamesEquipoA, b: form.sets[0]?.gamesEquipoB }}
+                      onPick={(a, b) =>
+                        updateForm(partido.id, prev => ({
+                          ...prev,
+                          sets: [{ gamesEquipoA: a, gamesEquipoB: b }],
+                          error: undefined,
+                        }))
+                      }
+                      compact
+                    />
+                  </div>
+                )}
 
                 {form.error && (
                   <p className="text-red-400 text-xs mt-2 text-center">{form.error}</p>

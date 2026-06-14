@@ -16,6 +16,7 @@ import {
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { ConfigurarModoModal } from './ConfigurarModoModal';
 import { ResultadoBatchModal } from './ResultadoBatchModal';
+import { QuickScoreChips } from './QuickScore';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
@@ -1071,6 +1072,19 @@ function ResultadoModal({ parejaA, parejaB, modoJuego, setsIniciales, onSubmit, 
           </div>
         ) : (
           <>
+            {formato === 'games' && (
+              <div className="mb-4">
+                <QuickScoreChips
+                  objetivo={valorObjetivo}
+                  conTieBreak={modoJuego?.conTieBreak}
+                  labelA={parejaA.jugadores}
+                  labelB={parejaB.jugadores}
+                  current={{ a: sets[0]?.gamesEquipoA, b: sets[0]?.gamesEquipoB }}
+                  onPick={(a, b) => setSets([{ gamesEquipoA: a, gamesEquipoB: b }])}
+                />
+                <p className="text-white/20 text-[10px] mt-2">O escribí el marcador abajo.</p>
+              </div>
+            )}
             <div className="space-y-3 mb-6">
               {sets.map((set, idx) => (
                 <div key={idx} className="flex items-center gap-3">
