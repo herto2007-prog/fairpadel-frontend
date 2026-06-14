@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { torneoService } from '../../../../services/torneoService';
+import { HelpTip } from './HelpTip';
 
 // ─── Types ───
 export type FormatoAmericano =
@@ -282,7 +283,10 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
           <div className="space-y-4 pt-3 border-t border-[#232838]">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-white/50 text-xs font-medium mb-1.5 block">Sistema de puntos</label>
+                <label className="text-white/50 text-xs font-medium mb-1.5 flex items-center gap-1.5">
+                  Sistema de puntos
+                  <HelpTip text="Define cómo se arma la tabla de posiciones. Lo más simple es 'games acumulados': cada jugador suma los games que ganó en todos sus partidos." />
+                </label>
                 <Controller
                   name="sistemaPuntos"
                   control={control}
@@ -351,7 +355,10 @@ export function AmericanoConfigForm({ control, watch, setValue, errors, formatoA
                     className="w-4 h-4 rounded border-[#232838] bg-[#151921] text-primary focus:ring-primary/20"
                   />
                   <div>
-                    <span className="text-white text-sm">Incluir tie-break</span>
+                    <span className="text-white text-sm flex items-center gap-1.5">
+                      Incluir tie-break
+                      <HelpTip text="El tie-break es el desempate cuando un set queda 6-6: se juega un punto largo a 7 (con 2 de diferencia) para definir quién gana el set. Si no estás seguro, dejalo activado." />
+                    </span>
                     <p className="text-white/30 text-[10px]">Si un set llega a 6-6, se juega un tie-break a 7 puntos (con diferencia de 2) para definir el ganador del set.</p>
                   </div>
                 </label>

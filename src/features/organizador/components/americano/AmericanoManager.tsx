@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -251,24 +251,95 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
   const partidosPendientesUltimaRonda = (ultimaRonda?.partidos ?? []).filter(p => p.estado === 'PENDIENTE').length;
-  const puedeSiguiente = modoConfigurado && ultimaRonda && 
+  const puedeSiguiente = modoConfigurado && ultimaRonda &&
     (ultimaRonda.estado === 'FINALIZADA' || partidosPendientesUltimaRonda <= 1) &&
     (torneo?.configAmericano?.rondaActual || 0) < numRondasMax;
 
+  // ─── Guía de pasos: detecta sola en qué paso está el torneo ───
+  const rondasCount = torneo?.americanosRonda?.length ?? 0;
+  const finalizado = torneo?.estado === 'FINALIZADO';
+  const pasoActual =
+    finalizado ? 4
+    : rondasCount > 0 ? 3
+    : puedeIniciar ? 2
+    : inscripcionesAbiertas ? 0
+    : 1;
+
+  const pasosGuia: { label: string; Icon: typeof Users; hint: string; accion: { txt: string; fn: () => void } | null }[] = [
+    {
+      label: 'Inscriben', Icon: Users,
+      hint: 'Compartí el link para que se anoten. Necesitás al menos 4 jugadores para empezar.',
+      accion: inscripcionesAbiertas && inscripciones.length >= 4 ? { txt: 'Cerrar inscripciones', fn: handleCerrarInscripciones } : null,
+    },
+    {
+      label: 'Cerrar', Icon: Flag,
+      hint: 'Inscripciones cerradas. Si falta gente reabrí; cuando estén todos y haya 4+, iniciá el torneo.',
+      accion: rondasCount === 0 ? { txt: 'Reabrir inscripciones', fn: handleReabrirInscripciones } : null,
+    },
+    {
+      label: 'Jugar', Icon: Play,
+      hint: 'Todo listo. Iniciá el torneo: el sistema arma las parejas y los cruces de la primera ronda.',
+      accion: { txt: 'Iniciar torneo', fn: handleIniciarRonda },
+    },
+    {
+      label: 'Cargar', Icon: Swords,
+      hint: puedeSiguiente
+        ? 'Cargá los resultados de la ronda (de un toque) y generá la siguiente.'
+        : 'Cargá los resultados de cada partido con los botones rápidos, en la pestaña Rondas.',
+      accion: { txt: 'Ir a las rondas', fn: () => setTabActivo('rondas') },
+    },
+    {
+      label: 'Listo', Icon: Trophy,
+      hint: 'Torneo finalizado. El sistema armó la tabla de posiciones y el podio.',
+      accion: { txt: 'Ver clasificación', fn: () => setTabActivo('clasificacion') },
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Info flujo organizador */}
-      {!modoConfigurado && (
-        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 flex gap-3">
-          <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-blue-400 text-xs font-medium">¿Cómo funciona?</p>
-            <p className="text-white/50 text-xs mt-1 leading-relaxed">
-              1. Tus amigos se inscriben · 2. Cerrás inscripciones cuando quieras · 3. Configurás el modo de juego · 4. Iniciás rondas y registrás resultados · 5. El sistema arma la clasificación automáticamente.
+      {/* Guía de pasos contextual: qué hacer ahora */}
+      <div className="bg-[#151921] border border-[#232838] rounded-xl p-4">
+        <div className="flex items-center mb-4">
+          {pasosGuia.map((p, i) => {
+            const done = i < pasoActual;
+            const current = i === pasoActual;
+            const Icon = done ? Check : p.Icon;
+            return (
+              <Fragment key={i}>
+                {i > 0 && <div className={`flex-1 h-0.5 ${i <= pasoActual ? 'bg-primary' : 'bg-[#232838]'}`} />}
+                <div className="flex flex-col items-center gap-1 min-w-[52px]">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                    done ? 'bg-primary border-primary text-white'
+                    : current ? 'bg-primary/15 border-primary text-primary'
+                    : 'bg-transparent border-[#232838] text-white/30'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className={`text-[10px] ${current ? 'text-white' : 'text-white/30'}`}>{p.label}</span>
+                </div>
+              </Fragment>
+            );
+          })}
+        </div>
+        <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex items-start gap-3">
+          <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-primary text-[10px] font-medium uppercase tracking-wide mb-0.5">
+              {pasoActual === 4 ? 'Listo' : 'Ahora'} · paso {pasoActual + 1} de 5
             </p>
+            <p className="text-white/60 text-xs leading-relaxed mb-2">{pasosGuia[pasoActual].hint}</p>
+            {pasosGuia[pasoActual].accion && (
+              <button
+                onClick={pasosGuia[pasoActual].accion!.fn}
+                disabled={!!accionLoading}
+                className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {pasosGuia[pasoActual].accion!.txt}
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
