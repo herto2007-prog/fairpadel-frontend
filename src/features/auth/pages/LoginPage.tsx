@@ -122,10 +122,10 @@ export const LoginPage = () => {
                 onSubmit={handleLogin}
                 className="space-y-6"
               >
-                {/* Documento */}
+                {/* Email o documento */}
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-400 mb-2 group-focus-within:text-primary transition-colors">
-                    Cédula de Identidad
+                    Email o cédula
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-primary transition-colors" />
@@ -134,7 +134,7 @@ export const LoginPage = () => {
                       value={documento}
                       onChange={(e) => setDocumento(e.target.value)}
                       className="w-full bg-dark-100 border border-gray-700 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                      placeholder="1234567"
+                      placeholder="tu@email.com o 1234567"
                       required
                     />
                   </div>
