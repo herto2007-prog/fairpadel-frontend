@@ -265,7 +265,7 @@ function PartidoCard({
                 <div className="font-medium truncate">
                   {partido.inscripcion1.jugador1.nombre} {partido.inscripcion1.jugador1.apellido}
                 </div>
-                <div className="text-sm text-gray-400 truncate">
+                <div className="font-medium truncate">
                   {partido.inscripcion1.jugador2.nombre} {partido.inscripcion1.jugador2.apellido}
                 </div>
               </div>
@@ -301,7 +301,7 @@ function PartidoCard({
                 <div className="font-medium truncate">
                   {partido.inscripcion2.jugador1.nombre} {partido.inscripcion2.jugador1.apellido}
                 </div>
-                <div className="text-sm text-gray-400 truncate">
+                <div className="font-medium truncate">
                   {partido.inscripcion2.jugador2.nombre} {partido.inscripcion2.jugador2.apellido}
                 </div>
               </div>

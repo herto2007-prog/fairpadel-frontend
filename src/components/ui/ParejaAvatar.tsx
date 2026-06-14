@@ -150,7 +150,11 @@ export function ParejaDisplay({
           </div>
         )}
         {jugador2 && (
-          <div className="text-sm text-gray-400 truncate">
+          <div
+            className={`font-medium truncate ${
+              isWinner ? 'text-green-400' : highlight ? 'text-[#df2531]' : 'text-white'
+            }`}
+          >
             {jugador2.nombre} {jugador2.apellido}
           </div>
         )}
