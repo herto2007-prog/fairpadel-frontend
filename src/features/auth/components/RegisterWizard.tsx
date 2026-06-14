@@ -6,6 +6,7 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 /**
  * Registro mínimo (mobile-first): nombre, apellido, email y contraseña.
@@ -87,6 +88,14 @@ export const RegisterWizard = () => {
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white mb-1">Creá tu cuenta</h1>
             <p className="text-gray-400 text-sm">Es gratis y toma menos de un minuto.</p>
+          </div>
+
+          <GoogleSignInButton onError={setError} />
+
+          <div className="flex items-center gap-3 my-5 text-gray-500 text-xs">
+            <span className="flex-1 h-px bg-gray-700" />
+            o con tu email
+            <span className="flex-1 h-px bg-gray-700" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">

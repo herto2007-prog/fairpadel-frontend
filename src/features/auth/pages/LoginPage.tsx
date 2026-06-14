@@ -9,6 +9,7 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/authService';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export const LoginPage = () => {
   useNoIndex();
@@ -122,6 +123,14 @@ export const LoginPage = () => {
                 onSubmit={handleLogin}
                 className="space-y-6"
               >
+                <GoogleSignInButton onError={setLoginError} />
+
+                <div className="flex items-center gap-3 text-gray-500 text-xs">
+                  <span className="flex-1 h-px bg-gray-700" />
+                  o con tu email o cédula
+                  <span className="flex-1 h-px bg-gray-700" />
+                </div>
+
                 {/* Email o documento */}
                 <div className="group">
                   <label className="block text-sm font-medium text-gray-400 mb-2 group-focus-within:text-primary transition-colors">
