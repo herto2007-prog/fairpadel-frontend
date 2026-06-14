@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  LayoutDashboard, 
-  Settings, 
-  Lock, 
+  LayoutDashboard,
+  Settings,
   Unlock,
   CheckCircle2, 
   Users, 
   Trophy,
   DollarSign,
-  User,
   Save,
   RefreshCw,
   ExternalLink,
@@ -26,7 +24,7 @@ import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 interface DashboardStats {
   totalTorneos: number;
   torneosActivos: number;
-  torneosBloqueados: number;
+  torneosPorCobrar: number;
   totalJugadores: number;
   comisionPendienteTotal: number;
   ingresosMes: number;
@@ -60,11 +58,10 @@ interface ConfigItem {
 }
 
 export function FairpadelPanel() {
-  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'config' | 'bloqueados' | 'comisiones'>('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'config' | 'comisiones'>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [torneosBloqueados, setTorneosBloqueados] = useState<TorneoBloqueado[]>([]);
   const [torneosComisiones, setTorneosComisiones] = useState<TorneoBloqueado[]>([]);
-  const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'pendientes' | 'bloqueados' | 'pagados' | 'exonerados'>('todos');
+  const [filtroComisiones, setFiltroComisiones] = useState<'todos' | 'por_cobrar' | 'verificar' | 'pagados' | 'exonerados'>('todos');
   const [busquedaComisiones, setBusquedaComisiones] = useState('');
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,16 +79,14 @@ export function FairpadelPanel() {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [dashData, configData, bloqueadosData, comisionesData] = await Promise.all([
+      const [dashData, configData, comisionesData] = await Promise.all([
         torneoV2Service.getDashboard(),
         torneoV2Service.getConfig(),
-        torneoV2Service.getTorneosBloqueados(),
         torneoV2Service.getTorneosComisiones(),
       ]);
 
       setStats(dashData.stats);
       setConfigs(configData.configs);
-      setTorneosBloqueados(bloqueadosData.torneos);
       setTorneosComisiones(comisionesData.torneos);
       
       // Inicializar valores editables
@@ -185,10 +180,10 @@ export function FairpadelPanel() {
           color="bg-emerald-500"
         />
         <StatCard
-          icon={Lock}
-          label="Torneos Bloqueados"
-          value={stats?.torneosBloqueados || 0}
-          color="bg-red-500"
+          icon={DollarSign}
+          label="Por cobrar"
+          value={stats?.torneosPorCobrar || 0}
+          color="bg-amber-500"
         />
         <StatCard
           icon={DollarSign}
@@ -203,7 +198,7 @@ export function FairpadelPanel() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-white mb-1">Comisión Configurada</h3>
-            <p className="text-slate-400 text-sm">Monto que se cobra por cada jugador inscripto confirmado</p>
+            <p className="text-slate-400 text-sm">Monto que se cobra por cada jugador que jugó el torneo</p>
           </div>
           <div className="text-right">
             <span className="text-3xl font-bold text-emerald-400">
@@ -293,115 +288,11 @@ export function FairpadelPanel() {
     </div>
   );
 
-  const renderBloqueados = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">
-          Torneos Bloqueados ({torneosBloqueados.length})
-        </h3>
-        <button
-          onClick={loadAllData}
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Recargar
-        </button>
-      </div>
-
-      {torneosBloqueados.length === 0 ? (
-        <div className="glass rounded-2xl p-12 text-center">
-          <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Todo al día</h3>
-          <p className="text-slate-400">No hay torneos bloqueados pendientes de pago</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {torneosBloqueados.map((torneo) => (
-            <motion.div
-              key={torneo.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass rounded-2xl p-6 border border-red-500/20"
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{torneo.nombre}</h4>
-                      <p className="text-sm text-slate-400">
-                        Bloqueado en: <span className="text-red-400">{torneo.comision.rondaBloqueo}</span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <User className="w-4 h-4" />
-                      {torneo.organizador.nombre} {torneo.organizador.apellido}
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <Users className="w-4 h-4" />
-                      {torneo.inscripciones} inscripciones
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <DollarSign className="w-4 h-4" />
-                      Estimado: {formatCurrency(torneo.comision.montoEstimado)}
-                    </div>
-                  </div>
-
-                  {torneo.comision.comprobanteUrl && (
-                    <a
-                      href={torneo.comision.comprobanteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 mt-3 text-sm text-emerald-400 hover:text-emerald-300"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Ver comprobante subido
-                    </a>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2 lg:items-end">
-                  <div className="text-right">
-                    <span className="text-xs text-slate-500 block">Estado</span>
-                    <span className={`text-sm font-medium ${
-                      torneo.comision.estado === 'PENDIENTE_VERIFICACION' 
-                        ? 'text-amber-400' 
-                        : 'text-red-400'
-                    }`}>
-                      {torneo.comision.estado === 'PENDIENTE_VERIFICACION' 
-                        ? 'Pendiente verificación' 
-                        : 'Pendiente pago'}
-                    </span>
-                  </div>
-                  
-                  {torneo.comision.estado === 'PENDIENTE_VERIFICACION' && (
-                    <button
-                      onClick={() => liberarTorneo(torneo.id, torneo.comision.montoEstimado)}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                    >
-                      <Unlock className="w-4 h-4" />
-                      Liberar Torneo
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   const renderComisiones = () => (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h3 className="text-lg font-semibold text-white">
-          Comisiones por Torneo ({torneosComisiones.length})
+          Cuentas por cobrar ({torneosComisiones.length})
         </h3>
         <button
           onClick={loadComisiones}
@@ -415,7 +306,7 @@ export function FairpadelPanel() {
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex flex-wrap gap-2">
-          {(['todos', 'pendientes', 'bloqueados', 'pagados', 'exonerados'] as const).map((f) => (
+          {(['todos', 'por_cobrar', 'verificar', 'pagados', 'exonerados'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFiltroComisiones(f)}
@@ -426,8 +317,8 @@ export function FairpadelPanel() {
               }`}
             >
               {f === 'todos' ? 'Todos' :
-               f === 'pendientes' ? 'Pendientes' :
-               f === 'bloqueados' ? 'Bloqueados' :
+               f === 'por_cobrar' ? 'Por cobrar' :
+               f === 'verificar' ? 'Comprobante subido' :
                f === 'pagados' ? 'Pagados' : 'Exonerados'}
             </button>
           ))}
@@ -458,12 +349,12 @@ export function FairpadelPanel() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`glass rounded-2xl p-5 border ${
-                torneo.comision.bloqueoActivo
-                  ? 'border-red-500/20'
-                  : torneo.comision.estado === 'PAGADO'
-                    ? 'border-emerald-500/20'
-                    : torneo.comision.estado === 'EXONERADO'
-                      ? 'border-blue-500/20'
+                torneo.comision.estado === 'PAGADO'
+                  ? 'border-emerald-500/20'
+                  : torneo.comision.estado === 'EXONERADO'
+                    ? 'border-blue-500/20'
+                    : torneo.comision.estado === 'POR_COBRAR'
+                      ? 'border-amber-500/30'
                       : 'border-slate-700'
               }`}
             >
@@ -471,17 +362,13 @@ export function FairpadelPanel() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      torneo.comision.bloqueoActivo
-                        ? 'bg-red-500/20'
-                        : torneo.comision.estado === 'PAGADO'
-                          ? 'bg-emerald-500/20'
-                          : torneo.comision.estado === 'EXONERADO'
-                            ? 'bg-blue-500/20'
-                            : 'bg-amber-500/20'
+                      torneo.comision.estado === 'PAGADO'
+                        ? 'bg-emerald-500/20'
+                        : torneo.comision.estado === 'EXONERADO'
+                          ? 'bg-blue-500/20'
+                          : 'bg-amber-500/20'
                     }`}>
-                      {torneo.comision.bloqueoActivo ? (
-                        <Lock className="w-5 h-5 text-red-400" />
-                      ) : torneo.comision.estado === 'PAGADO' ? (
+                      {torneo.comision.estado === 'PAGADO' ? (
                         <Check className="w-5 h-5 text-emerald-400" />
                       ) : torneo.comision.estado === 'EXONERADO' ? (
                         <DollarSign className="w-5 h-5 text-blue-400" />
@@ -536,9 +423,9 @@ export function FairpadelPanel() {
                         : torneo.comision.estado === 'EXONERADO'
                           ? 'text-blue-400'
                           : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
-                            ? 'text-amber-400'
-                            : torneo.comision.bloqueoActivo
-                              ? 'text-red-400'
+                            ? 'text-blue-400'
+                            : torneo.comision.estado === 'POR_COBRAR'
+                              ? 'text-amber-400'
                               : 'text-slate-300'
                     }`}>
                       {torneo.comision.estado === 'PAGADO'
@@ -546,10 +433,10 @@ export function FairpadelPanel() {
                         : torneo.comision.estado === 'EXONERADO'
                           ? 'Exonerado'
                           : torneo.comision.estado === 'PENDIENTE_VERIFICACION'
-                            ? 'Pendiente verificación'
-                            : torneo.comision.bloqueoActivo
-                              ? 'Bloqueado'
-                              : 'Pendiente'}
+                            ? 'Comprobante subido'
+                            : torneo.comision.estado === 'POR_COBRAR'
+                              ? 'Por cobrar'
+                              : 'En curso'}
                     </span>
                   </div>
 
@@ -601,17 +488,11 @@ export function FairpadelPanel() {
           onClick={() => setActiveSubTab('dashboard')}
         />
         <SubTabButton
-          label={`Bloqueados ${torneosBloqueados.length > 0 ? `(${torneosBloqueados.length})` : ''}`}
-          icon={Lock}
-          active={activeSubTab === 'bloqueados'}
-          onClick={() => setActiveSubTab('bloqueados')}
-          alert={torneosBloqueados.length > 0}
-        />
-        <SubTabButton
-          label="Comisiones"
+          label={`Cuentas por cobrar ${stats && stats.torneosPorCobrar > 0 ? `(${stats.torneosPorCobrar})` : ''}`}
           icon={DollarSign}
           active={activeSubTab === 'comisiones'}
           onClick={() => setActiveSubTab('comisiones')}
+          alert={!!stats && stats.torneosPorCobrar > 0}
         />
         <SubTabButton
           label="Configuración"
@@ -645,7 +526,6 @@ export function FairpadelPanel() {
         <>
           {activeSubTab === 'dashboard' && renderDashboard()}
           {activeSubTab === 'config' && renderConfig()}
-          {activeSubTab === 'bloqueados' && renderBloqueados()}
           {activeSubTab === 'comisiones' && renderComisiones()}
         </>
       )}
