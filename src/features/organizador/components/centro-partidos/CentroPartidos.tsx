@@ -24,7 +24,7 @@ interface Partido {
   orden: number;
   esBye: boolean;
   categoriaId: string;
-  categoria?: { id: string; nombre: string; tipo: string } | null;
+  categoria?: { id: string; nombre: string; tipo: string; tipoCategoria?: string } | null;
   inscripcion1?: Inscripcion | null;
   inscripcion2?: Inscripcion | null;
   ganador?: { id: string } | null;
@@ -77,14 +77,37 @@ function nombresDe(p: Partido): string {
   return ins
     .flatMap(i => [i.jugador1, i.jugador2])
     .map(j => `${j.nombre} ${j.apellido}`)
-    .join(' ')
+    .join(' ');
+}
+
+// Normaliza para buscar sin tildes ni mayúsculas: "Giménez" -> "gimenez".
+// Separa los acentos (NFD) y descarta el bloque de marcas combinantes (U+0300–U+036F).
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .split('')
+    .filter((c) => {
+      const code = c.charCodeAt(0);
+      return code < 0x0300 || code > 0x036f;
+    })
+    .join('')
     .toLowerCase();
+}
+
+type Genero = 'CABALLEROS' | 'DAMAS' | 'MIXTO';
+const GENERO_LABEL: Record<Genero, string> = { CABALLEROS: 'Caballeros', DAMAS: 'Damas', MIXTO: 'Mixto' };
+
+function generoDeCat(cat?: { tipo: string; tipoCategoria?: string } | null): Genero | null {
+  if (!cat) return null;
+  if (cat.tipoCategoria === 'MIXTO') return 'MIXTO';
+  return cat.tipo === 'FEMENINO' ? 'DAMAS' : 'CABALLEROS';
 }
 
 export function CentroPartidos({ tournamentId }: { tournamentId: string }) {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filtroGenero, setFiltroGenero] = useState<Genero | 'todos'>('todos');
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todas');
   const [filtroEstado, setFiltroEstado] = useState<EstadoOp | 'todos'>('todos');
   const [modalResultado, setModalResultado] = useState<{ open: boolean; partido: Partido | null; mode: 'create' | 'edit' }>({ open: false, partido: null, mode: 'create' });
@@ -103,21 +126,38 @@ export function CentroPartidos({ tournamentId }: { tournamentId: string }) {
     }
   };
 
-  // Categorías presentes (para el filtro)
-  const categorias = useMemo(() => {
-    const map = new Map<string, string>();
-    partidos.forEach(p => { if (p.categoria) map.set(p.categoria.id, p.categoria.nombre); });
-    return [...map.entries()].map(([id, nombre]) => ({ id, nombre }));
+  // Géneros presentes en el torneo (para mostrar solo los que aplican)
+  const generosPresentes = useMemo(() => {
+    const set = new Set<Genero>();
+    partidos.forEach(p => { const g = generoDeCat(p.categoria); if (g) set.add(g); });
+    return set;
   }, [partidos]);
 
-  // Base: aplica buscador + categoría (no el estado, para contar los chips)
+  // Categorías presentes (filtradas por el género elegido)
+  const categorias = useMemo(() => {
+    const map = new Map<string, string>();
+    partidos.forEach(p => {
+      if (!p.categoria) return;
+      if (filtroGenero !== 'todos' && generoDeCat(p.categoria) !== filtroGenero) return;
+      map.set(p.categoria.id, p.categoria.nombre);
+    });
+    return [...map.entries()].map(([id, nombre]) => ({ id, nombre }));
+  }, [partidos, filtroGenero]);
+
+  // Base: aplica buscador (sin tildes, multi-palabra) + género + categoría
+  // (no el estado, para que los contadores de los chips reflejen el resto del filtro)
   const base = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return partidos.filter(p =>
-      (filtroCategoria === 'todas' || p.categoriaId === filtroCategoria) &&
-      (q === '' || nombresDe(p).includes(q)),
-    );
-  }, [partidos, search, filtroCategoria]);
+    const tokens = norm(search).split(/\s+/).filter(Boolean);
+    return partidos.filter(p => {
+      if (filtroGenero !== 'todos' && generoDeCat(p.categoria) !== filtroGenero) return false;
+      if (filtroCategoria !== 'todas' && p.categoriaId !== filtroCategoria) return false;
+      if (tokens.length) {
+        const nombres = norm(nombresDe(p));
+        if (!tokens.every(t => nombres.includes(t))) return false;
+      }
+      return true;
+    });
+  }, [partidos, search, filtroGenero, filtroCategoria]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { todos: base.length, porjugar: 0, envivo: 0, pendiente: 0, finalizado: 0 };
@@ -165,6 +205,18 @@ export function CentroPartidos({ tournamentId }: { tournamentId: string }) {
             className="w-full pl-9 pr-3 py-2.5 bg-[#0B0E14] border border-[#232838] rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#df2531]/50"
           />
         </div>
+        {generosPresentes.size > 1 && (
+          <select
+            value={filtroGenero}
+            onChange={e => { setFiltroGenero(e.target.value as Genero | 'todos'); setFiltroCategoria('todas'); }}
+            className="px-3 py-2.5 bg-[#0B0E14] border border-[#232838] rounded-xl text-sm text-white focus:outline-none focus:border-[#df2531]/50"
+          >
+            <option value="todos">Todos los géneros</option>
+            {(['CABALLEROS', 'DAMAS', 'MIXTO'] as Genero[])
+              .filter(g => generosPresentes.has(g))
+              .map(g => <option key={g} value={g}>{GENERO_LABEL[g]}</option>)}
+          </select>
+        )}
         <select
           value={filtroCategoria}
           onChange={e => setFiltroCategoria(e.target.value)}
