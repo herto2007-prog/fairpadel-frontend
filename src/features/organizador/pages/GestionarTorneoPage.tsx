@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ChevronLeft, Trophy, LayoutDashboard, Users, 
-  GitBranch, Database, Sparkles
+import {
+  ChevronLeft, Trophy, LayoutDashboard, Users,
+  GitBranch, Database, Sparkles, Swords
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
 
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { BracketManager } from '../components/bracket';
+import { CentroPartidos } from '../components/centro-partidos/CentroPartidos';
 
 
 import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
@@ -28,7 +29,7 @@ interface Torneo {
   formato?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'auditoria' | 'americano';
+type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'centroPartidos' | 'auditoria' | 'americano';
 
 interface TabConfig {
   id: TabType;
@@ -100,6 +101,7 @@ export function GestionarTorneoPage() {
       : [
           { id: 'canchasSorteo' as TabType, label: 'Canchas y Sorteo', icon: Trophy },
           { id: 'bracket' as TabType, label: 'Fixture', icon: GitBranch },
+          { id: 'centroPartidos' as TabType, label: 'Partidos', icon: Swords },
           { id: 'auditoria' as TabType, label: 'Auditoria', icon: Database },
         ]
     ),
@@ -187,6 +189,10 @@ export function GestionarTorneoPage() {
 
         {activeTab === 'bracket' && id && (
           <BracketManager tournamentId={id} />
+        )}
+
+        {activeTab === 'centroPartidos' && id && (
+          <CentroPartidos tournamentId={id} />
         )}
 
 
