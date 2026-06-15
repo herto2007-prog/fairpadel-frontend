@@ -49,7 +49,6 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
   // Estado para publicación (DEBE estar antes de cualquier return condicional)
   const [publicando, setPublicando] = useState(false);
-  const [bracketPublicado, setBracketPublicado] = useState(false);
   const [urlPublica, setUrlPublica] = useState<string | null>(null);
   const [descargandoExcel, setDescargandoExcel] = useState(false);
 
@@ -88,7 +87,6 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     try {
       const { data } = await api.get(`/admin/torneos/${tournamentId}/estado-publicacion`);
       if (data.success) {
-        setBracketPublicado(data.torneo.bracketPublicado);
         setUrlPublica(data.urlPublica);
       }
     } catch (error) {
@@ -266,66 +264,61 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     );
   }
 
-  // Handler para publicar bracket
+  // Publicar el cuadro de ESTA categoría (no toca las demás).
   const handlePublicarBracket = async () => {
+    if (!categoriaSeleccionada?.fixtureVersionId) return;
     setPublicando(true);
     try {
-      const { data } = await api.post(`/admin/torneos/${tournamentId}/publicar-bracket`);
-      
+      const { data } = await api.post(
+        `/admin/bracket/${categoriaSeleccionada.fixtureVersionId}/publicar`,
+      );
       if (data.success) {
-        setBracketPublicado(true);
-        setUrlPublica(data.urlPublica);
-        showSuccess('Bracket publicado', `URL pública: ${window.location.origin}${data.urlPublica}`);
-      } else if (data.requiereConfirmacion && data.auditoria) {
-        // Hay problemas críticos, mostrar advertencia fuerte
-        const confirmar = await confirm({
-          title: '⚠️ Problemas detectados',
-          message: `Hay ${data.auditoria.criticos} problemas críticos que pueden afectar el bracket:\n\n${data.auditoria.problemas.map((p: any) => `• ${p.mensaje}`).join('\n')}\n\n¿Deseas publicar de todos modos?`,
-          variant: 'danger',
-          confirmText: 'Publicar de todos modos',
-          cancelText: 'Cancelar',
-        });
-        
-        if (confirmar) {
-          // Forzar publicación (endpoint adicional o con flag)
-          const { data: forceData } = await api.post(`/admin/torneos/${tournamentId}/publicar-bracket?force=true`);
-          if (forceData.success) {
-            setBracketPublicado(true);
-            setUrlPublica(forceData.urlPublica);
-            showSuccess('Bracket publicado', 'Se publicó con advertencias');
-          }
-        }
+        showSuccess(
+          'Cuadro publicado',
+          `${categoriaSeleccionada.category.nombre} ya es visible para los jugadores.`,
+        );
+        await loadCategorias();
+        await loadEstadoPublicacion();
+        setCategoriaSeleccionada(prev => (prev ? { ...prev, estado: 'SORTEO_REALIZADO' } : prev));
       } else {
-        showError('Error', data.message || 'No se pudo publicar el bracket');
+        showError('Error', data.message || 'No se pudo publicar el cuadro');
       }
     } catch (error: any) {
-      console.error('Error publicando bracket:', error);
+      console.error('Error publicando cuadro:', error);
       showError('Error', error.response?.data?.message || 'Error al publicar');
     } finally {
       setPublicando(false);
     }
   };
 
-  // Handler para despublicar bracket
+  // Despublicar el cuadro de ESTA categoría (vuelve a borrador, no borra nada).
   const handleDespublicarBracket = async () => {
+    if (!categoriaSeleccionada?.fixtureVersionId) return;
     const confirmar = await confirm({
-      title: '¿Despublicar bracket?',
-      message: 'Los jugadores ya no podrán ver el fixture públicamente.',
+      title: '¿Despublicar este cuadro?',
+      message: `Los jugadores ya no verán el cuadro de ${categoriaSeleccionada.category.nombre}. Las demás categorías no se tocan.`,
       variant: 'warning',
     });
-    
     if (!confirmar) return;
-    
     try {
-      const { data } = await api.post(`/admin/torneos/${tournamentId}/despublicar-bracket`);
+      const { data } = await api.post(
+        `/admin/bracket/${categoriaSeleccionada.fixtureVersionId}/despublicar`,
+      );
       if (data.success) {
-        setBracketPublicado(false);
-        showSuccess('Bracket despublicado', data.message);
+        showSuccess('Cuadro despublicado', data.message);
+        await loadCategorias();
+        await loadEstadoPublicacion();
+        setCategoriaSeleccionada(prev => (prev ? { ...prev, estado: 'FIXTURE_BORRADOR' } : prev));
       }
     } catch (error: any) {
       showError('Error', error.response?.data?.message || 'Error al despublicar');
     }
   };
+
+  // Una categoría está publicada (visible al público) cuando su cuadro pasó a
+  // PUBLICADO: la categoría queda en SORTEO_REALIZADO o más allá.
+  const categoriaPublicada = (estado: string) =>
+    ['SORTEO_REALIZADO', 'EN_CURSO', 'FINALIZADA'].includes(estado);
 
   const handleFinalizarCategoria = async (categoria: Categoria) => {
     const confirmed = await confirm({
@@ -415,6 +408,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   
   // Si hay una categoría seleccionada con bracket generado, mostrar el bracket
   if (categoriaSeleccionada?.fixtureVersionId) {
+    const estaPublicada = categoriaPublicada(categoriaSeleccionada.estado);
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -425,7 +419,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             ← Volver a categorías
           </button>
           <div className="flex items-center gap-2">
-            {bracketPublicado && urlPublica && (
+            {estaPublicada && urlPublica && (
               <a
                 href={urlPublica}
                 target="_blank"
@@ -454,12 +448,12 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             >
               {reSorteando ? 'Sorteando...' : 'Re-Sortear'}
             </button>
-            {bracketPublicado ? (
+            {estaPublicada ? (
               <button
                 onClick={handleDespublicarBracket}
                 className="px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
               >
-                Despublicar
+                Despublicar cuadro
               </button>
             ) : (
               <button
@@ -475,7 +469,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                 ) : (
                   <>
                     <Globe className="w-4 h-4" />
-                    Publicar Bracket
+                    Publicar cuadro
                   </>
                 )}
               </button>
