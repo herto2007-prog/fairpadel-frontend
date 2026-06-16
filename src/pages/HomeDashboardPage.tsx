@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { AmericanoCreateWizard } from '../features/americano/components/AmericanoCreateWizard';
 import { CompartirAmericanoModal } from '../features/americano/components/CompartirAmericanoModal';
+import { MiAgendaCard } from '../features/dashboard/components/MiAgendaCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
@@ -846,6 +847,9 @@ export default function HomeDashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Columna izquierda - Urgencia + Actividad */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Mi agenda del torneo (si el jugador está jugando alguno) */}
+            <MiAgendaCard />
+
             {/* Carta de urgencia (si hay torneos urgentes) */}
             {torneoDestacado && (
               <UrgencyCard torneo={torneoDestacado} />
