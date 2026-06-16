@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy, Download } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy, Download, CalendarClock } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { matchService } from '../../../../services/matchService';
+import { programacionService } from '../../services/programacionService';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -43,6 +44,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [modoSeleccion, setModoSeleccion] = useState(false);
   const [cerrandoGrupo, setCerrandoGrupo] = useState(false);
   const [reSorteando, setReSorteando] = useState(false);
+  const [reprogramando, setReprogramando] = useState(false);
   
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
@@ -406,6 +408,51 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     }
   };
   
+  // Handler para reprogramar TODA la agenda desde cero (no toca partidos jugados)
+  const handleReprogramarAgenda = async () => {
+    setReprogramando(true);
+    try {
+      const preview = await programacionService.reprogramarGeneralPreview(tournamentId);
+      const { totalJugables, asignados, sinFranja } = preview.resumen;
+
+      if (totalJugables === 0) {
+        showError(
+          'Nada para reprogramar',
+          'No hay partidos pendientes con ambas parejas definidas.',
+        );
+        return;
+      }
+
+      let message = `Se reacomodarán ${asignados} de ${totalJugables} partidos pendientes desde cero. Los partidos ya jugados no se tocan.`;
+      if (sinFranja > 0) {
+        message += ` ⚠️ ${sinFranja} quedaría(n) sin franja por falta de horarios — agregá más días o canchas si querés que entren todos.`;
+      }
+
+      const confirmed = await confirm({
+        title: '¿Reprogramar toda la agenda?',
+        message,
+        variant: 'warning',
+      });
+      if (!confirmed) return;
+
+      const res = await programacionService.reprogramarGeneral(tournamentId);
+      const r = res.resumen;
+      showSuccess(
+        'Agenda reprogramada',
+        `${r.asignados} partidos reacomodados${r.sinFranja > 0 ? ` · ${r.sinFranja} sin franja` : ''}.`,
+      );
+      await loadCategorias();
+      setCategoriaSeleccionada(null);
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudo reprogramar la agenda');
+    } finally {
+      setReprogramando(false);
+    }
+  };
+
+  // ¿Hay al menos una categoría sorteada? (para habilitar reprogramar)
+  const haySorteadas = categorias.some((c) => c.fixtureVersionId);
+
   // Si hay una categoría seleccionada con bracket generado, mostrar el bracket
   if (categoriaSeleccionada?.fixtureVersionId) {
     const estaPublicada = categoriaPublicada(categoriaSeleccionada.estado);
@@ -510,6 +557,17 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
           <span className="text-xs text-neutral-500 px-3 py-1 bg-white/5 rounded-full">
             {categorias.length} categorías
           </span>
+          {haySorteadas && (
+            <button
+              onClick={handleReprogramarAgenda}
+              disabled={reprogramando}
+              title="Reacomoda los horarios de todos los partidos pendientes desde cero (no toca los ya jugados)"
+              className="text-xs text-neutral-400 hover:text-white px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CalendarClock className="w-3.5 h-3.5" />
+              {reprogramando ? 'Reprogramando…' : 'Reprogramar agenda'}
+            </button>
+          )}
           {!modoSeleccion ? (
             <button
               onClick={() => setModoSeleccion(true)}
