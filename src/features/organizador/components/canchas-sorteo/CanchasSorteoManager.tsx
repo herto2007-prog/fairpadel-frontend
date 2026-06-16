@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronDown, ChevronUp, Trophy, Calendar, 
@@ -57,6 +57,9 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
 
   // Estado Paso 1: Sedes Asignadas (múltiples con orden)
   const [sedesAsignadas, setSedesAsignadas] = useState<{ id: string; nombre: string; ciudad: string; canchas: number; orden: number }[]>([]);
+
+  // Rango de fechas del torneo (para proponer los días de juego)
+  const [rangoTorneo, setRangoTorneo] = useState<{ inicio: string; fin: string } | null>(null);
 
   // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
@@ -128,8 +131,37 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       loadCategorias(),
       loadDiasConfigurados(),
       loadCanchas(),
+      loadRangoTorneo(),
     ]);
   };
+
+  const loadRangoTorneo = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}`);
+      if (data?.fechaInicio && data?.fechaFin) {
+        setRangoTorneo({ inicio: data.fechaInicio, fin: data.fechaFin });
+      }
+    } catch (err) {
+      console.error('Error cargando fechas del torneo:', err);
+    }
+  };
+
+  // Lista de fechas YYYY-MM-DD entre inicio y fin del torneo (cap 60 por seguridad)
+  const fechasDelRango = useMemo(() => {
+    if (!rangoTorneo?.inicio || !rangoTorneo?.fin) return [] as string[];
+    const [y0, m0, d0] = rangoTorneo.inicio.split('-').map(Number);
+    const [y1, m1, d1] = rangoTorneo.fin.split('-').map(Number);
+    const out: string[] = [];
+    let cur = Date.UTC(y0, m0 - 1, d0);
+    const end = Date.UTC(y1, m1 - 1, d1);
+    let guard = 0;
+    while (cur <= end && guard++ < 60) {
+      const dt = new Date(cur);
+      out.push(`${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`);
+      cur += 86400000;
+    }
+    return out;
+  }, [rangoTorneo]);
 
   const loadSedesAsignadas = async () => {
     try {
@@ -195,6 +227,60 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       }
     } catch (err) {
       console.error('Error cargando canchas:', err);
+    }
+  };
+
+  // Agregado rápido de un día del torneo (defaults: 18:00–23:00, todas las canchas)
+  const agregarDiaRapido = async (fecha: string) => {
+    if (canchas.length === 0) {
+      showError('Sin canchas', 'No hay canchas. Asigná una sede primero.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await canchasSorteoService.configurarDiaJuego({
+        tournamentId,
+        fecha,
+        horaInicio: '18:00',
+        horaFin: '23:00',
+        canchasIds: canchas.map(c => c.id),
+      });
+      if (response.success) {
+        showSuccess('Día agregado', `${formatDatePY(fecha)} • ${response.data.slotsGenerados} slots`);
+        await loadDiasConfigurados();
+      }
+    } catch (err: any) {
+      showError('Error al agregar día', err.response?.data?.message || 'No se pudo agregar el día');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Agrega de una vez todos los días del torneo que falten configurar
+  const agregarTodosLosDias = async () => {
+    const faltantes = fechasDelRango.filter(f => !dias.some(d => d.fecha === f));
+    if (faltantes.length === 0) return;
+    if (canchas.length === 0) {
+      showError('Sin canchas', 'No hay canchas. Asigná una sede primero.');
+      return;
+    }
+    setLoading(true);
+    try {
+      for (const fecha of faltantes) {
+        await canchasSorteoService.configurarDiaJuego({
+          tournamentId,
+          fecha,
+          horaInicio: '18:00',
+          horaFin: '23:00',
+          canchasIds: canchas.map(c => c.id),
+        });
+      }
+      showSuccess('Días agregados', `${faltantes.length} día(s) del torneo configurados`);
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudieron agregar todos los días');
+    } finally {
+      await loadDiasConfigurados();
+      setLoading(false);
     }
   };
 
@@ -679,6 +765,50 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               className="border-t border-white/10"
             >
               <div className="p-6 space-y-4">
+                {/* Días del torneo — propuestos desde el rango inicio–fin */}
+                {fechasDelRango.length > 0 && (
+                  <div className="bg-[#0B0E14] rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-[#df2531]" />
+                        Días del torneo
+                      </h4>
+                      {fechasDelRango.some(f => !dias.some(d => d.fecha === f)) && (
+                        <button
+                          onClick={agregarTodosLosDias}
+                          disabled={loading}
+                          className="text-xs px-3 py-1.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          + Agregar todos
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Tocá un día para agregarlo (18:00–23:00, todas las canchas). Después podés ajustar horario y canchas.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {fechasDelRango.map((fecha) => {
+                        const ya = dias.some(d => d.fecha === fecha);
+                        return (
+                          <button
+                            key={fecha}
+                            onClick={() => !ya && agregarDiaRapido(fecha)}
+                            disabled={loading || ya}
+                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                              ya
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-default'
+                                : 'bg-white/[0.03] border-white/10 text-gray-300 hover:border-[#df2531]/50 hover:text-white disabled:opacity-50'
+                            }`}
+                          >
+                            {ya ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                            {formatDatePY(fecha)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Días ya configurados */}
                 {dias.length > 0 && (
                   <div className="space-y-2">
