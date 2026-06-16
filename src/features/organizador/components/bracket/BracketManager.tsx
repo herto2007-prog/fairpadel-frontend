@@ -408,38 +408,22 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
     }
   };
   
-  // Handler para reprogramar TODA la agenda desde cero (no toca partidos jugados)
+  // Handler para reprogramar TODA la agenda desde cero (predictivo, no toca jugados)
   const handleReprogramarAgenda = async () => {
+    const confirmed = await confirm({
+      title: '¿Reprogramar toda la agenda?',
+      message:
+        'Se reacomodan todos los partidos desde cero, incluidas las rondas futuras (horario previsto según el cuadro). Los partidos ya jugados no se tocan. Lo que no entre por falta de franjas queda sin horario.',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+
     setReprogramando(true);
     try {
-      const preview = await programacionService.reprogramarGeneralPreview(tournamentId);
-      const { totalJugables, asignados, sinFranja } = preview.resumen;
-
-      if (totalJugables === 0) {
-        showError(
-          'Nada para reprogramar',
-          'No hay partidos pendientes con ambas parejas definidas.',
-        );
-        return;
-      }
-
-      let message = `Se reacomodarán ${asignados} de ${totalJugables} partidos pendientes desde cero. Los partidos ya jugados no se tocan.`;
-      if (sinFranja > 0) {
-        message += ` ⚠️ ${sinFranja} quedaría(n) sin franja por falta de horarios — agregá más días o canchas si querés que entren todos.`;
-      }
-
-      const confirmed = await confirm({
-        title: '¿Reprogramar toda la agenda?',
-        message,
-        variant: 'warning',
-      });
-      if (!confirmed) return;
-
       const res = await programacionService.reprogramarGeneral(tournamentId);
-      const r = res.resumen;
       showSuccess(
         'Agenda reprogramada',
-        `${r.asignados} partidos reacomodados${r.sinFranja > 0 ? ` · ${r.sinFranja} sin franja` : ''}.`,
+        `${res.asignados} partidos con horario${res.sinFranja > 0 ? ` · ${res.sinFranja} sin franja (faltan horarios)` : ''}.`,
       );
       await loadCategorias();
       setCategoriaSeleccionada(null);
