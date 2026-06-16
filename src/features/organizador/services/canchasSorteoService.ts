@@ -67,6 +67,17 @@ export interface SorteoMasivoResponse {
     slotsReservados: number;
     categorias: string[];
   }[];
+  // Aviso: partidos que no entraron por falta de franjas (el sorteo igual se guarda).
+  sinProgramar?: {
+    total: number;
+    porFase: Record<string, number>;
+    slotsFaltantes: number;
+    horasFaltantes: number;
+    hayFinales: boolean;
+    diaFinales: string | null;
+    mensaje: string;
+    solucion: string;
+  };
 }
 
 export const canchasSorteoService = {

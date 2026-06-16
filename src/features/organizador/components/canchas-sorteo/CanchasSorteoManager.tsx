@@ -107,25 +107,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   const [modalSlotsFaltantes, setModalSlotsFaltantes] = useState<{
     isOpen: boolean;
     mensaje: string;
-    detalle: {
-      totalSlotsNecesarios?: number;
-      slotsDisponibles?: number;
-      slotsFaltantes?: number;
-      horasNecesarias?: number;
-      horasDisponibles?: number;
-      categoriasAfectadas?: Array<{
-        nombre: string;
-        slotsFaltantes: number;
-        fasesFaltantes: string[];
-      }>;
-      fasesAfectadas?: string[];
-      diasSugeridos?: string[];
-      sugerencia?: string;
-    };
-  }>({ 
-    isOpen: false, 
-    mensaje: '', 
-    detalle: {} 
+    solucion: string;
+  }>({
+    isOpen: false,
+    mensaje: '',
+    solucion: '',
   });
 
   // Estados de carga
@@ -340,26 +326,23 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
         '¡Sorteo completado!',
         `${msgBase}${msgIgnoradas}`
       );
-      
+
       // Recargar datos
       await loadCategorias();
       setCategoriasSeleccionadas([]);
-      
-    } catch (err: any) {
-      // Verificar si es error de slots faltantes (nuevo formato simple)
-      const errorData = err.response?.data;
-      if (errorData?.detalle?.porFase || errorData?.message?.includes('partidos sin cancha')) {
-        // Nuevo formato: mensaje simple con partidos por fase
+
+      // Aviso (no error): faltaron franjas para algunos partidos. El sorteo SÍ
+      // se guardó; mostramos cuántas franjas/horas faltan y en qué día.
+      if (resultado.sinProgramar?.total) {
         setModalSlotsFaltantes({
           isOpen: true,
-          mensaje: errorData.message || 'Hay partidos sin cancha asignada',
-          detalle: errorData.detalle || {},
+          mensaje: resultado.sinProgramar.mensaje,
+          solucion: resultado.sinProgramar.solucion,
         });
-      } else if (errorData?.message) {
-        showError('Error en sorteo', errorData.message);
-      } else {
-        showError('Error en sorteo', 'Error desconocido');
       }
+    } catch (err: any) {
+      const errorData = err.response?.data;
+      showError('Error en sorteo', errorData?.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
@@ -1170,11 +1153,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white pr-8">Faltan canchas</h3>
+                  <h3 className="text-lg font-bold text-white pr-8">Faltan franjas para algunos partidos</h3>
                   <p className="text-gray-400 text-sm mt-1">{modalSlotsFaltantes.mensaje}</p>
                 </div>
-                <button 
-                  onClick={() => setModalSlotsFaltantes({ isOpen: false, mensaje: '', detalle: {} })}
+                <button
+                  onClick={() => setModalSlotsFaltantes({ isOpen: false, mensaje: '', solucion: '' })}
                   className="p-2 hover:bg-white/5 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -1190,13 +1173,13 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   <span className="text-blue-300 font-medium text-sm">Solución:</span>
                 </div>
                 <p className="text-blue-400 text-sm pl-7">
-                  Agrega más días de juego o aumenta el horario de los días existentes en el Paso 2.
+                  {modalSlotsFaltantes.solucion || 'Agrega más días de juego o aumenta el horario de los días existentes en el Paso 2.'}
                 </p>
               </div>
 
               {/* Botón */}
               <button
-                onClick={() => setModalSlotsFaltantes({ isOpen: false, mensaje: '', detalle: {} })}
+                onClick={() => setModalSlotsFaltantes({ isOpen: false, mensaje: '', solucion: '' })}
                 className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-xl transition-all"
               >
                 Entendido
