@@ -28,6 +28,8 @@ interface Partido {
     jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
     jugador2: { nombre: string; apellido: string; fotoUrl?: string | null };
   };
+  origen1?: string | null; // "Ganador Zona 3" cuando el lado aún no tiene pareja
+  origen2?: string | null;
   ganador?: {
     id: string;
     jugador1: { nombre: string; apellido: string; fotoUrl?: string | null };
@@ -275,7 +277,7 @@ function PartidoCard({
               <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
                 <span className="text-gray-500 text-xs">?</span>
               </div>
-              <div className="text-gray-500 italic">Por definir</div>
+              <div className="text-gray-400 italic">{partido.origen1 || 'Por definir'}</div>
             </div>
           )}
         </div>
@@ -313,7 +315,7 @@ function PartidoCard({
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="text-gray-500 italic">Por definir</div>
+              <div className="text-gray-400 italic">{partido.origen2 || 'Por definir'}</div>
               <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
                 <span className="text-gray-500 text-xs">?</span>
               </div>

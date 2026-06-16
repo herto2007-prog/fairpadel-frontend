@@ -25,6 +25,8 @@ interface Partido {
     jugador1: Jugador;
     jugador2: Jugador;
   };
+  origen1?: string | null; // "Ganador Zona 3" cuando el lado aún no tiene pareja
+  origen2?: string | null;
   ganador?: {
     id: string;
     jugador1: Jugador;
@@ -595,7 +597,7 @@ function MatchCard({ partido, isMobile }: { partido: Partido; isMobile?: boolean
             )}
           </>
         ) : (
-          <span className="text-[9px] text-gray-500 italic">Por definir</span>
+          <span className="text-[9px] text-gray-400 italic truncate">{partido.origen1 || 'Por definir'}</span>
         )}
       </div>
 
@@ -645,7 +647,7 @@ function MatchCard({ partido, isMobile }: { partido: Partido; isMobile?: boolean
             )}
           </>
         ) : (
-          <span className="text-[9px] text-gray-500 italic">Por definir</span>
+          <span className="text-[9px] text-gray-400 italic truncate">{partido.origen2 || 'Por definir'}</span>
         )}
       </div>
 
