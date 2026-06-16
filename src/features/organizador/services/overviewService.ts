@@ -13,6 +13,7 @@ export interface TorneoOverview {
   fechaInicio: string;
   fechaFin: string;
   ciudad: string;
+  costoInscripcion?: number;
   flyerUrl?: string;
   sede?: {
     id: string;

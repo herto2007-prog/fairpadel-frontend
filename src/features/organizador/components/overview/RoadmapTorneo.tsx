@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import {
   Check, Trophy, Users, Share2, Send, Eye, GitBranch, Flag,
-  PartyPopper, Loader2,
+  PartyPopper, Loader2, ClipboardList,
 } from 'lucide-react';
 import { OverviewData } from '../../services/overviewService';
 
@@ -37,6 +37,7 @@ interface RoadmapTorneoProps {
   onEnviarAprobacion: () => void;
   onFinalizar: () => void;
   onCopyLink: () => void;
+  onCompletarDatos: () => void;
 }
 
 export function RoadmapTorneo({
@@ -49,6 +50,7 @@ export function RoadmapTorneo({
   onEnviarAprobacion,
   onFinalizar,
   onCopyLink,
+  onCompletarDatos,
 }: RoadmapTorneoProps) {
   const { torneo, progreso, inscripciones } = data;
 
@@ -66,6 +68,37 @@ export function RoadmapTorneo({
   const enFase = ['programacion', 'en_curso'].includes(torneo.estadoProceso);
   const confirmadas = inscripciones.confirmadas;
 
+  // Datos públicos que el borrador difiere y se exigen para salir público.
+  // (ciudad/costo/flyer se cargan en el modal; sede se asigna en Canchas.)
+  const datosFaltan: string[] = [];
+  if (!torneo.ciudad) datosFaltan.push('ciudad');
+  if (!torneo.sede) datosFaltan.push('sede');
+  if (!torneo.costoInscripcion || torneo.costoInscripcion <= 0) datosFaltan.push('costo');
+  if (!torneo.flyerUrl) datosFaltan.push('flyer');
+  const datosCompletos = datosFaltan.length === 0;
+  const soloFaltaSede = datosFaltan.length === 1 && datosFaltan[0] === 'sede';
+
+  // CTAs del paso "Abrir inscripciones" según qué falte.
+  const ctaAbrir: CTA[] = [];
+  if (!yaPublico && !pendienteAprob) {
+    if (!datosCompletos) {
+      if (!soloFaltaSede) {
+        ctaAbrir.push({ label: 'Completar datos', icon: ClipboardList, onClick: onCompletarDatos, primary: true });
+      }
+      if (datosFaltan.includes('sede')) {
+        ctaAbrir.push({ label: 'Asignar sede', icon: Trophy, onClick: () => onTabChange('canchasSorteo'), primary: soloFaltaSede });
+      }
+    } else {
+      ctaAbrir.push({
+        label: rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',
+        icon: Send,
+        onClick: onEnviarAprobacion,
+        primary: true,
+        loading: enviando,
+      });
+    }
+  }
+
   const pasos: Paso[] = [
     {
       key: 'crear',
@@ -80,20 +113,13 @@ export function RoadmapTorneo({
         ? 'Tu torneo ya es público y recibe inscriptos'
         : pendienteAprob
           ? 'Esperando aprobación de FairPadel ⏳'
-          : rechazado
-            ? 'No fue aprobado. Ajustá lo necesario y reenvialo'
-            : 'Cuando esté listo, enviálo a aprobación de FairPadel',
+          : !datosCompletos
+            ? `Faltan datos para salir público: ${datosFaltan.join(', ')}`
+            : rechazado
+              ? 'No fue aprobado. Ajustá lo necesario y reenvialo'
+              : 'Cuando esté listo, enviálo a aprobación de FairPadel',
       done: yaPublico,
-      cta:
-        pendienteAprob || yaPublico
-          ? undefined
-          : [{
-              label: rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',
-              icon: Send,
-              onClick: onEnviarAprobacion,
-              primary: true,
-              loading: enviando,
-            }],
+      cta: ctaAbrir.length > 0 ? ctaAbrir : undefined,
     },
     {
       key: 'inscriptos',

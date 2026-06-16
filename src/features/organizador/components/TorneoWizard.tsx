@@ -1,12 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, DollarSign, Image as ImageIcon, 
-  Award, ChevronRight, ChevronLeft, Check, Upload,
-  Sparkles, Users, Info, Building2
+import {
+  Trophy, Award, ChevronRight, ChevronLeft, Check, Sparkles, Users, Info,
 } from 'lucide-react';
-import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
-import { SedeAutocomplete } from './SedeAutocomplete';
 import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { formatDatePY } from '../../../utils/date';
@@ -16,16 +12,8 @@ import { formatDatePY } from '../../../utils/date';
 // ═══════════════════════════════════════════════════════════
 interface TorneoFormData {
   nombre: string;
-  descripcion: string;
-  ciudad: string;
-  region: string;
-  pais: string;
-  sedeId: string;
   fechaInicio: string;
   fechaFin: string;
-  costoInscripcion: number;
-  flyerUrl: string;
-  flyerPublicId: string;
   categoriaIds: string[];
 }
 
@@ -37,19 +25,16 @@ interface Categoria {
   tipoCategoria?: 'STANDARD' | 'MIXTO' | 'SUMAS';
 }
 
-interface Sede {
-  id: string;
-  nombre: string;
-  ciudad: string;
-}
-
 interface TorneoWizardProps {
   onSuccess: (torneo: any) => void;
   onCancel: () => void;
 }
 
+const TOTAL_PASOS = 3;
+
 // ═══════════════════════════════════════════════════════════
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL — Borrador en 30s (nombre + fechas + categorías)
+// El resto (sede, costo, flyer) se completa después en el panel del torneo.
 // ═══════════════════════════════════════════════════════════
 export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const [step, setStep] = useState(1);
@@ -57,37 +42,26 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [sedes, setSedes] = useState<Sede[]>([]);
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState<TorneoFormData>({
     nombre: '',
-    descripcion: '',
-    ciudad: '',
-    region: '',
-    pais: 'Paraguay',
-    sedeId: '',
     fechaInicio: '',
     fechaFin: '',
-    costoInscripcion: 0,
-    flyerUrl: '',
-    flyerPublicId: '',
     categoriaIds: [],
   });
 
   useEffect(() => {
-    loadDatosAuxiliares();
+    loadCategorias();
   }, []);
 
-  const loadDatosAuxiliares = async () => {
+  const loadCategorias = async () => {
     try {
       const { data } = await api.get('/admin/torneos/datos/wizard');
       if (data.success) {
         setCategorias(data.categorias || []);
-        setSedes(data.sedes || []);
       }
-    } catch (error: any) {
-      if (error.response?.status === 401) {
+    } catch (err: any) {
+      if (err.response?.status === 401) {
         setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
       }
     }
@@ -100,7 +74,7 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
   const handleNext = () => {
     if (!validateStep(step)) return;
     setDirection(1);
-    setStep(prev => Math.min(prev + 1, 5));
+    setStep(prev => Math.min(prev + 1, TOTAL_PASOS));
     setError(null);
   };
 
@@ -117,10 +91,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
           setError('El nombre del torneo es obligatorio');
           return false;
         }
-        if (!formData.ciudad) {
-          setError('Debes seleccionar una ciudad');
-          return false;
-        }
         if (!formData.fechaInicio) {
           setError('Debes seleccionar la fecha de inicio del torneo');
           return false;
@@ -135,14 +105,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
         }
         return true;
       case 2:
-        if (formData.costoInscripcion <= 0) {
-          setError('El costo de inscripción debe ser mayor a 0');
-          return false;
-        }
-        return true;
-      case 3:
-        return true;
-      case 4:
         if (formData.categoriaIds.length === 0) {
           setError('Debes seleccionar al menos una categoría');
           return false;
@@ -157,11 +119,7 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
-        ...formData,
-      };
-      
-      const { data } = await api.post('/admin/torneos', payload);
+      const { data } = await api.post('/admin/torneos', { ...formData });
       if (data.success) {
         onSuccess(data.torneo);
       } else {
@@ -171,28 +129,6 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
       setError(err.response?.data?.message || 'Error creando torneo');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleImageUpload = async (file: File) => {
-    if (!file) return;
-    setUploadingImage(true);
-    const formDataUpload = new FormData();
-    formDataUpload.append('image', file);
-    formDataUpload.append('folder', 'tournaments');
-
-    try {
-      const { data } = await api.post('/uploads/image', formDataUpload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      if (data.success) {
-        updateField('flyerUrl', data.data.url);
-        updateField('flyerPublicId', data.data.publicId);
-      }
-    } catch (error: any) {
-      setError('Error subiendo la imagen');
-    } finally {
-      setUploadingImage(false);
     }
   };
 
@@ -216,13 +152,13 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
           </button>
           <div>
             <h1 className="text-lg font-medium text-white">Crear Torneo</h1>
-            <p className="text-white/40 text-xs">Paso {step} de 5</p>
+            <p className="text-white/40 text-xs">Paso {step} de {TOTAL_PASOS}</p>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="flex gap-1.5 mb-4">
-          {[1, 2, 3, 4, 5].map((s) => (
+          {Array.from({ length: TOTAL_PASOS }, (_, i) => i + 1).map((s) => (
             <div
               key={s}
               className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${
@@ -261,27 +197,10 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
             className="bg-white/[0.02] border border-white/5 rounded-xl p-4"
           >
             {step === 1 && (
-              <Step1Identidad 
-                formData={formData} 
-                updateField={updateField}
-                sedes={sedes}
-              />
+              <Step1Basico formData={formData} updateField={updateField} />
             )}
             {step === 2 && (
-              <Step2Inversion 
-                formData={formData} 
-                updateField={updateField}
-              />
-            )}
-            {step === 3 && (
-              <Step3Flyer 
-                formData={formData}
-                onImageUpload={handleImageUpload}
-                uploading={uploadingImage}
-              />
-            )}
-            {step === 4 && (
-              <Step4Categorias 
+              <Step2Categorias
                 formData={formData}
                 updateField={updateField}
                 caballerosStandard={caballerosStandard}
@@ -291,12 +210,8 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
                 sumasCaballeros={sumasCaballeros}
               />
             )}
-            {step === 5 && (
-              <Step5Confirmar 
-                formData={formData}
-                categorias={categorias}
-                sedes={sedes}
-              />
+            {step === 3 && (
+              <Step3Confirmar formData={formData} categorias={categorias} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -310,7 +225,7 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
             {step === 1 ? 'Cancelar' : 'Atrás'}
           </button>
 
-          {step < 5 ? (
+          {step < TOTAL_PASOS ? (
             <button
               onClick={handleNext}
               className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-all"
@@ -348,16 +263,14 @@ export function TorneoWizard({ onSuccess, onCancel }: TorneoWizardProps) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PASO 1: IDENTIDAD Y FECHAS
+// PASO 1: LO BÁSICO (nombre + fechas)
 // ═══════════════════════════════════════════════════════════
-function Step1Identidad({ 
-  formData, 
+function Step1Basico({
+  formData,
   updateField,
-  sedes 
-}: { 
-  formData: TorneoFormData; 
+}: {
+  formData: TorneoFormData;
   updateField: (field: keyof TorneoFormData, value: any) => void;
-  sedes: Sede[];
 }) {
   const nombreRef = useRef<HTMLInputElement>(null);
 
@@ -365,32 +278,14 @@ function Step1Identidad({
     nombreRef.current?.focus();
   }, []);
 
-  const handleCiudadChange = (ciudad: string) => {
-    updateField('ciudad', ciudad);
-    const regiones: Record<string, string> = {
-      'Asunción': 'Central', 'San Lorenzo': 'Central', 'Fernando de la Mora': 'Central',
-      'Lambaré': 'Central', 'Villa Elisa': 'Central', 'Luque': 'Central',
-      'Capiatá': 'Central', 'Ñemby': 'Central', 'Limpio': 'Central',
-      'Mariano Roque Alonso': 'Central', 'Areguá': 'Central', 'Villeta': 'Central',
-      'Encarnación': 'Itapúa', 'Ciudad del Este': 'Alto Paraná',
-      'Pedro Juan Caballero': 'Amambay', 'Coronel Oviedo': 'Caaguazú',
-      'Caacupé': 'Cordillera', 'Villarrica': 'Guairá', 'Pilar': 'Ñeembucú',
-      'Concepción': 'Concepción', 'San Pedro': 'San Pedro',
-      'Caazapá': 'Caazapá', 'San Juan Bautista': 'Misiones',
-      'Paraguarí': 'Paraguarí', 'Tebicuary': 'Paraguarí',
-      'Quiindy': 'Paraguarí', 'Ypacaraí': 'Central', 'Ypané': 'Central',
-    };
-    updateField('region', regiones[ciudad] || 'Central');
-  };
-
   return (
     <div className="space-y-4">
       <div className="text-center mb-4">
         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
           <Trophy className="w-5 h-5 text-primary" />
         </div>
-        <h2 className="text-base font-medium text-white">Datos del Torneo</h2>
-        <p className="text-white/40 text-xs">Información básica para comenzar</p>
+        <h2 className="text-base font-medium text-white">Lo básico</h2>
+        <p className="text-white/40 text-xs">Nombre y fechas — el resto lo completás después</p>
       </div>
 
       {/* Nombre */}
@@ -409,298 +304,40 @@ function Step1Identidad({
         />
       </div>
 
-      {/* Descripción */}
-      <div>
-        <label className="block text-xs text-white/60 mb-1.5">Descripción</label>
-        <textarea
-          value={formData.descripcion}
-          onChange={(e) => updateField('descripcion', e.target.value)}
-          rows={2}
-          className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors resize-none"
-          placeholder="Cuéntale a los jugadores qué hace especial este torneo..."
-        />
-      </div>
-
-      {/* Ciudad */}
-      <div>
-        <label className="block text-xs text-white/60 mb-1.5">
-          Ciudad <span className="text-primary">*</span>
-        </label>
-        <CityAutocomplete
-          value={formData.ciudad}
-          onChange={handleCiudadChange}
-          placeholder="Buscar ciudad..."
-        />
-        {formData.region && (
-          <p className="text-[10px] text-white/30 mt-1">
-            Depto: {formData.region}
-          </p>
-        )}
-      </div>
-
-      {/* Sede Principal */}
-      <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4">
-        <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-emerald-400" />
-          Sede Principal
-          {formData.sedeId && <span className="text-emerald-400 text-xs">✓ Seleccionada</span>}
-        </label>
-        
-        <p className="text-xs text-white/50 mb-3">
-          Esta será la sede principal del torneo. Las finales se jugarán aquí a menos que configures lo contrario en "Canchas".
-        </p>
-
-        <SedeAutocomplete
-          sedes={sedes}
-          value={formData.sedeId}
-          onChange={(sedeId) => updateField('sedeId', sedeId)}
-          placeholder="Buscar sede por nombre o ciudad..."
-          label=""
-        />
-        
-        {formData.sedeId && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400/80 bg-emerald-500/10 rounded-lg px-3 py-2">
-            <Trophy className="w-3.5 h-3.5" />
-            <span>Esta sede será el escenario principal para las finales del torneo</span>
-          </div>
-        )}
-      </div>
-
       {/* Fechas del Torneo */}
-      <div className="space-y-4">
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-          <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-primary" />
-            Fechas del Torneo <span className="text-primary">*</span>
-          </label>
-          <p className="text-xs text-white/50 mb-3">
-            Define el período del torneo. Estas fechas se mostrarán en el listado y overview.
-          </p>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-white/60 mb-1.5">
-                Fecha de inicio <span className="text-primary">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.fechaInicio}
-                max={formData.fechaFin}
-                onChange={(e) => updateField('fechaInicio', e.target.value)}
-                className="w-full bg-white/5 border border-primary/30 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/60 mb-1.5">
-                Fecha de fin <span className="text-primary">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.fechaFin}
-                min={formData.fechaInicio}
-                onChange={(e) => updateField('fechaFin', e.target.value)}
-                className="w-full bg-white/5 border border-primary/30 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════
-// PASO 2: INVERSIÓN
-// ═══════════════════════════════════════════════════════════
-function Step2Inversion({ 
-  formData, 
-  updateField 
-}: { 
-  formData: TorneoFormData; 
-  updateField: (field: keyof TorneoFormData, value: any) => void;
-}) {
-  const [displayValue, setDisplayValue] = useState('');
-
-  useEffect(() => {
-    if (formData.costoInscripcion > 0) {
-      setDisplayValue(formData.costoInscripcion.toLocaleString('es-PY'));
-    }
-  }, []);
-
-  const handleCostoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/[^\d]/g, '');
-    const numValue = parseInt(rawValue) || 0;
-    updateField('costoInscripcion', numValue);
-    setDisplayValue(rawValue ? parseInt(rawValue).toLocaleString('es-PY') : '');
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-          <DollarSign className="w-5 h-5 text-primary" />
-        </div>
-        <h2 className="text-base font-medium text-white">Inversión</h2>
-        <p className="text-white/40 text-xs">Define el costo y duración</p>
-      </div>
-
-      {/* Costo */}
-      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-        <label className="block text-xs text-white/60 mb-2">
-          Costo de Inscripción <span className="text-primary">*</span>
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+        <label className="block text-sm font-medium text-white mb-2 flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-primary" />
+          Fechas del Torneo <span className="text-primary">*</span>
         </label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-medium text-white/40">
-            Gs.
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={displayValue}
-            onChange={handleCostoChange}
-            className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-14 pr-3 text-xl font-medium text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
-            placeholder="0"
-          />
-        </div>
-        <p className="text-[10px] text-white/30 mt-2 flex items-center gap-1">
-          <Info className="w-3 h-3" />
-          Valor que los jugadores verán en la ficha
+        <p className="text-xs text-white/50 mb-3">
+          Definí el período del torneo. Se muestran en el listado y proponen los días de juego.
         </p>
-      </div>
 
-
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════
-// PASO 3: FLYER
-// ═══════════════════════════════════════════════════════════
-function Step3Flyer({ 
-  formData,
-  onImageUpload,
-  uploading
-}: { 
-  formData: TorneoFormData;
-  onImageUpload: (file: File) => void;
-  uploading: boolean;
-}) {
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onImageUpload(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onImageUpload(e.target.files[0]);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="text-center mb-4">
-        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-2">
-          <ImageIcon className="w-5 h-5 text-primary" />
-        </div>
-        <h2 className="text-base font-medium text-white">Flyer</h2>
-        <p className="text-white/40 text-xs">Imagen atractiva = más inscripciones</p>
-      </div>
-
-      {/* Upload */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`
-          relative border border-dashed rounded-xl p-6 text-center cursor-pointer
-          transition-all duration-200
-          ${dragActive 
-            ? 'border-primary bg-primary/5' 
-            : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
-          }
-          ${formData.flyerUrl ? 'border-emerald-500/30' : ''}
-        `}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleChange}
-          className="hidden"
-        />
-
-        {uploading ? (
-          <div className="flex flex-col items-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full mb-2"
-            />
-            <p className="text-white/40 text-sm">Subiendo...</p>
-          </div>
-        ) : formData.flyerUrl ? (
-          <div className="relative">
-            <img
-              src={formData.flyerUrl}
-              alt="Flyer"
-              className="max-h-40 mx-auto rounded-lg"
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-white/60 mb-1.5">
+              Fecha de inicio <span className="text-primary">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.fechaInicio}
+              max={formData.fechaFin}
+              onChange={(e) => updateField('fechaInicio', e.target.value)}
+              className="w-full bg-white/5 border border-primary/30 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
             />
           </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center mb-2">
-              <Upload className="w-5 h-5 text-white/40" />
-            </div>
-            <p className="text-white/60 text-sm font-medium">Suelta o haz clic</p>
-            <p className="text-[10px] text-white/30 mt-1">
-              1200x630px • JPG, PNG, WEBP
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Preview */}
-      <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-        <p className="text-xs text-white/40 mb-3">Vista previa</p>
-        <div className="max-w-[200px] mx-auto">
-          <div className="bg-dark rounded-lg overflow-hidden border border-white/5">
-            <div className="aspect-[16/9] bg-white/5 relative">
-              {formData.flyerUrl ? (
-                <img src={formData.flyerUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-white/20" />
-                </div>
-              )}
-            </div>
-            <div className="p-2.5">
-              <h3 className="text-sm font-medium text-white truncate">
-                {formData.nombre || 'Torneo'}
-              </h3>
-              <p className="text-[10px] text-white/40">
-                {formData.ciudad || 'Ciudad'} • Gs. {(formData.costoInscripcion || 0).toLocaleString('es-PY')}
-              </p>
-            </div>
+          <div>
+            <label className="block text-xs text-white/60 mb-1.5">
+              Fecha de fin <span className="text-primary">*</span>
+            </label>
+            <input
+              type="date"
+              value={formData.fechaFin}
+              min={formData.fechaInicio}
+              onChange={(e) => updateField('fechaFin', e.target.value)}
+              className="w-full bg-white/5 border border-primary/30 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary transition-colors"
+            />
           </div>
         </div>
       </div>
@@ -709,17 +346,17 @@ function Step3Flyer({
 }
 
 // ═══════════════════════════════════════════════════════════
-// PASO 4: CATEGORÍAS
+// PASO 2: CATEGORÍAS
 // ═══════════════════════════════════════════════════════════
-function Step4Categorias({ 
+function Step2Categorias({
   formData,
   updateField,
   caballerosStandard,
   damasStandard,
   mixtos,
   sumasDamas,
-  sumasCaballeros
-}: { 
+  sumasCaballeros,
+}: {
   formData: TorneoFormData;
   updateField: (field: keyof TorneoFormData, value: any) => void;
   caballerosStandard: Categoria[];
@@ -752,8 +389,8 @@ function Step4Categorias({
                 onClick={() => toggleCategoria(cat.id)}
                 className={`
                   py-2 px-1 rounded-lg border text-center transition-all text-xs
-                  ${isSelected 
-                    ? 'border-primary bg-primary/10 text-white' 
+                  ${isSelected
+                    ? 'border-primary bg-primary/10 text-white'
                     : 'border-white/10 hover:border-white/20 text-white/50'
                   }
                 `}
@@ -791,25 +428,22 @@ function Step4Categorias({
       {renderGrupo('Sumas Caballeros', sumasCaballeros, 'text-orange-400')}
 
       <p className="text-[10px] text-white/30 text-center">
-        Puedes seleccionar varias categorías
+        Podés seleccionar varias categorías
       </p>
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════
-// PASO 5: CONFIRMAR
+// PASO 3: CONFIRMAR
 // ═══════════════════════════════════════════════════════════
-function Step5Confirmar({ 
+function Step3Confirmar({
   formData,
   categorias,
-  sedes
-}: { 
+}: {
   formData: TorneoFormData;
   categorias: Categoria[];
-  sedes: Sede[];
 }) {
-  const sede = sedes.find(s => s.id === formData.sedeId);
   const categoriasSeleccionadas = categorias.filter(c => formData.categoriaIds.includes(c.id));
   const catMasculinas = categoriasSeleccionadas.filter(c => c.tipo === 'MASCULINO');
   const catFemeninas = categoriasSeleccionadas.filter(c => c.tipo === 'FEMENINO');
@@ -821,7 +455,7 @@ function Step5Confirmar({
           <Check className="w-5 h-5 text-emerald-500" />
         </div>
         <h2 className="text-base font-medium text-white">Confirmar</h2>
-        <p className="text-white/40 text-xs">Revisa antes de crear</p>
+        <p className="text-white/40 text-xs">Revisá antes de crear</p>
       </div>
 
       {/* Resumen */}
@@ -829,12 +463,6 @@ function Step5Confirmar({
         <div className="flex justify-between py-1.5 border-b border-white/5">
           <span className="text-white/40 text-xs">Nombre</span>
           <span className="text-white text-xs font-medium text-right truncate max-w-[60%]">{formData.nombre}</span>
-        </div>
-        <div className="flex justify-between py-1.5 border-b border-white/5">
-          <span className="text-white/40 text-xs">Ubicación</span>
-          <span className="text-white text-xs text-right">
-            {formData.ciudad}{sede ? ` - ${sede.nombre}` : ''}
-          </span>
         </div>
         <div className="flex justify-between py-1.5 border-b border-white/5">
           <span className="text-white/40 text-xs">Fecha inicio</span>
@@ -848,15 +476,9 @@ function Step5Confirmar({
             {formData.fechaFin ? formatDatePY(formData.fechaFin) : '-'}
           </span>
         </div>
-        <div className="flex justify-between py-1.5">
-          <span className="text-white/40 text-xs">Inscripción</span>
-          <span className="text-emerald-400 text-xs font-medium">
-            Gs. {formData.costoInscripcion.toLocaleString('es-PY')}
-          </span>
-        </div>
 
         {/* Categorías */}
-        <div className="pt-2 border-t border-white/5">
+        <div className="pt-2">
           <span className="text-white/40 text-xs block mb-2">Categorías:</span>
           <div className="flex flex-wrap gap-1">
             {catMasculinas.map(c => (
@@ -871,21 +493,13 @@ function Step5Confirmar({
             ))}
           </div>
         </div>
-
-        {/* Flyer */}
-        {formData.flyerUrl && (
-          <div className="pt-2">
-            <span className="text-white/40 text-xs block mb-2">Flyer:</span>
-            <img src={formData.flyerUrl} alt="" className="max-h-20 rounded-lg" />
-          </div>
-        )}
       </div>
 
-      {/* Info */}
+      {/* Info: qué sigue */}
       <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3">
         <p className="text-emerald-400 text-xs text-center flex items-center justify-center gap-1.5">
           <Sparkles className="w-3 h-3" />
-          El torneo será público al crearlo
+          Se crea como borrador. Después completás sede, costo y flyer desde el panel, y ahí lo enviás a aprobación.
         </p>
       </div>
     </div>

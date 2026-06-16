@@ -10,6 +10,7 @@ import { overviewService, OverviewData, TareaPendiente } from '../../services/ov
 import { formatDatePY } from '../../../../utils/date';
 import { SolicitarCircuitoCard } from './SolicitarCircuitoCard';
 import { RoadmapTorneo } from './RoadmapTorneo';
+import { CompletarDatosTorneoModal } from './CompletarDatosTorneoModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -26,6 +27,7 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
   const [finalizando, setFinalizando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [bracketPublicado, setBracketPublicado] = useState(false);
+  const [mostrarDatosModal, setMostrarDatosModal] = useState(false);
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
@@ -253,7 +255,19 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
         onEnviarAprobacion={handleEnviarAprobacion}
         onFinalizar={handleFinalizar}
         onCopyLink={handleCopyLink}
+        onCompletarDatos={() => setMostrarDatosModal(true)}
       />
+
+      {mostrarDatosModal && data && (
+        <CompletarDatosTorneoModal
+          tournamentId={tournamentId}
+          ciudadInicial={data.torneo.ciudad}
+          costoInicial={data.torneo.costoInscripcion}
+          flyerInicial={data.torneo.flyerUrl}
+          onClose={() => setMostrarDatosModal(false)}
+          onSaved={loadOverview}
+        />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
