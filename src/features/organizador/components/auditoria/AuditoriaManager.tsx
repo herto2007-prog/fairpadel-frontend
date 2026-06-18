@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Users, Calendar, Trophy, CheckCircle2, AlertCircle,
   Download, RefreshCw, Database, UserX, Shield, Wrench, AlertTriangle, Info,
-  Edit3, ArrowRightLeft
+  Edit3, ArrowRightLeft, DollarSign, Plus, Trash2
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
@@ -258,6 +258,18 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [busquedaJug, setBusquedaJug] = useState('');
   const [resultadosJug, setResultadosJug] = useState<Array<{ id: string; nombre: string; apellido: string; documento?: string }>>([]);
 
+  // Comisión del torneo (god-panel C)
+  const [comision, setComision] = useState<{ montoEstimado: number; montoPagado: number; estado: string; bloqueoActivo: boolean } | null>(null);
+  const [modalComisionAbierto, setModalComisionAbierto] = useState(false);
+  const [comForm, setComForm] = useState({ montoEstimado: 0, montoPagado: 0, estado: 'PENDIENTE', bloqueoActivo: false });
+  const [comBusy, setComBusy] = useState(false);
+
+  // Modal pagos de una inscripción (god-panel C)
+  const [modalPagosAbierto, setModalPagosAbierto] = useState(false);
+  const [inscPagos, setInscPagos] = useState<InscripcionData | null>(null);
+  const [nuevoPago, setNuevoPago] = useState({ monto: '', metodoPago: 'EFECTIVO', estado: 'CONFIRMADO' });
+  const [pagoBusy, setPagoBusy] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -310,6 +322,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
     if (data.success) {
       setInscripciones(data.data);
     }
+    loadComision();
   };
 
   const loadPartidos = async () => {
@@ -576,6 +589,111 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       showError('Error', err.response?.data?.message || 'No se pudo quitar');
     } finally {
       setGuardandoJ(false);
+    }
+  };
+
+  // ── God-panel C: comisión del torneo ──
+  const loadComision = async () => {
+    try {
+      const { data } = await api.get(`/admin/auditoria/torneos/${tournamentId}/comision`);
+      if (data.success) setComision(data.comision);
+    } catch {
+      setComision(null);
+    }
+  };
+
+  const abrirModalComision = () => {
+    if (comision) {
+      setComForm({ montoEstimado: comision.montoEstimado, montoPagado: comision.montoPagado, estado: comision.estado, bloqueoActivo: comision.bloqueoActivo });
+    }
+    setModalComisionAbierto(true);
+  };
+
+  const guardarComision = async () => {
+    setComBusy(true);
+    try {
+      await api.patch(`/admin/auditoria/torneos/${tournamentId}/comision`, comForm);
+      showSuccess('Listo', 'Comisión actualizada');
+      setModalComisionAbierto(false);
+      await loadComision();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo ajustar la comisión');
+    } finally {
+      setComBusy(false);
+    }
+  };
+
+  // ── God-panel C: pagos de una inscripción ──
+  const abrirModalPagos = (insc: InscripcionData) => {
+    setInscPagos(insc);
+    setNuevoPago({ monto: '', metodoPago: 'EFECTIVO', estado: 'CONFIRMADO' });
+    setModalPagosAbierto(true);
+  };
+
+  // Actualiza los pagos del modal localmente (sin recargar toda la tabla en vivo)
+  const setPagosLocal = (updater: (ps: InscripcionData['pagos']) => InscripcionData['pagos']) =>
+    setInscPagos((prev) => (prev ? { ...prev, pagos: updater(prev.pagos) } : prev));
+
+  const marcarPago = async (pagoId: string, estado: string) => {
+    setPagoBusy(true);
+    try {
+      await api.patch(`/admin/auditoria/pagos/${pagoId}`, { estado });
+      setPagosLocal((ps) => ps.map((p) => (p.id === pagoId ? { ...p, estado } : p)));
+      loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo actualizar el pago');
+    } finally {
+      setPagoBusy(false);
+    }
+  };
+
+  const guardarPago = async (pago: InscripcionData['pagos'][number]) => {
+    setPagoBusy(true);
+    try {
+      await api.patch(`/admin/auditoria/pagos/${pago.id}`, {
+        monto: Number(pago.monto) || 0,
+        metodoPago: pago.metodo,
+        estado: pago.estado,
+      });
+      showSuccess('Listo', 'Pago actualizado');
+      loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo guardar el pago');
+    } finally {
+      setPagoBusy(false);
+    }
+  };
+
+  const eliminarPago = async (pagoId: string) => {
+    setPagoBusy(true);
+    try {
+      await api.delete(`/admin/auditoria/pagos/${pagoId}`);
+      setPagosLocal((ps) => ps.filter((p) => p.id !== pagoId));
+      loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo eliminar el pago');
+    } finally {
+      setPagoBusy(false);
+    }
+  };
+
+  const agregarPago = async () => {
+    if (!inscPagos || !nuevoPago.monto) return;
+    setPagoBusy(true);
+    try {
+      const { data } = await api.post(`/admin/auditoria/inscripciones/${inscPagos.id}/pagos`, {
+        monto: Number(nuevoPago.monto),
+        metodoPago: nuevoPago.metodoPago,
+        estado: nuevoPago.estado,
+      });
+      setPagosLocal((ps) => [...ps, { id: data.pago.id, estado: nuevoPago.estado, monto: Number(nuevoPago.monto), metodo: nuevoPago.metodoPago, fecha: data.pago.fechaPago || '' }]);
+      setNuevoPago({ monto: '', metodoPago: 'EFECTIVO', estado: 'CONFIRMADO' });
+      showSuccess('Listo', 'Pago agregado');
+      loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo agregar el pago');
+    } finally {
+      setPagoBusy(false);
     }
   };
 
@@ -1138,6 +1256,28 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
 
             {/* Vista Inscripciones */}
             {vistaActiva === 'inscripciones' && (
+              <div className="space-y-4">
+              {/* Comisión del torneo (god-panel C) */}
+              {comision && (
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-green-400" />
+                      <span className="text-white font-medium">Comisión del torneo</span>
+                    </div>
+                    <span className="text-white/60 text-sm">Estimado: <strong className="text-white">Gs. {comision.montoEstimado.toLocaleString('es-PY')}</strong></span>
+                    <span className="text-white/60 text-sm">Pagado: <strong className="text-white">Gs. {comision.montoPagado.toLocaleString('es-PY')}</strong></span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${comision.estado === 'PAGADO' ? 'bg-green-500/20 text-green-400' : comision.estado === 'PARCIAL' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-white/60'}`}>{comision.estado}</span>
+                    {comision.bloqueoActivo && <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">Bloqueo activo</span>}
+                  </div>
+                  <button
+                    onClick={abrirModalComision}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" /> Ajustar
+                  </button>
+                </div>
+              )}
               <div className="bg-white/[0.02] rounded-lg border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 flex items-center justify-between">
                   <span className="text-white/60 text-sm">Total: <strong className="text-white">{inscripciones.length}</strong> inscripciones</span>
@@ -1242,6 +1382,13 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                                 <ArrowRightLeft className="w-4 h-4" />
                               </button>
                               <button
+                                onClick={() => abrirModalPagos(insc)}
+                                className="p-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors"
+                                title="Pagos"
+                              >
+                                <DollarSign className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => abrirModalCambiarEstado(insc)}
                                 className="p-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors"
                                 title="Cambiar estado (emergencia)"
@@ -1268,6 +1415,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                     <p className="text-white/40">No hay inscripciones</p>
                   </div>
                 )}
+              </div>
               </div>
             )}
 
@@ -2080,6 +2228,129 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
             </div>
             <div className="p-4 border-t border-white/10 flex justify-end">
               <button onClick={() => setModalJugadoresAbierto(false)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajustar Comisión (god-panel C) */}
+      {modalComisionAbierto && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-green-500/30 w-full max-w-md">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-green-400" />
+                <h3 className="text-white font-semibold">Ajustar comisión</h3>
+              </div>
+              <button onClick={() => setModalComisionAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-white/60 text-sm mb-1.5">Monto estimado (Gs)</label>
+                  <input type="number" value={comForm.montoEstimado} onChange={(e) => setComForm({ ...comForm, montoEstimado: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50" />
+                </div>
+                <div>
+                  <label className="block text-white/60 text-sm mb-1.5">Monto pagado (Gs)</label>
+                  <input type="number" value={comForm.montoPagado} onChange={(e) => setComForm({ ...comForm, montoPagado: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-white/60 text-sm mb-1.5">Estado</label>
+                <select value={comForm.estado} onChange={(e) => setComForm({ ...comForm, estado: e.target.value })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50">
+                  <option value="PENDIENTE" className="bg-[#1a1d29]">PENDIENTE</option>
+                  <option value="PARCIAL" className="bg-[#1a1d29]">PARCIAL</option>
+                  <option value="PAGADO" className="bg-[#1a1d29]">PAGADO</option>
+                  <option value="POR_COBRAR" className="bg-[#1a1d29]">POR_COBRAR</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-white/80 text-sm cursor-pointer">
+                <input type="checkbox" checked={comForm.bloqueoActivo} onChange={(e) => setComForm({ ...comForm, bloqueoActivo: e.target.checked })} className="w-4 h-4 rounded border-white/20 bg-white/5 text-green-500" />
+                Bloqueo activo
+              </label>
+            </div>
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button onClick={() => setModalComisionAbierto(false)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cancelar</button>
+              <button onClick={guardarComision} disabled={comBusy} className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-500/80 disabled:opacity-50 text-white font-medium rounded-lg transition-colors">
+                {comBusy ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pagos de inscripción (god-panel C) */}
+      {modalPagosAbierto && inscPagos && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-green-500/30 w-full max-w-lg max-h-[88vh] flex flex-col">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-green-400" />
+                <h3 className="text-white font-semibold">Pagos · {inscPagos.pareja.jugador1}</h3>
+              </div>
+              <button onClick={() => setModalPagosAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto">
+              {inscPagos.pagos.length === 0 ? (
+                <p className="text-white/40 text-sm">Sin pagos registrados.</p>
+              ) : (
+                inscPagos.pagos.map((pago) => (
+                  <div key={pago.id} className="bg-white/[0.03] rounded-lg p-3 border border-white/10 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        value={pago.monto as any}
+                        onChange={(e) => setPagosLocal((ps) => ps.map((p) => (p.id === pago.id ? { ...p, monto: parseInt(e.target.value) || 0 } : p)))}
+                        className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50"
+                        placeholder="Monto (Gs)"
+                      />
+                      <select
+                        value={pago.metodo}
+                        onChange={(e) => setPagosLocal((ps) => ps.map((p) => (p.id === pago.id ? { ...p, metodo: e.target.value } : p)))}
+                        className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50"
+                      >
+                        <option value="EFECTIVO" className="bg-[#1a1d29]">EFECTIVO</option>
+                        <option value="TRANSFERENCIA" className="bg-[#1a1d29]">TRANSFERENCIA</option>
+                        <option value="BANCARD" className="bg-[#1a1d29]">BANCARD</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => marcarPago(pago.id, pago.estado === 'CONFIRMADO' ? 'PENDIENTE' : 'CONFIRMADO')}
+                        disabled={pagoBusy}
+                        className={`text-xs px-2.5 py-1 rounded transition-colors disabled:opacity-50 ${pago.estado === 'CONFIRMADO' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'}`}
+                      >
+                        {pago.estado === 'CONFIRMADO' ? '✓ Confirmado (marcar pendiente)' : 'Pendiente (marcar confirmado)'}
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => guardarPago(pago)} disabled={pagoBusy} className="text-xs px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition-colors disabled:opacity-50">Guardar</button>
+                        <button onClick={() => eliminarPago(pago.id)} disabled={pagoBusy} className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors disabled:opacity-50" title="Eliminar pago">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Agregar pago */}
+              <div className="bg-white/[0.02] rounded-lg p-3 border border-dashed border-white/10 space-y-2">
+                <p className="text-white/60 text-xs font-medium">Agregar pago</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" value={nuevoPago.monto} onChange={(e) => setNuevoPago({ ...nuevoPago, monto: e.target.value })} placeholder="Monto (Gs)" className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50" />
+                  <select value={nuevoPago.metodoPago} onChange={(e) => setNuevoPago({ ...nuevoPago, metodoPago: e.target.value })} className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50">
+                    <option value="EFECTIVO" className="bg-[#1a1d29]">EFECTIVO</option>
+                    <option value="TRANSFERENCIA" className="bg-[#1a1d29]">TRANSFERENCIA</option>
+                    <option value="BANCARD" className="bg-[#1a1d29]">BANCARD</option>
+                  </select>
+                </div>
+                <button onClick={agregarPago} disabled={pagoBusy || !nuevoPago.monto} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                  <Plus className="w-4 h-4" /> Agregar pago
+                </button>
+              </div>
+            </div>
+            <div className="p-4 border-t border-white/10 flex justify-end">
+              <button onClick={() => setModalPagosAbierto(false)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cerrar</button>
             </div>
           </div>
         </div>
