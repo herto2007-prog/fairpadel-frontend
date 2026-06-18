@@ -704,9 +704,9 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
                             <div className="flex items-center gap-1 text-neutral-600">
                               <AlertCircle className="w-4 h-4" />
                               <span className="text-xs">
-                                {faltanParaMinimo > 0 
-                                  ? `Faltan ${faltanParaMinimo}` 
-                                  : 'Sortear desde Canchas y Sorteo'}
+                                {faltanParaMinimo > 0
+                                  ? `Faltan ${faltanParaMinimo}`
+                                  : 'Sortear en "Configurar y sortear"'}
                               </span>
                             </div>
                           )}

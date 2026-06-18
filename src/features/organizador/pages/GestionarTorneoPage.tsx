@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -8,11 +8,8 @@ import {
 import { OverviewTab } from '../components/overview/OverviewTab';
 
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
-import { BracketManager } from '../components/bracket';
+import { CuadroManager } from '../components/cuadro/CuadroManager';
 import { CentroPartidos } from '../components/centro-partidos/CentroPartidos';
-
-
-import { CanchasSorteoManager } from '../components/canchas-sorteo/CanchasSorteoManager';
 
 import { AuditoriaManager } from '../components/auditoria/AuditoriaManager';
 import { AmericanoManager } from '../components/americano/AmericanoManager';
@@ -29,13 +26,16 @@ interface Torneo {
   formato?: string;
 }
 
-type TabType = 'overview' | 'inscripciones' | 'bracket' | 'canchasSorteo' | 'centroPartidos' | 'auditoria' | 'americano';
+type TabType = 'overview' | 'inscripciones' | 'cuadro' | 'centroPartidos' | 'auditoria' | 'americano';
 
 interface TabConfig {
   id: TabType;
   label: string;
   icon: React.ElementType;
   badge?: number;
+  // Auditoría es la herramienta admin/dueño — no es uno de los 4 momentos
+  // del organizador, así que la separamos visualmente del resto.
+  aparte?: boolean;
 }
 
 export function GestionarTorneoPage() {
@@ -89,20 +89,19 @@ export function GestionarTorneoPage() {
   };
 
   const tabs: TabConfig[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { 
-      id: 'inscripciones', 
-      label: 'Inscripciones', 
+    { id: 'overview', label: 'Resumen', icon: LayoutDashboard },
+    {
+      id: 'inscripciones',
+      label: 'Inscriptos',
       icon: Users,
       badge: stats.inscripcionesPendientes > 0 ? stats.inscripcionesPendientes : undefined,
     },
     ...(torneo?.formato === 'americano'
       ? [{ id: 'americano' as TabType, label: 'Americano', icon: Sparkles }]
       : [
-          { id: 'canchasSorteo' as TabType, label: 'Canchas y Sorteo', icon: Trophy },
-          { id: 'bracket' as TabType, label: 'Fixture', icon: GitBranch },
+          { id: 'cuadro' as TabType, label: 'Cuadro', icon: GitBranch },
           { id: 'centroPartidos' as TabType, label: 'Partidos', icon: Swords },
-          { id: 'auditoria' as TabType, label: 'Auditoria', icon: Database },
+          { id: 'auditoria' as TabType, label: 'Auditoría', icon: Database, aparte: true },
         ]
     ),
   ];
@@ -158,16 +157,21 @@ export function GestionarTorneoPage() {
 
       {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-wrap gap-2 mb-6">
-          {tabs.map((tab) => (
-            <TabButton
-              key={tab.id}
-              label={tab.label}
-              icon={tab.icon}
-              active={activeTab === tab.id}
-              badge={tab.badge}
-              onClick={() => setActiveTab(tab.id)}
-            />
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {tabs.map((tab, index) => (
+            <Fragment key={tab.id}>
+              {/* Separador: Auditoría (herramienta admin) queda aparte de los 4 momentos */}
+              {tab.aparte && index > 0 && !tabs[index - 1].aparte && (
+                <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block" />
+              )}
+              <TabButton
+                label={tab.label}
+                icon={tab.icon}
+                active={activeTab === tab.id}
+                badge={tab.badge}
+                onClick={() => setActiveTab(tab.id)}
+              />
+            </Fragment>
           ))}
         </div>
 
@@ -183,12 +187,8 @@ export function GestionarTorneoPage() {
           <InscripcionesManager tournamentId={id} />
         )}
 
-        {activeTab === 'canchasSorteo' && id && (
-          <CanchasSorteoManager tournamentId={id} />
-        )}
-
-        {activeTab === 'bracket' && id && (
-          <BracketManager tournamentId={id} />
+        {activeTab === 'cuadro' && id && (
+          <CuadroManager tournamentId={id} />
         )}
 
         {activeTab === 'centroPartidos' && id && (

@@ -134,15 +134,15 @@ export function OverviewTab({ tournamentId, onTabChange }: OverviewTabProps) {
 
   // Las tareas usan links históricos (configuracion/disponibilidad/comision…)
   // que no coinciden con las pestañas reales. Traducimos a pestañas que existen.
-  const tabsValidas = ['overview', 'inscripciones', 'canchasSorteo', 'bracket', 'auditoria'];
+  const tabsValidas = ['overview', 'inscripciones', 'cuadro', 'auditoria'];
   const mapLinkATab = (link: string): string | null => {
     const mapa: Record<string, string> = {
       inscripciones: 'inscripciones',
-      bracket: 'bracket',
-      fixture: 'bracket',
-      disponibilidad: 'canchasSorteo',
-      configuracion: 'canchasSorteo',
-      sede: 'canchasSorteo',
+      bracket: 'cuadro',
+      fixture: 'cuadro',
+      disponibilidad: 'cuadro',
+      configuracion: 'cuadro',
+      sede: 'cuadro',
     };
     const destino = mapa[link] ?? link;
     return tabsValidas.includes(destino) ? destino : null;

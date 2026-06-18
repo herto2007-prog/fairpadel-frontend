@@ -86,7 +86,7 @@ export function RoadmapTorneo({
         ctaAbrir.push({ label: 'Completar datos', icon: ClipboardList, onClick: onCompletarDatos, primary: true });
       }
       if (datosFaltan.includes('sede')) {
-        ctaAbrir.push({ label: 'Asignar sede', icon: Trophy, onClick: () => onTabChange('canchasSorteo'), primary: soloFaltaSede });
+        ctaAbrir.push({ label: 'Asignar sede', icon: Trophy, onClick: () => onTabChange('cuadro'), primary: soloFaltaSede });
       }
     } else {
       ctaAbrir.push({
@@ -142,7 +142,7 @@ export function RoadmapTorneo({
           ? 'Falta cargar las canchas y horarios de los partidos'
           : 'Cuadro sorteado y horarios listos',
       done: fixtureOk && dispOk,
-      cta: [{ label: 'Ir a Canchas y Sorteo', icon: Trophy, onClick: () => onTabChange('canchasSorteo'), primary: true }],
+      cta: [{ label: 'Ir al Cuadro', icon: Trophy, onClick: () => onTabChange('cuadro'), primary: true }],
     },
     {
       key: 'publicar-cuadro',
@@ -151,7 +151,7 @@ export function RoadmapTorneo({
         ? 'Los jugadores ya pueden ver el cuadro'
         : 'El cuadro está armado pero todavía no es visible para los jugadores',
       done: bracketPublicado,
-      cta: [{ label: 'Revisar y publicar', icon: Eye, onClick: () => onTabChange('bracket'), primary: true }],
+      cta: [{ label: 'Revisar y publicar', icon: Eye, onClick: () => onTabChange('cuadro'), primary: true }],
     },
     {
       key: 'jugar',
@@ -161,7 +161,7 @@ export function RoadmapTorneo({
         : 'Cargá los resultados; cuando termine, cerrá el torneo',
       done: finalizado,
       cta: [
-        { label: 'Cargar resultados', icon: GitBranch, onClick: () => onTabChange('bracket'), primary: true },
+        { label: 'Cargar resultados', icon: GitBranch, onClick: () => onTabChange('centroPartidos'), primary: true },
         ...(enFase
           ? [{ label: 'Marcar terminado', icon: Flag, onClick: onFinalizar, loading: finalizando }]
           : []),

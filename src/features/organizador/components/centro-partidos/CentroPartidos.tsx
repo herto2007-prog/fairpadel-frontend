@@ -181,7 +181,7 @@ export function CentroPartidos({ tournamentId }: { tournamentId: string }) {
       <div className="text-center py-16 bg-[#151921] border border-[#232838] rounded-2xl">
         <Swords className="w-12 h-12 text-gray-600 mx-auto mb-4" />
         <p className="text-white font-medium">Todavía no hay partidos</p>
-        <p className="text-gray-400 text-sm mt-1">Sorteá los cuadros en "Canchas y Sorteo" y van a aparecer acá para cargar resultados.</p>
+        <p className="text-gray-400 text-sm mt-1">Sorteá los cuadros en "Cuadro" y van a aparecer acá para cargar resultados.</p>
       </div>
     );
   }
