@@ -214,6 +214,22 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
 
+  // Modal corregir parejas de un partido (god-panel)
+  const [modalParejasAbierto, setModalParejasAbierto] = useState(false);
+  const [partidoParejas, setPartidoParejas] = useState<PartidoData | null>(null);
+  const [inscCategoria, setInscCategoria] = useState<InscripcionData[]>([]);
+  const [parejaLado1, setParejaLado1] = useState('');
+  const [parejaLado2, setParejaLado2] = useState('');
+  const [guardandoParejas, setGuardandoParejas] = useState(false);
+
+  // Modal reprogramar partido puntual (god-panel)
+  const [modalReprogramarAbierto, setModalReprogramarAbierto] = useState(false);
+  const [partidoReprogramar, setPartidoReprogramar] = useState<PartidoData | null>(null);
+  const [reproFecha, setReproFecha] = useState('');
+  const [reproHora, setReproHora] = useState('');
+  const [reproCancha, setReproCancha] = useState(''); // '' = sin cambiar, '__none__' = quitar
+  const [guardandoRepro, setGuardandoRepro] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -335,6 +351,81 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
       showError('Error', err.response?.data?.message || 'Error al intercambiar');
     }
   };
+
+  // ── God-panel: corregir QUIÉN juega un partido ──
+  const abrirModalParejas = async (p: PartidoData) => {
+    setPartidoParejas(p);
+    setParejaLado1(p.inscripcion1Id || '');
+    setParejaLado2(p.inscripcion2Id || '');
+    try {
+      const { data } = await api.get(`/admin/auditoria/torneos/${tournamentId}/inscripciones?categoriaId=${p.categoria.id}`);
+      if (data.success) setInscCategoria(data.data);
+    } catch {
+      setInscCategoria([]);
+    }
+    setModalParejasAbierto(true);
+  };
+
+  const guardarParejas = async () => {
+    if (!partidoParejas) return;
+    if (parejaLado1 && parejaLado2 && parejaLado1 === parejaLado2) {
+      showError('Parejas inválidas', 'No podés poner la misma pareja en los dos lados.');
+      return;
+    }
+    setGuardandoParejas(true);
+    try {
+      await api.put(`/admin/auditoria/partidos/${partidoParejas.id}/corregir-parejas`, {
+        inscripcion1Id: parejaLado1 || null,
+        inscripcion2Id: parejaLado2 || null,
+      });
+      showSuccess('Listo', 'Parejas del partido actualizadas');
+      setModalParejasAbierto(false);
+      setPartidoParejas(null);
+      await loadPartidos();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudieron cambiar las parejas');
+    } finally {
+      setGuardandoParejas(false);
+    }
+  };
+
+  // ── God-panel: reprogramar un partido puntual (fecha/hora/cancha) ──
+  const abrirModalReprogramar = async (p: PartidoData) => {
+    setPartidoReprogramar(p);
+    setReproFecha(p.programacion?.fecha || '');
+    setReproHora(p.programacion?.hora || '');
+    setReproCancha('');
+    await cargarCanchasDisponibles();
+    setModalReprogramarAbierto(true);
+  };
+
+  const guardarReprogramar = async () => {
+    if (!partidoReprogramar) return;
+    setGuardandoRepro(true);
+    try {
+      await api.put(`/admin/auditoria/partidos/${partidoReprogramar.id}/reprogramar`, {
+        fecha: reproFecha,
+        hora: reproHora,
+        ...(reproCancha === '__none__'
+          ? { torneoCanchaId: null }
+          : reproCancha
+            ? { torneoCanchaId: reproCancha }
+            : {}),
+      });
+      showSuccess('Listo', 'Partido reprogramado');
+      setModalReprogramarAbierto(false);
+      setPartidoReprogramar(null);
+      await loadPartidos();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo reprogramar');
+    } finally {
+      setGuardandoRepro(false);
+    }
+  };
+
+  // Nombre legible de una pareja para los selectores
+  const nombrePareja = (i: InscripcionData) =>
+    `${i.pareja.jugador1}${i.pareja.completa ? ` / ${i.pareja.jugador2}` : ' (sin pareja)'}`;
 
   const loadSlots = async () => {
     const params = new URLSearchParams();
@@ -1119,6 +1210,24 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                               >
                                 <ArrowRightLeft className="w-4 h-4" />
                               </button>
+                              {/* Reprogramar puntual (fecha/hora/cancha) */}
+                              <button
+                                onClick={() => abrirModalReprogramar(p)}
+                                className="p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors"
+                                title="Reprogramar (fecha/hora/cancha)"
+                              >
+                                <Calendar className="w-4 h-4" />
+                              </button>
+                              {/* Corregir parejas: solo si el partido no tiene resultado todavía */}
+                              {!p.resultado && !['FINALIZADO', 'WO', 'RETIRADO', 'DESCALIFICADO'].includes(p.estado) && (
+                                <button
+                                  onClick={() => abrirModalParejas(p)}
+                                  className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
+                                  title="Corregir parejas (quién juega)"
+                                >
+                                  <Users className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1511,6 +1620,128 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
               </button>
             </div>
           </motion.div>
+        </div>
+      )}
+
+      {/* Modal Corregir Parejas (god-panel) */}
+      {modalParejasAbierto && partidoParejas && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-emerald-500/30 w-full max-w-md">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-white font-semibold">Corregir parejas</h3>
+              </div>
+              <button onClick={() => setModalParejasAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="bg-white/5 rounded-lg p-3 text-sm">
+                <p className="text-white/60">{partidoParejas.fase} · {partidoParejas.categoria.nombre}</p>
+                <p className="text-white/40 text-xs mt-1">Cambiá quién juega este partido. Solo parejas de esta categoría.</p>
+              </div>
+              <div>
+                <label className="block text-white/60 text-sm mb-1.5">Lado 1</label>
+                <select
+                  value={parejaLado1}
+                  onChange={(e) => setParejaLado1(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="" className="bg-[#1a1d29]">— Vacío —</option>
+                  {inscCategoria.map((i) => (
+                    <option key={i.id} value={i.id} className="bg-[#1a1d29]">{nombrePareja(i)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-white/60 text-sm mb-1.5">Lado 2</label>
+                <select
+                  value={parejaLado2}
+                  onChange={(e) => setParejaLado2(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="" className="bg-[#1a1d29]">— Vacío —</option>
+                  {inscCategoria.map((i) => (
+                    <option key={i.id} value={i.id} className="bg-[#1a1d29]">{nombrePareja(i)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button onClick={() => setModalParejasAbierto(false)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cancelar</button>
+              <button
+                onClick={guardarParejas}
+                disabled={guardandoParejas}
+                className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-500/80 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+              >
+                {guardandoParejas ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reprogramar partido puntual (god-panel) */}
+      {modalReprogramarAbierto && partidoReprogramar && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-amber-500/30 w-full max-w-md">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-400" />
+                <h3 className="text-white font-semibold">Reprogramar partido</h3>
+              </div>
+              <button onClick={() => setModalReprogramarAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="bg-white/5 rounded-lg p-3 text-sm">
+                <p className="text-white/60">{partidoReprogramar.fase} · {partidoReprogramar.categoria.nombre}</p>
+                <p className="text-white/40 text-xs mt-1">{partidoReprogramar.pareja1} vs {partidoReprogramar.pareja2}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-white/60 text-sm mb-1.5">Fecha</label>
+                  <input
+                    type="date"
+                    value={reproFecha}
+                    onChange={(e) => setReproFecha(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500/50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/60 text-sm mb-1.5">Hora</label>
+                  <input
+                    type="time"
+                    value={reproHora}
+                    onChange={(e) => setReproHora(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500/50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-white/60 text-sm mb-1.5">Cancha</label>
+                <select
+                  value={reproCancha}
+                  onChange={(e) => setReproCancha(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500/50"
+                >
+                  <option value="" className="bg-[#1a1d29]">— Sin cambiar —</option>
+                  {canchasDisponibles.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-[#1a1d29]">{c.nombre} - {c.sede}</option>
+                  ))}
+                  <option value="__none__" className="bg-[#1a1d29]">— Quitar cancha —</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button onClick={() => setModalReprogramarAbierto(false)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cancelar</button>
+              <button
+                onClick={guardarReprogramar}
+                disabled={guardandoRepro}
+                className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-500/80 disabled:opacity-50 text-black font-medium rounded-lg transition-colors"
+              >
+                {guardandoRepro ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
