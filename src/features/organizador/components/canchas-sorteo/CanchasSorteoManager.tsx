@@ -5,7 +5,7 @@ import {
   CheckCircle2, MapPin, Plus, X, Trash2,
   Shuffle, ArrowUp, ArrowDown, GripVertical
 } from 'lucide-react';
-import { canchasSorteoService } from '../../services/canchasSorteoService';
+import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
@@ -61,6 +61,12 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Rango de fechas del torneo (para proponer los días de juego)
   const [rangoTorneo, setRangoTorneo] = useState<{ inicio: string; fin: string } | null>(null);
 
+  // Capacidad: cuántas horas-cancha necesita el evento vs las que tenés
+  const [capacidad, setCapacidad] = useState<CalculoSlotsResponse | null>(null);
+
+  // Categorías (se usa también para el cálculo de capacidad, por eso va arriba)
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+
   // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
@@ -80,8 +86,12 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     }
   }, [canchas, canchasInicializadas]);
 
+  // Recalcular capacidad cuando hay categorías o cambian los días
+  useEffect(() => {
+    if (categorias.length > 0) loadCapacidad();
+  }, [categorias, dias]);
+
   // Estado Paso 3: Categorías
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([]);
   // NUEVO: Para sorteo por lotes - definir fecha desde la cual asignar slots
   const [usarFechaDesde, setUsarFechaDesde] = useState(false);
@@ -143,6 +153,18 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       }
     } catch (err) {
       console.error('Error cargando fechas del torneo:', err);
+    }
+  };
+
+  // Capacidad del evento según parejas confirmadas vs canchas/horarios configurados
+  const loadCapacidad = async () => {
+    try {
+      const ids = categorias.filter((c) => c.parejas > 0).map((c) => c.id);
+      if (ids.length === 0) { setCapacidad(null); return; }
+      const cap = await canchasSorteoService.calcularSlotsNecesarios(tournamentId, ids);
+      setCapacidad(cap);
+    } catch {
+      setCapacidad(null);
     }
   };
 
@@ -765,6 +787,65 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
               className="border-t border-white/10"
             >
               <div className="p-6 space-y-4">
+                {/* Capacidad del evento — cuántas horas-cancha necesitás vs las que tenés */}
+                {capacidad && capacidad.totalSlotsNecesarios > 0 && (() => {
+                  const parejas = capacidad.detallePorCategoria.reduce((s, c) => s + c.parejas, 0);
+                  const horasNec = capacidad.horasNecesarias;
+                  const horasDisp = capacidad.horasDisponibles;
+                  const faltanH = Math.max(0, horasNec - horasDisp);
+                  const pct = horasNec > 0 ? Math.min(100, Math.round((horasDisp / horasNec) * 100)) : 0;
+                  return (
+                    <div className="bg-[#0B0E14] rounded-lg p-4 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-white">Capacidad del evento</span>
+                        <span className="text-xs text-gray-500">· según parejas confirmadas</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-3">Se afina a medida que llegan inscriptos.</p>
+
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-white">{parejas}</div>
+                          <div className="text-[11px] text-gray-500">parejas</div>
+                        </div>
+                        <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-white">{capacidad.totalSlotsNecesarios}</div>
+                          <div className="text-[11px] text-gray-500">partidos</div>
+                        </div>
+                        <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-white">~{horasNec}h</div>
+                          <div className="text-[11px] text-gray-500">horas-cancha</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-400">Tenés configurado</span>
+                        <span className="font-medium text-white">{horasDisp}h / {horasNec}h</span>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+                        <div
+                          className={`h-full ${faltanH > 0 ? 'bg-yellow-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+
+                      {faltanH > 0 ? (
+                        <div className="flex items-start gap-2 bg-yellow-500/10 rounded-lg p-3">
+                          <span className="text-yellow-400 text-sm">⚠️</span>
+                          <div className="text-xs text-yellow-300">
+                            Te faltan <span className="font-bold">~{faltanH}h</span> de cancha para cubrir todo el evento.
+                            Agregá días o canchas abajo (cada cancha extra suma horas a todos sus días).
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-emerald-500/10 rounded-lg p-3">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <div className="text-xs text-emerald-300">Te alcanza para cubrir todo el evento.</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Días del torneo — propuestos desde el rango inicio–fin */}
                 {fechasDelRango.length > 0 && (
                   <div className="bg-[#0B0E14] rounded-lg p-4 space-y-3">
