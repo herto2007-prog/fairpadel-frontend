@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ChevronLeft, Trophy, LayoutDashboard, Users,
-  GitBranch, Database, Sparkles, Swords
+  GitBranch, Database, Sparkles, Swords, Pencil
 } from 'lucide-react';
 import { OverviewTab } from '../components/overview/OverviewTab';
 
 import { InscripcionesManager } from '../components/inscripciones/InscripcionesManager';
 import { CuadroManager } from '../components/cuadro/CuadroManager';
 import { CentroPartidos } from '../components/centro-partidos/CentroPartidos';
+import { CompletarDatosTorneoModal } from '../components/overview/CompletarDatosTorneoModal';
 
 import { AuditoriaManager } from '../components/auditoria/AuditoriaManager';
 import { AmericanoManager } from '../components/americano/AmericanoManager';
@@ -45,6 +46,8 @@ export function GestionarTorneoPage() {
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [mostrarEditar, setMostrarEditar] = useState(false);
+  const [editVersion, setEditVersion] = useState(0);
   const [stats, setStats] = useState({
     inscripcionesPendientes: 0,
   });
@@ -147,10 +150,19 @@ export function GestionarTorneoPage() {
             >
               <ChevronLeft className="w-6 h-6 text-gray-400" />
             </button>
-            <div>
-              <h1 className="text-xl font-bold text-white">{torneo.nombre}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-white truncate">{torneo.nombre}</h1>
               <p className="text-gray-400 text-sm">{torneo.ciudad}</p>
             </div>
+            {/* Editar transversal: disponible siempre, desde cualquier momento */}
+            <button
+              onClick={() => setMostrarEditar(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors flex-shrink-0"
+              title="Editar datos del torneo"
+            >
+              <Pencil className="w-4 h-4" />
+              <span className="hidden sm:inline">Editar</span>
+            </button>
           </div>
         </div>
       </div>
@@ -177,9 +189,11 @@ export function GestionarTorneoPage() {
 
         {/* Contenido */}
         {activeTab === 'overview' && id && (
-          <OverviewTab 
-            tournamentId={id} 
+          <OverviewTab
+            tournamentId={id}
             onTabChange={(tab) => setActiveTab(tab as TabType)}
+            onEditar={() => setMostrarEditar(true)}
+            reloadSignal={editVersion}
           />
         )}
 
@@ -205,6 +219,19 @@ export function GestionarTorneoPage() {
           <AmericanoManager tournamentId={id} />
         )}
       </div>
+
+      {/* Editar datos del torneo (transversal) */}
+      {mostrarEditar && id && (
+        <CompletarDatosTorneoModal
+          tournamentId={id}
+          onClose={() => setMostrarEditar(false)}
+          onSaved={() => {
+            loadTorneo();
+            loadStats();
+            setEditVersion((v) => v + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
