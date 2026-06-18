@@ -230,6 +230,11 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [reproCancha, setReproCancha] = useState(''); // '' = sin cambiar, '__none__' = quitar
   const [guardandoRepro, setGuardandoRepro] = useState(false);
 
+  // Modal limpiar resultado (deshacer, en cascada)
+  const [modalLimpiarAbierto, setModalLimpiarAbierto] = useState(false);
+  const [partidoALimpiar, setPartidoALimpiar] = useState<PartidoData | null>(null);
+  const [limpiando, setLimpiando] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -426,6 +431,26 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   // Nombre legible de una pareja para los selectores
   const nombrePareja = (i: InscripcionData) =>
     `${i.pareja.jugador1}${i.pareja.completa ? ` / ${i.pareja.jugador2}` : ' (sin pareja)'}`;
+
+  // ── God-panel: limpiar resultado (deshacer, en cascada) ──
+  const limpiarResultadoPartido = async () => {
+    if (!partidoALimpiar) return;
+    setLimpiando(true);
+    try {
+      const { data } = await api.post(`/admin/auditoria/partidos/${partidoALimpiar.id}/limpiar-resultado`);
+      showSuccess('Resultado limpiado', `${data.partidosAfectados} partido(s) volvieron a "sin resultado".`);
+      setModalLimpiarAbierto(false);
+      setPartidoALimpiar(null);
+      await loadPartidos();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo limpiar el resultado');
+    } finally {
+      setLimpiando(false);
+    }
+  };
+
+  const partidoTieneResultado = (p: PartidoData) =>
+    !!p.resultado || ['FINALIZADO', 'WO', 'RETIRADO', 'DESCALIFICADO'].includes(p.estado);
 
   const loadSlots = async () => {
     const params = new URLSearchParams();
@@ -1219,13 +1244,23 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                                 <Calendar className="w-4 h-4" />
                               </button>
                               {/* Corregir parejas: solo si el partido no tiene resultado todavía */}
-                              {!p.resultado && !['FINALIZADO', 'WO', 'RETIRADO', 'DESCALIFICADO'].includes(p.estado) && (
+                              {!partidoTieneResultado(p) && (
                                 <button
                                   onClick={() => abrirModalParejas(p)}
                                   className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
                                   title="Corregir parejas (quién juega)"
                                 >
                                   <Users className="w-4 h-4" />
+                                </button>
+                              )}
+                              {/* Limpiar resultado (deshacer, en cascada): solo si tiene resultado */}
+                              {partidoTieneResultado(p) && (
+                                <button
+                                  onClick={() => { setPartidoALimpiar(p); setModalLimpiarAbierto(true); }}
+                                  className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                                  title="Limpiar resultado (deshacer)"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
@@ -1530,6 +1565,26 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
         cancelText="Cancelar"
         variant={inscripcionAEliminar?.programacion.length ? 'warning' : 'danger'}
         isLoading={eliminando}
+      />
+
+      {/* Modal Limpiar Resultado (deshacer, en cascada) */}
+      <ConfirmModal
+        isOpen={modalLimpiarAbierto}
+        onClose={() => {
+          setModalLimpiarAbierto(false);
+          setPartidoALimpiar(null);
+        }}
+        onConfirm={limpiarResultadoPartido}
+        title="Limpiar resultado"
+        message={
+          partidoALimpiar
+            ? `Se borrará el resultado de "${partidoALimpiar.pareja1} vs ${partidoALimpiar.pareja2}". Si rondas posteriores ya se jugaron con este ganador, también se limpiarán y los jugadores se sacarán de esos partidos (el cuadro queda consistente para volver a cargar). Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmText="Limpiar resultado"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={limpiando}
       />
 
       {/* Modal Cambiar Estado (Emergencia) */}
