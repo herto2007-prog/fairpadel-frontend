@@ -56,6 +56,11 @@ interface InscripcionData {
     telefonoJ1?: string;
     telefonoJ2?: string;
     completa: boolean;
+    jugador1Id: string;
+    jugador2Id: string | null;
+    jugador2Documento: string;
+    j1: { id: string; nombre: string; apellido: string; telefono?: string; documento?: string } | null;
+    j2: { id: string; nombre: string; apellido: string; telefono?: string; documento?: string } | null;
   };
   categoria: {
     id: string;
@@ -234,6 +239,24 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [modalLimpiarAbierto, setModalLimpiarAbierto] = useState(false);
   const [partidoALimpiar, setPartidoALimpiar] = useState<PartidoData | null>(null);
   const [limpiando, setLimpiando] = useState(false);
+
+  // Modal mover inscripción de categoría (god-panel B)
+  const [modalMoverAbierto, setModalMoverAbierto] = useState(false);
+  const [inscMover, setInscMover] = useState<InscripcionData | null>(null);
+  const [catsTorneo, setCatsTorneo] = useState<Array<{ categoryId: string; nombre: string }>>([]);
+  const [catDestino, setCatDestino] = useState('');
+  const [moviendo, setMoviendo] = useState(false);
+
+  // Modal editar/corregir jugadores de una inscripción (god-panel B)
+  const [modalJugadoresAbierto, setModalJugadoresAbierto] = useState(false);
+  const [inscJugadores, setInscJugadores] = useState<InscripcionData | null>(null);
+  const [j1Form, setJ1Form] = useState({ nombre: '', apellido: '', telefono: '', documento: '' });
+  const [j2Form, setJ2Form] = useState({ nombre: '', apellido: '', telefono: '', documento: '' });
+  const [guardandoJ, setGuardandoJ] = useState(false);
+  // Búsqueda para cambiar/completar quién integra la pareja
+  const [buscarSlot, setBuscarSlot] = useState<1 | 2 | null>(null);
+  const [busquedaJug, setBusquedaJug] = useState('');
+  const [resultadosJug, setResultadosJug] = useState<Array<{ id: string; nombre: string; apellido: string; documento?: string }>>([]);
 
   useEffect(() => {
     loadData();
@@ -451,6 +474,110 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
 
   const partidoTieneResultado = (p: PartidoData) =>
     !!p.resultado || ['FINALIZADO', 'WO', 'RETIRADO', 'DESCALIFICADO'].includes(p.estado);
+
+  // ── God-panel B: mover inscripción de categoría ──
+  const abrirModalMover = async (insc: InscripcionData) => {
+    setInscMover(insc);
+    setCatDestino('');
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
+      if (data.success) {
+        setCatsTorneo((data.categorias || []).map((c: any) => ({ categoryId: c.categoryId, nombre: c.nombre || c.category?.nombre || '' })));
+      }
+    } catch {
+      setCatsTorneo([]);
+    }
+    setModalMoverAbierto(true);
+  };
+
+  const guardarMover = async () => {
+    if (!inscMover || !catDestino) return;
+    setMoviendo(true);
+    try {
+      await api.patch(`/admin/auditoria/inscripciones/${inscMover.id}/categoria`, { categoryId: catDestino });
+      showSuccess('Listo', 'Inscripción movida de categoría');
+      setModalMoverAbierto(false);
+      setInscMover(null);
+      await loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo mover');
+    } finally {
+      setMoviendo(false);
+    }
+  };
+
+  // ── God-panel B: editar/corregir jugadores de una inscripción ──
+  const abrirModalJugadores = (insc: InscripcionData) => {
+    setInscJugadores(insc);
+    setJ1Form({ nombre: insc.pareja.j1?.nombre || '', apellido: insc.pareja.j1?.apellido || '', telefono: insc.pareja.j1?.telefono || '', documento: insc.pareja.j1?.documento || '' });
+    setJ2Form({ nombre: insc.pareja.j2?.nombre || '', apellido: insc.pareja.j2?.apellido || '', telefono: insc.pareja.j2?.telefono || '', documento: insc.pareja.j2?.documento || '' });
+    setBuscarSlot(null);
+    setBusquedaJug('');
+    setResultadosJug([]);
+    setModalJugadoresAbierto(true);
+  };
+
+  const guardarJugador = async (slot: 1 | 2) => {
+    const insc = inscJugadores;
+    const j = slot === 1 ? insc?.pareja.j1 : insc?.pareja.j2;
+    if (!insc || !j) return;
+    setGuardandoJ(true);
+    try {
+      await api.patch(`/admin/auditoria/jugadores/${j.id}`, slot === 1 ? j1Form : j2Form);
+      showSuccess('Listo', 'Datos del jugador actualizados');
+      await loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo guardar');
+    } finally {
+      setGuardandoJ(false);
+    }
+  };
+
+  const buscarJugadores = async (q: string) => {
+    setBusquedaJug(q);
+    if (q.trim().length < 2) { setResultadosJug([]); return; }
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/jugadores/buscar?q=${encodeURIComponent(q)}`);
+      if (data.success) setResultadosJug(data.jugadores || []);
+    } catch {
+      setResultadosJug([]);
+    }
+  };
+
+  const seleccionarJugador = async (slot: 1 | 2, u: { id: string; documento?: string }) => {
+    const insc = inscJugadores;
+    if (!insc) return;
+    setGuardandoJ(true);
+    try {
+      const body = slot === 1 ? { jugador1Id: u.id } : { jugador2Id: u.id, jugador2Documento: u.documento };
+      await api.patch(`/admin/auditoria/inscripciones/${insc.id}/pareja`, body);
+      showSuccess('Listo', 'Pareja actualizada');
+      setModalJugadoresAbierto(false);
+      setInscJugadores(null);
+      await loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo cambiar la pareja');
+    } finally {
+      setGuardandoJ(false);
+    }
+  };
+
+  const quitarJugador2 = async () => {
+    const insc = inscJugadores;
+    if (!insc) return;
+    setGuardandoJ(true);
+    try {
+      await api.patch(`/admin/auditoria/inscripciones/${insc.id}/pareja`, { jugador2Id: null });
+      showSuccess('Listo', 'Pareja dejada pendiente');
+      setModalJugadoresAbierto(false);
+      setInscJugadores(null);
+      await loadInscripciones();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo quitar');
+    } finally {
+      setGuardandoJ(false);
+    }
+  };
 
   const loadSlots = async () => {
     const params = new URLSearchParams();
@@ -1100,6 +1227,20 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => abrirModalJugadores(insc)}
+                                className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
+                                title="Editar / corregir jugadores"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => abrirModalMover(insc)}
+                                className="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                                title="Mover de categoría"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" />
+                              </button>
                               <button
                                 onClick={() => abrirModalCambiarEstado(insc)}
                                 className="p-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors"
@@ -1795,6 +1936,150 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
               >
                 {guardandoRepro ? 'Guardando...' : 'Guardar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Mover de categoría (god-panel B) */}
+      {modalMoverAbierto && inscMover && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-blue-500/30 w-full max-w-md">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="w-5 h-5 text-blue-400" />
+                <h3 className="text-white font-semibold">Mover de categoría</h3>
+              </div>
+              <button onClick={() => setModalMoverAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="bg-white/5 rounded-lg p-3 text-sm">
+                <p className="text-white">{inscMover.pareja.jugador1}{inscMover.pareja.completa ? ` / ${inscMover.pareja.jugador2}` : ''}</p>
+                <p className="text-white/40 text-xs mt-1">Categoría actual: {inscMover.categoria.nombre}</p>
+              </div>
+              <div>
+                <label className="block text-white/60 text-sm mb-1.5">Mover a:</label>
+                <select
+                  value={catDestino}
+                  onChange={(e) => setCatDestino(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500/50"
+                >
+                  <option value="" className="bg-[#1a1d29]">Elegí una categoría…</option>
+                  {catsTorneo.filter((c) => c.categoryId !== inscMover.categoria.id).map((c) => (
+                    <option key={c.categoryId} value={c.categoryId} className="bg-[#1a1d29]">{c.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-white/40 text-xs">Si la pareja ya está en el cuadro, primero hay que limpiar sus partidos.</p>
+            </div>
+            <div className="p-4 border-t border-white/10 flex gap-2">
+              <button onClick={() => setModalMoverAbierto(false)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cancelar</button>
+              <button
+                onClick={guardarMover}
+                disabled={moviendo || !catDestino}
+                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-500/80 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+              >
+                {moviendo ? 'Moviendo...' : 'Mover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar / corregir jugadores (god-panel B) */}
+      {modalJugadoresAbierto && inscJugadores && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1d29] rounded-xl border border-emerald-500/30 w-full max-w-lg max-h-[88vh] flex flex-col">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-white font-semibold">Editar / corregir jugadores</h3>
+              </div>
+              <button onClick={() => setModalJugadoresAbierto(false)} className="text-white/40 hover:text-white">✕</button>
+            </div>
+            <div className="p-4 space-y-4 overflow-y-auto">
+              <p className="text-white/40 text-xs">
+                Editar los datos cambia al jugador en TODA la app. "Cambiar/Completar" reemplaza quién integra la pareja en esta inscripción.
+              </p>
+
+              {([1, 2] as const).map((slot) => {
+                const j = slot === 1 ? inscJugadores.pareja.j1 : inscJugadores.pareja.j2;
+                const form = slot === 1 ? j1Form : j2Form;
+                const setForm = slot === 1 ? setJ1Form : setJ2Form;
+                return (
+                  <div key={slot} className="bg-white/[0.03] rounded-lg p-3 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white/70 text-sm font-medium">Jugador {slot}{slot === 2 && !j ? ' (pendiente)' : ''}</span>
+                      <button
+                        onClick={() => { setBuscarSlot(buscarSlot === slot ? null : slot); setBusquedaJug(''); setResultadosJug([]); }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        {buscarSlot === slot ? 'Cancelar' : (j ? 'Cambiar' : 'Completar')}
+                      </button>
+                    </div>
+
+                    {/* Buscador para cambiar/completar quién integra la pareja */}
+                    {buscarSlot === slot && (
+                      <div className="mb-3">
+                        <input
+                          autoFocus
+                          value={busquedaJug}
+                          onChange={(e) => buscarJugadores(e.target.value)}
+                          placeholder="Buscar por nombre, documento o email…"
+                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500/50"
+                        />
+                        {resultadosJug.length > 0 && (
+                          <div className="mt-1 max-h-40 overflow-y-auto space-y-1">
+                            {resultadosJug.map((u) => (
+                              <button
+                                key={u.id}
+                                onClick={() => seleccionarJugador(slot, u)}
+                                disabled={guardandoJ}
+                                className="w-full text-left px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-white transition-colors disabled:opacity-50"
+                              >
+                                {u.nombre} {u.apellido} {u.documento ? <span className="text-white/40">· {u.documento}</span> : null}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {slot === 2 && j && (
+                          <button
+                            onClick={quitarJugador2}
+                            disabled={guardandoJ}
+                            className="mt-2 text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                          >
+                            Quitar pareja (dejar pendiente)
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Datos editables del jugador (si existe) */}
+                    {j ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre" className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                          <input value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} placeholder="Apellido" className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                          <input value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="Teléfono" className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                          <input value={form.documento} onChange={(e) => setForm({ ...form, documento: e.target.value })} placeholder="Documento" className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500/50" />
+                        </div>
+                        <button
+                          onClick={() => guardarJugador(slot)}
+                          disabled={guardandoJ}
+                          className="mt-2 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Guardar datos del jugador {slot}
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-white/40 text-sm">Sin jugador. Usá "Completar" para asignar uno.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="p-4 border-t border-white/10 flex justify-end">
+              <button onClick={() => setModalJugadoresAbierto(false)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors">Cerrar</button>
             </div>
           </div>
         </div>
