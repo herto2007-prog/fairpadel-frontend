@@ -64,6 +64,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Capacidad: cuántas horas-cancha necesita el evento vs las que tenés
   const [capacidad, setCapacidad] = useState<CalculoSlotsResponse | null>(null);
 
+  // Planner "¿cuántas parejas esperás?" (planificar antes de tener inscriptos)
+  const [mostrarPlanner, setMostrarPlanner] = useState(false);
+  const [planParejas, setPlanParejas] = useState(16);
+  const [planResult, setPlanResult] = useState<{ categorias: number; partidos: number; horasNecesarias: number } | null>(null);
+
   // Categorías (se usa también para el cálculo de capacidad, por eso va arriba)
   const [categorias, setCategorias] = useState<Categoria[]>([]);
 
@@ -90,6 +95,20 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   useEffect(() => {
     if (categorias.length > 0) loadCapacidad();
   }, [categorias, dias]);
+
+  // Estimar capacidad del planner (debounced) cuando está abierto
+  useEffect(() => {
+    if (!mostrarPlanner) return;
+    const t = setTimeout(async () => {
+      try {
+        const r = await canchasSorteoService.estimarCapacidad(tournamentId, planParejas);
+        setPlanResult({ categorias: r.categorias, partidos: r.partidos, horasNecesarias: r.horasNecesarias });
+      } catch {
+        setPlanResult(null);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [mostrarPlanner, planParejas, tournamentId]);
 
   // Estado Paso 3: Categorías
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([]);
@@ -845,6 +864,51 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     </div>
                   );
                 })()}
+
+                {/* Planner: ¿cuántas parejas esperás? — planificar sin inscriptos */}
+                <div className="bg-[#0B0E14] rounded-lg p-4 border border-white/5">
+                  <button
+                    onClick={() => setMostrarPlanner(v => !v)}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <span className="text-sm font-medium text-white">¿Cuántas parejas esperás? — planificar canchas</span>
+                    {mostrarPlanner ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </button>
+
+                  {mostrarPlanner && (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs text-gray-400">Parejas por categoría</label>
+                        <input
+                          type="number"
+                          min={4}
+                          value={planParejas}
+                          onChange={(e) => setPlanParejas(parseInt(e.target.value) || 0)}
+                          className="w-20 bg-[#151921] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm"
+                        />
+                      </div>
+
+                      {planResult && (
+                        <>
+                          <div className="text-sm text-gray-300">
+                            {planResult.categorias} categoría(s) × {planParejas} parejas → <span className="text-white font-medium">~{planResult.partidos} partidos</span> → <span className="text-white font-medium">~{planResult.horasNecesarias}h de cancha</span>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Para cubrirlo (días de ~5h):
+                            <div className="flex flex-wrap gap-2 mt-1.5">
+                              {[1, 2, 3].map((d) => (
+                                <span key={d} className="px-2.5 py-1 bg-white/[0.04] border border-white/10 rounded-lg text-gray-300">
+                                  {d} día{d > 1 ? 's' : ''}: ~{Math.ceil(planResult.horasNecesarias / (d * 5))} cancha(s)
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-gray-600">Estimación para planificar. Con los inscriptos reales se ajusta solo.</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Días del torneo — propuestos desde el rango inicio–fin */}
                 {fechasDelRango.length > 0 && (

@@ -111,6 +111,23 @@ export const canchasSorteoService = {
     return response.data;
   },
 
+  // Estimar capacidad para una cantidad esperada de parejas por categoría (planner)
+  estimarCapacidad: async (
+    tournamentId: string,
+    parejasPorCategoria: number,
+  ): Promise<{
+    parejasPorCategoria: number;
+    categorias: number;
+    partidosPorCategoria: number;
+    partidos: number;
+    horasNecesarias: number;
+  }> => {
+    const { data } = await api.get(
+      `/admin/canchas-sorteo/${tournamentId}/capacidad-estimada?parejas=${parejasPorCategoria}`,
+    );
+    return data;
+  },
+
   // PASO 2: Cerrar inscripciones y sortear
   cerrarInscripcionesYsortear: async (
     data: CerrarInscripcionesPayload
