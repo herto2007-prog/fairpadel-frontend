@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Filter, Users, Calendar, Trophy, CheckCircle2, AlertCircle,
   Download, RefreshCw, Database, UserX, Shield, Wrench, AlertTriangle, Info,
-  Edit3, ArrowRightLeft, DollarSign, Plus, Trash2
+  Edit3, ArrowRightLeft, DollarSign, Plus, Trash2, Settings, Shuffle
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { formatDatePY, formatDatePYLong } from '../../../../utils/date';
@@ -15,7 +15,18 @@ interface AuditoriaManagerProps {
   tournamentId: string;
 }
 
-type VistaTipo = 'validacion' | 'inscripciones' | 'partidos' | 'slots' | 'sin-cancha';
+type VistaTipo = 'validacion' | 'inscripciones' | 'partidos' | 'slots' | 'sin-cancha' | 'estados';
+
+const ESTADOS_TORNEO = ['BORRADOR', 'PENDIENTE_APROBACION', 'PUBLICADO', 'EN_CURSO', 'FINALIZADO', 'RECHAZADO', 'CANCELADO'];
+const ESTADOS_CATEGORIA = ['INSCRIPCIONES_ABIERTAS', 'INSCRIPCIONES_CERRADAS', 'FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO', 'FINALIZADA'];
+
+interface CategoriaEstadoData {
+  id: string;
+  categoryId: string;
+  nombre: string;
+  estado: string;
+  fixtureVersionId: string | null;
+}
 
 interface ProblemaData {
   id: string;
@@ -270,6 +281,11 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
   const [nuevoPago, setNuevoPago] = useState({ monto: '', metodoPago: 'EFECTIVO', estado: 'CONFIRMADO' });
   const [pagoBusy, setPagoBusy] = useState(false);
 
+  // Vista Estados (god-panel D)
+  const [torneoEstado, setTorneoEstado] = useState<string>('');
+  const [categoriasEstados, setCategoriasEstados] = useState<CategoriaEstadoData[]>([]);
+  const [estadoBusy, setEstadoBusy] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [tournamentId, vistaActiva]);
@@ -300,6 +316,9 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
           break;
         case 'sin-cancha':
           await loadPartidosSinCancha();
+          break;
+        case 'estados':
+          await loadEstados();
           break;
       }
     } catch (err: any) {
@@ -726,6 +745,84 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
     }
   };
 
+  const loadEstados = async () => {
+    const [tRes, cRes] = await Promise.all([
+      api.get(`/admin/torneos/${tournamentId}`),
+      api.get(`/admin/torneos/${tournamentId}/categorias`).catch(() => ({ data: { categorias: [] } })),
+    ]);
+    setTorneoEstado(tRes.data?.estado || '');
+    setCategoriasEstados(
+      (cRes.data.categorias || []).map((c: any) => ({
+        id: c.id,
+        categoryId: c.categoryId,
+        nombre: c.nombre || c.category?.nombre || '',
+        estado: c.estado,
+        fixtureVersionId: c.fixtureVersionId || null,
+      })),
+    );
+  };
+
+  // ── God-panel D: forzar estados + re-sortear ──
+  const forzarEstadoTorneo = async (estado: string) => {
+    setEstadoBusy(true);
+    try {
+      await api.patch(`/admin/auditoria/torneos/${tournamentId}/estado`, { estado });
+      setTorneoEstado(estado);
+      showSuccess('Listo', `Torneo en estado ${estado}`);
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo cambiar el estado');
+    } finally {
+      setEstadoBusy(false);
+    }
+  };
+
+  const forzarEstadoCategoria = async (categoriaTcId: string, estado: string) => {
+    setEstadoBusy(true);
+    try {
+      await api.patch(`/admin/auditoria/categorias/${categoriaTcId}/estado`, { estado });
+      setCategoriasEstados((prev) => prev.map((c) => (c.id === categoriaTcId ? { ...c, estado } : c)));
+      showSuccess('Listo', `Categoría en estado ${estado}`);
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo cambiar el estado');
+    } finally {
+      setEstadoBusy(false);
+    }
+  };
+
+  const reSortearCategoria = async (fixtureVersionId: string | null, nombre: string) => {
+    if (!fixtureVersionId) {
+      showWarning('Sin cuadro', `${nombre} todavía no fue sorteada.`);
+      return;
+    }
+    if (!confirm(`¿Re-sortear "${nombre}"? Se regenera el cuadro y se reasignan las parejas.`)) return;
+    setEstadoBusy(true);
+    try {
+      await api.post(`/admin/bracket/${fixtureVersionId}/sortear-nuevo`, { usarSemillas: false });
+      showSuccess('Listo', `${nombre} re-sorteada`);
+      await loadEstados();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo re-sortear');
+    } finally {
+      setEstadoBusy(false);
+    }
+  };
+
+  // Re-sortear desde la pestaña Validación: ubica la categoría por id y re-sortea.
+  const reSortearDesdeValidacion = async (problema: ProblemaData) => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
+      const cats = data.categorias || [];
+      const cat = cats.find((c: any) => c.id === problema.categoriaId || c.categoryId === problema.categoriaId);
+      if (!cat?.fixtureVersionId) {
+        showWarning('Sin cuadro', `No encontré el cuadro de ${problema.categoria}. Re-sorteá desde la pestaña Estados.`);
+        return;
+      }
+      await reSortearCategoria(cat.fixtureVersionId, cat.nombre || problema.categoria);
+    } catch {
+      showError('Error', 'No se pudo iniciar el re-sorteo');
+    }
+  };
+
   const cargarCanchasDisponibles = async () => {
     const { data } = await api.get(`/admin/canchas-sorteo/${tournamentId}/canchas`);
     if (data.success) {
@@ -880,6 +977,7 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
     { id: 'sin-cancha', label: 'Partidos SIN Canchas', icon: AlertCircle },
     { id: 'inscripciones', label: 'Inscripciones', icon: Users },
     { id: 'slots', label: 'Slots', icon: Calendar },
+    { id: 'estados', label: 'Estados', icon: Settings },
   ] as const;
 
   if (!user?.roles?.includes('admin')) {
@@ -1164,11 +1262,9 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                           {/* Botón de acción */}
                           {problema.tipo === 'CRITICO' && (
                             <button
-                              onClick={() => {
-                                // Navegar a la categoría para re-sortear
-                                showWarning('Re-sortear', `Re-sortear categoría: ${problema.categoria}`);
-                              }}
-                              className="px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                              onClick={() => reSortearDesdeValidacion(problema)}
+                              disabled={estadoBusy}
+                              className="px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50"
                             >
                               Re-sortear
                             </button>
@@ -1653,6 +1749,70 @@ export function AuditoriaManager({ tournamentId }: AuditoriaManagerProps) {
                     <p className="text-white/40">No hay slots configurados</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Vista Estados (god-panel D) */}
+            {vistaActiva === 'estados' && (
+              <div className="space-y-4">
+                {/* Estado del torneo */}
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trophy className="w-5 h-5 text-[#df2531]" />
+                    <span className="text-white font-medium">Estado del torneo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={torneoEstado}
+                      onChange={(e) => forzarEstadoTorneo(e.target.value)}
+                      disabled={estadoBusy}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50 disabled:opacity-50"
+                    >
+                      {ESTADOS_TORNEO.map((e) => (
+                        <option key={e} value={e} className="bg-[#1a1d29]">{e}</option>
+                      ))}
+                    </select>
+                    <span className="text-white/40 text-xs">Cambia el estado directo (reabrir, avanzar, des-finalizar…).</span>
+                  </div>
+                </div>
+
+                {/* Estados por categoría */}
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 overflow-hidden">
+                  <div className="p-4 border-b border-white/5">
+                    <span className="text-white/60 text-sm">Categorías: <strong className="text-white">{categoriasEstados.length}</strong></span>
+                  </div>
+                  {categoriasEstados.length === 0 ? (
+                    <div className="text-center py-12 text-white/40 text-sm">No hay categorías</div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {categoriasEstados.map((cat) => (
+                        <div key={cat.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                          <span className="text-white font-medium">{cat.nombre}</span>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={cat.estado}
+                              onChange={(e) => forzarEstadoCategoria(cat.id, e.target.value)}
+                              disabled={estadoBusy}
+                              className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-[#df2531]/50 disabled:opacity-50"
+                            >
+                              {ESTADOS_CATEGORIA.map((e) => (
+                                <option key={e} value={e} className="bg-[#1a1d29]">{e}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => reSortearCategoria(cat.fixtureVersionId, cat.nombre)}
+                              disabled={estadoBusy || !cat.fixtureVersionId}
+                              title={cat.fixtureVersionId ? 'Re-sortear el cuadro' : 'Todavía no sorteada'}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Shuffle className="w-4 h-4" /> Re-sortear
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </motion.div>
