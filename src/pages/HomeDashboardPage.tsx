@@ -513,9 +513,9 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
     return actividadesConIcono.find(a => tipo.includes(a.tipo)) || actividadesConIcono[3];
   };
 
-  // TODO: Obtener actividades reales de otros jugadores desde la API
-  // Por ahora no mostramos datos mock a usuarios reales
-  const actividadesFOMO: any[] = [];
+  // Limpiar vacío: si el jugador no tiene actividad propia, no mostramos la card
+  // (el feed social DE OTROS es la Fase B; no prometemos "tu red" si está vacía).
+  if (!actividad || actividad.length === 0) return null;
 
   return (
     <motion.div
@@ -526,14 +526,12 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white flex items-center gap-2">
           <Activity size={18} className="text-[#df2531]" />
-          ¿Te están pasando? 👀
+          Tu actividad reciente
         </h3>
-        <span className="text-xs text-gray-500">Actividad reciente</span>
       </div>
 
       <div className="space-y-3">
-        {/* Actividades del usuario */}
-        {actividad?.slice(0, 3).map((item, index) => {
+        {actividad.slice(0, 4).map((item, index) => {
           const config = getIconoPorTipo(item.tipo);
           return (
             <motion.div
@@ -554,58 +552,7 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
             </motion.div>
           );
         })}
-
-        {/* Divider - solo si hay actividades FOMO */}
-        {actividadesFOMO.length > 0 && (
-          <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#232838]" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="px-3 bg-[#151921] text-xs text-gray-500">En tu red</span>
-            </div>
-          </div>
-        )}
-
-        {/* Actividades FOMO de otros jugadores */}
-        {actividadesFOMO.map((item, index) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: (actividad?.length || 0) * 0.1 + index * 0.1 }}
-            className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-[#df2531]/5 to-transparent border border-[#df2531]/10 hover:border-[#df2531]/30 transition-colors cursor-pointer"
-          >
-            <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}>
-              <item.icono size={18} className={item.color} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{item.titulo}</p>
-              <p className="text-xs text-gray-500">{item.fecha}</p>
-            </div>
-            <span className="text-xs text-[#df2531] flex-shrink-0">🔥 Trending</span>
-          </motion.div>
-        ))}
-
-        {/* Mensaje cuando no hay actividad */}
-        {(!actividad || actividad.length === 0) && actividadesFOMO.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Activity size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Aún no hay actividad en tu red</p>
-            <p className="text-xs mt-1">¡Participa en torneos para ver actualizaciones!</p>
-          </div>
-        )}
       </div>
-
-      {/* Link solo si hay actividad */}
-      {((actividad && actividad.length > 0) || actividadesFOMO.length > 0) && (
-        <Link 
-          to="/rankings"
-          className="block w-full mt-4 py-2 text-center text-sm text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg transition-colors"
-        >
-          Ver toda la actividad →
-        </Link>
-      )}
     </motion.div>
   );
 }
@@ -616,7 +563,10 @@ function SocialFeed({ actividad }: { actividad: PerfilJugador['actividadReciente
 
 function LogrosDestacados({ logros }: { logros: PerfilJugador['logros'] | undefined }) {
   const logrosDestacados = logros?.filter(l => l.nivel === 'oro' || l.progreso >= 80).slice(0, 3) || [];
-  
+
+  // Limpiar vacío: sin logros destacados, no mostramos la card.
+  if (logrosDestacados.length === 0) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -633,8 +583,7 @@ function LogrosDestacados({ logros }: { logros: PerfilJugador['logros'] | undefi
         </Link>
       </div>
 
-      {logrosDestacados.length > 0 ? (
-        <div className="space-y-3">
+      <div className="space-y-3">
           {logrosDestacados.map((logro, index) => (
             <motion.div
               key={logro.id}
@@ -672,19 +621,6 @@ function LogrosDestacados({ logros }: { logros: PerfilJugador['logros'] | undefi
             </motion.div>
           ))}
         </div>
-      ) : (
-        <div className="text-center py-6">
-          <Sparkles size={32} className="text-gray-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">Participa en torneos para ganar logros</p>
-        </div>
-      )}
-
-      <Link
-        to="/torneos"
-        className="block w-full mt-4 py-2.5 bg-[#232838] hover:bg-[#2a3042] text-white text-sm font-medium rounded-xl transition-colors text-center"
-      >
-        Buscar torneos para competir
-      </Link>
     </motion.div>
   );
 }
@@ -845,24 +781,24 @@ export default function HomeDashboardPage() {
 
         {/* Layout principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Columna izquierda - Urgencia + Actividad */}
+          {/* Columna izquierda - "feed": prioridad gancho → FOMO → actividad */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Mi agenda del torneo (si el jugador está jugando alguno) */}
+            {/* 1. Gancho: tu próximo partido (si estás jugando un torneo) */}
             <MiAgendaCard />
 
-            {/* Carta de urgencia (si hay torneos urgentes) */}
+            {/* 2. FOMO: torneo que se está llenando */}
             {torneoDestacado && (
               <UrgencyCard torneo={torneoDestacado} />
             )}
 
-            {/* Grid: Social Feed + Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SocialFeed actividad={perfil?.actividadReciente} />
-              <LogrosDestacados logros={perfil?.logros} />
-            </div>
-
-            {/* Sección de torneos recomendados (versión horizontal) */}
+            {/* 3. Descubrir: torneos recomendados para vos */}
             <TorneosRecomendados torneos={torneosRecomendados} />
+
+            {/* 4. Tu actividad reciente (se oculta si no hay) */}
+            <SocialFeed actividad={perfil?.actividadReciente} />
+
+            {/* 5. Tus logros destacados (se oculta si no hay) */}
+            <LogrosDestacados logros={perfil?.logros} />
           </div>
 
           {/* Columna derecha - Stats detallados y acciones */}
