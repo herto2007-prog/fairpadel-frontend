@@ -10,7 +10,6 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useNoIndex } from '../../../hooks/useNoIndex';
-import { validarReglasCategoria, ResultadoRegla } from '../validarReglasCategoria';
 
 interface Torneo {
   id: string;
@@ -93,6 +92,10 @@ export function InscripcionWizardPage() {
   const [datosCompletar, setDatosCompletar] = useState({ documento: '', genero: '' as '' | 'MASCULINO' | 'FEMENINO', categoria: '' });
   const [guardandoDatos, setGuardandoDatos] = useState(false);
 
+  // Elegibilidad por categoría calculada en el BACK (regla canónica única).
+  // El front no replica reglas: consulta y pinta permitido/motivo.
+  const [permitidos, setPermitidos] = useState<Record<string, { permitido: boolean; motivo: string }>>({});
+
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -115,6 +118,26 @@ export function InscripcionWizardPage() {
     };
     if (slug) cargarDatos();
   }, [slug, navigate, isAuthenticated]);
+
+  // Trae del back qué categorías puede elegir el jugador (con su pareja si ya la eligió).
+  useEffect(() => {
+    if (!torneo) return;
+    const cargarPermitidos = async () => {
+      try {
+        const qs = jugador2?.id ? `?jugador2Id=${jugador2.id}` : '';
+        const { data } = await api.get(`/inscripciones/public/torneos/${torneo.id}/categorias-permitidas${qs}`);
+        if (data.success) {
+          const map: Record<string, { permitido: boolean; motivo: string }> = {};
+          for (const c of data.categorias) map[c.id] = { permitido: c.permitido, motivo: c.motivo };
+          setPermitidos(map);
+        }
+      } catch {
+        // Si falla, dejamos todo habilitado; el back valida igual al confirmar.
+        setPermitidos({});
+      }
+    };
+    cargarPermitidos();
+  }, [torneo, jugador2]);
 
   const buscarJugador = async () => {
     if (!busquedaQuery.trim()) return;
@@ -143,24 +166,14 @@ export function InscripcionWizardPage() {
       .sort((a: any, b: any) => a.orden - b.orden);
   }, [torneo]);
 
-  // Evalúa una categoría con la MISMA regla que el backend (validarReglasCategoria).
-  // MIXTO/SUMAS se permiten al seleccionar; el backend las valida con la pareja.
-  const evaluarCategoria = (categoria: any): ResultadoRegla => {
-    if (categoria.tipoCategoria === 'MIXTO' || categoria.tipoCategoria === 'SUMAS') {
-      return { permitido: true, mensaje: '' };
-    }
-    if (!userProfile?.categoria || !userProfile?.genero) {
-      return { permitido: true, mensaje: '' };
-    }
-    return validarReglasCategoria(userProfile.genero, userProfile.categoria, categoria);
-  };
-
-  const puedeInscribirseEnCategoria = (categoria: any): boolean => evaluarCategoria(categoria).permitido;
+  // Elegibilidad según el back (regla canónica única). Mientras carga, se permite.
+  const puedeInscribirseEnCategoria = (categoria: any): boolean =>
+    permitidos[categoria.id]?.permitido !== false;
 
   const handleSeleccionarCategoria = (categoria: any) => {
-    const res = evaluarCategoria(categoria);
-    if (!res.permitido) {
-      showWarning('Categoría no permitida', res.mensaje);
+    const info = permitidos[categoria.id];
+    if (info && !info.permitido) {
+      showWarning('Categoría no permitida', info.motivo || 'No podés inscribirte en esta categoría.');
       return;
     }
     setCategoriaSeleccionada(categoria.id);
