@@ -23,13 +23,16 @@ interface Categoria {
   estado: string;
   fixtureVersionId: string | null;
   inscripcionesCount: number;
+  minimoParejas: number; // viene del back (fuente única)
 }
 
 interface BracketManagerProps {
   tournamentId: string;
 }
 
-const MINIMO_PARA_SORTEAR = 8;
+// El mínimo de parejas para sortear lo define el back y llega por categoría
+// (campo `minimoParejas`). No se hardcodea acá. Fallback solo defensivo.
+const MINIMO_FALLBACK = 8;
 
 export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -181,7 +184,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
 
   const seleccionarTodas = () => {
     const seleccionables = categorias.filter(
-      c => c.estado === 'INSCRIPCIONES_ABIERTAS' && c.inscripcionesCount >= MINIMO_PARA_SORTEAR
+      c => c.estado === 'INSCRIPCIONES_ABIERTAS' && c.inscripcionesCount >= (c.minimoParejas ?? MINIMO_FALLBACK)
     );
     setCategoriasSeleccionadas(new Set(seleccionables.map(c => c.id)));
   };
@@ -592,10 +595,11 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
               <div className="grid gap-2">
                 {cats.map((categoria, index) => {
                   const estadoInfo = getEstadoInfo(categoria.estado);
-                  const faltanParaMinimo = Math.max(0, MINIMO_PARA_SORTEAR - categoria.inscripcionesCount);
+                  const minimo = categoria.minimoParejas ?? MINIMO_FALLBACK;
+                  const faltanParaMinimo = Math.max(0, minimo - categoria.inscripcionesCount);
                   
                   // Acciones disponibles
-                  const puedeCerrar = categoria.estado === 'INSCRIPCIONES_ABIERTAS' && categoria.inscripcionesCount >= MINIMO_PARA_SORTEAR;
+                  const puedeCerrar = categoria.estado === 'INSCRIPCIONES_ABIERTAS' && categoria.inscripcionesCount >= minimo;
                   const puedeAbrir = categoria.estado === 'INSCRIPCIONES_CERRADAS' && !categoria.fixtureVersionId;
                   const yaSorteado = !!categoria.fixtureVersionId;
 
@@ -724,7 +728,7 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
       {/* Info footer */}
       <div className="pt-4 border-t border-white/5">
         <p className="text-xs text-neutral-500">
-          Mínimo {MINIMO_PARA_SORTEAR} parejas para realizar el sorteo. 
+          Mínimo {categorias[0]?.minimoParejas ?? MINIMO_FALLBACK} parejas para realizar el sorteo. 
           Las categorías se ordenan automáticamente por nivel (Primera, Segunda, etc.)
         </p>
       </div>

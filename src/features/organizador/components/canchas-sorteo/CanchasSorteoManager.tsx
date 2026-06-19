@@ -404,7 +404,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // ============================================
   // PASO 3: Sortear Directo (MVP Simplificado)
   // ============================================
-  const MINIMO_PAREJAS_MVP = 8; // MVP: Mínimo 8 parejas para sortear
+  // El mínimo de parejas lo define el back y llega por categoría (`minimoParejas`).
 
   const sortearDirecto = async () => {
     if (categoriasSeleccionadas.length === 0) {
@@ -412,15 +412,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       return;
     }
 
-    // Validación simple MVP: mínimo 8 parejas por categoría
+    // Validación: cada categoría debe llegar a su mínimo (definido por el back)
     const categoriasInvalidas = categorias
       .filter(c => categoriasSeleccionadas.includes(c.id))
-      .filter(c => c.parejas < MINIMO_PAREJAS_MVP);
-    
+      .filter(c => c.parejas < c.minimoParejas);
+
     if (categoriasInvalidas.length > 0) {
       showError(
         'No se puede sortear',
-        `${categoriasInvalidas.map(c => c.nombre).join(', ')}: necesita al menos ${MINIMO_PAREJAS_MVP} parejas`
+        `${categoriasInvalidas.map(c => `${c.nombre}: necesita al menos ${c.minimoParejas} parejas`).join('; ')}`
       );
       return;
     }
@@ -488,7 +488,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     // FIX: Mínimo 8 parejas y que no esté ya sorteada (por fixtureVersionId o estado)
     const estadosSorteados = ['CERRADA', 'INSCRIPCIONES_CERRADAS', 'FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'];
     const disponibles = categorias
-      .filter(c => c.parejas >= MINIMO_PAREJAS_MVP && !c.fixtureVersionId && !estadosSorteados.includes(c.estado))
+      .filter(c => c.parejas >= c.minimoParejas && !c.fixtureVersionId && !estadosSorteados.includes(c.estado))
       .map(c => c.id);
     setCategoriasSeleccionadas(disponibles);
   };
@@ -1172,11 +1172,11 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   ) : (
                     <div className="grid gap-2">
                       {categorias.map((cat) => {
-                        // MVP: Mínimo 8 parejas para poder sortear
+                        // El mínimo lo define el back (cat.minimoParejas).
                         // FIX: Una categoría está sorteada si tiene fixtureVersionId O está en estado sorteado
                         const estadosSorteados = ['CERRADA', 'INSCRIPCIONES_CERRADAS', 'FIXTURE_BORRADOR', 'SORTEO_REALIZADO', 'EN_CURSO'];
                         const estaSorteada = !!cat.fixtureVersionId || estadosSorteados.includes(cat.estado);
-                        const puedeSortear = cat.parejas >= MINIMO_PAREJAS_MVP && !estaSorteada;
+                        const puedeSortear = cat.parejas >= cat.minimoParejas && !estaSorteada;
                         const isSeleccionada = categoriasSeleccionadas.includes(cat.id);
                         
                         return (
@@ -1207,15 +1207,15 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                                 <div>
                                   <p className="text-white font-medium">{cat.nombre}</p>
                                   <p className="text-xs text-gray-500">
-                                    {cat.parejas} parejas (mín: {MINIMO_PAREJAS_MVP})
+                                    {cat.parejas} parejas (mín: {cat.minimoParejas})
                                   </p>
                                 </div>
                               </div>
                               <div className="text-right">
                                 {estaSorteada ? (
                                   <span className="text-xs text-emerald-400 font-medium">Sorteada</span>
-                                ) : cat.parejas < MINIMO_PAREJAS_MVP ? (
-                                  <span className="text-xs text-red-400">Necesita {MINIMO_PAREJAS_MVP} parejas</span>
+                                ) : cat.parejas < cat.minimoParejas ? (
+                                  <span className="text-xs text-red-400">Necesita {cat.minimoParejas} parejas</span>
                                 ) : (
                                   <span className="text-xs text-gray-500">Disponible</span>
                                 )}

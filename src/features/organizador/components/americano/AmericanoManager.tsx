@@ -249,6 +249,8 @@ export function AmericanoManager({ tournamentId }: AmericanoManagerProps) {
   const numRondasMax = numRondasConfig === 'automatico' ? 999 : (typeof numRondasConfig === 'number' ? numRondasConfig : parseInt(numRondasConfig as string, 10) || 4);
   
   const inscripcionesAbiertas = torneo?.configAmericano?.inscripcionesAbiertas ?? true;
+  // Gate de UI para habilitar "Iniciar". El mínimo real lo valida el back por grupo
+  // (americano.constants: MINIMO_JUGADORES_INDIVIDUAL=4 / MINIMO_PAREJAS_GRUPO=2).
   const puedeIniciar = modoConfigurado && inscripciones.length >= 4 && torneo?.americanosRonda?.length === 0;
   const partidosPendientesUltimaRonda = (ultimaRonda?.partidos ?? []).filter(p => p.estado === 'PENDIENTE').length;
   const puedeSiguiente = modoConfigurado && ultimaRonda &&

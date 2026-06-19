@@ -56,12 +56,8 @@ const CODIGOS_PAIS = [
   { codigo: '+56', pais: 'Chile', bandera: '🇨🇱' },
 ];
 
-// Categorías oficiales por género (nombres tal cual existen en la BD).
-// El nuevo registro mínimo no pide categoría; se elige acá al inscribirse.
-const CATEGORIAS_POR_GENERO: Record<'MASCULINO' | 'FEMENINO', string[]> = {
-  MASCULINO: ['1ª Categoría', '2ª Categoría', '3ª Categoría', '4ª Categoría', '5ª Categoría', '6ª Categoría', '7ª Categoría', '8ª Categoría', 'Principiante'],
-  FEMENINO: ['1ª Categoría Femenina', '2ª Categoría Femenina', '3ª Categoría Femenina', '4ª Categoría Femenina', '5ª Categoría Femenina', '6ª Categoría Femenina', '7ª Categoría Femenina', '8ª Categoría Femenina', 'Principiante Femenino'],
-};
+// Las categorías por género ya NO se hardcodean acá: se traen del back
+// (GET /inscripciones/public/categorias) para no duplicar el catálogo de la BD.
 
 export function InscripcionWizardPage() {
   useNoIndex();
@@ -96,6 +92,9 @@ export function InscripcionWizardPage() {
   // El front no replica reglas: consulta y pinta permitido/motivo.
   const [permitidos, setPermitidos] = useState<Record<string, { permitido: boolean; motivo: string }>>({});
 
+  // Catálogo de categorías personales (del back) para el selector "completá tus datos".
+  const [categoriasCatalogo, setCategoriasCatalogo] = useState<Array<{ id: string; nombre: string; tipo: string; orden: number }>>([]);
+
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -106,6 +105,11 @@ export function InscripcionWizardPage() {
           const { data: profileData } = await api.get('/auth/me');
           // /auth/me devuelve { user } (sin campo success)
           if (profileData?.user) setUserProfile(profileData.user);
+          // Catálogo de categorías (para el selector si falta completar perfil)
+          try {
+            const { data: catData } = await api.get('/inscripciones/public/categorias');
+            if (catData?.success) setCategoriasCatalogo(catData.categorias || []);
+          } catch { /* si falla, el selector queda vacío hasta reintentar */ }
         } else {
           localStorage.setItem('redirectAfterLogin', `/t/${slug}/inscribirse`);
           navigate('/login');
@@ -252,7 +256,9 @@ export function InscripcionWizardPage() {
     const faltaDoc = !userProfile.documento;
     const faltaGenero = !userProfile.genero;
     const faltaCategoria = !userProfile.categoria;
-    const catOptions = generoEfectivo ? CATEGORIAS_POR_GENERO[generoEfectivo] : [];
+    const catOptions = generoEfectivo
+      ? categoriasCatalogo.filter((c) => c.tipo === generoEfectivo).map((c) => c.nombre)
+      : [];
     const puedeGuardar =
       (!faltaDoc || datosCompletar.documento.trim().length > 0) &&
       (!faltaGenero || !!datosCompletar.genero) &&
