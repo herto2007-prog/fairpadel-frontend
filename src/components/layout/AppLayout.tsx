@@ -29,13 +29,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // Items solo para organizadores y admin
   const isOrganizador = user?.roles?.includes('organizador') || user?.roles?.includes('admin');
   
-  const navItems = isOrganizador
+  const navItemsBase = isOrganizador
     ? [
         ...baseNavItems.slice(0, 1), // Torneos
         { path: '/mis-torneos', label: 'Mis Torneos', icon: Target },
         ...baseNavItems.slice(1), // Resto
       ]
     : baseNavItems;
+
+  // "Mi agenda" (¿cuándo juego?) primero, solo para usuarios logueados.
+  const navItems = user
+    ? [{ path: '/mi-agenda', label: 'Mi agenda', icon: Calendar }, ...navItemsBase]
+    : navItemsBase;
 
   return (
     <div className="min-h-screen bg-[#0B0E14] text-white compact-ui">

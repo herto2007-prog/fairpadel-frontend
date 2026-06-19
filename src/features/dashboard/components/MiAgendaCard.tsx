@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarClock, Trophy, TrendingDown, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api } from '../../../services/api';
 
 interface NodoAgenda {
@@ -42,7 +43,9 @@ function NodoLinea({ n }: { n: NodoAgenda }) {
   );
 }
 
-export function MiAgendaCard() {
+// showEmpty: en el dashboard se oculta si no hay agenda (false, default); en la
+// página dedicada /mi-agenda se muestra un empty state que invita a ver torneos.
+export function MiAgendaCard({ showEmpty = false }: { showEmpty?: boolean }) {
   const [agendas, setAgendas] = useState<Agenda[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,8 +57,27 @@ export function MiAgendaCard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // No mostrar nada si todavía está cargando o el jugador no tiene agenda
-  if (loading || agendas.length === 0) return null;
+  if (loading) return null;
+
+  // Sin agenda: en el dashboard no mostramos nada; en la página dedicada, empty state.
+  if (agendas.length === 0) {
+    if (!showEmpty) return null;
+    return (
+      <div className="bg-[#151921] border border-[#232838] rounded-2xl p-8 text-center">
+        <CalendarClock size={32} className="text-gray-600 mx-auto mb-3" />
+        <p className="text-white font-medium">Todavía no tenés partidos próximos</p>
+        <p className="text-sm text-gray-500 mt-1 mb-4">
+          Cuando te inscribas a un torneo y se sortee el cuadro, vas a ver acá tu próximo partido y el camino si ganás o perdés.
+        </p>
+        <Link
+          to="/torneos"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-xl text-sm font-medium transition-colors"
+        >
+          <Trophy size={16} /> Ver torneos abiertos
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <motion.div

@@ -34,6 +34,7 @@ const AmericanoDetailPage = lazy(() => import('./features/americano/pages/Americ
 
 // Inscripciones (V1)
 const MisInscripcionesPage = lazy(() => import('./features/inscripciones/pages/MisInscripcionesPage'));
+const MiAgendaPage = lazy(() => import('./features/dashboard/pages/MiAgendaPage').then(m => ({ default: m.MiAgendaPage })));
 
 // Rankings (V1)
 const RankingsPage = lazy(() => import('./features/rankings/pages/RankingsPage'));
@@ -189,6 +190,9 @@ function App() {
               {/* Canchas/Reservas (V2) */}
               <Route path="/sedes" element={<CanchasPage />} />
               <Route path="/sedes/:id" element={<SedeDetailPage />} />
+
+              {/* Jugador - Mi agenda (¿cuándo juego?) */}
+              <Route path="/mi-agenda" element={<MiAgendaPage />} />
 
               {/* Comunidad/Jugadores */}
               <Route path="/comunidad" element={<ComunidadV2Page />} />
