@@ -11,6 +11,7 @@ import {
 import { AmericanoCreateWizard } from '../features/americano/components/AmericanoCreateWizard';
 import { CompartirAmericanoModal } from '../features/americano/components/CompartirAmericanoModal';
 import { MiAgendaCard } from '../features/dashboard/components/MiAgendaCard';
+import { FeedSocialCard } from '../features/dashboard/components/FeedSocialCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { perfilService, PerfilJugador } from '../features/perfil/perfilService';
@@ -786,7 +787,10 @@ export default function HomeDashboardPage() {
             {/* 1. Gancho: tu próximo partido (si estás jugando un torneo) */}
             <MiAgendaCard />
 
-            {/* 2. FOMO: torneo que se está llenando */}
+            {/* 2. Pulso: feed social de tu mundo de pádel (Fase B) */}
+            <FeedSocialCard />
+
+            {/* 3. FOMO: torneo que se está llenando */}
             {torneoDestacado && (
               <UrgencyCard torneo={torneoDestacado} />
             )}
