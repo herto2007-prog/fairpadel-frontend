@@ -10,6 +10,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useNoIndex } from '../../../hooks/useNoIndex';
+import { validarReglasCategoria, ResultadoRegla } from '../validarReglasCategoria';
 
 interface Torneo {
   id: string;
@@ -142,40 +143,24 @@ export function InscripcionWizardPage() {
       .sort((a: any, b: any) => a.orden - b.orden);
   }, [torneo]);
 
-  // Validar si el jugador puede inscribirse en una categoría
-  const puedeInscribirseEnCategoria = (categoria: any): boolean => {
-    // MIXTO y SUMAS: siempre permitir selección, el backend valida con la pareja
+  // Evalúa una categoría con la MISMA regla que el backend (validarReglasCategoria).
+  // MIXTO/SUMAS se permiten al seleccionar; el backend las valida con la pareja.
+  const evaluarCategoria = (categoria: any): ResultadoRegla => {
     if (categoria.tipoCategoria === 'MIXTO' || categoria.tipoCategoria === 'SUMAS') {
-      return true;
+      return { permitido: true, mensaje: '' };
     }
-
-    // STANDARD: validación clásica de género/nivel
-    if (!userProfile?.categoria) return true;
-    
-    const ordenJugador = userProfile.categoria.orden;
-    const generoJugador = userProfile.genero;
-    
-    // No permitir categorías masculinas a jugadoras femeninas si es muy inferior
-    if (categoria.tipo === 'MASCULINO' && generoJugador === 'FEMENINO' && categoria.orden > ordenJugador + 1) {
-      return false;
+    if (!userProfile?.categoria || !userProfile?.genero) {
+      return { permitido: true, mensaje: '' };
     }
-    
-    // No permitir categorías femeninas a jugadores masculinos
-    if (categoria.tipo === 'FEMENINO' && generoJugador === 'MASCULINO') {
-      return false;
-    }
-    
-    // No permitir categoría inferior (ej: jugador 1ª no puede jugar 8ª)
-    if (categoria.orden > ordenJugador) {
-      return false;
-    }
-    
-    return true;
+    return validarReglasCategoria(userProfile.genero, userProfile.categoria, categoria);
   };
 
+  const puedeInscribirseEnCategoria = (categoria: any): boolean => evaluarCategoria(categoria).permitido;
+
   const handleSeleccionarCategoria = (categoria: any) => {
-    if (!puedeInscribirseEnCategoria(categoria)) {
-      showWarning('Categoría no permitida', `No puedes inscribirte en ${categoria.nombre} porque es inferior a tu categoría actual (${userProfile?.categoria?.nombre || 'Sin categoría'}).`);
+    const res = evaluarCategoria(categoria);
+    if (!res.permitido) {
+      showWarning('Categoría no permitida', res.mensaje);
       return;
     }
     setCategoriaSeleccionada(categoria.id);
