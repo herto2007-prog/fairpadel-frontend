@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { inscripcionService, Inscripcion } from '../../../services/inscripcionService';
-import { Calendar, Trophy, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Trophy, Clock, MapPin, Users, XCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
@@ -15,6 +15,7 @@ export default function MisInscripcionesPage() {
   useNoIndex();
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const location = useLocation();
 
@@ -38,6 +39,20 @@ export default function MisInscripcionesPage() {
       console.error('Error loading inscripciones:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelar = async (inscripcion: Inscripcion) => {
+    const nombre = inscripcion.tournament?.nombre || 'este torneo';
+    if (!window.confirm(`¿Seguro que querés cancelar tu inscripción en "${nombre}"? No se puede deshacer.`)) return;
+    try {
+      setCancelandoId(inscripcion.id);
+      await inscripcionService.cancelar(inscripcion.id);
+      await loadInscripciones();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'No se pudo cancelar. Intentá de nuevo más tarde.');
+    } finally {
+      setCancelandoId(null);
     }
   };
 
@@ -130,6 +145,22 @@ export default function MisInscripcionesPage() {
                     <p>✅ ¡Inscripción confirmada! Te esperamos en el torneo.</p>
                   </div>
                 )}
+
+                {/* Acción: cancelar (el back decide puedeCancelar: solo jugador 1, antes del sorteo) */}
+                {inscripcion.puedeCancelar ? (
+                  <button
+                    onClick={() => handleCancelar(inscripcion)}
+                    disabled={cancelandoId === inscripcion.id}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition disabled:opacity-50 text-sm font-medium"
+                  >
+                    <XCircle size={16} />
+                    {cancelandoId === inscripcion.id ? 'Cancelando…' : 'Cancelar inscripción'}
+                  </button>
+                ) : inscripcion.estado !== 'CANCELADA' ? (
+                  <p className="mt-4 text-sm text-gray-500 italic">
+                    Para cancelar esta inscripción, contactá al organizador.
+                  </p>
+                ) : null}
               </div>
             );
           })}

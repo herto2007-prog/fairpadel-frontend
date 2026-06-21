@@ -12,6 +12,8 @@ export interface Inscripcion {
   category?: { nombre: string };
   jugador1?: { nombre: string; apellido: string };
   jugador2?: { nombre: string; apellido: string };
+  /** Calculado por el back: ¿puede ESTE jugador auto-cancelar? (solo jugador 1, antes del sorteo) */
+  puedeCancelar?: boolean;
 }
 
 export const inscripcionService = {
@@ -21,7 +23,7 @@ export const inscripcionService = {
   getMyInscripciones: () => api.get('/inscripciones/my').then(r => r.data),
   create: (data: any) => api.post('/inscripciones', data).then(r => r.data),
   confirmar: (id: string) => api.post(`/inscripciones/${id}/confirmar`).then(r => r.data),
-  cancelar: (id: string) => api.post(`/inscripciones/${id}/cancelar`).then(r => r.data),
+  cancelar: (id: string) => api.patch(`/inscripciones/${id}/cancelar`).then(r => r.data),
 
   // Descarga el Excel de inscripciones del torneo (Fase 7 - reportes).
   // El backend devuelve el archivo; acá disparamos la descarga en el navegador.
