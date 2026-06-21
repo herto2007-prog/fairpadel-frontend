@@ -82,6 +82,7 @@ export function InscripcionWizardPage() {
   const [busquedaQuery, setBusquedaQuery] = useState('');
   const [busquedaResultados, setBusquedaResultados] = useState<any[]>([]);
   const [buscando, setBuscando] = useState(false);
+  const [busquedaRealizada, setBusquedaRealizada] = useState(false);
   const [mostrarFormNuevo, setMostrarFormNuevo] = useState(false);
 
   // Just-in-time: completar datos de competidor si el perfil está incompleto
@@ -152,12 +153,12 @@ export function InscripcionWizardPage() {
       const { data } = await api.get(`/inscripciones/public/buscar-pareja?${params.toString()}`);
       if (data.success) {
         setBusquedaResultados(data.jugadores);
-        setMostrarFormNuevo(data.jugadores.length === 0);
       }
     } catch (error) {
       console.error('Error buscando jugador:', error);
     } finally {
       setBuscando(false);
+      setBusquedaRealizada(true);
     }
   };
 
@@ -201,7 +202,15 @@ export function InscripcionWizardPage() {
       }
       
       const { data } = await api.post('/inscripciones/public', payload);
-      if (data.success) navigate('/inscripciones/my', { state: { success: true } });
+      if (data.success) {
+        showSuccess(
+          data.inscripcion?.requiereInvitacion ? '¡Lugar reservado!' : '¡Inscripción confirmada!',
+          data.message || (data.inscripcion?.requiereInvitacion
+            ? 'Tu lugar queda reservado hasta que tu compañero/a se sume y confirme.'
+            : 'Tu lugar está reservado.'),
+        );
+        navigate('/inscripciones/my', { state: { success: true } });
+      }
     } catch (error: any) {
       showError('Error', error.response?.data?.message || 'Error creando inscripción');
     } finally {
@@ -458,12 +467,25 @@ export function InscripcionWizardPage() {
                     </div>
                   )}
 
-                  {busquedaResultados.length === 0 && (
+                  {busquedaRealizada && !buscando && busquedaResultados.length === 0 && (
+                    <div className="p-4 border border-white/10 rounded-lg text-center space-y-3">
+                      <p className="text-sm text-white">No encontramos a nadie con esos datos</p>
+                      <p className="text-xs text-white/50">¿Tu compañero/a todavía no está en FairPadel? Invitalo/a y le llega un aviso para sumarse.</p>
+                      <button
+                        onClick={() => setMostrarFormNuevo(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-dashed border-white/20 rounded-lg text-sm text-white/70 hover:text-white hover:border-white/40 transition-colors"
+                      >
+                        + Invitar a {busquedaQuery.trim() || 'tu compañero/a'}
+                      </button>
+                    </div>
+                  )}
+
+                  {busquedaResultados.length > 0 && (
                     <button
                       onClick={() => setMostrarFormNuevo(true)}
-                      className="w-full p-3 border border-dashed border-white/20 rounded-lg text-sm text-white/60 hover:text-white hover:border-white/40 transition-colors"
+                      className="w-full text-center text-xs text-white/40 hover:text-white/70 underline transition-colors mt-1"
                     >
-                      + Invitar jugador no registrado
+                      ¿No es ninguno? Invitá a alguien que no tiene cuenta
                     </button>
                   )}
                 </div>
@@ -473,8 +495,18 @@ export function InscripcionWizardPage() {
                 <div className="space-y-3 p-3 border border-white/10 rounded-lg bg-white/[0.01]">
                   <p className="text-xs text-white/40 uppercase tracking-wider flex items-center gap-2">
                     <Info className="w-3 h-3" />
-                    Invitar nuevo jugador
+                    Invitar a tu compañero/a
                   </p>
+                  <p className="text-xs text-white/50 leading-relaxed">
+                    Le enviamos una invitación por email. Tu lugar queda <span className="text-[#df2531] font-medium">reservado</span> y se confirma cuando se sume y acepte.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormNuevo(false)}
+                    className="text-xs text-white/40 hover:text-white transition-colors"
+                  >
+                    ← Volver a buscar
+                  </button>
                   <div className="grid grid-cols-2 gap-2">
                     <input type="text" placeholder="Nombre" value={jugador2NoRegistrado.nombre} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, nombre: e.target.value }))} className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />
                     <input type="text" placeholder="Apellido" value={jugador2NoRegistrado.apellido} onChange={(e) => setJugador2NoRegistrado(p => ({ ...p, apellido: e.target.value }))} className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50" />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,9 @@ export const RegisterWizard = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
 
-  const [form, setForm] = useState({ nombre: '', apellido: '', email: '', password: '' });
+  const [searchParams] = useSearchParams();
+  // Si llega desde el email de invitación (/register?email=...), precargamos el email.
+  const [form, setForm] = useState({ nombre: '', apellido: '', email: searchParams.get('email') || '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
