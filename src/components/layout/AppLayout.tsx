@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle, Sparkles } from 'lucide-react';
+import { Trophy, MapPin, Users, Award, Calendar, LogOut, Menu, X, Target, User, Building2, UserCircle, Sparkles, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import { VerificacionEmailBanner } from '../VerificacionEmailBanner';
 
@@ -10,44 +10,41 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [masMenuOpen, setMasMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  // Items base para todos los usuarios
-  const baseNavItems = [
-    { path: '/torneos', label: 'Torneos', icon: Trophy },
-    { path: '/americano', label: 'Americano', icon: Sparkles },
-    { path: '/sedes', label: 'Canchas', icon: MapPin },
-    { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
-    { path: '/instructores', label: 'Instructores', icon: Users },
-    { path: '/rankings', label: 'Rankings', icon: Award },
-  ];
-
-  // Items solo para organizadores y admin
   const isOrganizador = user?.roles?.includes('organizador') || user?.roles?.includes('admin');
-  
-  const navItemsBase = isOrganizador
-    ? [
-        ...baseNavItems.slice(0, 1), // Torneos
-        { path: '/mis-torneos', label: 'Mis Torneos', icon: Target },
-        ...baseNavItems.slice(1), // Resto
-      ]
-    : baseNavItems;
-
   const isDueno = user?.roles?.includes('dueño');
 
-  // "Mi agenda" (¿cuándo juego?) primero, solo para usuarios logueados.
-  // El dueño ve "Mis sedes" destacado en el nav (no solo en el menú del avatar).
-  const navItems = user
-    ? [
-        { path: '/mi-agenda', label: 'Mi agenda', icon: Calendar },
-        ...(isDueno ? [{ path: '/mis-sedes', label: 'Mis sedes', icon: Building2 }] : []),
-        ...navItemsBase,
-      ]
-    : navItemsBase;
+  // Nav central (lo más usado). Lo secundario va al menú "Más"; lo de gestión, al avatar.
+  const primaryBase = [
+    { path: '/torneos', label: 'Torneos', icon: Trophy },
+    { path: '/sedes', label: 'Canchas', icon: MapPin },
+    { path: '/comunidad', label: 'Comunidad', icon: UserCircle },
+    { path: '/rankings', label: 'Rankings', icon: Award },
+  ];
+  const primaryNav = user
+    ? [{ path: '/mi-agenda', label: 'Mi agenda', icon: Calendar }, ...primaryBase]
+    : primaryBase;
+
+  // Secundario: menú "Más"
+  const masItems = [
+    { path: '/americano', label: 'Americano', icon: Sparkles },
+    { path: '/instructores', label: 'Instructores', icon: Users },
+  ];
+
+  // Gestión: van al menú del avatar (solo a quien le corresponde el rol)
+  const gestionItems = [
+    ...(isOrganizador ? [{ path: '/mis-torneos', label: 'Mis torneos', icon: Target }] : []),
+    ...(isDueno ? [{ path: '/mis-sedes', label: 'Mis sedes', icon: Building2 }] : []),
+  ];
+
+  // Para el menú móvil (lista vertical, hay espacio): central + Más
+  const navItems = [...primaryNav, ...masItems];
 
   return (
     <div className="min-h-screen bg-[#0B0E14] text-white compact-ui">
@@ -63,14 +60,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
+              {primaryNav.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-[#df2531] text-white'
                         : 'text-gray-400 hover:text-white hover:bg-[#232838]'
@@ -81,6 +78,41 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
+
+              {/* Menú "Más" */}
+              <div className="relative">
+                <button
+                  onClick={() => setMasMenuOpen(!masMenuOpen)}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    masItems.some((m) => location.pathname.startsWith(m.path))
+                      ? 'bg-[#df2531] text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-[#232838]'
+                  }`}
+                >
+                  Más <ChevronDown size={16} />
+                </button>
+                {masMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setMasMenuOpen(false)} />
+                    <div className="absolute left-0 top-full mt-2 w-48 bg-[#151921] border border-[#232838] rounded-lg shadow-xl z-20 py-1">
+                      {masItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setMasMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#232838] transition-colors"
+                          >
+                            <Icon size={16} />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </nav>
 
             {/* User Menu */}
@@ -137,16 +169,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                             <Calendar size={16} />
                             Mis Reservas
                           </Link>
-                          {user?.roles?.includes('dueño') && (
-                            <Link
-                              to="/mis-sedes"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#232838] transition-colors"
-                            >
-                              <Building2 size={16} />
-                              Mis Sedes
-                            </Link>
-                          )}
+                          {gestionItems.length > 0 && <div className="border-t border-[#232838] my-1" />}
+                          {gestionItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => setUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-[#232838] transition-colors"
+                              >
+                                <Icon size={16} />
+                                {item.label}
+                              </Link>
+                            );
+                          })}
                           <div className="border-t border-[#232838] my-1" />
                           <button
                             onClick={() => {
@@ -239,16 +276,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     <Calendar size={20} />
                     Mis Reservas
                   </Link>
-                  {user?.roles?.includes('dueño') && (
-                    <Link
-                      to="/mis-sedes"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-[#232838]"
-                    >
-                      <Building2 size={20} />
-                      Mis Sedes
-                    </Link>
-                  )}
+                  {gestionItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-[#232838]"
+                      >
+                        <Icon size={20} />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-[#232838] rounded-lg text-sm font-medium"

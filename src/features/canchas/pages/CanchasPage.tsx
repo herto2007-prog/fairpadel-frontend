@@ -6,6 +6,7 @@ import { DurationSelector } from '../../../components/ui/DurationSelector';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { formatDatePYLong, getDateOnlyPY } from '../../../utils/date';
 import { CanchaSelectionModal } from '../components/CanchaSelectionModal';
+import { SumaTuSedeBanner } from '../../../components/SumaTuSedeBanner';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
 interface SedeDisponibilidad {
@@ -261,6 +262,13 @@ export function CanchasPage() {
               ))}
             </div>
           </>
+        )}
+
+        {/* Marketing: sumar complejo */}
+        {!loading && (
+          <div className="mt-12">
+            <SumaTuSedeBanner />
+          </div>
         )}
       </div>
 

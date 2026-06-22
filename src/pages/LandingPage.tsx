@@ -6,6 +6,7 @@ import { HowItWorks } from '../components/landing/HowItWorks';
 import { Testimonials } from '../components/landing/Testimonials';
 import { Pricing } from '../components/landing/Pricing';
 import { CTA } from '../components/landing/CTA';
+import { SumaTuSedeBanner } from '../components/SumaTuSedeBanner';
 import { Footer } from '../components/landing/Footer';
 import { ParticleBackground } from '../components/landing/ParticleBackground';
 import { SEOSection } from '../components/landing/SEOSection';
@@ -37,6 +38,9 @@ export default function LandingPage() {
         <HowItWorks />
         <Testimonials />
         <Pricing />
+        <div className="py-12">
+          <SumaTuSedeBanner />
+        </div>
         <CTA />
         <SEOSection />
       </main>
