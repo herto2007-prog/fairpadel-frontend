@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield, Building2, Settings, Trophy, Route, Award, Users,
-  Crown, CreditCard, MessageCircle, ExternalLink,
+  Crown, CreditCard, MessageCircle, ExternalLink, Medal,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
@@ -11,12 +11,13 @@ import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
 import { CircuitosManager } from '../components/CircuitosManager';
+import { LigasOrganizadorManager } from '../components/LigasOrganizadorManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
 import { SuscripcionesManager } from '../components/SuscripcionesManager';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
 type SectionId =
-  | 'torneos' | 'circuitos'
+  | 'torneos' | 'circuitos' | 'ligas'
   | 'usuarios' | 'duenos'
   | 'sedes' | 'modalidades'
   | 'suscripciones';
@@ -36,6 +37,7 @@ const GRUPOS: { titulo: string; items: NavItem[] }[] = [
     items: [
       { id: 'torneos', label: 'Torneos', icon: Trophy, subtitle: 'Centro de torneos: aprobar, cobrar y configurar' },
       { id: 'circuitos', label: 'Circuitos', icon: Route, subtitle: 'Ligas y rankings por circuito' },
+      { id: 'ligas', label: 'Ligas de organizadores', icon: Medal, subtitle: 'Habilitar el ranking propio de cada organizador' },
       { id: 'federacion', label: 'Federación', icon: Award, subtitle: 'Categorías, ascensos y descensos', href: '/admin/federacion', accent: '#df2531' },
     ],
   },
@@ -147,6 +149,7 @@ export function AdminPage() {
           >
             {active === 'torneos' && <FairpadelPanel />}
             {active === 'circuitos' && <CircuitosManager />}
+            {active === 'ligas' && <LigasOrganizadorManager />}
             {active === 'usuarios' && <UserRoleManager />}
             {active === 'duenos' && <SedesDuenosManager />}
             {active === 'sedes' && <SedesManager />}

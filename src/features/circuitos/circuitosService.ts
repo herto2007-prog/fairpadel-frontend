@@ -258,6 +258,25 @@ export const circuitosService = {
   },
 
   // ═══════════════════════════════════════════════════════════
+  // CAPA 2: LIGAS DE ORGANIZADOR (Admin habilita el ranking propio)
+  // ═══════════════════════════════════════════════════════════
+
+  getLigasOrganizadores: async () => {
+    const response = await api.get('/circuitos/admin/ligas');
+    return response.data;
+  },
+
+  habilitarLiga: async (organizadorId: string) => {
+    const response = await api.post(`/circuitos/admin/ligas/${organizadorId}/habilitar`);
+    return response.data;
+  },
+
+  deshabilitarLiga: async (organizadorId: string) => {
+    const response = await api.post(`/circuitos/admin/ligas/${organizadorId}/deshabilitar`);
+    return response.data;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   // CATEGORÍAS
   // ═══════════════════════════════════════════════════════════
 
