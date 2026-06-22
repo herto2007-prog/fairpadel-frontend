@@ -216,8 +216,8 @@ export default function MisSedesPage() {
                 <p className="text-sm text-gray-400">Reservas automáticas</p>
               </div>
               <div className="text-center p-4 bg-[#0B0E14]/50 rounded-xl">
-                <div className="text-3xl font-bold text-green-400 mb-1">+40%</div>
-                <p className="text-sm text-gray-400">Más ocupación</p>
+                <div className="text-3xl font-bold text-green-400 mb-1">App</div>
+                <p className="text-sm text-gray-400">Reservan desde el celu</p>
               </div>
               <div className="text-center p-4 bg-[#0B0E14]/50 rounded-xl">
                 <div className="text-3xl font-bold text-blue-400 mb-1">0</div>
@@ -288,10 +288,10 @@ export default function MisSedesPage() {
               </div>
             </div>
 
-            {/* Testimonio / Social proof */}
+            {/* Invitación */}
             <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500">
               <Users className="w-4 h-4" />
-              <span>Más de <strong className="text-white">50 sedes</strong> ya están usando el sistema de reservas</span>
+              <span>Sumá tu sede al sistema de reservas de FairPadel</span>
             </div>
           </div>
         </div>
