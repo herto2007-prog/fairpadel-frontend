@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, Settings, Trophy, Route, TrendingUp, User, Crown, CreditCard, MessageCircle } from 'lucide-react';
+import { Shield, Building2, Settings, Trophy, Route, Award, User, Crown, CreditCard, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
@@ -8,12 +8,11 @@ import { SedesManager } from '../components/SedesManager';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
 import { CircuitosManager } from '../components/CircuitosManager';
-import { AscensosManager } from '../components/AscensosManager';
 import { SedesDuenosManager } from '../components/SedesDuenosManager';
 import { SuscripcionesManager } from '../components/SuscripcionesManager';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
-type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'circuitos' | 'ascensos' | 'duenos' | 'suscripciones' | 'whatsapp';
+type AdminTab = 'roles' | 'sedes' | 'modalidades' | 'fairpadel' | 'circuitos' | 'duenos' | 'suscripciones' | 'whatsapp';
 
 export function AdminPage() {
   useNoIndex();
@@ -24,7 +23,6 @@ export function AdminPage() {
     { id: 'fairpadel' as AdminTab, label: 'Torneos', icon: Trophy, color: 'bg-emerald-500' },
     { id: 'whatsapp' as AdminTab, label: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500' },
     { id: 'circuitos' as AdminTab, label: 'Circuitos', icon: Route, color: 'bg-purple-500' },
-    { id: 'ascensos' as AdminTab, label: 'Ascensos', icon: TrendingUp, color: 'bg-amber-500' },
     { id: 'suscripciones' as AdminTab, label: 'Suscripciones', icon: CreditCard, color: 'bg-cyan-500' },
     { id: 'sedes' as AdminTab, label: 'Sedes', icon: Building2, color: 'bg-orange-500' },
     { id: 'modalidades' as AdminTab, label: 'Modalidades', icon: Settings, color: 'bg-pink-500' },
@@ -56,12 +54,23 @@ export function AdminPage() {
           </a>
         </motion.div>
 
-        {/* Botón WhatsApp destacado */}
+        {/* Accesos destacados (pantallas propias) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="mb-6"
+          className="mb-6 flex flex-col sm:flex-row gap-3"
         >
+          <button
+            onClick={() => navigate('/admin/federacion')}
+            className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[#df2531]/20 to-rose-500/20 border border-[#df2531]/30 text-[#df2531] rounded-xl hover:bg-[#df2531]/30 transition-all w-full sm:w-auto"
+          >
+            <Award className="w-6 h-6" />
+            <div className="text-left">
+              <div className="font-semibold">Federación</div>
+              <div className="text-sm text-rose-300/70">Categorías, ascensos y descensos</div>
+            </div>
+          </button>
+
           <button
             onClick={() => navigate('/admin/whatsapp')}
             className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/30 transition-all w-full sm:w-auto"
@@ -122,7 +131,6 @@ export function AdminPage() {
           {activeTab === 'modalidades' && <ModalidadesManager />}
           {activeTab === 'fairpadel' && <FairpadelPanel />}
           {activeTab === 'circuitos' && <CircuitosManager />}
-          {activeTab === 'ascensos' && <AscensosManager />}
           {activeTab === 'duenos' && <SedesDuenosManager />}
           {activeTab === 'suscripciones' && <SuscripcionesManager />}
         </motion.div>

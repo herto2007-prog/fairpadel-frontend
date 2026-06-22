@@ -57,6 +57,17 @@ export interface UpdateRolesData {
   roles: string[];
 }
 
+export interface MovimientoCategoria {
+  id: string;
+  userId: string;
+  tipo: string;
+  motivo: string;
+  createdAt: string;
+  jugador: { id: string; nombre: string; apellido: string; fotoUrl?: string } | null;
+  categoriaAnterior: { id: string; nombre: string } | null;
+  categoriaNueva: { id: string; nombre: string } | null;
+}
+
 export interface Sede {
   id: string;
   nombre: string;
@@ -172,6 +183,8 @@ export const adminService = {
     api.get(`/admin/users/${userId}/inscripciones-activas`).then(r => r.data),
   getUserHistorialCategorias: (userId: string) =>
     api.get(`/admin/users/${userId}/historial-categorias`).then(r => r.data),
+  getHistorialCategoriasRecientes: (limit = 20) =>
+    api.get(`/admin/historial-categorias?limit=${limit}`).then(r => r.data),
 
   // SEDES
   getSedes: () => api.get('/admin/sedes').then(r => r.data),

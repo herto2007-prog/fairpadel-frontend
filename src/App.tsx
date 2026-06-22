@@ -69,6 +69,7 @@ const ComunidadV2Page = lazy(() => import('./features/jugadores/pages/ComunidadV
 // Admin
 const AdminPage = lazy(() => import('./features/admin/pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const WhatsAppAdminPage = lazy(() => import('./features/admin/pages/WhatsAppAdminPage').then(m => ({ default: m.WhatsAppAdminPage })));
+const FederacionPage = lazy(() => import('./features/admin/pages/FederacionPage').then(m => ({ default: m.FederacionPage })));
 
 // Organizador
 const MisTorneosPage = lazy(() => import('./features/organizador/pages/MisTorneosPage').then(m => ({ default: m.MisTorneosPage })));
@@ -225,6 +226,7 @@ function App() {
               <Route element={<RoleProtectedRoute allowedRoles={['admin']} />}>
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/admin/whatsapp" element={<WhatsAppAdminPage />} />
+                <Route path="/admin/federacion" element={<FederacionPage />} />
               </Route>
 
               {/* Páginas de retorno de Bancard */}
