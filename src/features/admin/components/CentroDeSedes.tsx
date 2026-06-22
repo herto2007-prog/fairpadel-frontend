@@ -953,17 +953,41 @@ function ServicioTab({
   const [working, setWorking] = useState(false);
   const activo = !!sede.servicio?.suscripcionActiva;
 
+  const [mode, setMode] = useState<null | 'pago' | 'regalo'>(null);
+  const [plan, setPlan] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
+  const [monto, setMonto] = useState('');
+  const [metodo, setMetodo] = useState<'TRANSFERENCIA' | 'EFECTIVO'>('TRANSFERENCIA');
+
   const loadPagos = async () => {
     try { setPagos(await centroSedesService.getPagos(sede.id)); }
     catch { setPagos([]); }
   };
   useEffect(() => { loadPagos(); }, [sede.id]);
 
-  const activar = async (tipo: 'MENSUAL' | 'ANUAL') => {
+  const openForm = (m: 'pago' | 'regalo') => {
+    setMode(m); setPlan('MENSUAL'); setMonto(''); setMetodo('TRANSFERENCIA');
+  };
+
+  const registrarPago = async () => {
+    const montoNum = parseInt(monto, 10);
+    if (!montoNum || montoNum <= 0) { showError('Falta el monto', 'Ingresá el monto cobrado'); return; }
     setWorking(true);
     try {
-      await centroSedesService.activarServicio(sede.id, tipo);
-      showSuccess('Listo', `Servicio activado (${tipo.toLowerCase()})`);
+      await centroSedesService.registrarPago(sede.id, { tipo: plan, monto: montoNum, metodo });
+      showSuccess('Listo', 'Pago registrado y servicio activado');
+      setMode(null);
+      await reload(); await loadPagos();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo registrar el pago');
+    } finally { setWorking(false); }
+  };
+
+  const regalar = async () => {
+    setWorking(true);
+    try {
+      await centroSedesService.regalarServicio(sede.id, plan, 'Regalo desde Centro de Sedes');
+      showSuccess('Listo', 'Servicio activado de regalo');
+      setMode(null);
       await reload(); await loadPagos();
     } catch (err: any) {
       showError('Error', err.response?.data?.message || 'No se pudo activar');
@@ -989,6 +1013,17 @@ function ServicioTab({
 
   const estadoPagoColor = (e: string) =>
     e === 'COMPLETADO' ? 'text-green-400' : e === 'PENDIENTE' ? 'text-amber-400' : 'text-gray-500';
+
+  const metodoLabel = (m: string | null) => {
+    switch (m) {
+      case 'TRANSFERENCIA': return 'Transferencia';
+      case 'EFECTIVO': return 'Efectivo';
+      case 'REGALO': return 'Regalo';
+      case 'BANCARD': return 'Bancard';
+      case 'MANUAL': return 'Manual';
+      default: return m || '-';
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -1016,13 +1051,13 @@ function ServicioTab({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => activar('MENSUAL')} disabled={working}
+        <button onClick={() => openForm('pago')} disabled={working}
           className="flex items-center gap-2 px-4 py-2 bg-green-500/15 hover:bg-green-500/25 disabled:opacity-50 text-green-400 rounded-lg text-sm">
-          <Gift className="w-4 h-4" /> Activar mensual
+          <CreditCard className="w-4 h-4" /> Registrar pago
         </button>
-        <button onClick={() => activar('ANUAL')} disabled={working}
+        <button onClick={() => openForm('regalo')} disabled={working}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500/15 hover:bg-blue-500/25 disabled:opacity-50 text-blue-400 rounded-lg text-sm">
-          <Gift className="w-4 h-4" /> Activar anual
+          <Gift className="w-4 h-4" /> Regalar
         </button>
         {activo && (
           <button onClick={desactivar} disabled={working}
@@ -1031,6 +1066,67 @@ function ServicioTab({
           </button>
         )}
       </div>
+
+      <AnimatePresence>
+        {mode && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="bg-[#0B0E14] border border-[#232838] rounded-xl p-4 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-white font-medium text-sm">
+                {mode === 'pago' ? 'Registrar pago' : 'Regalar servicio (sin cobro)'}
+              </h4>
+              <button onClick={() => setMode(null)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1.5">Plan</label>
+                <select value={plan} onChange={(e) => setPlan(e.target.value as 'MENSUAL' | 'ANUAL')}
+                  className="w-full bg-[#151921] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary">
+                  <option value="MENSUAL">Mensual (+1 mes)</option>
+                  <option value="ANUAL">Anual (+12 meses)</option>
+                </select>
+              </div>
+
+              {mode === 'pago' && (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Método</label>
+                    <select value={metodo} onChange={(e) => setMetodo(e.target.value as 'TRANSFERENCIA' | 'EFECTIVO')}
+                      className="w-full bg-[#151921] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary">
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                      <option value="EFECTIVO">Efectivo</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-400 mb-1.5">Monto cobrado (Gs.)</label>
+                    <input type="number" min="0" value={monto}
+                      onChange={(e) => setMonto(e.target.value)}
+                      placeholder="Ej: 60000"
+                      className="w-full bg-[#151921] border border-[#232838] rounded-lg py-2 px-3 text-white text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {activo && (
+              <p className="text-xs text-amber-400/80">
+                El servicio ya está activo: este {mode === 'pago' ? 'pago' : 'regalo'} extiende el vencimiento desde {formatDate(sede.servicio?.suscripcionVenceEn)}.
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setMode(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancelar</button>
+              <button onClick={mode === 'pago' ? registrarPago : regalar} disabled={working}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg text-sm">
+                <Save className="w-4 h-4" /> {mode === 'pago' ? 'Registrar y activar' : 'Activar gratis'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div>
         <p className="text-xs uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-2">
@@ -1049,16 +1145,16 @@ function ServicioTab({
               <div key={p.id} className="grid grid-cols-4 gap-2 px-4 py-2.5 text-sm border-b border-[#1a1f29] last:border-0">
                 <span className="text-gray-300">{formatDate(p.fechaPago || p.createdAt)}</span>
                 <span className="text-gray-400 text-xs self-center">{formatDate(p.periodoDesde)} → {formatDate(p.periodoHasta)}</span>
-                <span className="text-gray-400 self-center">{p.metodo || '-'}</span>
-                <span className={`text-right self-center ${estadoPagoColor(p.estado)}`}>
-                  {formatMonto(p.monto, p.moneda)}
+                <span className="text-gray-400 self-center">{metodoLabel(p.metodo)}</span>
+                <span className={`text-right self-center ${p.metodo === 'REGALO' ? 'text-blue-400' : estadoPagoColor(p.estado)}`}>
+                  {p.metodo === 'REGALO' ? 'Regalo' : formatMonto(p.monto, p.moneda)}
                 </span>
               </div>
             ))
           )}
         </div>
         <p className="text-xs text-gray-600 mt-2">
-          "Activar mensual / anual" registra el pago y deja el servicio vigente (sirve para cobros por transferencia o regalo).
+          "Registrar pago" anota el cobro real (transferencia/efectivo) y activa el servicio. "Regalar" lo activa sin cobro. Los pagos por Bancard se registran y activan solos.
         </p>
       </div>
     </div>

@@ -61,14 +61,20 @@ export const centroSedesService = {
   getPagos: (sedeId: string): Promise<PagoServicio[]> =>
     api.get(`/admin/centro-sedes/${sedeId}/pagos`).then((r) => r.data),
 
-  // Activar / regalar el servicio (crea un pago MANUAL y deja la suscripción vigente)
-  activarServicio: (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL') =>
+  // Registrar un pago manual (transferencia/efectivo) y dejar el servicio vigente.
+  // El backend extiende el vencimiento si ya estaba activo (renovación).
+  registrarPago: (
+    sedeId: string,
+    data: { tipo: 'MENSUAL' | 'ANUAL'; monto: number; metodo: 'TRANSFERENCIA' | 'EFECTIVO'; nota?: string },
+  ) =>
     api
-      .post('/admin/suscripciones/activar-manual', {
-        sedeId,
-        tipo,
-        nota: 'Activación manual desde Centro de Sedes',
-      })
+      .post('/admin/suscripciones/activar-manual', { sedeId, ...data })
+      .then((r) => r.data),
+
+  // Regalar el servicio (sin cobro): activa sin registrar plata.
+  regalarServicio: (sedeId: string, tipo: 'MENSUAL' | 'ANUAL' = 'MENSUAL', nota?: string) =>
+    api
+      .post('/admin/suscripciones/activar-manual', { sedeId, tipo, metodo: 'REGALO', nota })
       .then((r) => r.data),
 
   // Desactivar el servicio
