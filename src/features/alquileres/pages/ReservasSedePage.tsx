@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import PanelReservasVisual from '../components/PanelReservasVisual';
 import EstadisticasReservas from '../components/EstadisticasReservas';
-import { 
-  Calendar, Clock, CheckCircle, XCircle, AlertCircle, 
+import {
+  Calendar, Clock, CheckCircle, XCircle, AlertCircle,
   ChevronLeft, User, Filter, LayoutGrid, List, BarChart3
 } from 'lucide-react';
 import { useNoIndex } from '../../../hooks/useNoIndex';
@@ -33,7 +35,8 @@ export default function ReservasSedePage() {
   const { sedeId } = useParams<{ sedeId: string }>();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
-  
+  const { confirm, ...confirmModalProps } = useConfirm();
+
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<string>('TODAS');
@@ -71,14 +74,23 @@ export default function ReservasSedePage() {
     }
   };
 
-  const handleRechazar = async (reservaId: string) => {
-    const motivo = prompt('Motivo del rechazo (opcional):');
+  const handleRechazar = async (reservaId: string, confirmada: boolean) => {
+    const ok = await confirm({
+      title: confirmada ? '¿Cancelar reserva?' : '¿Rechazar reserva?',
+      message: confirmada
+        ? 'La reserva confirmada se cancelará y el horario quedará libre nuevamente.'
+        : 'La reserva pendiente será rechazada.',
+      confirmText: confirmada ? 'Cancelar reserva' : 'Rechazar',
+      cancelText: 'Volver',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
-      await api.post(`/alquileres/reservas/${reservaId}/rechazar`, { motivo });
-      showSuccess('Éxito', 'Reserva rechazada');
+      await api.post(`/alquileres/reservas/${reservaId}/rechazar`, {});
+      showSuccess('Listo', confirmada ? 'Reserva cancelada' : 'Reserva rechazada');
       cargarReservas();
     } catch (err: any) {
-      showError('Error', err.response?.data?.message || 'No se pudo rechazar');
+      showError('Error', err.response?.data?.message || 'No se pudo procesar');
     }
   };
 
@@ -338,13 +350,22 @@ export default function ReservasSedePage() {
                           Aprobar
                         </button>
                         <button
-                          onClick={() => handleRechazar(reserva.id)}
+                          onClick={() => handleRechazar(reserva.id, false)}
                           className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
                         >
                           <XCircle className="w-4 h-4" />
                           Rechazar
                         </button>
                       </>
+                    )}
+                    {reserva.estado === 'CONFIRMADA' && (
+                      <button
+                        onClick={() => handleRechazar(reserva.id, true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancelar
+                      </button>
                     )}
                   </div>
                 </div>
@@ -354,6 +375,17 @@ export default function ReservasSedePage() {
         </div>
         </>
         )}
+
+        <ConfirmModal
+          isOpen={confirmModalProps.isOpen}
+          onClose={confirmModalProps.close}
+          onConfirm={confirmModalProps.handleConfirm}
+          title={confirmModalProps.title}
+          message={confirmModalProps.message}
+          confirmText={confirmModalProps.confirmText}
+          cancelText={confirmModalProps.cancelText}
+          variant={confirmModalProps.variant}
+        />
       </div>
     </div>
   );

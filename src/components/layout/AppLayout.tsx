@@ -37,9 +37,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       ]
     : baseNavItems;
 
+  const isDueno = user?.roles?.includes('dueño');
+
   // "Mi agenda" (¿cuándo juego?) primero, solo para usuarios logueados.
+  // El dueño ve "Mis sedes" destacado en el nav (no solo en el menú del avatar).
   const navItems = user
-    ? [{ path: '/mi-agenda', label: 'Mi agenda', icon: Calendar }, ...navItemsBase]
+    ? [
+        { path: '/mi-agenda', label: 'Mi agenda', icon: Calendar },
+        ...(isDueno ? [{ path: '/mis-sedes', label: 'Mis sedes', icon: Building2 }] : []),
+        ...navItemsBase,
+      ]
     : navItemsBase;
 
   return (
