@@ -2,12 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Award, Search, History, ArrowUp, ArrowDown, Minus,
-  Users, Trophy, Loader2, ArrowLeft,
+  Users, Trophy, Loader2, ArrowLeft, AlertTriangle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useNoIndex } from '../../../hooks/useNoIndex';
-import { adminService, User as AdminUser, MovimientoCategoria } from '../../../services/adminService';
+import { adminService, User as AdminUser, MovimientoCategoria, GrupoDuplicado } from '../../../services/adminService';
 import { rankingsService } from '../../rankings/rankingsService';
 import { AscensosManager } from '../components/AscensosManager';
 import { EditarJugadorModal } from '../components/EditarJugadorModal';
@@ -26,6 +26,7 @@ export function FederacionPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [movimientos, setMovimientos] = useState<MovimientoCategoria[]>([]);
   const [candidatosPendientes, setCandidatosPendientes] = useState(0);
+  const [duplicados, setDuplicados] = useState<GrupoDuplicado[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -33,15 +34,17 @@ export function FederacionPage() {
   const cargar = async () => {
     setLoading(true);
     try {
-      const [us, mov, asc] = await Promise.all([
+      const [us, mov, asc, dup] = await Promise.all([
         adminService.getUsers(),
         adminService.getHistorialCategoriasRecientes(20),
         rankingsService.getAscensosPendientes(),
+        adminService.getPosiblesDuplicados(),
       ]);
       setUsers(Array.isArray(us) ? us : []);
       setMovimientos(mov.data || []);
       const pend = (asc.data || []).filter((a: any) => a.estado === 'PENDIENTE');
       setCandidatosPendientes(pend.length);
+      setDuplicados(dup.data || []);
     } catch {
       // estados vacíos si algo falla
     } finally {
@@ -226,6 +229,53 @@ export function FederacionPage() {
                     {m.motivo && <div className="text-xs text-gray-500 truncate italic">{m.motivo}</div>}
                   </div>
                   <span className="text-xs text-gray-500 flex-shrink-0">{formatDatePY(m.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Zona 4: Posibles cuentas duplicadas (alerta blanda) */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            <h2 className="text-xl font-bold text-white">Posibles cuentas duplicadas</h2>
+            {duplicados.length > 0 && (
+              <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">{duplicados.length}</span>
+            )}
+          </div>
+          <p className="text-sm text-gray-400 mb-4">
+            Cuentas que se parecen (mismo teléfono, o mismo nombre y fecha de nacimiento). No se bloquea nada — revisá y, si corresponde, corregí desde el buscador de arriba.
+          </p>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-[#df2531]" />
+            </div>
+          ) : duplicados.length === 0 ? (
+            <div className="text-center py-8 bg-[#151921] border border-white/5 rounded-xl">
+              <AlertTriangle className="w-9 h-9 text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">Sin coincidencias sospechosas. 👌</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {duplicados.map((g) => (
+                <div key={`${g.motivo}-${g.clave}`} className="bg-[#151921] border border-amber-500/20 rounded-xl p-3">
+                  <div className="text-xs text-amber-400 font-medium mb-2">{g.motivo}</div>
+                  <div className="space-y-1.5">
+                    {g.usuarios.map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => setQuery(`${u.nombre} ${u.apellido}`)}
+                        className="w-full flex items-center justify-between gap-2 text-left rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors"
+                      >
+                        <span className="text-sm text-white truncate">{u.nombre} {u.apellido}</span>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          {u.documento || 'sin cédula'}{u.telefono ? ` · ${u.telefono}` : ''} · {u.estado.toLowerCase()}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

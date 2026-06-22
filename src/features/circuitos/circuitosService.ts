@@ -151,6 +151,11 @@ export const circuitosService = {
     return response.data;
   },
 
+  getCategoriasRanking: async (id: string) => {
+    const response = await api.get(`/circuitos/${id}/categorias-ranking`);
+    return response.data;
+  },
+
   // ═══════════════════════════════════════════════════════════
   // ADMIN - CRUD Circuitos
   // ═══════════════════════════════════════════════════════════

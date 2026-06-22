@@ -71,6 +71,8 @@ export default function CircuitoDetailPage() {
   const [circuito, setCircuito] = useState<Circuito | null>(null);
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [torneos, setTorneos] = useState<TorneoCircuito[]>([]);
+  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
+  const [catSel, setCatSel] = useState<string>(''); // '' = todas
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'ranking' | 'torneos'>('info');
 
@@ -99,9 +101,10 @@ export default function CircuitoDetailPage() {
       // 2) Ranking y torneos van por ID del circuito (NO por slug — antes se
       //    pasaba el slug y estos endpoints esperan el id → volvían vacíos).
       const circuitoId = circuitoRes.data.id;
-      const [rankingRes, torneosRes] = await Promise.all([
+      const [rankingRes, torneosRes, catsRes] = await Promise.all([
         circuitosService.getRankingCircuito(circuitoId),
         circuitosService.getTorneosCircuito(circuitoId),
+        circuitosService.getCategoriasRanking(circuitoId),
       ]);
 
       if (rankingRes.success) {
@@ -110,11 +113,21 @@ export default function CircuitoDetailPage() {
       if (torneosRes.success) {
         setTorneos(torneosRes.data);
       }
+      if (catsRes.success) {
+        setCategorias(catsRes.data);
+      }
     } catch (error) {
       console.error('Error cargando circuito:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const cambiarCategoria = async (catId: string) => {
+    if (!circuito) return;
+    setCatSel(catId);
+    const res = await circuitosService.getRankingCircuito(circuito.id, catId || undefined);
+    if (res.success) setRanking(res.data);
   };
 
   if (loading) {
@@ -261,6 +274,30 @@ export default function CircuitoDetailPage() {
         )}
 
         {activeTab === 'ranking' && (
+          <div>
+            {categorias.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  onClick={() => cambiarCategoria('')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    catSel === '' ? 'bg-[#df2531] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Todas
+                </button>
+                {categorias.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => cambiarCategoria(c.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      catSel === c.id ? 'bg-[#df2531] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {c.nombre}
+                  </button>
+                ))}
+              </div>
+            )}
           <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
             {ranking.length === 0 ? (
               <div className="text-center py-12">
@@ -319,6 +356,7 @@ export default function CircuitoDetailPage() {
                 </tbody>
               </table>
             )}
+          </div>
           </div>
         )}
 

@@ -57,6 +57,24 @@ export interface UpdateRolesData {
   roles: string[];
 }
 
+export interface UsuarioDuplicado {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  documento: string | null;
+  telefono: string | null;
+  fechaNacimiento: string | null;
+  fotoUrl?: string | null;
+  estado: string;
+}
+
+export interface GrupoDuplicado {
+  motivo: string;
+  clave: string;
+  usuarios: UsuarioDuplicado[];
+}
+
 export interface MovimientoCategoria {
   id: string;
   userId: string;
@@ -185,6 +203,8 @@ export const adminService = {
     api.get(`/admin/users/${userId}/historial-categorias`).then(r => r.data),
   getHistorialCategoriasRecientes: (limit = 20) =>
     api.get(`/admin/historial-categorias?limit=${limit}`).then(r => r.data),
+  getPosiblesDuplicados: () =>
+    api.get('/admin/posibles-duplicados').then(r => r.data),
 
   // SEDES
   getSedes: () => api.get('/admin/sedes').then(r => r.data),
