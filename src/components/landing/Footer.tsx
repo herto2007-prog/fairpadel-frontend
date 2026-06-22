@@ -12,6 +12,7 @@ const footerLinks = {
   ],
   empresa: [
     { name: 'Sobre Nosotros', href: '/about' },
+    { name: '¿Tenés canchas? Sumate', href: '/suma-tu-sede' },
   ],
   soporte: [
     { name: 'Contacto', href: '/contacto' },

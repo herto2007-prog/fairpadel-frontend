@@ -46,6 +46,7 @@ const PerfilPage = lazy(() => import('./features/perfil/pages/PerfilPage').then(
 // Canchas/Reservas (V2)
 const CanchasPage = lazy(() => import('./features/canchas/pages/CanchasPage').then(m => ({ default: m.CanchasPage })));
 const SedeDetailPage = lazy(() => import('./features/sedes/pages/SedeDetailPage'));
+const SumaTuSedePage = lazy(() => import('./features/sedes/pages/SumaTuSedePage'));
 
 // Alquileres (V2)
 const AlquileresPage = lazy(() => import('./features/alquileres/pages/AlquileresPage'));
@@ -137,6 +138,9 @@ function App() {
             <Route path="/terminos" element={<TerminosPage />} />
             <Route path="/privacidad" element={<PrivacidadPage />} />
             <Route path="/contacto" element={<ContactoPage />} />
+
+            {/* Sumá tu sede - Público (lead de dueños) */}
+            <Route path="/suma-tu-sede" element={<SumaTuSedePage />} />
 
             {/* Torneos Públicos - V2 (con navegación visible) */}
             <Route element={<PublicLayout />}>

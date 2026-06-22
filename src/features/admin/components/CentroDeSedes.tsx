@@ -4,12 +4,14 @@ import {
   Building2, Plus, Search, Phone, Map, Save, X, Edit2, Trash2,
   Power, ChevronDown, Check, ArrowLeft, Info, LayoutGrid, Users, CalendarClock,
   Crown, UserCog, Sun, Home, CheckCircle, MinusCircle, Gift, XCircle, CreditCard,
+  Inbox, Mail, PhoneCall, StickyNote, MapPin,
 } from 'lucide-react';
 import { adminService, CreateSedeData, CreateCanchaData } from '../../../services/adminService';
 import { sedesAdminService } from '../../../services/sedesAdminService';
 import {
   centroSedesService, CentroSede, CentroSedeCancha, PagoServicio,
 } from '../../../services/centroSedesService';
+import { solicitudesSedeService, SolicitudSede } from '../../../services/solicitudesSedeService';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { useToast } from '../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../hooks/useConfirm';
@@ -56,6 +58,10 @@ export function CentroDeSedes() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('datos');
 
+  const [vista, setVista] = useState<'sedes' | 'solicitudes'>('sedes');
+  const [nuevasSolicitudes, setNuevasSolicitudes] = useState(0);
+  const [prefill, setPrefill] = useState<{ nombre: string; ciudad: string; telefono: string } | null>(null);
+
   const selected = sedes.find((s) => s.id === selectedId) || null;
 
   const loadSedes = async () => {
@@ -70,11 +76,25 @@ export function CentroDeSedes() {
     }
   };
 
-  useEffect(() => { loadSedes(); }, []);
+  const loadNuevas = async () => {
+    try {
+      const { nuevas } = await solicitudesSedeService.listar();
+      setNuevasSolicitudes(nuevas);
+    } catch { /* silencioso */ }
+  };
+
+  useEffect(() => { loadSedes(); loadNuevas(); }, []);
 
   const openFicha = (id: string) => {
     setSelectedId(id);
     setTab('datos');
+  };
+
+  // Convertir una solicitud en sede: precarga el form de Nueva Sede y va a Sedes.
+  const onConvertir = (s: SolicitudSede) => {
+    setPrefill({ nombre: s.nombreSede, ciudad: s.ciudad, telefono: s.telefono });
+    setSelectedId(null);
+    setVista('sedes');
   };
 
   const filtered = sedes.filter((s) =>
@@ -103,7 +123,40 @@ export function CentroDeSedes() {
 
   return (
     <div className="space-y-6">
-      {selected ? (
+      {/* Selector de vista: Sedes / Solicitudes */}
+      {!selected && (
+        <div className="flex gap-1 border-b border-[#232838]">
+          <button
+            onClick={() => setVista('sedes')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+              vista === 'sedes' ? 'border-primary text-white' : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Building2 className="w-4 h-4" /> Sedes <span className="text-gray-500">{sedes.length}</span>
+          </button>
+          <button
+            onClick={() => { setVista('solicitudes'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+              vista === 'solicitudes' ? 'border-primary text-white' : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Inbox className="w-4 h-4" /> Solicitudes
+            {nuevasSolicitudes > 0 && (
+              <span className="bg-primary text-white text-[11px] px-2 py-0.5 rounded-full">{nuevasSolicitudes} nuevas</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {vista === 'solicitudes' && !selected ? (
+        <SolicitudesInbox
+          onConvertir={onConvertir}
+          onCountChange={setNuevasSolicitudes}
+          showSuccess={showSuccess}
+          showError={showError}
+          confirm={confirm}
+        />
+      ) : selected ? (
         <FichaSede
           sede={selected}
           tab={tab}
@@ -125,6 +178,8 @@ export function CentroDeSedes() {
           setSearch={setSearch}
           onOpen={openFicha}
           reload={loadSedes}
+          prefill={prefill}
+          onClearPrefill={() => setPrefill(null)}
           showSuccess={showSuccess}
           showError={showError}
         />
@@ -171,7 +226,7 @@ function ServicioBadge({ sede }: { sede: CentroSede }) {
 
 function ListaSedes({
   sedes, total, servicioVigentes, porVencer, totalCanchas,
-  search, setSearch, onOpen, reload, showSuccess, showError,
+  search, setSearch, onOpen, reload, prefill, onClearPrefill, showSuccess, showError,
 }: {
   sedes: CentroSede[];
   total: number;
@@ -182,10 +237,19 @@ function ListaSedes({
   setSearch: (s: string) => void;
   onOpen: (id: string) => void;
   reload: () => Promise<void>;
+  prefill: { nombre: string; ciudad: string; telefono: string } | null;
+  onClearPrefill: () => void;
   showSuccess: (t: string, m: string) => void;
   showError: (t: string, m: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
+
+  // Al llegar un prefill (convertir solicitud), abrir el form de Nueva Sede.
+  useEffect(() => {
+    if (prefill) setShowForm(true);
+  }, [prefill]);
+
+  const closeForm = () => { setShowForm(false); onClearPrefill(); };
 
   return (
     <div className="space-y-6">
@@ -226,8 +290,9 @@ function ListaSedes({
       <AnimatePresence>
         {showForm && (
           <SedeForm
-            onCancel={() => setShowForm(false)}
-            onSaved={async () => { setShowForm(false); await reload(); }}
+            prefill={prefill}
+            onCancel={closeForm}
+            onSaved={async () => { closeForm(); await reload(); }}
             showSuccess={showSuccess}
             showError={showError}
           />
@@ -304,22 +369,23 @@ function splitPhone(telefono?: string | null) {
 }
 
 function SedeForm({
-  sede, onCancel, onSaved, showSuccess, showError,
+  sede, prefill, onCancel, onSaved, showSuccess, showError,
 }: {
   sede?: CentroSede;
+  prefill?: { nombre: string; ciudad: string; telefono: string } | null;
   onCancel: () => void;
   onSaved: () => Promise<void>;
   showSuccess: (t: string, m: string) => void;
   showError: (t: string, m: string) => void;
 }) {
   const editing = !!sede;
-  const initPhone = splitPhone(sede?.telefono);
+  const initPhone = splitPhone(sede?.telefono || prefill?.telefono);
   const [form, setForm] = useState<CreateSedeData>({
-    nombre: sede?.nombre || '',
-    ciudad: sede?.ciudad || '',
+    nombre: sede?.nombre || prefill?.nombre || '',
+    ciudad: sede?.ciudad || prefill?.ciudad || '',
     direccion: sede?.direccion || '',
     mapsUrl: sede?.mapsUrl || '',
-    telefono: sede?.telefono || '',
+    telefono: sede?.telefono || prefill?.telefono || '',
   });
   const [paisTelefono, setPaisTelefono] = useState(initPhone.code);
   const [telefonoNumero, setTelefonoNumero] = useState(initPhone.numero);
@@ -1166,6 +1232,213 @@ function ServStat({ label, value, color }: { label: string; value: string; color
     <div className="bg-[#0B0E14] border border-[#232838] rounded-xl p-3">
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`text-sm font-medium ${color}`}>{value}</p>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// BANDEJA DE SOLICITUDES
+// ════════════════════════════════════════════════════════════
+
+const ESTADO_INFO: Record<string, { label: string; cls: string }> = {
+  NUEVO: { label: 'Nuevo', cls: 'bg-red-500/16 text-red-400' },
+  CONTACTADO: { label: 'Contactado', cls: 'bg-blue-500/16 text-blue-400' },
+  CONVERTIDO: { label: 'Convertido', cls: 'bg-green-500/16 text-green-400' },
+  RECHAZADO: { label: 'Rechazado', cls: 'bg-gray-600/40 text-gray-400' },
+};
+
+function SolicitudesInbox({
+  onConvertir, onCountChange, showSuccess, showError, confirm,
+}: {
+  onConvertir: (s: SolicitudSede) => void;
+  onCountChange: (n: number) => void;
+  showSuccess: (t: string, m: string) => void;
+  showError: (t: string, m: string) => void;
+  confirm: (o: any) => Promise<boolean>;
+}) {
+  const [solicitudes, setSolicitudes] = useState<SolicitudSede[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState<string>('TODAS');
+
+  const load = async () => {
+    try {
+      const data = await solicitudesSedeService.listar();
+      setSolicitudes(data.solicitudes);
+      onCountChange(data.nuevas);
+    } catch {
+      showError('Error', 'No se pudieron cargar las solicitudes');
+      setSolicitudes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const cambiarEstado = async (s: SolicitudSede, estado: string) => {
+    if (estado === 'RECHAZADO') {
+      const ok = await confirm({
+        title: 'Rechazar solicitud',
+        message: `Se marcará la solicitud de "${s.nombreSede}" como rechazada.`,
+        confirmText: 'Rechazar', cancelText: 'Volver', variant: 'warning',
+      });
+      if (!ok) return;
+    }
+    try {
+      await solicitudesSedeService.actualizar(s.id, { estado });
+      showSuccess('Listo', 'Solicitud actualizada');
+      await load();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo actualizar');
+    }
+  };
+
+  const convertir = async (s: SolicitudSede) => {
+    try {
+      await solicitudesSedeService.actualizar(s.id, { estado: 'CONVERTIDO' });
+      onConvertir(s);
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo convertir');
+    }
+  };
+
+  const guardarNota = async (s: SolicitudSede, notaAdmin: string) => {
+    try {
+      await solicitudesSedeService.actualizar(s.id, { notaAdmin });
+      showSuccess('Listo', 'Nota guardada');
+      await load();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo guardar la nota');
+    }
+  };
+
+  const filtradas = filtro === 'TODAS' ? solicitudes : solicitudes.filter((s) => s.estado === filtro);
+
+  if (loading) {
+    return (
+      <div className="glass rounded-3xl p-12 text-center">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full mx-auto" />
+        <p className="text-gray-400 mt-4">Cargando solicitudes...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2">
+        {['TODAS', 'NUEVO', 'CONTACTADO', 'CONVERTIDO', 'RECHAZADO'].map((f) => (
+          <button key={f} onClick={() => setFiltro(f)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              filtro === f ? 'bg-primary text-white' : 'bg-[#151921] text-gray-400 hover:text-white'
+            }`}>
+            {f === 'TODAS' ? 'Todas' : ESTADO_INFO[f].label}
+          </button>
+        ))}
+      </div>
+
+      {filtradas.length === 0 ? (
+        <div className="glass rounded-3xl p-12 text-center">
+          <Inbox className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No hay solicitudes{filtro !== 'TODAS' ? ' en este estado' : ''}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtradas.map((s) => (
+            <SolicitudCard key={s.id} s={s}
+              onContactar={() => cambiarEstado(s, 'CONTACTADO')}
+              onConvertir={() => convertir(s)}
+              onRechazar={() => cambiarEstado(s, 'RECHAZADO')}
+              onGuardarNota={(nota) => guardarNota(s, nota)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SolicitudCard({
+  s, onContactar, onConvertir, onRechazar, onGuardarNota,
+}: {
+  s: SolicitudSede;
+  onContactar: () => void;
+  onConvertir: () => void;
+  onRechazar: () => void;
+  onGuardarNota: (nota: string) => void;
+}) {
+  const [editandoNota, setEditandoNota] = useState(false);
+  const [nota, setNota] = useState(s.notaAdmin || '');
+  const info = ESTADO_INFO[s.estado] || ESTADO_INFO.NUEVO;
+  const cerrada = s.estado === 'CONVERTIDO' || s.estado === 'RECHAZADO';
+
+  return (
+    <div className="bg-[#151921] border border-[#232838] rounded-xl p-4">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+          <Building2 className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-white">{s.nombreSede}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${info.cls}`}>{info.label}</span>
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> {s.ciudad}
+          </div>
+          <div className="text-xs text-gray-300 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-gray-500" /> {s.nombreContacto}</span>
+            <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5 text-gray-500" /> {s.telefono}</span>
+            <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5 text-gray-500" /> {s.email}</span>
+          </div>
+          {s.mensaje && (
+            <p className="text-xs text-gray-400 italic mt-2 bg-[#0B0E14] rounded-lg px-3 py-2">"{s.mensaje}"</p>
+          )}
+
+          {editandoNota ? (
+            <div className="mt-2">
+              <textarea value={nota} onChange={(e) => setNota(e.target.value)}
+                className="w-full bg-[#0B0E14] border border-[#232838] rounded-lg p-2 text-sm text-gray-200 focus:outline-none focus:border-primary h-16"
+                placeholder="Tu nota interna..." />
+              <div className="flex gap-2 mt-1">
+                <button onClick={() => { onGuardarNota(nota); setEditandoNota(false); }}
+                  className="px-3 py-1 bg-primary text-white rounded text-xs">Guardar</button>
+                <button onClick={() => { setNota(s.notaAdmin || ''); setEditandoNota(false); }}
+                  className="px-3 py-1 text-gray-400 text-xs">Cancelar</button>
+              </div>
+            </div>
+          ) : s.notaAdmin ? (
+            <p className="text-xs text-gray-400 mt-2 bg-[#0B0E14] rounded-lg px-3 py-2 flex items-start gap-2">
+              <StickyNote className="w-3.5 h-3.5 text-gray-500 mt-0.5 flex-shrink-0" /> {s.notaAdmin}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mt-3">
+        {s.estado === 'NUEVO' && (
+          <button onClick={onContactar}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/14 hover:bg-blue-500/24 text-blue-400 rounded-lg text-xs">
+            <PhoneCall className="w-3.5 h-3.5" /> Marcar contactado
+          </button>
+        )}
+        {!cerrada && (
+          <button onClick={onConvertir}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/14 hover:bg-green-500/24 text-green-400 rounded-lg text-xs">
+            <CheckCircle className="w-3.5 h-3.5" /> Convertir en sede
+          </button>
+        )}
+        <button onClick={() => setEditandoNota(!editandoNota)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1b212c] hover:bg-[#232838] text-gray-300 rounded-lg text-xs">
+          <StickyNote className="w-3.5 h-3.5" /> {s.notaAdmin ? 'Editar nota' : 'Agregar nota'}
+        </button>
+        {!cerrada && (
+          <button onClick={onRechazar}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/14 hover:bg-red-500/24 text-red-400 rounded-lg text-xs">
+            <XCircle className="w-3.5 h-3.5" /> Rechazar
+          </button>
+        )}
+      </div>
     </div>
   );
 }
