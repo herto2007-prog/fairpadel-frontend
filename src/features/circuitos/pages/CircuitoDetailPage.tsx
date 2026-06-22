@@ -376,9 +376,11 @@ export default function CircuitoDetailPage() {
                       <p className="text-sm text-gray-400">
                         {formatDatePY(tc.torneo.fechaInicio)} • {tc.torneo.ciudad}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Organiza: {tc.torneo.organizador.apellido}, {tc.torneo.organizador.nombre}
-                      </p>
+                      {tc.torneo.organizador && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Organiza: {tc.torneo.organizador.apellido}, {tc.torneo.organizador.nombre}
+                        </p>
+                      )}
                     </div>
                   </Link>
                 </motion.div>
