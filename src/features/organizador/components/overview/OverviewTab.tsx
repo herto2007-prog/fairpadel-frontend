@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
 import { formatDatePY } from '../../../../utils/date';
-import { SolicitarCircuitoCard } from './SolicitarCircuitoCard';
 import { RoadmapTorneo } from './RoadmapTorneo';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
@@ -378,9 +377,6 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
             Ver todas las inscripciones
           </button>
         </div>
-
-        {/* Solicitar Circuito - Card propia */}
-        <SolicitarCircuitoCard tournamentId={tournamentId} />
       </div>
 
       <ConfirmModal

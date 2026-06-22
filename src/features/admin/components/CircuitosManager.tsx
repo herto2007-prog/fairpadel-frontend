@@ -1,12 +1,12 @@
 // CircuitosManager - Admin Panel para gestión de circuitos
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, Plus, CheckCircle, XCircle, Settings, Loader2, ExternalLink, MapPin, 
+import {
+  Trophy, Plus, Settings, Loader2, ExternalLink, MapPin,
   Upload, Image as ImageIcon, X, Calendar,
   Trash2, Save, RefreshCw
 } from 'lucide-react';
-import { circuitosService, Circuito, TorneoCircuito, Solicitud } from '../../circuitos/circuitosService';
+import { circuitosService, Circuito, TorneoCircuito } from '../../circuitos/circuitosService';
 import { rankingsService } from '../../rankings/rankingsService';
 import { formatDatePY } from '../../../utils/date';
 import { useToast } from '../../../components/ui/ToastProvider';
@@ -15,14 +15,11 @@ import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { Modal } from '../../../components/ui/Modal';
 
 export function CircuitosManager() {
-  const { showSuccess, showError } = useToast();
-  const { confirm, ...confirmState } = useConfirm();
-  const [activeSubTab, setActiveSubTab] = useState<'circuitos' | 'solicitudes' | 'nuevo'>('circuitos');
+  const confirmState = useConfirm();
+  const [activeSubTab, setActiveSubTab] = useState<'circuitos' | 'nuevo'>('circuitos');
   const [circuitos, setCircuitos] = useState<Circuito[]>([]);
-  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<string | null>(null);
-  
+
   // Modal state
   const [selectedCircuito, setSelectedCircuito] = useState<Circuito | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,9 +34,6 @@ export function CircuitosManager() {
       if (activeSubTab === 'circuitos') {
         const res = await circuitosService.getCircuitos();
         if (res.success) setCircuitos(res.data);
-      } else if (activeSubTab === 'solicitudes') {
-        const res = await circuitosService.getSolicitudesPendientes();
-        if (res.success) setSolicitudes(res.data);
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -48,33 +42,6 @@ export function CircuitosManager() {
     }
   };
 
-  const handleProcesarSolicitud = async (id: string, estado: 'APROBADO' | 'RECHAZADO') => {
-    const confirmed = await confirm({
-      title: estado === 'APROBADO' ? 'Aprobar solicitud' : 'Rechazar solicitud',
-      message: `Estás seguro de ${estado === 'APROBADO' ? 'aprobar' : 'rechazar'} esta solicitud de inclusión al circuito?`,
-      confirmText: estado === 'APROBADO' ? 'Aprobar' : 'Rechazar',
-      cancelText: 'Cancelar',
-      variant: estado === 'APROBADO' ? 'success' : 'danger',
-    });
-    if (!confirmed) return;
-    
-    setProcessing(id);
-    try {
-      await circuitosService.procesarSolicitud(id, {
-        estado,
-        puntosValidos: estado === 'APROBADO',
-      });
-      showSuccess(
-        estado === 'APROBADO' ? 'Solicitud aprobada' : 'Solicitud rechazada',
-        `La solicitud fue ${estado === 'APROBADO' ? 'aprobada' : 'rechazada'} exitosamente`
-      );
-      await loadData();
-    } catch (error) {
-      showError('Error', 'No se pudo procesar la solicitud');
-    } finally {
-      setProcessing(null);
-    }
-  };
 
   const handleOpenModal = (circuito: Circuito) => {
     setSelectedCircuito(circuito);
@@ -103,19 +70,6 @@ export function CircuitosManager() {
           }`}
         >
           Circuitos
-        </button>
-        <button
-          onClick={() => setActiveSubTab('solicitudes')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-            activeSubTab === 'solicitudes'
-              ? 'bg-[#df2531] text-white'
-              : 'bg-[#151921] text-gray-400 hover:text-white'
-          }`}
-        >
-          Solicitudes
-          {solicitudes.length > 0 && (
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{solicitudes.length}</span>
-          )}
         </button>
         <button
           onClick={() => setActiveSubTab('nuevo')}
@@ -205,61 +159,6 @@ export function CircuitosManager() {
                       title="Gestionar circuito"
                     >
                       <Settings className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      ) : activeSubTab === 'solicitudes' ? (
-        <div className="grid gap-4">
-          {solicitudes.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">No hay solicitudes pendientes</p>
-          ) : (
-            solicitudes.map((sol) => (
-              <motion.div
-                key={sol.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-[#151921] border border-white/5 rounded-xl p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Trophy className="w-5 h-5 text-[#df2531]" />
-                      <h3 className="font-bold text-white">{sol.torneo.nombre}</h3>
-                    </div>
-                    <p className="text-gray-400 text-sm">
-                      Quiere unirse a: <span className="text-white">{sol.circuito.nombre}</span>
-                    </p>
-                    <p className="text-gray-500 text-sm mt-1">
-                      Organizador: {sol.torneo.organizador.apellido}, {sol.torneo.organizador.nombre}
-                    </p>
-                    <p className="text-gray-500 text-sm">
-                      {sol.torneo.ciudad} • {formatDatePY(sol.torneo.fechaInicio)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleProcesarSolicitud(sol.id, 'APROBADO')}
-                      disabled={processing === sol.id}
-                      className="flex items-center gap-1 px-3 py-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition-colors disabled:opacity-50"
-                    >
-                      {processing === sol.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4" />
-                      )}
-                      Aprobar
-                    </button>
-                    <button
-                      onClick={() => handleProcesarSolicitud(sol.id, 'RECHAZADO')}
-                      disabled={processing === sol.id}
-                      className="flex items-center gap-1 px-3 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors disabled:opacity-50"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Rechazar
                     </button>
                   </div>
                 </div>

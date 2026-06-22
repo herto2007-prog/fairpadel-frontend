@@ -151,20 +151,6 @@ export const circuitosService = {
     return response.data;
   },
 
-  getEstadoCircuito: async (torneoId: string) => {
-    const response = await api.get(`/circuitos/torneo/${torneoId}/estado-circuito`);
-    return response.data;
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  // ORGANIZADOR - Solicitar inclusión
-  // ═══════════════════════════════════════════════════════════
-
-  solicitarInclusion: async (torneoId: string, data: SolicitarInclusionPayload) => {
-    const response = await api.post(`/circuitos/torneo/${torneoId}/solicitar`, data);
-    return response.data;
-  },
-
   // ═══════════════════════════════════════════════════════════
   // ADMIN - CRUD Circuitos
   // ═══════════════════════════════════════════════════════════
@@ -185,18 +171,8 @@ export const circuitosService = {
   },
 
   // ═══════════════════════════════════════════════════════════
-  // ADMIN - Gestión de Solicitudes (Legacy)
+  // ADMIN - Configuración de torneos del circuito
   // ═══════════════════════════════════════════════════════════
-
-  getSolicitudesPendientes: async () => {
-    const response = await api.get('/circuitos/admin/solicitudes-pendientes');
-    return response.data;
-  },
-
-  procesarSolicitud: async (id: string, data: ProcesarSolicitudPayload) => {
-    const response = await api.post(`/circuitos/admin/solicitud/${id}/procesar`, data);
-    return response.data;
-  },
 
   configurarTorneoCircuito: async (id: string, data: { puntosValidos?: boolean; orden?: number; esFinal?: boolean; multiplicador?: number; notas?: string }) => {
     const response = await api.post(`/circuitos/admin/torneo-circuito/${id}/configurar`, data);
