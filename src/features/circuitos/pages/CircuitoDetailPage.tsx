@@ -89,15 +89,21 @@ export default function CircuitoDetailPage() {
 
   const loadCircuito = async () => {
     try {
-      const [circuitoRes, rankingRes, torneosRes] = await Promise.all([
-        circuitosService.getCircuitoBySlug(slug!),
-        circuitosService.getRankingCircuito(slug!),
-        circuitosService.getTorneosCircuito(slug!),
+      // 1) Cargar el circuito por slug (de ahí sacamos el ID).
+      const circuitoRes = await circuitosService.getCircuitoBySlug(slug!);
+      if (!circuitoRes.success || !circuitoRes.data) {
+        return;
+      }
+      setCircuito(circuitoRes.data);
+
+      // 2) Ranking y torneos van por ID del circuito (NO por slug — antes se
+      //    pasaba el slug y estos endpoints esperan el id → volvían vacíos).
+      const circuitoId = circuitoRes.data.id;
+      const [rankingRes, torneosRes] = await Promise.all([
+        circuitosService.getRankingCircuito(circuitoId),
+        circuitosService.getTorneosCircuito(circuitoId),
       ]);
 
-      if (circuitoRes.success) {
-        setCircuito(circuitoRes.data);
-      }
       if (rankingRes.success) {
         setRanking(rankingRes.data);
       }
