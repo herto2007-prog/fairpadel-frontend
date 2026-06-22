@@ -2,24 +2,21 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield, Building2, Settings, Trophy, Route, Award, Users,
-  Crown, CreditCard, MessageCircle, ExternalLink,
+  MessageCircle, ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { UserRoleManager } from '../components/UserRoleManager';
-import { SedesManager } from '../components/SedesManager';
+import { CentroDeSedes } from '../components/CentroDeSedes';
 import { ModalidadesManager } from '../components/ModalidadesManager';
 import { FairpadelPanel } from '../components/FairpadelPanel';
 import { CircuitosManager } from '../components/CircuitosManager';
-import { SedesDuenosManager } from '../components/SedesDuenosManager';
-import { SuscripcionesManager } from '../components/SuscripcionesManager';
 import { useNoIndex } from '../../../hooks/useNoIndex';
 
 type SectionId =
   | 'torneos' | 'circuitos'
-  | 'usuarios' | 'duenos'
-  | 'sedes' | 'modalidades'
-  | 'suscripciones';
+  | 'usuarios'
+  | 'sedes' | 'modalidades';
 
 interface NavItem {
   id: SectionId | string;
@@ -43,20 +40,18 @@ const GRUPOS: { titulo: string; items: NavItem[] }[] = [
     titulo: 'Gente',
     items: [
       { id: 'usuarios', label: 'Usuarios', icon: Users, subtitle: 'Cuentas, roles y datos de jugadores' },
-      { id: 'duenos', label: 'Dueños de sede', icon: Crown, subtitle: 'Asignación de dueños a sedes' },
     ],
   },
   {
     titulo: 'Lugares',
     items: [
-      { id: 'sedes', label: 'Sedes y canchas', icon: Building2, subtitle: 'Sedes, canchas y disponibilidad' },
+      { id: 'sedes', label: 'Sedes', icon: Building2, subtitle: 'Sedes, canchas, responsables y servicio de reservas' },
       { id: 'modalidades', label: 'Modalidades', icon: Settings, subtitle: 'Reglas y formatos de juego' },
     ],
   },
   {
     titulo: 'Negocio',
     items: [
-      { id: 'suscripciones', label: 'Suscripciones', icon: CreditCard, subtitle: 'Planes y pagos de sedes' },
       { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, subtitle: 'Conversaciones y leads', href: '/admin/whatsapp', accent: '#22c55e' },
     ],
   },
@@ -148,10 +143,8 @@ export function AdminPage() {
             {active === 'torneos' && <FairpadelPanel />}
             {active === 'circuitos' && <CircuitosManager />}
             {active === 'usuarios' && <UserRoleManager />}
-            {active === 'duenos' && <SedesDuenosManager />}
-            {active === 'sedes' && <SedesManager />}
+            {active === 'sedes' && <CentroDeSedes />}
             {active === 'modalidades' && <ModalidadesManager />}
-            {active === 'suscripciones' && <SuscripcionesManager />}
           </motion.div>
         </main>
       </div>

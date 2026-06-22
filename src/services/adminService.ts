@@ -125,6 +125,7 @@ export interface Cancha {
   nombre: string;
   tipo: string;
   tieneLuz: boolean;
+  cubierta?: boolean;
   activa: boolean;
   sedeId: string;
   notas?: string;
@@ -134,13 +135,15 @@ export interface CreateCanchaData {
   nombre: string;
   tipo?: string; // Siempre SINTETICO en 2026
   tieneLuz?: boolean;
-  notas?: string; // Opcional: techada, gradas, etc.
+  cubierta?: boolean; // Techada
+  notas?: string; // Opcional: gradas, acceso, etc.
 }
 
 export interface UpdateCanchaData {
   nombre?: string;
   tipo?: string;
   tieneLuz?: boolean;
+  cubierta?: boolean;
   activa?: boolean;
   notas?: string;
 }
