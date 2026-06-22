@@ -93,6 +93,12 @@ export const rankingsService = {
     return response.data;
   },
 
+  // Recalcula TODO el circuito desde cero (todas las categorías, motor nuevo)
+  recalcularCircuitoCompleto: async (circuitoId: string) => {
+    const response = await api.post(`/rankings/admin/recalcular-circuito-completo/${circuitoId}`);
+    return response.data;
+  },
+
   // Admin - Ascensos
   getAscensosPendientes: async () => {
     const response = await api.get('/rankings/admin/ascensos-pendientes');

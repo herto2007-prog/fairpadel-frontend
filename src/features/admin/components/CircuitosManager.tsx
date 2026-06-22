@@ -404,24 +404,7 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   });
 
   // Recalcular ranking
-  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([]);
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
   const [recalculando, setRecalculando] = useState(false);
-
-  useEffect(() => {
-    loadCategorias();
-  }, []);
-
-  const loadCategorias = async () => {
-    try {
-      const res = await circuitosService.getCategorias();
-      if (res?.success && Array.isArray(res.data)) {
-        setCategorias(res.data);
-      }
-    } catch (error) {
-      // Silencioso
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -444,18 +427,14 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
   };
 
   const handleRecalcular = async () => {
-    if (!categoriaSeleccionada) {
-      showError('Error', 'Seleccioná una categoría para recalcular');
-      return;
-    }
     setRecalculando(true);
     try {
-      await rankingsService.recalcularRankingCircuito(
-        circuito.id,
-        categoriaSeleccionada,
-        circuito.temporada,
+      const res = await rankingsService.recalcularCircuitoCompleto(circuito.id);
+      const d = res.data || {};
+      showSuccess(
+        'Ranking recalculado',
+        `${d.torneosRecalculados ?? 0} torneo(s) y ${d.categoriasRecalculadas ?? 0} categoría(s) recalculadas.`,
       );
-      showSuccess('Recalculado', 'Ranking del circuito actualizado para la categoría seleccionada');
     } catch (error) {
       showError('Error', 'No se pudo recalcular el ranking');
     } finally {
@@ -590,31 +569,16 @@ function GeneralTab({ circuito, onUpdated }: { circuito: Circuito; onUpdated: ()
           Recalcular Ranking
         </h4>
         <p className="text-sm text-gray-400 mb-4">
-          Si modificaste multiplicadores o puntos válidos de los torneos, recalculá el ranking del circuito para una categoría específica.
+          Rehace el ranking del circuito desde cero, con todos sus torneos finalizados y todas las categorías. Usalo si agregaste/sacaste torneos o corregiste un resultado.
         </p>
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">Categoría</label>
-            <select
-              value={categoriaSeleccionada}
-              onChange={(e) => setCategoriaSeleccionada(e.target.value)}
-              className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="">Seleccionar categoría...</option>
-              {categorias.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleRecalcular}
-            disabled={recalculando || !categoriaSeleccionada}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            {recalculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Recalcular
-          </button>
-        </div>
+        <button
+          onClick={handleRecalcular}
+          disabled={recalculando}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          {recalculando ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          Recalcular ranking del circuito
+        </button>
       </div>
     </div>
   );
@@ -949,7 +913,6 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
     ciudad: 'Asunción',
     temporada: new Date().getFullYear().toString(),
     colorPrimario: '#df2531',
-    multiplicadorGlobal: 1.0,
   });
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1085,20 +1048,6 @@ function NuevoCircuitoForm({ onSuccess }: { onSuccess: () => void }) {
             required
           />
         </div>
-      </div>
-
-      {/* Multiplicador Global */}
-      <div>
-        <label className="text-sm text-gray-400 block mb-1">Multiplicador Global de Puntos</label>
-        <input
-          type="number"
-          step="0.1"
-          value={formData.multiplicadorGlobal}
-          onChange={(e) => setFormData({ ...formData, multiplicadorGlobal: parseFloat(e.target.value) })}
-          className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white"
-          min={0.1}
-        />
-        <p className="text-xs text-gray-500 mt-1">Multiplica todos los puntos de los torneos del circuito (ej: 1.5 = 50% más)</p>
       </div>
 
       {/* Color */}
