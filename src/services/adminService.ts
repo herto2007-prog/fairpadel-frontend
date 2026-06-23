@@ -43,6 +43,38 @@ export interface InscripcionActiva {
   jugador2?: { id: string; nombre: string; apellido: string };
 }
 
+export interface RankingItem {
+  id: string;
+  tipoRanking: string;
+  alcance: string;
+  genero: string;
+  puntosTotales: number;
+  posicion: number;
+  torneosJugados: number;
+  victorias: number;
+  derrotas: number;
+  porcentajeVictorias: string | null;
+  rachaActual: number;
+  mejorPosicion: number | null;
+  campeonatos: number;
+  temporada: string;
+}
+
+export interface PuntosItem {
+  id: string;
+  posicionFinal: string;
+  puntosGanados: number;
+  fechaTorneo: string;
+  tournament: { nombre: string };
+  category: { nombre: string };
+}
+
+export interface FichaJugador {
+  inscripciones: InscripcionActiva[];
+  rankings: RankingItem[];
+  historialPuntos: PuntosItem[];
+}
+
 export interface HistorialCategoriaItem {
   id: string;
   userId: string;
@@ -206,6 +238,8 @@ export const adminService = {
     api.put(`/admin/users/${userId}`, data).then(r => r.data),
   setUserPassword: (userId: string, password: string) =>
     api.post(`/admin/users/${userId}/set-password`, { password }).then(r => r.data),
+  getUserFicha: (userId: string): Promise<{ success: boolean; data: FichaJugador }> =>
+    api.get(`/admin/users/${userId}/ficha`).then(r => r.data),
   getUserInscripcionesActivas: (userId: string) =>
     api.get(`/admin/users/${userId}/inscripciones-activas`).then(r => r.data),
   getUserHistorialCategorias: (userId: string) =>

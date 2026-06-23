@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import {
   User, Trophy, CalendarDays, ClipboardList, AlertTriangle,
   ArrowUp, ArrowDown, Minus, Save, Loader2,
-  MapPin, Phone, Cake, Shield, Mail, FileText, Key
+  MapPin, Phone, Cake, Shield, Mail, FileText, Key,
+  BarChart3, Award, TrendingUp
 } from 'lucide-react';
 import { ModalContent } from '../../../components/ui/Modal';
-import { adminService, User as AdminUser, InscripcionActiva, HistorialCategoriaItem } from '../../../services/adminService';
+import { adminService, User as AdminUser, InscripcionActiva, HistorialCategoriaItem, RankingItem, PuntosItem } from '../../../services/adminService';
 import { torneoService } from '../../../services/torneoService';
 import { useToast } from '../../../components/ui/ToastProvider';
 
@@ -17,12 +18,13 @@ interface Props {
   onUpdate: (updatedUser: AdminUser) => void;
 }
 
-type TabId = 'perfil' | 'categoria' | 'inscripciones' | 'historial';
+type TabId = 'perfil' | 'categoria' | 'inscripciones' | 'ranking' | 'historial';
 
 const TABS: { id: TabId; label: string; icon: typeof User }[] = [
   { id: 'perfil', label: 'Perfil', icon: User },
   { id: 'categoria', label: 'Categoría', icon: Trophy },
-  { id: 'inscripciones', label: 'En curso', icon: CalendarDays },
+  { id: 'inscripciones', label: 'Torneos', icon: CalendarDays },
+  { id: 'ranking', label: 'Ranking', icon: BarChart3 },
   { id: 'historial', label: 'Historial', icon: ClipboardList },
 ];
 
@@ -35,6 +37,8 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
   const [saving, setSaving] = useState(false);
   const [categorias, setCategorias] = useState<Array<{ id: string; nombre: string; tipo: string; orden: number }>>([]);
   const [inscripciones, setInscripciones] = useState<InscripcionActiva[]>([]);
+  const [rankings, setRankings] = useState<RankingItem[]>([]);
+  const [puntos, setPuntos] = useState<PuntosItem[]>([]);
   const [historial, setHistorial] = useState<HistorialCategoriaItem[]>([]);
 
   // Form state
@@ -82,15 +86,17 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
     const load = async () => {
       setLoading(true);
       try {
-        const [cats, insc, hist] = await Promise.all([
+        const [cats, ficha, hist] = await Promise.all([
           // Sin filtro de género: el endpoint filtra por tipoCategoria (no género).
           // Traemos todas y filtramos por género del lado del cliente (categoriasFiltradas).
           torneoService.getCategories(),
-          adminService.getUserInscripcionesActivas(user.id),
+          adminService.getUserFicha(user.id),
           adminService.getUserHistorialCategorias(user.id),
         ]);
         setCategorias(cats);
-        setInscripciones(insc.data || []);
+        setInscripciones(ficha.data.inscripciones || []);
+        setRankings(ficha.data.rankings || []);
+        setPuntos(ficha.data.historialPuntos || []);
         setHistorial(hist.data || []);
       } catch (err) {
         showError('Error', 'No se pudieron cargar los datos del jugador');
@@ -479,7 +485,7 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                 {inscripciones.length === 0 ? (
                   <div className="text-center py-8 text-gray-400 text-sm">
                     <CalendarDays className="w-10 h-10 mx-auto mb-2 text-gray-600" />
-                    No tiene inscripciones en torneos en curso
+                    No tiene inscripciones en ningún torneo
                   </div>
                 ) : (
                   inscripciones.map((ins) => (
@@ -497,6 +503,80 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                       </span>
                     </div>
                   ))
+                )}
+              </div>
+            )}
+
+            {/* TAB: RANKING */}
+            {activeTab === 'ranking' && (
+              <div className="space-y-4">
+                {rankings.length === 0 && puntos.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    <BarChart3 className="w-10 h-10 mx-auto mb-2 text-gray-600" />
+                    Sin actividad de ranking todavía
+                  </div>
+                ) : (
+                  <>
+                    {rankings.map((r) => (
+                      <div key={r.id} className="bg-[#151921] border border-white/5 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Award className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium text-white">
+                            {r.alcance} · {r.genero.toLowerCase()}
+                          </span>
+                          <span className="ml-auto text-xs text-gray-500">Temporada {r.temporada}</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div>
+                            <p className="text-xs text-gray-500">Posición</p>
+                            <p className="text-lg font-bold text-white">#{r.posicion}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Puntos</p>
+                            <p className="text-lg font-bold text-primary">{r.puntosTotales}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Torneos</p>
+                            <p className="text-lg font-bold text-white">{r.torneosJugados}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">V / D</p>
+                            <p className="text-lg font-bold text-white">{r.victorias} / {r.derrotas}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/5 text-xs text-gray-400">
+                          {r.porcentajeVictorias != null && (
+                            <span>Efectividad: <span className="text-white font-medium">{Math.round(Number(r.porcentajeVictorias))}%</span></span>
+                          )}
+                          {r.campeonatos > 0 && (
+                            <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> {r.campeonatos} título{r.campeonatos > 1 ? 's' : ''}</span>
+                          )}
+                          {r.rachaActual !== 0 && (
+                            <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-green-400" /> Racha {r.rachaActual}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {puntos.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 mt-2">Puntos por torneo</p>
+                        <div className="space-y-2">
+                          {puntos.map((p) => (
+                            <div key={p.id} className="bg-[#151921] border border-white/5 rounded-xl p-3 flex items-center justify-between">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{p.tournament.nombre}</p>
+                                <p className="text-xs text-gray-400">{p.category.nombre} · {p.posicionFinal} · {p.fechaTorneo}</p>
+                              </div>
+                              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary whitespace-nowrap">
+                                +{p.puntosGanados} pts
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
