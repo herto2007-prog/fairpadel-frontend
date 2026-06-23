@@ -21,6 +21,10 @@ export interface User {
 }
 
 export interface UpdateUserAdminData {
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  documento?: string;
   categoriaActualId?: string;
   telefono?: string;
   ciudad?: string;
@@ -200,6 +204,8 @@ export const adminService = {
     api.post(`/admin/users/${userId}/whatsapp/confirmar-consentimiento`).then(r => r.data),
   updateUser: (userId: string, data: UpdateUserAdminData) =>
     api.put(`/admin/users/${userId}`, data).then(r => r.data),
+  setUserPassword: (userId: string, password: string) =>
+    api.post(`/admin/users/${userId}/set-password`, { password }).then(r => r.data),
   getUserInscripcionesActivas: (userId: string) =>
     api.get(`/admin/users/${userId}/inscripciones-activas`).then(r => r.data),
   getUserHistorialCategorias: (userId: string) =>

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   User, Trophy, CalendarDays, ClipboardList, AlertTriangle,
   ArrowUp, ArrowDown, Minus, Save, Loader2,
-  MapPin, Phone, Cake, Shield, Mail, FileText
+  MapPin, Phone, Cake, Shield, Mail, FileText, Key
 } from 'lucide-react';
 import { ModalContent } from '../../../components/ui/Modal';
 import { adminService, User as AdminUser, InscripcionActiva, HistorialCategoriaItem } from '../../../services/adminService';
@@ -39,6 +39,10 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
 
   // Form state
   const [form, setForm] = useState({
+    nombre: user.nombre || '',
+    apellido: user.apellido || '',
+    email: user.email || '',
+    documento: user.documento || '',
     telefono: user.telefono || '',
     ciudad: user.ciudad || '',
     fechaNacimiento: user.fechaNacimiento || '',
@@ -47,6 +51,8 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
     categoriaActualId: user.categoriaActual?.id || '',
     motivoCambioCategoria: '',
   });
+  const [pwd, setPwd] = useState('');
+  const [savingPwd, setSavingPwd] = useState(false);
 
   const [advertencias, setAdvertencias] = useState<{ inscripciones: InscripcionActiva[]; ascensosPendientes: any[] } | null>(null);
   const [confirmarFuerza, setConfirmarFuerza] = useState(false);
@@ -58,7 +64,12 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
     setActiveTab('perfil');
     setAdvertencias(null);
     setConfirmarFuerza(false);
+    setPwd('');
     setForm({
+      nombre: user.nombre || '',
+      apellido: user.apellido || '',
+      email: user.email || '',
+      documento: user.documento || '',
       telefono: user.telefono || '',
       ciudad: user.ciudad || '',
       fechaNacimiento: user.fechaNacimiento || '',
@@ -72,7 +83,9 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
       setLoading(true);
       try {
         const [cats, insc, hist] = await Promise.all([
-          torneoService.getCategories(user.genero),
+          // Sin filtro de género: el endpoint filtra por tipoCategoria (no género).
+          // Traemos todas y filtramos por género del lado del cliente (categoriasFiltradas).
+          torneoService.getCategories(),
           adminService.getUserInscripcionesActivas(user.id),
           adminService.getUserHistorialCategorias(user.id),
         ]);
@@ -99,6 +112,10 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
     setSaving(true);
     try {
       const payload: any = {};
+      if (form.nombre.trim() && form.nombre.trim() !== user.nombre) payload.nombre = form.nombre.trim();
+      if (form.apellido.trim() && form.apellido.trim() !== user.apellido) payload.apellido = form.apellido.trim();
+      if (form.email.trim() !== (user.email || '')) payload.email = form.email.trim();
+      if (form.documento.trim() !== (user.documento || '')) payload.documento = form.documento.trim();
       if (form.telefono !== (user.telefono || '')) payload.telefono = form.telefono || undefined;
       if (form.ciudad !== (user.ciudad || '')) payload.ciudad = form.ciudad || undefined;
       if (form.fechaNacimiento !== (user.fechaNacimiento || '')) payload.fechaNacimiento = form.fechaNacimiento || undefined;
@@ -134,6 +151,23 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
       showError('Error', msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSetPassword = async () => {
+    if (pwd.length < 6) {
+      showError('Contraseña corta', 'Debe tener al menos 6 caracteres');
+      return;
+    }
+    setSavingPwd(true);
+    try {
+      await adminService.setUserPassword(user.id, pwd);
+      showSuccess('Contraseña actualizada', `Ya podés pasarle la nueva clave a ${user.nombre}`);
+      setPwd('');
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo actualizar la contraseña');
+    } finally {
+      setSavingPwd(false);
     }
   };
 
@@ -225,9 +259,21 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                       <User className="w-3 h-3" /> Nombre
                     </label>
                     <input
-                      value={`${user.nombre} ${user.apellido}`}
-                      disabled
-                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+                      value={form.nombre}
+                      onChange={(e) => handleChange('nombre', e.target.value)}
+                      placeholder="Nombre"
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-primary outline-none transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-400 flex items-center gap-1">
+                      <User className="w-3 h-3" /> Apellido
+                    </label>
+                    <input
+                      value={form.apellido}
+                      onChange={(e) => handleChange('apellido', e.target.value)}
+                      placeholder="Apellido"
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-primary outline-none transition-colors"
                     />
                   </div>
                   <div className="space-y-1">
@@ -235,9 +281,11 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                       <Mail className="w-3 h-3" /> Email
                     </label>
                     <input
-                      value={user.email}
-                      disabled
-                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      placeholder="correo@ejemplo.com"
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-primary outline-none transition-colors"
                     />
                   </div>
                   <div className="space-y-1">
@@ -245,9 +293,10 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                       <FileText className="w-3 h-3" /> Documento
                     </label>
                     <input
-                      value={user.documento}
-                      disabled
-                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+                      value={form.documento}
+                      onChange={(e) => handleChange('documento', e.target.value)}
+                      placeholder="Cédula"
+                      className="w-full bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-primary outline-none transition-colors"
                     />
                   </div>
                   <div className="space-y-1">
@@ -310,6 +359,32 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Contraseña manual (soporte) */}
+                <div className="border-t border-white/10 pt-4 space-y-2">
+                  <label className="text-xs text-gray-400 flex items-center gap-1">
+                    <Shield className="w-3 h-3" /> Contraseña (soporte)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      value={pwd}
+                      onChange={(e) => setPwd(e.target.value)}
+                      placeholder="Nueva contraseña (mín. 6)"
+                      className="flex-1 bg-[#151921] border border-[#232838] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-primary outline-none transition-colors"
+                    />
+                    <button
+                      onClick={handleSetPassword}
+                      disabled={savingPwd || pwd.length < 6}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-xl transition-colors disabled:opacity-50 text-sm whitespace-nowrap"
+                    >
+                      {savingPwd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                      Setear
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Cambia la contraseña al instante (no envía email). Pasásela vos al jugador.
+                  </p>
                 </div>
               </div>
             )}
