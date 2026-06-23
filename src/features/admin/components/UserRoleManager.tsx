@@ -332,176 +332,151 @@ export function UserRoleManager() {
         </div>
       </div>
 
-      {/* Lista de usuarios */}
-      <div className="glass rounded-3xl overflow-hidden">
-        <div className="max-h-[65vh] overflow-y-auto lg:max-h-none">
-          <div className="">
-          <table className="w-full">
-            <thead className="bg-[#151921] border-b border-[#232838]">
-              <tr>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Usuario</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">ID</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Documento</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Categoría</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Estado</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">WhatsApp</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Roles</th>
-                <th className="text-left px-3 py-2.5 text-xs font-medium text-gray-400">Soporte</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#232838]">
-              {filteredUsers.map((user) => (
-                <motion.tr
-                  key={user.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="hover:bg-[#151921]/50 transition-colors"
-                >
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden relative flex-shrink-0">
-                        {user.fotoUrl ? (
-                          <img
-                            src={user.fotoUrl}
-                            alt={`${user.nombre} ${user.apellido}`}
-                            className="w-full h-full object-cover absolute inset-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        <span className={`text-primary font-semibold relative z-10 ${user.fotoUrl ? 'hidden' : ''}`}>
-                          {user.nombre.charAt(0)}{user.apellido.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">{user.nombre} {user.apellido}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs text-gray-400 bg-[#232838] px-2 py-1 rounded truncate max-w-[80px]">
-                        {user.id}
-                      </code>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(user.id)}
-                        className="p-1.5 hover:bg-[#232838] rounded-lg transition-colors text-gray-400 hover:text-white"
-                        title="Copiar ID"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-400">{user.documento}</td>
-                  <td className="px-3 py-2.5">
-                    <span className="px-3 py-1 bg-[#232838] rounded-full text-sm text-gray-300">
-                      {user.categoriaActual?.nombre || 'Sin categoría'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className={`px-3 py-1 rounded-full text-sm border ${getEstadoBadge(user.estado)}`}>
-                      {user.estado.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {getWhatsappBadge(user)}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex gap-2 flex-wrap">
-                      {ROLES.map((role) => {
-                        const hasRole = user.roles.includes(role.id);
-                        const Icon = role.icon;
-                        
-                        return (
-                          <button
-                            key={role.id}
-                            onClick={() => toggleRole(user.id, role.id, user.roles)}
-                            disabled={saving === user.id}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              hasRole
-                                ? `${role.color} text-white shadow-lg`
-                                : 'bg-[#232838] text-gray-400 hover:bg-[#2a3042]'
-                            } ${saving === user.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Icon className="w-4 h-4" />
-                            {role.label}
-                            {hasRole && <CheckCircle className="w-3 h-3 ml-1" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {user.estado === 'NO_VERIFICADO' && (
-                        <button
-                          onClick={() => handleResendVerification(user.email)}
-                          disabled={soporteLoading === `verify-${user.email}`}
-                          className="flex items-center gap-1 px-2 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                          title="Reenviar email de verificación"
-                        >
-                          {soporteLoading === `verify-${user.email}` ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Mail className="w-3.5 h-3.5" />
-                          )}
-                          Verificar
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handlePasswordReset(user.email)}
-                        disabled={soporteLoading === `reset-${user.email}`}
-                        className="flex items-center gap-1 px-2 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                        title="Enviar recuperación de contraseña"
-                      >
-                        {soporteLoading === `reset-${user.email}` ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Key className="w-3.5 h-3.5" />
-                        )}
-                        Reset pass
-                      </button>
-                      {user.telefono && user.consentWhatsappStatus !== 'CONFIRMADO' && (
-                        <button
-                          onClick={() => handleConfirmarWhatsApp(user.id)}
-                          disabled={whatsappLoading === user.id}
-                          className="flex items-center gap-1 px-2 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                          title="Confirmar consentimiento de WhatsApp manualmente"
-                        >
-                          {whatsappLoading === user.id ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <MessageCircle className="w-3.5 h-3.5" />
-                          )}
-                          WhatsApp
-                        </button>
-                      )}
-                      <button
-                        onClick={() => { setSelectedUser(user); setEditModalOpen(true); }}
-                        className="flex items-center gap-1 px-2 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg text-xs font-medium transition-colors"
-                        title="Editar jugador"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Editar
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
+      {/* Lista de usuarios — tarjetas */}
+      {filteredUsers.length === 0 ? (
+        <div className="glass rounded-3xl p-12 text-center">
+          <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400">No se encontraron usuarios</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredUsers.map((user) => (
+            <motion.div
+              key={user.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass rounded-2xl p-5 flex flex-col gap-4"
+            >
+              {/* Encabezado: foto + nombre/email + estado */}
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden relative flex-shrink-0">
+                  {user.fotoUrl ? (
+                    <img
+                      src={user.fotoUrl}
+                      alt={`${user.nombre} ${user.apellido}`}
+                      className="w-full h-full object-cover absolute inset-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className={`text-primary font-semibold relative z-10 ${user.fotoUrl ? 'hidden' : ''}`}>
+                    {user.nombre.charAt(0)}{user.apellido.charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white truncate">{user.nombre} {user.apellido}</p>
+                  <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs border whitespace-nowrap ${getEstadoBadge(user.estado)}`}>
+                  {user.estado.replace(/_/g, ' ')}
+                </span>
+              </div>
 
-        {filteredUsers.length === 0 && (
-          <div className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No se encontraron usuarios</p>
-          </div>
-        )}
-      </div>
+              {/* Datos: documento, categoría, ID, WhatsApp */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 bg-[#232838] rounded-full text-gray-300">
+                  {user.categoriaActual?.nombre || 'Sin categoría'}
+                </span>
+                <span className="px-2.5 py-1 bg-[#232838] rounded-full text-gray-400">
+                  Doc: {user.documento || '—'}
+                </span>
+                {getWhatsappBadge(user)}
+                <button
+                  onClick={() => navigator.clipboard.writeText(user.id)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#232838] hover:bg-[#2a3042] rounded-full text-gray-400 hover:text-white transition-colors"
+                  title={`Copiar ID: ${user.id}`}
+                >
+                  <code className="truncate max-w-[80px]">{user.id}</code>
+                  <Copy className="w-3.5 h-3.5 flex-shrink-0" />
+                </button>
+              </div>
+
+              {/* Roles */}
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-2">Roles</p>
+                <div className="flex gap-2 flex-wrap">
+                  {ROLES.map((role) => {
+                    const hasRole = user.roles.includes(role.id);
+                    const Icon = role.icon;
+                    return (
+                      <button
+                        key={role.id}
+                        onClick={() => toggleRole(user.id, role.id, user.roles)}
+                        disabled={saving === user.id}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                          hasRole
+                            ? `${role.color} text-white shadow-lg`
+                            : 'bg-[#232838] text-gray-400 hover:bg-[#2a3042]'
+                        } ${saving === user.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {role.label}
+                        {hasRole && <CheckCircle className="w-3 h-3" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Acciones de soporte */}
+              <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-[#232838] mt-auto">
+                <button
+                  onClick={() => { setSelectedUser(user); setEditModalOpen(true); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg text-xs font-medium transition-colors"
+                  title="Editar jugador"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar
+                </button>
+                <button
+                  onClick={() => handlePasswordReset(user.email)}
+                  disabled={soporteLoading === `reset-${user.email}`}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                  title="Enviar recuperación de contraseña"
+                >
+                  {soporteLoading === `reset-${user.email}` ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Key className="w-3.5 h-3.5" />
+                  )}
+                  Reset pass
+                </button>
+                {user.estado === 'NO_VERIFICADO' && (
+                  <button
+                    onClick={() => handleResendVerification(user.email)}
+                    disabled={soporteLoading === `verify-${user.email}`}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    title="Reenviar email de verificación"
+                  >
+                    {soporteLoading === `verify-${user.email}` ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5" />
+                    )}
+                    Verificar
+                  </button>
+                )}
+                {user.telefono && user.consentWhatsappStatus !== 'CONFIRMADO' && (
+                  <button
+                    onClick={() => handleConfirmarWhatsApp(user.id)}
+                    disabled={whatsappLoading === user.id}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    title="Confirmar consentimiento de WhatsApp manualmente"
+                  >
+                    {whatsappLoading === user.id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    )}
+                    WhatsApp
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {selectedUser && (
         <EditarJugadorModal
