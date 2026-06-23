@@ -202,6 +202,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
               )}
 
+              {/* Ingresar (deslogueado) */}
+              {!user && (
+                <Link
+                  to="/login"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#df2531] hover:bg-[#c41f2a] text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <User size={16} />
+                  Ingresar
+                </Link>
+              )}
+
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -298,6 +309,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     Cerrar sesión
                   </button>
                 </>
+              )}
+              {!user && (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-[#df2531] text-white"
+                >
+                  <User size={20} />
+                  Ingresar
+                </Link>
               )}
             </div>
           </div>

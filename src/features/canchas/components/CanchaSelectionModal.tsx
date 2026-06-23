@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Clock, Sun, ChevronRight, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, MapPin, Clock, Sun, ChevronRight, Check, LogIn } from 'lucide-react';
 import { useToast } from '../../../components/ui/ToastProvider';
+import { useAuth } from '../../../features/auth/context/AuthContext';
 import { alquileresService } from '../../../services/alquileresService';
 
 interface Slot {
@@ -54,6 +56,8 @@ export function CanchaSelectionModal({
   onReservaSuccess,
 }: CanchaSelectionModalProps) {
   const { showSuccess, showError } = useToast();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [selectedCancha, setSelectedCancha] = useState<Cancha | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [loading, setLoading] = useState(false);
@@ -322,28 +326,44 @@ export function CanchaSelectionModal({
                     </div>
                   </div>
 
-                  {/* Botón confirmar */}
-                  <button
-                    onClick={handleReservar}
-                    disabled={loading}
-                    className="w-full py-4 bg-[#df2531] hover:bg-[#df2531]/80 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        <Check size={20} />
-                        Confirmar reserva
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-center text-white/40 text-sm mt-4">
-                    Al confirmar, aceptas los términos y condiciones de reserva
-                  </p>
+                  {/* Botón confirmar (o login si no está logueado) */}
+                  {isAuthenticated ? (
+                    <>
+                      <button
+                        onClick={handleReservar}
+                        disabled={loading}
+                        className="w-full py-4 bg-[#df2531] hover:bg-[#df2531]/80 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <Check size={20} />
+                            Confirmar reserva
+                          </>
+                        )}
+                      </button>
+                      <p className="text-center text-white/40 text-sm mt-4">
+                        Al confirmar, aceptas los términos y condiciones de reserva
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => navigate('/login', { state: { from: { pathname: '/sedes' } } })}
+                        className="w-full py-4 bg-[#df2531] hover:bg-[#df2531]/80 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <LogIn size={20} />
+                        Iniciá sesión para reservar
+                      </button>
+                      <p className="text-center text-white/40 text-sm mt-4">
+                        Necesitás una cuenta (gratis) para confirmar tu reserva
+                      </p>
+                    </>
+                  )}
                 </>
               )}
             </div>

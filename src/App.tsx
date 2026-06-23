@@ -149,6 +149,9 @@ function App() {
               <Route path="/torneo/:id/fixture" element={<PublicBracketPage />} />
               <Route path="/americano" element={<AmericanosListPage />} />
               <Route path="/americano/:id" element={<AmericanoDetailPage />} />
+              {/* Canchas/Reservas - públicas (mirar sin login; login al reservar) */}
+              <Route path="/sedes" element={<CanchasPage />} />
+              <Route path="/sedes/:id" element={<SedeDetailPage />} />
             </Route>
 
             {/* Mockup Perfil - Temporal */}
@@ -191,10 +194,6 @@ function App() {
               {/* Circuitos */}
               <Route path="/circuitos" element={<CircuitosListPage />} />
               <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
-
-              {/* Canchas/Reservas (V2) */}
-              <Route path="/sedes" element={<CanchasPage />} />
-              <Route path="/sedes/:id" element={<SedeDetailPage />} />
 
               {/* Jugador - Mi agenda (¿cuándo juego?) */}
               <Route path="/mi-agenda" element={<MiAgendaPage />} />
