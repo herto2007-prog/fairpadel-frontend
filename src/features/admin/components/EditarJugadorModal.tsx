@@ -4,7 +4,7 @@ import {
   User, Trophy, CalendarDays, ClipboardList, AlertTriangle,
   ArrowUp, ArrowDown, Minus, Save, Loader2,
   MapPin, Phone, Cake, Shield, Mail, FileText, Key,
-  BarChart3, Award, TrendingUp
+  BarChart3, Award, TrendingUp, Power, RotateCcw, Trash2
 } from 'lucide-react';
 import { ModalContent } from '../../../components/ui/Modal';
 import { adminService, User as AdminUser, InscripcionActiva, HistorialCategoriaItem, RankingItem, PuntosItem } from '../../../services/adminService';
@@ -16,6 +16,7 @@ interface Props {
   onClose: () => void;
   user: AdminUser;
   onUpdate: (updatedUser: AdminUser) => void;
+  onDelete?: (userId: string) => void;
 }
 
 type TabId = 'perfil' | 'categoria' | 'inscripciones' | 'ranking' | 'historial';
@@ -30,7 +31,7 @@ const TABS: { id: TabId; label: string; icon: typeof User }[] = [
 
 const ESTADOS = ['ACTIVO', 'NO_VERIFICADO', 'INACTIVO', 'SUSPENDIDO'] as const;
 
-export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
+export function EditarJugadorModal({ isOpen, onClose, user, onUpdate, onDelete }: Props) {
   const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('perfil');
   const [loading, setLoading] = useState(false);
@@ -57,6 +58,7 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
   });
   const [pwd, setPwd] = useState('');
   const [savingPwd, setSavingPwd] = useState(false);
+  const [estadoBusy, setEstadoBusy] = useState(false);
 
   const [advertencias, setAdvertencias] = useState<{ inscripciones: InscripcionActiva[]; ascensosPendientes: any[] } | null>(null);
   const [confirmarFuerza, setConfirmarFuerza] = useState(false);
@@ -174,6 +176,44 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
       showError('Error', err.response?.data?.message || 'No se pudo actualizar la contraseña');
     } finally {
       setSavingPwd(false);
+    }
+  };
+
+  const esInactivo = user.estado === 'INACTIVO';
+  const esVacia = inscripciones.length === 0 && rankings.length === 0 && puntos.length === 0;
+
+  const toggleActivo = async () => {
+    const nuevo = esInactivo ? 'ACTIVO' : 'INACTIVO';
+    const accion = esInactivo ? 'reactivar' : 'desactivar';
+    if (!window.confirm(`¿Seguro que querés ${accion} la cuenta de ${user.nombre} ${user.apellido}?`)) return;
+    setEstadoBusy(true);
+    try {
+      const res = await adminService.updateUser(user.id, { estado: nuevo });
+      showSuccess(
+        esInactivo ? 'Cuenta reactivada' : 'Cuenta desactivada',
+        esInactivo ? 'El jugador puede volver a iniciar sesión' : 'No puede iniciar sesión; su historial se conserva',
+      );
+      onUpdate(res.user);
+      onClose();
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo cambiar el estado');
+    } finally {
+      setEstadoBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Vas a ELIMINAR definitivamente la cuenta de ${user.nombre} ${user.apellido}. Solo es posible porque no tiene historial. ¿Continuar?`)) return;
+    setEstadoBusy(true);
+    try {
+      await adminService.deleteUser(user.id);
+      showSuccess('Cuenta eliminada', 'La cuenta vacía fue eliminada');
+      onDelete?.(user.id);
+      onClose();
+    } catch (err: any) {
+      showError('No se pudo eliminar', err.response?.data?.message || 'La cuenta tiene historial: desactivala en su lugar');
+    } finally {
+      setEstadoBusy(false);
     }
   };
 
@@ -390,6 +430,43 @@ export function EditarJugadorModal({ isOpen, onClose, user, onUpdate }: Props) {
                   </div>
                   <p className="text-xs text-gray-500">
                     Cambia la contraseña al instante (no envía email). Pasásela vos al jugador.
+                  </p>
+                </div>
+
+                {/* Cuenta: desactivar (soft) / reactivar / eliminar (solo vacía) */}
+                <div className="border-t border-white/10 pt-4 space-y-2">
+                  <label className="text-xs text-gray-400 flex items-center gap-1">
+                    <Power className="w-3 h-3" /> Cuenta
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={toggleActivo}
+                      disabled={estadoBusy}
+                      className={`flex items-center gap-2 px-4 py-2 font-medium rounded-xl transition-colors disabled:opacity-50 text-sm ${
+                        esInactivo
+                          ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
+                          : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400'
+                      }`}
+                    >
+                      {estadoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : esInactivo ? <RotateCcw className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                      {esInactivo ? 'Reactivar cuenta' : 'Desactivar cuenta'}
+                    </button>
+                    {esVacia && (
+                      <button
+                        onClick={handleDelete}
+                        disabled={estadoBusy}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-xl transition-colors disabled:opacity-50 text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar definitivamente
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    <strong className="text-gray-400">Desactivar</strong> conserva todo el historial (el jugador no puede iniciar sesión; reversible).{' '}
+                    {esVacia
+                      ? 'Como esta cuenta no tiene historial, también podés eliminarla del todo.'
+                      : 'Eliminar del todo no está disponible: la cuenta tiene historial.'}
                   </p>
                 </div>
               </div>

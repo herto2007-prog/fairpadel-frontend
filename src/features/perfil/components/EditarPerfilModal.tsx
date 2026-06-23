@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, MapPin, Camera, Lock, Instagram, Facebook, Loader2, Check, Calendar } from 'lucide-react';
+import { X, User, MapPin, Camera, Lock, Instagram, Facebook, Loader2, Check, Calendar, Power } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
-import { PerfilJugador } from '../perfilService';
+import { PerfilJugador, perfilService } from '../perfilService';
+import { useAuth } from '../../auth/context/AuthContext';
 import { CityAutocomplete } from '../../../components/ui/CityAutocomplete';
 import { AvatarEditorModal } from '../../../components/upload/AvatarEditor';
 
@@ -16,8 +18,11 @@ interface EditarPerfilModalProps {
 type TabType = 'general' | 'fotos' | 'seguridad';
 
 export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarPerfilModalProps) {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('general');
   const [loading, setLoading] = useState(false);
+  const [desactivando, setDesactivando] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +65,20 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
       setError(err.response?.data?.message || 'Error actualizando perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDesactivarCuenta = async () => {
+    if (!window.confirm('¿Seguro que querés desactivar tu cuenta? No vas a poder iniciar sesión. Tu historial se conserva y podés pedir que la reactivemos cuando quieras.')) return;
+    setDesactivando(true);
+    setError(null);
+    try {
+      await perfilService.desactivarCuenta();
+      await logout();
+      navigate('/login');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'No se pudo desactivar la cuenta');
+      setDesactivando(false);
     }
   };
 
@@ -319,6 +338,21 @@ export function EditarPerfilModal({ isOpen, onClose, perfil, onUpdate }: EditarP
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Cambios'}
                 </button>
+
+                {/* Desactivar mi cuenta (soft-delete) */}
+                <div className="mt-6 pt-5 border-t border-white/10">
+                  <button
+                    onClick={handleDesactivarCuenta}
+                    disabled={desactivando}
+                    className="w-full py-2.5 bg-white/5 hover:bg-red-500/15 disabled:opacity-50 text-white/50 hover:text-red-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {desactivando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
+                    Desactivar mi cuenta
+                  </button>
+                  <p className="text-xs text-white/30 text-center mt-2">
+                    Tu historial se conserva. Para volver, escribinos y la reactivamos.
+                  </p>
+                </div>
               </div>
             )}
 

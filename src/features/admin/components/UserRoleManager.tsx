@@ -487,6 +487,9 @@ export function UserRoleManager() {
           onUpdate={(updatedUser) => {
             setUsers(users.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
           }}
+          onDelete={(userId) => {
+            setUsers(users.filter(u => u.id !== userId));
+          }}
         />
       )}
     </div>

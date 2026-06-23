@@ -154,4 +154,12 @@ export const perfilService = {
     const response = await api.post('/users/profile/whatsapp/revocar');
     return response.data;
   },
+
+  /**
+   * Desactiva (soft-delete) la propia cuenta. El historial se conserva.
+   */
+  desactivarCuenta: async (): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post('/users/profile/desactivar');
+    return response.data;
+  },
 };
