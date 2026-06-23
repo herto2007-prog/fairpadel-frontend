@@ -65,11 +65,12 @@ export function UserRoleManager() {
   };
 
   const filteredUsers = users.filter(user => {
+    const q = search.toLowerCase();
     const matchSearch =
-      user.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      user.apellido.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.documento.includes(search);
+      (user.nombre ?? '').toLowerCase().includes(q) ||
+      (user.apellido ?? '').toLowerCase().includes(q) ||
+      (user.email ?? '').toLowerCase().includes(q) ||
+      (user.documento ?? '').includes(search);
     const matchEstado = filtroEstado === 'TODOS' || user.estado === filtroEstado;
     return matchSearch && matchEstado;
   });
