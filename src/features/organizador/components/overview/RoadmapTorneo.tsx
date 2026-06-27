@@ -69,25 +69,20 @@ export function RoadmapTorneo({
   const confirmadas = inscripciones.confirmadas;
 
   // Datos públicos que el borrador difiere y se exigen para salir público.
-  // (ciudad/costo/flyer se cargan en el modal; sede se asigna en Canchas.)
+  // (ciudad/costo/flyer/sede se cargan TODOS en el modal "Completar datos".)
   const datosFaltan: string[] = [];
   if (!torneo.ciudad) datosFaltan.push('ciudad');
   if (!torneo.sede) datosFaltan.push('sede');
   if (!torneo.costoInscripcion || torneo.costoInscripcion <= 0) datosFaltan.push('costo');
   if (!torneo.flyerUrl) datosFaltan.push('flyer');
   const datosCompletos = datosFaltan.length === 0;
-  const soloFaltaSede = datosFaltan.length === 1 && datosFaltan[0] === 'sede';
 
   // CTAs del paso "Abrir inscripciones" según qué falte.
   const ctaAbrir: CTA[] = [];
   if (!yaPublico && !pendienteAprob) {
     if (!datosCompletos) {
-      if (!soloFaltaSede) {
-        ctaAbrir.push({ label: 'Completar datos', icon: ClipboardList, onClick: onCompletarDatos, primary: true });
-      }
-      if (datosFaltan.includes('sede')) {
-        ctaAbrir.push({ label: 'Asignar sede', icon: Trophy, onClick: () => onTabChange('cuadro'), primary: soloFaltaSede });
-      }
+      // Todo (incluida la sede) se completa en el mismo modal.
+      ctaAbrir.push({ label: 'Completar datos', icon: ClipboardList, onClick: onCompletarDatos, primary: true });
     } else {
       ctaAbrir.push({
         label: torneo.publicaDirecto ? 'Publicar' : rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',

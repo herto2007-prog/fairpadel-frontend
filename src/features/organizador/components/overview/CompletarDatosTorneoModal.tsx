@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Upload, Loader2, MapPin, DollarSign, Image as ImageIcon,
-  Type as TypeIcon, FileText, Calendar, Tags, ChevronDown, ChevronUp, Lock,
+  Type as TypeIcon, FileText, Calendar, Tags, ChevronDown, ChevronUp, Lock, Building2,
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { CityAutocomplete } from '../../../../components/ui/CityAutocomplete';
@@ -52,6 +52,11 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
   const [costo, setCosto] = useState<number>(0);
   const [flyerUrl, setFlyerUrl] = useState('');
 
+  // Sede principal (se asigna acá mismo, sin ir a la pestaña Cuadro)
+  const [sedes, setSedes] = useState<{ id: string; nombre: string; ciudad?: string }[]>([]);
+  const [sedeId, setSedeId] = useState('');
+  const [guardandoSede, setGuardandoSede] = useState(false);
+
   // Categorías
   const [disponibles, setDisponibles] = useState<CategoriaDisponible[]>([]);
   const [actuales, setActuales] = useState<CategoriaActual[]>([]);
@@ -68,10 +73,12 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
   const cargar = async () => {
     setCargando(true);
     try {
-      const [tRes, catActRes, catDispRes] = await Promise.all([
+      const [tRes, catActRes, catDispRes, sedesRes, sedesAsigRes] = await Promise.all([
         api.get(`/admin/torneos/${tournamentId}`),
         api.get(`/admin/torneos/${tournamentId}/categorias`).catch(() => ({ data: { categorias: [] } })),
         api.get('/admin/torneos/datos/wizard').catch(() => ({ data: { categorias: [] } })),
+        api.get('/admin/sedes?activas=true').catch(() => ({ data: { sedes: [] } })),
+        api.get(`/admin/torneos/${tournamentId}/sedes`).catch(() => ({ data: { sedes: [] } })),
       ]);
 
       const t = tRes.data;
@@ -84,6 +91,11 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       setCosto(t.costoInscripcion || 0);
       setFlyerUrl(t.flyerUrl || '');
       setEstado(t.estado || 'BORRADOR');
+
+      setSedes(sedesRes.data.sedes || []);
+      // Sede principal actual: la del torneo (sedePrincipal/sedeId) o, si no,
+      // la primera asignada.
+      setSedeId(t.sedePrincipal?.id || t.sedeId || sedesAsigRes.data.sedes?.[0]?.id || '');
 
       const act: CategoriaActual[] = (catActRes.data.categorias || []).map((c: any) => ({
         categoryId: c.categoryId,
@@ -130,6 +142,27 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       else next.add(categoryId);
       return next;
     });
+  };
+
+  // Asignar / cambiar la sede principal del torneo (acción inmediata, como el flyer).
+  // El backend deja la 1ra sede como principal y copia sus canchas; cambiar usa /cambiar.
+  const elegirSede = async (nuevoId: string) => {
+    if (!nuevoId || nuevoId === sedeId || guardandoSede) return;
+    const anterior = sedeId;
+    setGuardandoSede(true);
+    try {
+      if (!anterior) {
+        await api.post(`/admin/torneos/${tournamentId}/sedes`, { sedeId: nuevoId });
+      } else {
+        await api.put(`/admin/torneos/${tournamentId}/sedes/${anterior}/cambiar`, { nuevaSedeId: nuevoId });
+      }
+      setSedeId(nuevoId);
+      showSuccess('Sede asignada', 'Se asignó la sede y se copiaron sus canchas.');
+    } catch (err: any) {
+      showError('Error', err.response?.data?.message || 'No se pudo asignar la sede');
+    } finally {
+      setGuardandoSede(false);
+    }
   };
 
   const subirFlyer = async (file: File) => {
@@ -362,6 +395,27 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
                   <MapPin className="w-4 h-4 text-[#df2531]" /> Ciudad
                 </label>
                 <CityAutocomplete value={ciudad} onChange={setCiudad} placeholder="Buscar ciudad..." />
+              </div>
+
+              {/* Sede principal — se asigna acá mismo (antes había que ir a Cuadro) */}
+              <div>
+                <label className="text-sm text-white mb-1.5 flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-[#df2531]" /> Sede {guardandoSede && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />}
+                </label>
+                <select
+                  value={sedeId}
+                  onChange={(e) => elegirSede(e.target.value)}
+                  disabled={guardandoSede}
+                  className="w-full bg-[#0B0E14] border border-white/10 rounded-lg py-2.5 px-3 text-white focus:outline-none focus:border-[#df2531]/50 disabled:opacity-50"
+                >
+                  <option value="">Elegí una sede…</option>
+                  {sedes.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nombre}{s.ciudad ? ` · ${s.ciudad}` : ''}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-gray-500 mt-1.5">
+                  Al elegirla se copian sus canchas. Para varias sedes o ajustar canchas, usá la pestaña Cuadro.
+                </p>
               </div>
 
               {/* Costo */}
