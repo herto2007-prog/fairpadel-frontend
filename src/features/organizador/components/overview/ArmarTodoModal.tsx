@@ -88,9 +88,13 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
   }, [tournamentId, fechaInicio, fechaFin]);
 
   // Cada día genera según su horario típico (semana 18–23, finde 14–23).
+  // Igual que el motor: cuenta todo partido que EMPIEZA antes de la hora tope,
+  // aunque termine después (la hora fin es tope para empezar, no para terminar)
+  // → redondeo hacia arriba, no hacia abajo.
   const generables = [...diasSel].reduce((acc, f) => {
     const h = horarioPorTipoDia(f);
-    const slots = Math.max(0, Math.floor((aMin(h.horaFin) - aMin(h.horaInicio)) / (minutosSlot || 1))) * canchas.length;
+    const minutos = aMin(h.horaFin) - aMin(h.horaInicio);
+    const slots = Math.max(0, Math.ceil(minutos / (minutosSlot || 1))) * canchas.length;
     return acc + slots;
   }, 0);
   const alcanza = necesarios == null || generables >= necesarios;
