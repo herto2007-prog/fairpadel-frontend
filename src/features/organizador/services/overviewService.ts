@@ -102,6 +102,17 @@ export const overviewService = {
   },
 
   /**
+   * Pre-chequeo informativo antes de "Marcar terminado": qué queda sin terminar
+   * (partidos / categorías) y la comisión que se fijaría. No cambia nada.
+   */
+  preFinalizacion: async (
+    tournamentId: string,
+  ): Promise<{ categoriasTotal: number; categoriasSinFinalizar: number; partidosPendientes: number; comisionEstimada: number; jugadores: number }> => {
+    const { data } = await api.get(`/admin/torneos/${tournamentId}/pre-finalizacion`);
+    return data.data;
+  },
+
+  /**
    * Envía el torneo (BORRADOR o RECHAZADO) a aprobación del admin. NO publica:
    * lo deja PENDIENTE_APROBACION. El admin lo aprueba y recién ahí sale público.
    * Lo usa el paso "Abrir inscripciones" del roadmap.

@@ -75,13 +75,31 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
   };
 
   const handleFinalizar = async () => {
+    // Pre-chequeo informativo (no bloquea): qué queda sin terminar + comisión.
+    let aviso = '';
+    let hayPendientes = false;
+    try {
+      const pre = await overviewService.preFinalizacion(tournamentId);
+      const partes: string[] = [];
+      if (pre.partidosPendientes > 0) partes.push(`${pre.partidosPendientes} partido(s) sin jugar`);
+      if (pre.categoriasSinFinalizar > 0) partes.push(`${pre.categoriasSinFinalizar} de ${pre.categoriasTotal} categoría(s) sin finalizar`);
+      if (partes.length > 0) {
+        hayPendientes = true;
+        aviso += `Atención: todavía quedan ${partes.join(' y ')}. `;
+      }
+      if (pre.comisionEstimada > 0) {
+        aviso += `Se fijará la comisión en Gs ${pre.comisionEstimada.toLocaleString('es-PY')} (${pre.jugadores} jugador(es) que jugaron). `;
+      }
+    } catch {
+      /* si el pre-chequeo falla, seguimos con el mensaje genérico */
+    }
+
     const ok = await confirm({
       title: 'Marcar torneo como terminado',
-      message:
-        'Se cerrará el torneo y se calculará la comisión de FairPadel según los jugadores que realmente jugaron. Esto no se puede deshacer. ¿Continuar?',
-      confirmText: 'Marcar terminado',
+      message: `${aviso}Se cerrará el torneo y la comisión queda firme. Esto no se puede deshacer. ¿Continuar?`,
+      confirmText: 'Marcar terminado igual',
       cancelText: 'Cancelar',
-      variant: 'warning',
+      variant: hayPendientes ? 'danger' : 'warning',
     });
     if (!ok) return;
     try {
