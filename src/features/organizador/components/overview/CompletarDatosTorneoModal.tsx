@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   X, Upload, Loader2, MapPin, DollarSign, Image as ImageIcon,
   Type as TypeIcon, FileText, Calendar, Tags, ChevronDown, ChevronUp, Lock,
@@ -6,6 +6,8 @@ import {
 import { api } from '../../../../services/api';
 import { CityAutocomplete } from '../../../../components/ui/CityAutocomplete';
 import { useToast } from '../../../../components/ui/ToastProvider';
+import { useConfirm } from '../../../../hooks/useConfirm';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 
 interface Props {
   tournamentId: string;
@@ -34,6 +36,8 @@ interface CategoriaActual {
 // segura: agregar es libre, quitar solo si no tienen inscriptos ni cuadro.
 export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Props) {
   const { showSuccess, showError } = useToast();
+  const { confirm, ...confirmState } = useConfirm();
+  const initialRef = useRef<string>('');
 
   const [cargando, setCargando] = useState(true);
   const [estado, setEstado] = useState<string>('BORRADOR');
@@ -90,6 +94,12 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       setActuales(act);
       setSeleccionadas(new Set(act.map((c) => c.categoryId)));
       setDisponibles(catDispRes.data.categorias || []);
+      // Snapshot inicial para detectar cambios sin guardar (#5).
+      initialRef.current = JSON.stringify({
+        nombre: t.nombre || '', descripcion: t.descripcion || '', fechaInicio: t.fechaInicio || '',
+        fechaFin: t.fechaFin || '', fechaLimite: t.fechaLimiteInscr || '', ciudad: t.ciudad || '',
+        costo: t.costoInscripcion || 0, flyerUrl: t.flyerUrl || '', cats: act.map((c) => c.categoryId).sort(),
+      });
     } catch (err: any) {
       showError('Error', 'No se pudieron cargar los datos del torneo');
     } finally {
@@ -124,6 +134,10 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
 
   const subirFlyer = async (file: File) => {
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Imagen muy grande', 'El flyer no puede superar 5 MB. Probá con una imagen más liviana.');
+      return;
+    }
     setSubiendo(true);
     const fd = new FormData();
     fd.append('image', file);
@@ -147,6 +161,30 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
     return false;
   };
 
+  // Cambios sin guardar (#5): comparar el estado actual con el snapshot inicial.
+  const haycambios = () => {
+    if (!initialRef.current) return false;
+    const ahora = JSON.stringify({
+      nombre, descripcion, fechaInicio, fechaFin, fechaLimite, ciudad, costo, flyerUrl,
+      cats: Array.from(seleccionadas).sort(),
+    });
+    return ahora !== initialRef.current;
+  };
+
+  const intentarCerrar = async () => {
+    if (haycambios()) {
+      const ok = await confirm({
+        title: '¿Salir sin guardar?',
+        message: 'Tenés cambios sin guardar que se van a perder.',
+        confirmText: 'Salir igual',
+        cancelText: 'Seguir editando',
+        variant: 'danger',
+      });
+      if (!ok) return;
+    }
+    onClose();
+  };
+
   const guardar = async () => {
     if (!nombre.trim()) {
       showError('Falta el nombre', 'El torneo necesita un nombre.');
@@ -159,6 +197,17 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
     if (fechaLimite && fechaInicio && fechaLimite > fechaInicio) {
       showError('Cierre de inscripciones inválido', 'El cierre de inscripciones no puede ser posterior al inicio del torneo.');
       return;
+    }
+    // Sanity de costo (#6): atajar un cero de más sin bloquear costos legítimos.
+    if (costo > 2000000) {
+      const ok = await confirm({
+        title: '¿El costo es correcto?',
+        message: `Pusiste Gs ${costo.toLocaleString('es-PY')} de inscripción. ¿Es así?`,
+        confirmText: 'Sí, es correcto',
+        cancelText: 'Revisar',
+        variant: 'warning',
+      });
+      if (!ok) return;
     }
     setGuardando(true);
     try {
@@ -214,7 +263,7 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       <div className="bg-[#151921] border border-[#232838] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[#232838] sticky top-0 bg-[#151921] z-10">
           <h3 className="font-bold text-white">Editar torneo</h3>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white">
+          <button onClick={intentarCerrar} className="p-1 text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -414,7 +463,7 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
             </div>
 
             <div className="flex items-center justify-end gap-2 p-5 border-t border-[#232838] sticky bottom-0 bg-[#151921]">
-              <button onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white">
+              <button onClick={intentarCerrar} className="px-4 py-2 text-sm text-gray-400 hover:text-white">
                 Cancelar
               </button>
               <button
@@ -429,6 +478,16 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
           </>
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={confirmState.close}
+        onConfirm={confirmState.handleConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   );
 }
