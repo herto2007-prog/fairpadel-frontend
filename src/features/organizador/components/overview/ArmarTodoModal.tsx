@@ -4,6 +4,7 @@ import { api } from '../../../../services/api';
 import { canchasSorteoService } from '../../services/canchasSorteoService';
 import { useToast } from '../../../../components/ui/ToastProvider';
 import { formatDatePY } from '../../../../utils/date';
+import { horarioPorTipoDia } from '../../utils/horarioDia';
 
 interface Props {
   tournamentId: string;
@@ -42,8 +43,6 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
   const [diasConfig, setDiasConfig] = useState<Set<string>>(new Set());
   const [necesarios, setNecesarios] = useState<number | null>(null);
 
-  const [horaInicio, setHoraInicio] = useState('18:00');
-  const [horaFin, setHoraFin] = useState('23:00');
   const minutosSlot = 70; // default del backend (no se envía; sirve para estimar capacidad)
   const [diasSel, setDiasSel] = useState<Set<string>>(new Set());
 
@@ -81,8 +80,12 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
     })();
   }, [tournamentId, fechaInicio, fechaFin]);
 
-  const slotsPorDia = Math.max(0, Math.floor((aMin(horaFin) - aMin(horaInicio)) / (minutosSlot || 1))) * canchas.length;
-  const generables = slotsPorDia * diasSel.size;
+  // Cada día genera según su horario típico (semana 18–23, finde 14–23).
+  const generables = [...diasSel].reduce((acc, f) => {
+    const h = horarioPorTipoDia(f);
+    const slots = Math.max(0, Math.floor((aMin(h.horaFin) - aMin(h.horaInicio)) / (minutosSlot || 1))) * canchas.length;
+    return acc + slots;
+  }, 0);
   const alcanza = necesarios == null || generables >= necesarios;
 
   const toggleDia = (f: string) => setDiasSel((prev) => { const n = new Set(prev); n.has(f) ? n.delete(f) : n.add(f); return n; });
@@ -91,15 +94,16 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
     if (canchas.length === 0) { showError('Sin canchas', 'Asigná una sede primero (en Completar datos).'); return; }
     if (elegibles.length === 0) { showError('Nada para sortear', 'Ninguna categoría llegó al mínimo de parejas.'); return; }
     if (diasSel.size === 0) { showError('Sin días', 'Elegí al menos un día.'); return; }
-    if (aMin(horaFin) - aMin(horaInicio) < minutosSlot) { showError('Horario corto', 'El horario no alcanza ni para un partido.'); return; }
 
     setProcesando(true);
     try {
-      // 1. Crear los días seleccionados que falten configurar.
+      // 1. Crear los días seleccionados que falten configurar, cada uno con su
+      //    horario típico (semana 18–23, finde 14–23).
       const aCrear = [...diasSel].filter((f) => !diasConfig.has(f)).sort();
       for (const fecha of aCrear) {
+        const h = horarioPorTipoDia(fecha);
         await canchasSorteoService.configurarDiaJuego({
-          tournamentId, fecha, horaInicio, horaFin, canchasIds: canchas.map((c) => c.id),
+          tournamentId, fecha, horaInicio: h.horaInicio, horaFin: h.horaFin, canchasIds: canchas.map((c) => c.id),
         });
       }
       // 2. Cerrar inscripciones y sortear las categorías elegibles.
@@ -150,18 +154,10 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
               </div>
             ) : (
               <>
-                {/* Horario de juego */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-400 flex items-center gap-1 mb-1"><Clock className="w-3.5 h-3.5" /> Desde</label>
-                    <input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)}
-                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg py-2 px-2 text-white text-sm [&::-webkit-calendar-picker-indicator]:invert" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 flex items-center gap-1 mb-1"><Clock className="w-3.5 h-3.5" /> Hasta</label>
-                    <input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)}
-                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg py-2 px-2 text-white text-sm [&::-webkit-calendar-picker-indicator]:invert" />
-                  </div>
+                {/* Horario por tipo de día (no un horario único para todos) */}
+                <div className="bg-[#0B0E14] border border-white/10 rounded-lg p-3 text-xs text-gray-400 flex items-start gap-2">
+                  <Clock className="w-4 h-4 mt-0.5 text-[#df2531] shrink-0" />
+                  <span>Cada día usa su horario típico: <span className="text-white">semana 18–23</span>, <span className="text-white">finde 14–23</span>. Lo afinás día por día en “Configurar y sortear”.</span>
                 </div>
 
                 {/* Días */}

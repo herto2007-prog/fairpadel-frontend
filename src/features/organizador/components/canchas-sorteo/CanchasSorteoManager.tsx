@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronDown, ChevronUp, Trophy, Calendar, 
+import {
+  ChevronDown, ChevronUp, Trophy, Calendar,
   CheckCircle2, MapPin, Plus, X, Trash2,
-  Shuffle, ArrowUp, ArrowDown, GripVertical
+  Shuffle, ArrowUp, ArrowDown, GripVertical, Clock, Pencil
 } from 'lucide-react';
 import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
@@ -11,6 +11,7 @@ import { useToast } from '../../../../components/ui/ToastProvider';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { formatDatePY } from '../../../../utils/date';
+import { esFinDeSemana, horarioPorTipoDia, FASES_BRACKET, faseLabel, parseFases } from '../../utils/horarioDia';
 
 interface Props {
   tournamentId: string;
@@ -34,6 +35,7 @@ interface DiaConfigurado {
   slotsLibres: number;
   slotsOcupados: number;
   canchas: number;
+  fasesPermitidas?: string | null;
 }
 
 interface Cancha {
@@ -75,21 +77,14 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   // Estado Paso 2: Días y Canchas
   const [dias, setDias] = useState<DiaConfigurado[]>([]);
   const [canchas, setCanchas] = useState<Cancha[]>([]);
-  const [canchasInicializadas, setCanchasInicializadas] = useState(false);
-  const [nuevoDia, setNuevoDia] = useState({
-    fecha: '',
+
+  // Edición inline de un día (horario + fases). Una franja por día.
+  const [diaEditando, setDiaEditando] = useState<string | null>(null);
+  const [edit, setEdit] = useState<{ horaInicio: string; horaFin: string; fases: string[] }>({
     horaInicio: '18:00',
     horaFin: '23:00',
-    canchasIds: [] as string[],
+    fases: [],
   });
-
-  // Inicializar canchasIds UNA SOLA VEZ cuando se cargan las canchas
-  useEffect(() => {
-    if (canchas.length > 0 && !canchasInicializadas) {
-      setNuevoDia(prev => ({ ...prev, canchasIds: canchas.map(c => c.id) }));
-      setCanchasInicializadas(true);
-    }
-  }, [canchas, canchasInicializadas]);
 
   // Recalcular capacidad cuando hay categorías o cambian los días
   useEffect(() => {
@@ -253,6 +248,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           slotsLibres: d.slotsLibres || 0,
           slotsOcupados: d.slotsOcupados || 0,
           canchas: d.canchas || 0,
+          fasesPermitidas: d.fasesPermitidas ?? null,
         })));
       }
     } catch (err) {
@@ -279,15 +275,16 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     }
     setLoading(true);
     try {
+      const h = horarioPorTipoDia(fecha);
       const response = await canchasSorteoService.configurarDiaJuego({
         tournamentId,
         fecha,
-        horaInicio: '18:00',
-        horaFin: '23:00',
+        horaInicio: h.horaInicio,
+        horaFin: h.horaFin,
         canchasIds: canchas.map(c => c.id),
       });
       if (response.success) {
-        showSuccess('Día agregado', `${formatDatePY(fecha)} • ${response.data.slotsGenerados} slots`);
+        showSuccess('Día agregado', `${formatDatePY(fecha)} • ${h.horaInicio}–${h.horaFin}`);
         await loadDiasConfigurados();
       }
     } catch (err: any) {
@@ -308,11 +305,12 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
     setLoading(true);
     try {
       for (const fecha of faltantes) {
+        const h = horarioPorTipoDia(fecha);
         await canchasSorteoService.configurarDiaJuego({
           tournamentId,
           fecha,
-          horaInicio: '18:00',
-          horaFin: '23:00',
+          horaInicio: h.horaInicio,
+          horaFin: h.horaFin,
           canchasIds: canchas.map(c => c.id),
         });
       }
@@ -326,50 +324,50 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
   };
 
   // ============================================
-  // PASO 2: Agregar día con selección de canchas
+  // PASO 2: Editar un día (horario + fases) — inline
   // ============================================
-  const agregarDia = async () => {
-    if (!nuevoDia.fecha) {
-      showError('Datos incompletos', 'Selecciona una fecha');
-      return;
-    }
-    if (canchas.length === 0) {
-      showError('Sin canchas', 'No hay canchas disponibles. Asigna una sede primero.');
-      return;
-    }
-    if (nuevoDia.canchasIds.length === 0) {
-      showError('Sin canchas seleccionadas', 'Selecciona al menos una cancha para este día');
-      return;
-    }
+  const abrirEdicion = (dia: DiaConfigurado) => {
+    setDiaEditando(dia.fecha);
+    setEdit({
+      horaInicio: dia.horaInicio,
+      horaFin: dia.horaFin,
+      fases: parseFases(dia.fasesPermitidas),
+    });
+  };
 
+  const cancelarEdicion = () => setDiaEditando(null);
+
+  const toggleFaseEdit = (f: string) => {
+    setEdit((prev) => ({
+      ...prev,
+      fases: prev.fases.includes(f) ? prev.fases.filter((x) => x !== f) : [...prev.fases, f],
+    }));
+  };
+
+  // Guardar = borrar el día y recrearlo con el horario/fases nuevos. Garantiza
+  // slots limpios. Si ya tiene partidos programados, el back bloquea el borrado
+  // (no se puede editar un día con su sorteo encima — es lo correcto).
+  const guardarEdicionDia = async (dia: DiaConfigurado) => {
+    if (edit.horaFin <= edit.horaInicio) {
+      showError('Horario inválido', 'La hora de fin debe ser posterior a la de inicio.');
+      return;
+    }
     setLoading(true);
     try {
-      // Usar solo las canchas seleccionadas para este día
-      const response = await canchasSorteoService.configurarDiaJuego({
+      await api.delete(`/admin/canchas-sorteo/dias/${dia.id}`);
+      await canchasSorteoService.configurarDiaJuego({
         tournamentId,
-        fecha: nuevoDia.fecha,
-        horaInicio: nuevoDia.horaInicio,
-        horaFin: nuevoDia.horaFin,
-        canchasIds: nuevoDia.canchasIds, // Solo las seleccionadas
+        fecha: dia.fecha,
+        horaInicio: edit.horaInicio,
+        horaFin: edit.horaFin,
+        canchasIds: canchas.map((c) => c.id),
+        fasesPermitidas: edit.fases.length ? edit.fases : undefined,
       });
-      
-      if (response.success) {
-        showSuccess(
-          'Día configurado', 
-          `${nuevoDia.fecha} • ${response.data.slotsGenerados} slots generados`
-        );
-        await loadDiasConfigurados();
-        // Resetear formulario con todas las canchas seleccionadas por defecto
-        setNuevoDia({
-          fecha: '',
-          horaInicio: '18:00',
-          horaFin: '23:00',
-          canchasIds: canchas.map(c => c.id),
-        });
-      }
+      showSuccess('Día actualizado', `${formatDatePY(dia.fecha)} • ${edit.horaInicio}–${edit.horaFin}`);
+      setDiaEditando(null);
+      await loadDiasConfigurados();
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Error agregando día';
-      showError('Error al agregar día', msg);
+      showError('No se pudo actualizar', err.response?.data?.message || 'Error actualizando el día');
     } finally {
       setLoading(false);
     }
@@ -601,7 +599,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
           Canchas y Sorteo
         </h2>
         <p className="text-gray-400 text-sm">
-          MVP: Asigna sede, agrega días y sortea
+          Asigná la sede, configurá los días de juego y sorteá las categorías.
         </p>
       </div>
 
@@ -910,7 +908,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                   )}
                 </div>
 
-                {/* Días del torneo — propuestos desde el rango inicio–fin */}
+                {/* Días del torneo — una sola lista: agregás, ajustás horario y fases por día */}
                 {fechasDelRango.length > 0 && (
                   <div className="bg-[#0B0E14] rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
@@ -921,7 +919,7 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                       {fechasDelRango.some(f => !dias.some(d => d.fecha === f)) && (
                         <button
                           onClick={agregarTodosLosDias}
-                          disabled={loading}
+                          disabled={loading || canchas.length === 0}
                           className="text-xs px-3 py-1.5 bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg transition-colors disabled:opacity-50"
                         >
                           + Agregar todos
@@ -929,188 +927,157 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      Tocá un día para agregarlo (18:00–23:00, todas las canchas). Después podés ajustar horario y canchas.
+                      Cada día arranca con el horario típico (semana 18–23, finde 14–23). Tocá un día para ajustar su horario y las fases que se juegan.
                     </p>
-                    <div className="flex flex-wrap gap-2">
+
+                    {canchas.length === 0 && (
+                      <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p className="text-sm text-yellow-400">Asigná una sede primero para poder agregar días.</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
                       {fechasDelRango.map((fecha) => {
-                        const ya = dias.some(d => d.fecha === fecha);
+                        const dia = dias.find((d) => d.fecha === fecha);
+                        const finde = esFinDeSemana(fecha);
+                        const tipo = finde ? 'finde' : 'semana';
+                        const tipoClass = finde ? 'bg-amber-500/15 text-amber-300' : 'bg-[#df2531]/15 text-[#f0997b]';
+
+                        if (!dia) {
+                          const sug = horarioPorTipoDia(fecha);
+                          return (
+                            <div key={fecha} className="flex items-center justify-between bg-white/[0.02] border border-white/10 rounded-lg p-3">
+                              <div className="flex items-center gap-3">
+                                <Calendar className="w-4 h-4 text-gray-500" />
+                                <div>
+                                  <div className="text-sm text-gray-300">{formatDatePY(fecha)}</div>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-500">
+                                    <Clock className="w-3 h-3" /> {sug.horaInicio}–{sug.horaFin}
+                                    <span className={`px-1.5 py-0.5 rounded-full ${tipoClass}`}>{tipo}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => agregarDiaRapido(fecha)}
+                                disabled={loading || canchas.length === 0}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-[#df2531]/40 text-[#df2531] hover:bg-[#df2531]/10 disabled:opacity-50 flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Agregar
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        const editando = diaEditando === fecha;
+                        const fases = parseFases(dia.fasesPermitidas);
+                        const franjas = dia.slotsLibres + dia.slotsOcupados;
                         return (
-                          <button
-                            key={fecha}
-                            onClick={() => !ya && agregarDiaRapido(fecha)}
-                            disabled={loading || ya}
-                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
-                              ya
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-default'
-                                : 'bg-white/[0.03] border-white/10 text-gray-300 hover:border-[#df2531]/50 hover:text-white disabled:opacity-50'
-                            }`}
-                          >
-                            {ya ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                            {formatDatePY(fecha)}
-                          </button>
+                          <div key={fecha} className={`bg-white/[0.02] border rounded-lg p-3 ${editando ? 'border-[#df2531]' : 'border-white/10'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="text-sm text-white flex items-center gap-2">
+                                    {formatDatePY(fecha)}
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tipoClass}`}>{tipo}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400 flex-wrap">
+                                    <Clock className="w-3 h-3" /> {dia.horaInicio}–{dia.horaFin}
+                                    <span className="text-gray-600">·</span>
+                                    <span className={franjas === 0 ? 'text-yellow-400' : ''}>{franjas} franjas</span>
+                                  </div>
+                                  {fases.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {fases.map((f) => (
+                                        <span key={f} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#534AB7]/25 text-[#CECBF6]">{faseLabel(f)}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => (editando ? cancelarEdicion() : abrirEdicion(dia))}
+                                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                                  title={editando ? 'Cerrar' : 'Editar horario y fases'}
+                                >
+                                  {editando ? <X className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                                </button>
+                                <button
+                                  onClick={() => eliminarDia(dia.id, dia.fecha)}
+                                  disabled={loading}
+                                  className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                  title="Quitar día"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {editando && (
+                              <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-xs text-gray-400 block mb-1">Desde</label>
+                                    <input
+                                      type="time"
+                                      value={edit.horaInicio}
+                                      onChange={(e) => setEdit({ ...edit, horaInicio: e.target.value })}
+                                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white text-sm [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-gray-400 block mb-1">Hasta</label>
+                                    <input
+                                      type="time"
+                                      value={edit.horaFin}
+                                      onChange={(e) => setEdit({ ...edit, horaFin: e.target.value })}
+                                      className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-3 py-2 text-white text-sm [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-400 block mb-1.5">Fases que se juegan este día</label>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {FASES_BRACKET.map((f) => {
+                                      const on = edit.fases.includes(f);
+                                      return (
+                                        <button
+                                          key={f}
+                                          onClick={() => toggleFaseEdit(f)}
+                                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
+                                            on
+                                              ? 'bg-[#534AB7]/25 border-[#534AB7]/60 text-[#CECBF6]'
+                                              : 'bg-white/[0.02] border-white/10 text-gray-400 hover:border-white/30'
+                                          }`}
+                                        >
+                                          {faseLabel(f)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  <p className="text-[11px] text-gray-600 mt-1.5">
+                                    Si no marcás ninguna, el sistema reparte las fases según el día de la semana.
+                                  </p>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={cancelarEdicion} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">Cancelar</button>
+                                  <button
+                                    onClick={() => guardarEdicionDia(dia)}
+                                    disabled={loading}
+                                    className="px-4 py-1.5 text-xs bg-[#df2531] hover:bg-[#df2531]/80 text-white rounded-lg disabled:opacity-50"
+                                  >
+                                    {loading ? 'Guardando…' : 'Guardar'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
-
-                {/* Días ya configurados */}
-                {dias.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-400">Días configurados:</h4>
-                    <div className="grid gap-2">
-                      {dias.map((dia) => (
-                        <div key={dia.id} className="bg-white/[0.03] rounded-lg p-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="w-4 h-4 text-[#df2531]" />
-                            <span className="text-white font-medium">
-                              {formatDatePY(dia.fecha)}
-                            </span>
-                            <span className="text-gray-500 text-sm">
-                              {dia.horaInicio} - {dia.horaFin}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-sm ${dia.slotsLibres === 0 ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                              {dia.slotsLibres === 0 && dia.slotsOcupados === 0 
-                                ? 'Sin slots - elimina y vuelve a agregar' 
-                                : `${dia.slotsLibres} libres / ${dia.slotsOcupados} ocupados`}
-                            </span>
-                            <button
-                              onClick={() => eliminarDia(dia.id, dia.fecha)}
-                              disabled={loading}
-                              className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                              title="Eliminar día"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Formulario para agregar día - MVP Simplificado */}
-                <div className="bg-[#0B0E14] rounded-lg p-4 space-y-4">
-                  <h4 className="text-sm font-medium text-white flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-[#df2531]" />
-                    Agregar nuevo día
-                  </h4>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">Fecha</label>
-                      <input
-                        type="date"
-                        value={nuevoDia.fecha}
-                        onChange={(e) => setNuevoDia({ ...nuevoDia, fecha: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">Hora inicio</label>
-                      <input
-                        type="time"
-                        value={nuevoDia.horaInicio}
-                        onChange={(e) => setNuevoDia({ ...nuevoDia, horaInicio: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-2">Hora fin</label>
-                      <input
-                        type="time"
-                        value={nuevoDia.horaFin}
-                        onChange={(e) => setNuevoDia({ ...nuevoDia, horaFin: e.target.value })}
-                        className="w-full bg-[#0B0E14] border border-white/10 rounded-lg px-4 py-2.5 text-white [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
-      />
-                    </div>
-                  </div>
-
-                  {/* Selector de canchas para este día */}
-                  {canchas.length === 0 ? (
-                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-sm text-yellow-400">
-                        No hay canchas disponibles. Asigna una sede primero.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <label className="text-sm text-gray-400 block">
-                        Canchas disponibles este día 
-                        <span className="text-gray-600 ml-1">
-                          (desmarca las que estén en mantenimiento)
-                        </span>
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {[...canchas].sort((a, b) => {
-                          // Primero ordenar por sede, luego por nombre de cancha
-                          const sedeCompare = a.sede.nombre.localeCompare(b.sede.nombre);
-                          if (sedeCompare !== 0) return sedeCompare;
-                          return a.nombre.localeCompare(b.nombre);
-                        }).map((cancha) => (
-                          <label
-                            key={cancha.id}
-                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                              nuevoDia.canchasIds.includes(cancha.id)
-                                ? 'bg-[#df2531]/10 border-[#df2531]/30'
-                                : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.04]'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={nuevoDia.canchasIds.includes(cancha.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setNuevoDia(prev => ({
-                                    ...prev,
-                                    canchasIds: [...prev.canchasIds, cancha.id]
-                                  }));
-                                } else {
-                                  setNuevoDia(prev => ({
-                                    ...prev,
-                                    canchasIds: prev.canchasIds.filter(id => id !== cancha.id)
-                                  }));
-                                }
-                              }}
-                              className="w-4 h-4 rounded border-white/20 bg-[#0B0E14] text-[#df2531] focus:ring-[#df2531]/50"
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className={`text-sm truncate ${
-                                nuevoDia.canchasIds.includes(cancha.id) ? 'text-white' : 'text-gray-400'
-                              }`}>
-                                {cancha.nombre}
-                              </span>
-                              <span className={`text-[10px] truncate ${
-                                nuevoDia.canchasIds.includes(cancha.id) ? 'text-[#df2531]/70' : 'text-gray-600'
-                              }`}>
-                                {cancha.sede.nombre}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                      {nuevoDia.canchasIds.length === 0 && (
-                        <p className="text-sm text-yellow-400">
-                          Selecciona al menos una cancha
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        {nuevoDia.canchasIds.length} de {canchas.length} canchas seleccionadas • Slots de 70 min
-                      </p>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={agregarDia}
-                    disabled={loading || canchas.length === 0}
-                    className="w-full py-3 bg-[#df2531] hover:bg-[#df2531]/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {loading ? 'Agregando...' : 'Agregar Día'}
-                  </button>
-                </div>
               </div>
             </motion.div>
           )}
