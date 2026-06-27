@@ -20,6 +20,7 @@ export interface TorneoOverview {
     nombre: string;
     ciudad: string;
   };
+  publicaDirecto?: boolean;
   diasHastaInicio: number | null;
 }
 
@@ -117,8 +118,9 @@ export const overviewService = {
    * lo deja PENDIENTE_APROBACION. El admin lo aprueba y recién ahí sale público.
    * Lo usa el paso "Abrir inscripciones" del roadmap.
    */
-  enviarAprobacion: async (tournamentId: string): Promise<void> => {
-    await api.post(`/admin/torneos/${tournamentId}/enviar-aprobacion`);
+  enviarAprobacion: async (tournamentId: string): Promise<{ publicado: boolean }> => {
+    const { data } = await api.post(`/admin/torneos/${tournamentId}/enviar-aprobacion`);
+    return { publicado: !!data?.publicado };
   },
 
   /**

@@ -90,7 +90,7 @@ export function RoadmapTorneo({
       }
     } else {
       ctaAbrir.push({
-        label: rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',
+        label: torneo.publicaDirecto ? 'Publicar' : rechazado ? 'Enviar de nuevo' : 'Enviar a aprobación',
         icon: Send,
         onClick: onEnviarAprobacion,
         primary: true,

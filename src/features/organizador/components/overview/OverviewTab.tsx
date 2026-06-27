@@ -53,19 +53,25 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
   };
 
   const handleEnviarAprobacion = async () => {
+    const directo = !!data?.torneo?.publicaDirecto;
     const ok = await confirm({
-      title: 'Enviar a aprobación',
-      message:
-        'El torneo se enviará a FairPadel para su aprobación. Cuando lo aprueben, quedará público y abierto a inscripciones. ¿Continuar?',
-      confirmText: 'Enviar a aprobación',
+      title: directo ? 'Publicar torneo' : 'Enviar a aprobación',
+      message: directo
+        ? 'Tu torneo se publicará ahora mismo y quedará abierto a inscripciones. ¿Continuar?'
+        : 'El torneo se enviará a FairPadel para su aprobación. Cuando lo aprueben, quedará público y abierto a inscripciones. ¿Continuar?',
+      confirmText: directo ? 'Publicar' : 'Enviar a aprobación',
       cancelText: 'Cancelar',
       variant: 'info',
     });
     if (!ok) return;
     try {
       setEnviando(true);
-      await overviewService.enviarAprobacion(tournamentId);
-      showSuccess('Enviado a aprobación', 'Te avisamos cuando FairPadel lo apruebe.');
+      const { publicado } = await overviewService.enviarAprobacion(tournamentId);
+      if (publicado) {
+        showSuccess('¡Tu torneo ya está público!', 'Ya es visible y recibe inscripciones.');
+      } else {
+        showSuccess('Enviado a aprobación', 'Te avisamos cuando FairPadel lo apruebe.');
+      }
       await loadOverview();
     } catch (error: any) {
       showError('Error', error.response?.data?.message || 'No se pudo enviar a aprobación');
