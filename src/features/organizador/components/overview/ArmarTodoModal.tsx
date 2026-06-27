@@ -54,6 +54,13 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
     () => cats.filter((c) => c.parejas >= c.minimoParejas && !c.fixtureVersionId && !SORTEADOS.includes(c.estado)),
     [cats],
   );
+  // Para dar el mensaje correcto cuando no hay elegibles: distinguir "ya sorteada"
+  // de "le faltan parejas".
+  const yaSorteadas = useMemo(() => cats.filter((c) => !!c.fixtureVersionId || SORTEADOS.includes(c.estado)), [cats]);
+  const bajoMinimo = useMemo(
+    () => cats.filter((c) => !c.fixtureVersionId && !SORTEADOS.includes(c.estado) && c.parejas < c.minimoParejas),
+    [cats],
+  );
 
   useEffect(() => {
     (async () => {
@@ -150,7 +157,11 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
 
             {elegibles.length === 0 ? (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-amber-300 text-sm">
-                Todavía ninguna categoría llegó al mínimo de parejas para sortear.
+                {yaSorteadas.length > 0
+                  ? bajoMinimo.length > 0
+                    ? 'Ya armaste algunas categorías; el resto todavía no llegó al mínimo de parejas para sortear.'
+                    : 'Ya armaste el cuadro de estas categorías. Para verlo o publicarlo, andá a la pestaña Cuadro.'
+                  : 'Todavía ninguna categoría llegó al mínimo de parejas para sortear.'}
               </div>
             ) : (
               <>
