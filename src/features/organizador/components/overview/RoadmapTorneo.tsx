@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import {
   Check, Trophy, Users, Share2, Send, Eye, GitBranch, Flag,
-  PartyPopper, Loader2, ClipboardList,
+  PartyPopper, Loader2, ClipboardList, Sparkles,
 } from 'lucide-react';
 import { OverviewData } from '../../services/overviewService';
 
@@ -38,6 +38,7 @@ interface RoadmapTorneoProps {
   onFinalizar: () => void;
   onCopyLink: () => void;
   onCompletarDatos: () => void;
+  onArmarTodo: () => void;
 }
 
 export function RoadmapTorneo({
@@ -51,6 +52,7 @@ export function RoadmapTorneo({
   onFinalizar,
   onCopyLink,
   onCompletarDatos,
+  onArmarTodo,
 }: RoadmapTorneoProps) {
   const { torneo, progreso, inscripciones } = data;
 
@@ -137,7 +139,12 @@ export function RoadmapTorneo({
           ? 'Falta cargar las canchas y horarios de los partidos'
           : 'Cuadro sorteado y horarios listos',
       done: fixtureOk && dispOk,
-      cta: [{ label: 'Ir al Cuadro', icon: Trophy, onClick: () => onTabChange('cuadro'), primary: true }],
+      cta: !fixtureOk
+        ? [
+            { label: 'Armar automático', icon: Sparkles, onClick: onArmarTodo, primary: true },
+            { label: 'Ir al Cuadro', icon: Trophy, onClick: () => onTabChange('cuadro') },
+          ]
+        : [{ label: 'Ir al Cuadro', icon: Trophy, onClick: () => onTabChange('cuadro'), primary: true }],
     },
     {
       key: 'publicar-cuadro',

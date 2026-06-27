@@ -9,6 +9,7 @@ import {
 import { overviewService, OverviewData, TareaPendiente } from '../../services/overviewService';
 import { formatDatePY } from '../../../../utils/date';
 import { RoadmapTorneo } from './RoadmapTorneo';
+import { ArmarTodoModal } from './ArmarTodoModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -29,6 +30,7 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
   const [finalizando, setFinalizando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [bracketPublicado, setBracketPublicado] = useState(false);
+  const [armarOpen, setArmarOpen] = useState(false);
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
@@ -281,7 +283,18 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
         onFinalizar={handleFinalizar}
         onCopyLink={handleCopyLink}
         onCompletarDatos={() => onEditar?.()}
+        onArmarTodo={() => setArmarOpen(true)}
       />
+
+      {armarOpen && data && (
+        <ArmarTodoModal
+          tournamentId={tournamentId}
+          fechaInicio={data.torneo.fechaInicio}
+          fechaFin={data.torneo.fechaFin}
+          onClose={() => setArmarOpen(false)}
+          onDone={loadOverview}
+        />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
