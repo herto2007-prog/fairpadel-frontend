@@ -43,6 +43,7 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
   const [descripcion, setDescripcion] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
+  const [fechaLimite, setFechaLimite] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [costo, setCosto] = useState<number>(0);
   const [flyerUrl, setFlyerUrl] = useState('');
@@ -74,6 +75,7 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       setDescripcion(t.descripcion || '');
       setFechaInicio(t.fechaInicio || '');
       setFechaFin(t.fechaFin || '');
+      setFechaLimite(t.fechaLimiteInscr || '');
       setCiudad(t.ciudad || '');
       setCosto(t.costoInscripcion || 0);
       setFlyerUrl(t.flyerUrl || '');
@@ -154,6 +156,10 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
       showError('Fechas inválidas', 'La fecha de fin no puede ser anterior a la de inicio.');
       return;
     }
+    if (fechaLimite && fechaInicio && fechaLimite > fechaInicio) {
+      showError('Cierre de inscripciones inválido', 'El cierre de inscripciones no puede ser posterior al inicio del torneo.');
+      return;
+    }
     setGuardando(true);
     try {
       await api.put(`/admin/torneos/${tournamentId}`, {
@@ -161,6 +167,7 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
         descripcion,
         ...(fechaInicio && { fechaInicio }),
         ...(fechaFin && { fechaFin }),
+        ...(fechaLimite && { fechaLimiteInscripcion: fechaLimite }),
         ciudad,
         costoInscripcion: costo,
         flyerUrl,
@@ -282,6 +289,23 @@ export function CompletarDatosTorneoModal({ tournamentId, onClose, onSaved }: Pr
                 </div>
               </div>
               <p className="text-[11px] text-gray-500 -mt-2">El último día es el de las finales (se deriva del fin).</p>
+
+              {/* Cierre de inscripciones */}
+              <div>
+                <label className="text-sm text-white mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-[#df2531]" /> Cierre de inscripciones
+                </label>
+                <input
+                  type="date"
+                  value={fechaLimite}
+                  max={fechaInicio || undefined}
+                  onChange={(e) => setFechaLimite(e.target.value)}
+                  className="w-full bg-[#0B0E14] border border-white/10 rounded-lg py-2.5 px-3 text-white focus:outline-none focus:border-[#df2531]/50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
+                />
+                <p className="text-[11px] text-gray-500 mt-1.5">
+                  Hasta esta fecha la gente puede inscribirse. Si lo dejás vacío, queda hasta el día de inicio. Igual podés cerrar antes a mano cuando sorteés.
+                </p>
+              </div>
 
               {/* Ciudad */}
               <div>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Users, Search, Plus, Download, 
+  Users, Search, Plus, Download,
   Trash2, Phone, Mail, DollarSign,
-  MoreVertical, Eye, CheckCircle, XCircle, Pencil
+  MoreVertical, Eye, CheckCircle, XCircle, Pencil, Lock
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { inscripcionService } from '../../../../services/inscripcionService';
@@ -76,9 +76,13 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
   const [modalEditarInscripcion, setModalEditarInscripcion] = useState<Inscripcion | null>(null);
   const [accionLoading, setAccionLoading] = useState<string | null>(null);
   const [excelLoading, setExcelLoading] = useState(false);
+  // Categorías (tournamentCategory) para poder cerrar inscripciones desde acá.
+  const [cats, setCats] = useState<{ id: string; estado: string; nombre: string }[]>([]);
+  const [cerrandoLote, setCerrandoLote] = useState(false);
 
   useEffect(() => {
     loadInscripciones();
+    loadCategorias();
   }, [tournamentId]);
 
   const loadInscripciones = async () => {
@@ -92,6 +96,47 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
       console.error('Error cargando inscripciones:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      const { data } = await api.get(`/admin/torneos/${tournamentId}/categorias`);
+      const lista = (data.categorias || []).map((c: any) => ({
+        id: c.id,
+        estado: c.estado,
+        nombre: c.nombre || c.category?.nombre || 'Categoría',
+      }));
+      setCats(lista);
+    } catch {
+      setCats([]);
+    }
+  };
+
+  const categoriasAbiertas = cats.filter((c) => c.estado === 'INSCRIPCIONES_ABIERTAS');
+
+  const cerrarInscripciones = async () => {
+    if (categoriasAbiertas.length === 0) return;
+    const nombres = categoriasAbiertas.map((c) => c.nombre).join(', ');
+    const ok = await confirm({
+      title: `¿Cerrar inscripciones?`,
+      message: `Se cerrarán las inscripciones de: ${nombres}. Después podés sortear el cuadro. (Podés reabrir mientras no hayas sorteado.)`,
+      confirmText: 'Cerrar inscripciones',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    setCerrandoLote(true);
+    try {
+      await api.post(`/admin/torneos/${tournamentId}/categorias/cerrar-lote`, {
+        categoriaIds: categoriasAbiertas.map((c) => c.id),
+      });
+      showSuccess('Inscripciones cerradas', `Se cerraron ${categoriasAbiertas.length} categoría(s).`);
+      await loadCategorias();
+    } catch (error: any) {
+      showError('Error', error.response?.data?.message || 'No se pudieron cerrar las inscripciones');
+    } finally {
+      setCerrandoLote(false);
     }
   };
 
@@ -362,6 +407,19 @@ export function InscripcionesManager({ tournamentId }: InscripcionesManagerProps
                   <Download className="w-4 h-4" />
                   {excelLoading ? 'Generando...' : 'Excel'}
                 </button>
+
+                {/* Cerrar inscripciones (solo si hay categorías abiertas) */}
+                {categoriasAbiertas.length > 0 && (
+                  <button
+                    onClick={cerrarInscripciones}
+                    disabled={cerrandoLote}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#0B0E14] hover:bg-[#232838] border border-amber-500/40 text-amber-300 rounded-xl text-sm transition-colors disabled:opacity-50"
+                    title="Cerrar las inscripciones para poder sortear"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {cerrandoLote ? 'Cerrando...' : `Cerrar inscripciones (${categoriasAbiertas.length})`}
+                  </button>
+                )}
 
                 {/* Inscripción manual */}
                 <button
