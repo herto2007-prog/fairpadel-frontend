@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown, ChevronUp, Trophy, Calendar,
   CheckCircle2, MapPin, Plus, X, Trash2,
-  Shuffle, ArrowUp, ArrowDown, GripVertical, Clock, Pencil
+  Shuffle, ArrowUp, ArrowDown, GripVertical, Clock, Pencil,
+  Zap, Moon, CalendarRange
 } from 'lucide-react';
 import { canchasSorteoService, CalculoSlotsResponse } from '../../services/canchasSorteoService';
 import { api } from '../../../../services/api';
@@ -319,6 +320,46 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
       showError('Error', err.response?.data?.message || 'No se pudieron agregar todos los días');
     } finally {
       await loadDiasConfigurados();
+      setLoading(false);
+    }
+  };
+
+  // ============================================
+  // PASO 2: Armar la agenda de un toque (preset por formato)
+  // ============================================
+  const FORMATOS: { id: 'FINDE' | 'EXPRESS' | 'LIGA' | 'NOCTURNO'; label: string; desc: string; Icon: typeof Calendar }[] = [
+    { id: 'FINDE', label: 'Fin de semana', desc: 'Jue/vie zona, sáb llave, dom finales', Icon: Calendar },
+    { id: 'EXPRESS', label: 'Un día', desc: 'Todo en una jornada', Icon: Zap },
+    { id: 'LIGA', label: 'Liga', desc: 'Varios fines de semana', Icon: CalendarRange },
+    { id: 'NOCTURNO', label: 'Nocturno', desc: 'Noches entre semana', Icon: Moon },
+  ];
+
+  const aplicarFormato = async (formato: 'FINDE' | 'EXPRESS' | 'LIGA' | 'NOCTURNO') => {
+    if (canchas.length === 0) {
+      showError('Sin canchas', 'Asigná una sede primero para armar la agenda.');
+      return;
+    }
+    if (fechasDelRango.length === 0) {
+      showError('Sin fechas', 'Definí las fechas del torneo primero.');
+      return;
+    }
+    if (dias.length > 0) {
+      const ok = await confirm({
+        title: '¿Rearmar la agenda?',
+        message: 'Se reemplazan los días actuales por el formato elegido. (No se puede si una categoría ya fue sorteada.)',
+        confirmText: 'Rearmar',
+        cancelText: 'Cancelar',
+      });
+      if (!ok) return;
+    }
+    setLoading(true);
+    try {
+      await canchasSorteoService.aplicarPreset({ tournamentId, formato, fechas: fechasDelRango });
+      showSuccess('Agenda armada', 'Listo. Revisá los días abajo: podés ajustar cualquiera.');
+      await loadDiasConfigurados();
+    } catch (err: any) {
+      showError('No se pudo armar', err.response?.data?.message || 'Error aplicando el formato');
+    } finally {
       setLoading(false);
     }
   };
@@ -886,6 +927,36 @@ export function CanchasSorteoManager({ tournamentId }: Props) {
                     </div>
                   )}
                 </div>
+
+                {/* Armar la agenda de un toque: el organizador elige un formato y el
+                    sistema autogenera los días con su horario y qué fase qué día. */}
+                {fechasDelRango.length > 0 && (
+                  <div className="bg-[#0B0E14] rounded-lg p-4 space-y-3">
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                      <Shuffle className="w-4 h-4 text-[#df2531]" />
+                      Armá la agenda de un toque
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      Elegí un formato y armamos los días, horarios y qué fase se juega cada día. Después ajustás lo que quieras abajo.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {FORMATOS.map(({ id, label, desc, Icon }) => (
+                        <button
+                          key={id}
+                          onClick={() => aplicarFormato(id)}
+                          disabled={loading || canchas.length === 0}
+                          className="text-left p-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#df2531]/50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon className="w-4 h-4 text-[#df2531]" />
+                            <span className="text-sm font-medium text-white">{label}</span>
+                          </div>
+                          <span className="block text-[11px] text-gray-500 leading-tight">{desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Días del torneo — una sola lista: agregás, ajustás horario y fases por día */}
                 {fechasDelRango.length > 0 && (

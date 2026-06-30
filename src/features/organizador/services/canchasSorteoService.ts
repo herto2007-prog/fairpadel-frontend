@@ -93,6 +93,16 @@ export const canchasSorteoService = {
     return response.data;
   },
 
+  // PASO 1.b (preset): aplicar un paquete de agenda por formato (autogenera los días)
+  aplicarPreset: async (data: {
+    tournamentId: string;
+    formato: 'FINDE' | 'EXPRESS' | 'LIGA' | 'NOCTURNO';
+    fechas: string[];
+  }) => {
+    const response = await api.post('/admin/canchas-sorteo/dias/aplicar-preset', data);
+    return response.data;
+  },
+
   // Obtener configuración actual
   obtenerConfiguracion: async (tournamentId: string) => {
     const response = await api.get(`/admin/canchas-sorteo/${tournamentId}/configuracion`);
