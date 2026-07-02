@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Settings2, GitBranch } from 'lucide-react';
+import { Settings2, GitBranch, CalendarDays } from 'lucide-react';
 import { CanchasSorteoManager } from '../canchas-sorteo/CanchasSorteoManager';
 import { BracketManager } from '../bracket';
+import { AgendaCalendario } from './AgendaCalendario';
 
 interface Props {
   tournamentId: string;
 }
 
-type Vista = 'configurar' | 'cuadros';
+type Vista = 'configurar' | 'cuadros' | 'agenda';
 
 // ============================================
 // CUADRO — un solo momento del torneo (¿cuándo y dónde?)
@@ -37,6 +38,12 @@ export function CuadroManager({ tournamentId }: Props) {
             label="Cuadros"
             onClick={() => setVista('cuadros')}
           />
+          <SubTab
+            active={vista === 'agenda'}
+            icon={CalendarDays}
+            label="Agenda"
+            onClick={() => setVista('agenda')}
+          />
         </div>
         <p className="text-xs text-gray-500 mt-2">
           Configurá sedes y días, sorteá las categorías, y después revisá y publicá los cuadros.
@@ -46,6 +53,7 @@ export function CuadroManager({ tournamentId }: Props) {
       {/* Vista activa */}
       {vista === 'configurar' && <CanchasSorteoManager tournamentId={tournamentId} />}
       {vista === 'cuadros' && <BracketManager tournamentId={tournamentId} />}
+      {vista === 'agenda' && <AgendaCalendario tournamentId={tournamentId} />}
     </div>
   );
 }
