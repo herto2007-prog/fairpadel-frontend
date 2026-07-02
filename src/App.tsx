@@ -155,6 +155,13 @@ function App() {
               {/* Canchas/Reservas - públicas (mirar sin login; login al reservar) */}
               <Route path="/sedes" element={<CanchasPage />} />
               <Route path="/sedes/:id" element={<SedeDetailPage />} />
+              {/* Comunidad - pública (lista de jugadores; el feed sigue tras login) */}
+              <Route path="/comunidad" element={<ComunidadV2Page />} />
+              <Route path="/jugadores" element={<ComunidadV2Page />} />
+              {/* Rankings - públicos (consultables desde cualquier lado) */}
+              <Route path="/rankings" element={<RankingsPage />} />
+              <Route path="/circuitos" element={<Navigate to="/rankings" replace />} />
+              <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
             </Route>
 
             {/* Mockup Perfil - Temporal */}
@@ -191,19 +198,8 @@ function App() {
               {/* Inscripciones Públicas - V2 */}
               <Route path="/t/:slug/inscribirse" element={<InscripcionWizardPage />} />
 
-              {/* Rankings (V1) */}
-              <Route path="/rankings" element={<RankingsPage />} />
-
-              {/* Circuitos */}
-              <Route path="/circuitos" element={<Navigate to="/rankings" replace />} />
-              <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
-
               {/* Jugador - Mi agenda (¿cuándo juego?) */}
               <Route path="/mi-agenda" element={<MiAgendaPage />} />
-
-              {/* Comunidad/Jugadores */}
-              <Route path="/comunidad" element={<ComunidadV2Page />} />
-              <Route path="/jugadores" element={<ComunidadV2Page />} />
 
               {/* Dueño - Mis Sedes */}
               <Route path="/mis-sedes" element={<MisSedesPage />} />
