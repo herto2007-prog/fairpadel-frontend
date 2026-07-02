@@ -149,7 +149,7 @@ export function AtrasarAgendaModal({ tournamentId, onClose, onDone }: Props) {
                 {MONTOS.map((m) => (
                   <button key={m} onClick={() => { setMinutos(m); setCustom(''); }}
                     className={`px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${custom === '' && minutos === m ? 'bg-[#df2531] border-[#df2531] text-white' : 'bg-[#0B0E14] border-white/10 text-gray-400'}`}>
-                    {m >= 60 ? `${m / 60}h${m % 60 ? ` ${m % 60}'` : ''}` : `${m}'`}
+                    {m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}'` : ''}` : `${m}'`}
                   </button>
                 ))}
                 <input
