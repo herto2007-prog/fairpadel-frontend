@@ -41,7 +41,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // de entrada ("Organizá tu torneo" → /organizar activa el rol).
   const gestionItems = [
     ...(isOrganizador
-      ? [{ path: '/mis-torneos', label: 'Mis torneos', icon: Target }]
+      ? [
+          { path: '/mis-torneos', label: 'Mis torneos', icon: Target },
+          { path: '/mis-rankings', label: 'Mis rankings', icon: Trophy },
+        ]
       : [{ path: '/organizar', label: 'Organizá tu torneo', icon: Target }]),
     ...(isDueno ? [{ path: '/mis-sedes', label: 'Mis sedes', icon: Building2 }] : []),
   ];

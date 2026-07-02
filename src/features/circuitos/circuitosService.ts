@@ -122,6 +122,50 @@ export interface AsignarTorneoDirectoPayload {
 
 export const circuitosService = {
   // ═══════════════════════════════════════════════════════════
+  // MIS RANKINGS (organizador, autoservicio)
+  // ═══════════════════════════════════════════════════════════
+
+  validarNombre: async (nombre: string) => {
+    const response = await api.get(`/circuitos/validar-nombre?nombre=${encodeURIComponent(nombre)}`);
+    return response.data as { disponible: boolean; motivo?: string; slug?: string };
+  },
+
+  getMisRankings: async () => {
+    const response = await api.get('/circuitos/mis');
+    return response.data;
+  },
+
+  crearMiRanking: async (data: { nombre: string; descripcion?: string; logoUrl?: string; ciudad?: string }) => {
+    const response = await api.post('/circuitos/mis', data);
+    return response.data;
+  },
+
+  editarMiRanking: async (id: string, data: { nombre?: string; descripcion?: string; logoUrl?: string; estado?: string }) => {
+    const response = await api.put(`/circuitos/mis/${id}`, data);
+    return response.data;
+  },
+
+  borrarMiRanking: async (id: string) => {
+    const response = await api.delete(`/circuitos/mis/${id}`);
+    return response.data;
+  },
+
+  getTorneosDisponiblesParaMiRanking: async (id: string) => {
+    const response = await api.get(`/circuitos/mis/${id}/torneos-disponibles`);
+    return response.data;
+  },
+
+  sumarTorneoAMiRanking: async (id: string, torneoId: string) => {
+    const response = await api.post(`/circuitos/mis/${id}/torneos`, { torneoId });
+    return response.data;
+  },
+
+  quitarTorneoDeMiRanking: async (id: string, torneoId: string) => {
+    const response = await api.delete(`/circuitos/mis/${id}/torneos/${torneoId}`);
+    return response.data;
+  },
+
+  // ═══════════════════════════════════════════════════════════
   // PÚBLICOS
   // ═══════════════════════════════════════════════════════════
 

@@ -76,6 +76,7 @@ const FederacionPage = lazy(() => import('./features/admin/pages/FederacionPage'
 const MisTorneosPage = lazy(() => import('./features/organizador/pages/MisTorneosPage').then(m => ({ default: m.MisTorneosPage })));
 const GestionarTorneoPage = lazy(() => import('./features/organizador/pages/GestionarTorneoPage').then(m => ({ default: m.GestionarTorneoPage })));
 const OrganizarPage = lazy(() => import('./features/organizador/pages/OrganizarPage').then(m => ({ default: m.OrganizarPage })));
+const MisRankingsPage = lazy(() => import('./features/circuitos/pages/MisRankingsPage').then(m => ({ default: m.MisRankingsPage })));
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 
 function PageLoader() {
@@ -225,6 +226,7 @@ function App() {
               <Route element={<RoleProtectedRoute allowedRoles={['organizador', 'dueño']} />}>
                 <Route path="/mis-torneos" element={<MisTorneosPage />} />
                 <Route path="/mis-torneos/:id/gestionar" element={<GestionarTorneoPage />} />
+                <Route path="/mis-rankings" element={<MisRankingsPage />} />
                 <Route path="/sede/:sedeId/disponibilidad" element={<GestionDisponibilidadPage />} />
                 <Route path="/sede/:sedeId/suscripcion" element={<SuscripcionPage />} />
               </Route>
