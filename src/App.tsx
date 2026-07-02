@@ -38,7 +38,8 @@ const MiAgendaPage = lazy(() => import('./features/dashboard/pages/MiAgendaPage'
 
 // Rankings (V1)
 const RankingsPage = lazy(() => import('./features/rankings/pages/RankingsPage'));
-const CircuitosListPage = lazy(() => import('./features/circuitos').then(m => ({ default: m.CircuitosListPage })));
+// CircuitosListPage se retiró: /circuitos duplicaba a /rankings (misma lista,
+// dos puertas). Queda UNA puerta (Rankings); el detalle /circuitos/:slug sigue.
 const CircuitoDetailPage = lazy(() => import('./features/circuitos').then(m => ({ default: m.CircuitoDetailPage })));
 const PerfilMockupPage = lazy(() => import('./features/perfil/pages/PerfilMockupPage').then(m => ({ default: m.PerfilMockupPage })));
 const PerfilPage = lazy(() => import('./features/perfil/pages/PerfilPage').then(m => ({ default: m.PerfilPage })));
@@ -194,7 +195,7 @@ function App() {
               <Route path="/rankings" element={<RankingsPage />} />
 
               {/* Circuitos */}
-              <Route path="/circuitos" element={<CircuitosListPage />} />
+              <Route path="/circuitos" element={<Navigate to="/rankings" replace />} />
               <Route path="/circuitos/:slug" element={<CircuitoDetailPage />} />
 
               {/* Jugador - Mi agenda (¿cuándo juego?) */}
