@@ -57,13 +57,22 @@ export default function RankingsPage() {
     <PageLayout showHeader showEffects>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
             <Trophy className="w-8 h-8 text-[#df2531]" />
             Rankings
           </h1>
           <p className="text-gray-400">
-            Explorá el ranking de cada circuito activo y seguí la trayectoria de los jugadores
+            Cada ranking es de su organizador: sus torneos suman a su tabla. Elegí uno y seguí la trayectoria de los jugadores.
+          </p>
+        </div>
+
+        {/* Gobierno de niveles: la categoría es de FairPadel, no de un ranking */}
+        <div className="mb-8 bg-white/[0.02] border border-white/5 rounded-xl p-4 flex items-start gap-3">
+          <Star className="w-4 h-4 text-[#df2531] mt-0.5 shrink-0" />
+          <p className="text-xs text-gray-500">
+            <span className="text-gray-300">Tu categoría (8va → 1ra) la gobierna FairPadel</span> contando los
+            resultados de todos los torneos — los ascensos no dependen de ningún ranking en particular.
           </p>
         </div>
 

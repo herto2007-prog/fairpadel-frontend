@@ -826,8 +826,9 @@ export default function HomeDashboardPage() {
                         <Crown size={20} className="text-[#df2531]" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">Ranking General</p>
-                        <p className="text-xs text-gray-500">{perfil.ranking[0].tipo}</p>
+                        {/* El ranking es del CIRCUITO donde el jugador suma (no hay "general") */}
+                        <p className="text-sm font-medium text-white">{(perfil.ranking[0] as any).alcanceNombre || 'Ranking'}</p>
+                        <p className="text-xs text-gray-500">tu mejor ranking</p>
                       </div>
                     </div>
                     <div className="text-right">
