@@ -20,13 +20,20 @@ export function PublicBracketPage() {
   const loadTorneo = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get(`/public/torneos/${id}`);
-      if (data.success) {
-        setTorneo(data.torneo);
-        // Verificar si el bracket está publicado
-        if (!data.torneo.bracketPublicado) {
-          setError('El bracket de este torneo aún no ha sido publicado');
-        }
+      // La visibilidad del cuadro la decide SOLO el backend (publicado, o
+      // torneo ya en juego): si /categorias viene vacío, no hay nada que ver.
+      const [torneoRes, categoriasRes] = await Promise.all([
+        api.get(`/public/torneos/${id}`),
+        api.get(`/public/torneos/${id}/categorias`),
+      ]);
+      if (!torneoRes.data.success) {
+        setError('Torneo no encontrado');
+        return;
+      }
+      setTorneo(torneoRes.data.torneo);
+      const categorias = categoriasRes.data?.categorias ?? [];
+      if (categorias.length === 0) {
+        setError('El cuadro de este torneo aún no fue publicado');
       }
     } catch (err: any) {
       setError('Torneo no encontrado');

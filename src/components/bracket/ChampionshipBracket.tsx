@@ -98,9 +98,13 @@ export function ChampionshipBracket({
         }));
         setCategorias(cats);
         setCategoriaSeleccionada(cats[0].id);
+      } else {
+        // Sin categorías visibles no hay loadData que apague el spinner
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error cargando categorías:', error);
+      setLoading(false);
     }
   };
 
