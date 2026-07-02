@@ -8,6 +8,13 @@ export interface ReprogramarGeneralResponse {
   distribucionPorDia: Record<string, number>;
 }
 
+export interface AtrasarAgendaResponse {
+  success: boolean;
+  message: string;
+  movidos: number;
+  sinHorario: number;
+}
+
 export const programacionService = {
   // Reprograma TODA la agenda desde cero con el motor predictivo.
   // Incluye las rondas futuras (slot determinístico) y respeta los partidos ya jugados.
@@ -16,6 +23,20 @@ export const programacionService = {
   ): Promise<ReprogramarGeneralResponse> => {
     const { data } = await api.post(
       `/admin/canchas-sorteo/${tournamentId}/reprogramar-general`,
+    );
+    return data;
+  },
+
+  // Atrasa la agenda de UN día (lluvia/demora): corre los partidos no jugados
+  // X minutos, conservando cancha y orden. Los jugados no se tocan.
+  atrasarAgenda: async (
+    tournamentId: string,
+    fecha: string,
+    minutos: number,
+  ): Promise<AtrasarAgendaResponse> => {
+    const { data } = await api.post(
+      `/admin/canchas-sorteo/${tournamentId}/atrasar-agenda`,
+      { fecha, minutos },
     );
     return data;
   },

@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy, Download, CalendarClock } from 'lucide-react';
+import { AlertCircle, Lock, Unlock, Eye, CheckSquare, Square, X, Globe, ExternalLink, Trophy, Download, CalendarClock, CloudRain } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { matchService } from '../../../../services/matchService';
 import { programacionService } from '../../services/programacionService';
 import { BracketView } from './BracketView';
 import { ConfigurarBracketModal } from './ConfigurarBracketModal';
+import { AtrasarAgendaModal } from './AtrasarAgendaModal';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -48,7 +49,8 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
   const [cerrandoGrupo, setCerrandoGrupo] = useState(false);
   const [reSorteando, setReSorteando] = useState(false);
   const [reprogramando, setReprogramando] = useState(false);
-  
+  const [modalAtrasarAbierto, setModalAtrasarAbierto] = useState(false);
+
   const { confirm, ...confirmState } = useConfirm();
   const { showSuccess, showError } = useToast();
 
@@ -555,6 +557,16 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
               {reprogramando ? 'Reprogramando…' : 'Reprogramar agenda'}
             </button>
           )}
+          {haySorteadas && (
+            <button
+              onClick={() => setModalAtrasarAbierto(true)}
+              title="Llovió o se demoró: corre los partidos no jugados de un día X minutos, conservando cancha y orden"
+              className="text-xs text-neutral-400 hover:text-white px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <CloudRain className="w-3.5 h-3.5" />
+              Atrasar día
+            </button>
+          )}
           {!modoSeleccion ? (
             <button
               onClick={() => setModoSeleccion(true)}
@@ -790,6 +802,15 @@ export function BracketManager({ tournamentId }: BracketManagerProps) {
             setShowConfigModal(false);
             loadCategorias();
           }}
+        />
+      )}
+
+      {/* Modal atrasar día (lluvia/demora) */}
+      {modalAtrasarAbierto && (
+        <AtrasarAgendaModal
+          tournamentId={tournamentId}
+          onClose={() => setModalAtrasarAbierto(false)}
+          onDone={() => loadCategorias()}
         />
       )}
 
