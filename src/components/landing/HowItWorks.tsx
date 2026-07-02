@@ -20,8 +20,8 @@ const steps = [
   {
     number: '03',
     icon: Settings,
-    title: 'Generá el fixture',
-    description: 'Con un click, el sistema crea el bracket con sistema paraguayo. Todos juegan mínimo 2 partidos.',
+    title: 'Sorteá y programá',
+    description: 'Con un click, el sistema sortea el cuadro con sistema paraguayo y arma la agenda por cancha y horario.',
     color: 'bg-purple-500',
   },
   {
@@ -172,18 +172,6 @@ export const HowItWorks = () => {
               </div>
             </div>
 
-            {/* Play Button Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-dark/50 backdrop-blur-sm">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-2xl shadow-primary/50"
-              >
-                <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </motion.button>
-            </div>
           </div>
         </motion.div>
       </div>

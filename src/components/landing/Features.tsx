@@ -14,32 +14,32 @@ import { StaggerContainer, StaggerItem } from './AnimatedSection';
 const features = [
   {
     icon: Trophy,
-    title: 'Fixture Automático',
+    title: 'Sorteo Justo Automático',
     description: 'Genera brackets profesionales con sistema de acomodación paraguaya. Todos juegan mínimo 2 partidos.',
     color: 'from-amber-500 to-orange-600',
   },
   {
     icon: Users,
     title: 'Gestión de Inscripciones',
-    description: 'Inscripción directa de parejas, confirmaciones automáticas y lista de espera inteligente.',
+    description: 'Compartís el link y las parejas se inscriben solas. Vos controlás cupos, categorías y pagos.',
     color: 'from-blue-500 to-cyan-600',
   },
   {
     icon: Calendar,
-    title: 'Scheduling Inteligente',
-    description: 'Organiza partidos por cancha y horario automáticamente. Sin conflictos ni solapamientos.',
+    title: 'Agenda por Cancha y Hora',
+    description: 'Calendario visual del torneo: cada partido con su cancha y horario, sin choques ni esperas eternas.',
     color: 'from-purple-500 to-pink-600',
   },
   {
     icon: CreditCard,
-    title: 'Pagos Integrados',
-    description: 'Cobrá inscripciones online con Bancard. Comprobantes digitales y seguimiento automático.',
+    title: 'Control de Pagos',
+    description: 'Cobrá como quieras: efectivo o transferencia. Marcás quién pagó y tenés el estado de cada pareja a la vista.',
     color: 'from-green-500 to-emerald-600',
   },
   {
     icon: BarChart3,
-    title: 'Rankings en Tiempo Real',
-    description: 'Sistema de puntos automático. Rankings globales, por categoría y por sede.',
+    title: 'Tu Propio Ranking',
+    description: 'Creá el ranking de tu circuito gratis. Los puntos se cargan solos al finalizar cada torneo.',
     color: 'from-red-500 to-rose-600',
   },
   {
@@ -50,14 +50,14 @@ const features = [
   },
   {
     icon: Zap,
-    title: 'Notificaciones Push',
-    description: 'Jugadores reciben alertas de sus partidos, resultados y próximas fechas automáticamente.',
+    title: 'Avisos Automáticos',
+    description: 'Cada jugador ve su cuadro, sus horarios y los resultados al instante. Menos preguntas, más juego.',
     color: 'from-yellow-500 to-amber-600',
   },
   {
     icon: Award,
-    title: 'Sistema de Categorías',
-    description: 'Clasificación automática por nivel. Reglas de ascenso y descenso personalizables.',
+    title: 'Cuadro Público',
+    description: 'Compartí el link del cuadro y todos siguen el torneo en vivo, sin necesidad de cuenta.',
     color: 'from-teal-500 to-cyan-600',
   },
 ];
@@ -159,13 +159,11 @@ export const Features = () => {
           </p>
           <motion.a
             href="/register"
-            target="_blank"
-            rel="noopener noreferrer"
             className="btn-primary inline-flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Probar Todas las Features
+            Crear mi cuenta gratis
             <Zap className="w-5 h-5" />
           </motion.a>
         </motion.div>

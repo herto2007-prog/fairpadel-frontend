@@ -34,22 +34,20 @@ export const CTA = () => {
 
             {/* Headline */}
             <h2 className="heading-lg text-white mb-6">
-              ¿Listo para transformar{' '}
-              <span className="text-gradient">tus torneos?</span>
+              El pádel paraguayo{' '}
+              <span className="text-gradient">ya está acá</span>
             </h2>
 
             {/* Subheadline */}
             <p className="text-body text-lg mb-10 max-w-2xl mx-auto">
-              Creá tu cuenta gratis y organizá tu primer torneo 
-              en minutos. Tené todo bajo control desde el primer día.
+              Creá tu cuenta gratis: inscribite a un torneo, organizá el tuyo
+              o reservá una cancha. Todo en minutos.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.a
                 href="/register"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-primary inline-flex items-center justify-center gap-2 text-lg group"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -65,13 +63,13 @@ export const CTA = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Hablar con Ventas
+                Hablar por WhatsApp
               </motion.a>
             </div>
 
             {/* Trust Text */}
             <p className="mt-8 text-gray-500 text-sm">
-              ✓ Setup en 2 minutos • ✓ Sin tarjeta de crédito • ✓ Cancelá cuando quieras
+              ✓ Cuenta gratis en 2 minutos • ✓ Sin tarjeta de crédito • ✓ Soporte en español
             </p>
           </div>
         </FadeIn>

@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   const features = [
-    { icon: Trophy, label: 'Organizá torneos profesionales' },
+    { icon: Trophy, label: 'Jugá torneos con cuadro y horarios claros' },
     { icon: Users, label: 'Conectá con la comunidad' },
-    { icon: Zap, label: 'Gestioná todo en un solo lugar' },
+    { icon: Zap, label: 'Organizá y reservá en un solo lugar' },
   ];
 
   return (
@@ -107,7 +107,7 @@ export const Hero = () => {
               <span className="text-gradient">FairPadel</span>
               <br />
               <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-semibold">
-                La plataforma para organizar torneos de pádel
+                El pádel de Paraguay, en un solo lugar
               </span>
             </motion.h1>
 
@@ -118,9 +118,9 @@ export const Hero = () => {
               transition={{ duration: 0.8, delay: 0.7 }}
               className="text-body text-lg mb-10 max-w-xl mx-auto lg:mx-0"
             >
-              La plataforma pensada para jugadores, organizadores y sedes de pádel en Paraguay. 
-              Brackets automáticos, rankings en tiempo real, reservas de canchas y mucho más. 
-              Todo en un solo lugar.
+              Jugá torneos con tu pareja, seguí tu cuadro y horarios desde el celular,
+              reservá cancha online y subí en el ranking. Y si organizás torneos o tenés
+              canchas, acá está todo lo que necesitás.
             </motion.p>
 
             {/* CTA Buttons */}

@@ -42,19 +42,19 @@ export const SEOSection = () => {
             
             <div className="space-y-4">
               <p>
-                Para los <strong className="text-white">organizadores de torneos</strong>, FairPadel 
-                ofrece herramientas completas: gestión de inscripciones con lista de espera inteligente, 
-                cobro de inscripciones online integrado con Bancard, scheduling automático de partidos 
-                por cancha y horario, y un sistema de notificaciones que mantiene informados a todos 
-                los participantes sobre sus próximos partidos.
+                Para los <strong className="text-white">organizadores de torneos</strong>, FairPadel
+                ofrece herramientas completas: gestión de inscripciones online, control de pagos,
+                agenda automática de partidos por cancha y horario, cuadro público para compartir,
+                rankings propios del circuito y un sistema de notificaciones que mantiene informados
+                a todos los participantes sobre sus próximos partidos.
               </p>
               
               <p>
-                Los <strong className="text-white">jugadores de pádel</strong> pueden encontrar torneos 
-                en su ciudad, inscribirse fácilmente con sus parejas, seguir su progreso en los rankings 
-                y recibir notificaciones de sus partidos. La plataforma está disponible desde cualquier 
-                dispositivo, permitiendo acceder a la información de torneos, resultados y rankings 
-                desde la computadora, tablet o celular.
+                Los <strong className="text-white">jugadores de pádel</strong> pueden encontrar torneos
+                en su ciudad, inscribirse fácilmente con sus parejas, reservar canchas online, seguir
+                su progreso en los rankings y recibir notificaciones de sus partidos. La plataforma está
+                disponible desde cualquier dispositivo, permitiendo acceder a la información de torneos,
+                resultados y rankings desde la computadora, tablet o celular.
               </p>
               
               <p>

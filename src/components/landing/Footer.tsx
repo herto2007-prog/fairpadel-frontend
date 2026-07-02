@@ -7,8 +7,8 @@ const footerLinks = {
   producto: [
     { name: 'Características', href: '#features' },
     { name: 'Precios', href: '#pricing' },
-    { name: 'Demo', href: '#how-it-works' },
-    { name: 'Actualizaciones', href: '#' },
+    { name: 'Cómo funciona', href: '#how-it-works' },
+    { name: 'Ver torneos', href: '/torneos' },
   ],
   empresa: [
     { name: 'Sobre Nosotros', href: '/about' },
@@ -170,9 +170,6 @@ export const Footer = () => {
             <Link to="/terminos" className="text-gray-500 hover:text-primary transition-colors text-sm">
               Términos
             </Link>
-            <a href="#" className="text-gray-500 hover:text-primary transition-colors text-sm">
-              Cookies
-            </a>
           </div>
         </div>
       </div>

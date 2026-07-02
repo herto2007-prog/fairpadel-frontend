@@ -1,28 +1,32 @@
 import { motion } from 'framer-motion';
-import { Quote, Star } from 'lucide-react';
+import { Quote, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { FadeIn } from './AnimatedSection';
 
-const testimonials = [
-  {
-    name: 'Organizador de Torneos',
-    role: '¿Sos organizador?',
-    content: 'Si organizás torneos de pádel, FairPadel te permite crear brackets automáticos, gestionar inscripciones y seguir resultados en tiempo real. Todo desde una sola plataforma.',
-    rating: 5,
-    avatar: 'OT',
-  },
+const perfiles = [
   {
     name: 'Jugador de Pádel',
     role: '¿Sos jugador?',
-    content: 'Encontrá torneos en tu ciudad, inscribite con tu pareja, seguí tus resultados y mirá tu evolución en los rankings. Todo desde el celular.',
-    rating: 5,
+    content: 'Encontrá torneos en tu ciudad, inscribite con tu pareja, seguí tu cuadro y horarios desde el celular y mirá tu evolución en los rankings.',
     avatar: 'JP',
+    cta: 'Crear mi cuenta gratis',
+    ctaLink: '/register',
+  },
+  {
+    name: 'Organizador de Torneos',
+    role: '¿Sos organizador?',
+    content: 'Creá tu torneo en minutos: sorteo justo automático, agenda por cancha y horario, control de pagos y tu propio ranking para fidelizar jugadores.',
+    avatar: 'OT',
+    cta: 'Organizar mi primer torneo',
+    ctaLink: '/organizar',
   },
   {
     name: 'Dueño de Sede',
     role: '¿Tenés canchas?',
-    content: 'Gestioná tus alquileres y torneos en un solo lugar. Ofrecé reservas online a tus clientes y organizá competencias para atraer más jugadores.',
-    rating: 5,
+    content: 'Ofrecé reservas online a tus clientes, sumá tu sede al catálogo nacional y atraé más jugadores con torneos en tus canchas.',
     avatar: 'DS',
+    cta: 'Sumar mi sede',
+    ctaLink: '/suma-tu-sede',
   },
 ];
 
@@ -43,7 +47,7 @@ export const Testimonials = () => {
             viewport={{ once: true }}
             className="inline-block text-primary font-semibold text-sm tracking-wider uppercase mb-4"
           >
-            Testimonios
+            Para cada uno
           </motion.span>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -52,46 +56,48 @@ export const Testimonials = () => {
             transition={{ delay: 0.1 }}
             className="heading-lg text-white mb-6"
           >
-            Lo que dicen los que ya usan{' '}
-            <span className="text-gradient">FairPadel</span>
+            Una plataforma, tres maneras de{' '}
+            <span className="text-gradient">vivirla</span>
           </motion.h2>
         </div>
 
-        {/* Testimonials Grid */}
+        {/* Perfiles Grid */}
         <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <FadeIn key={testimonial.name} delay={index * 0.15}>
+          {perfiles.map((perfil, index) => (
+            <FadeIn key={perfil.name} delay={index * 0.15}>
               <motion.div
                 whileHover={{ y: -5 }}
-                className="glass rounded-2xl p-8 h-full border border-transparent hover:border-primary/20 transition-all duration-500"
+                className="glass rounded-2xl p-8 h-full flex flex-col border border-transparent hover:border-primary/20 transition-all duration-500"
               >
                 {/* Quote Icon */}
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                   <Quote className="w-5 h-5 text-primary" />
                 </div>
 
-                {/* Rating */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  ))}
-                </div>
-
                 {/* Content */}
                 <p className="text-gray-300 mb-6 leading-relaxed">
-                  "{testimonial.content}"
+                  {perfil.content}
                 </p>
 
                 {/* Author */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mt-auto">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-red-600 flex items-center justify-center text-white font-bold">
-                    {testimonial.avatar}
+                    {perfil.avatar}
                   </div>
                   <div>
-                    <p className="text-white font-semibold">{testimonial.name}</p>
-                    <p className="text-gray-500 text-sm">{testimonial.role}</p>
+                    <p className="text-white font-semibold">{perfil.name}</p>
+                    <p className="text-gray-500 text-sm">{perfil.role}</p>
                   </div>
                 </div>
+
+                {/* CTA */}
+                <Link
+                  to={perfil.ctaLink}
+                  className="mt-6 inline-flex items-center gap-2 text-primary hover:text-primary/80 text-sm font-medium group"
+                >
+                  {perfil.cta}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </motion.div>
             </FadeIn>
           ))}
