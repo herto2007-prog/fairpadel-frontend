@@ -43,7 +43,7 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
   const [diasConfig, setDiasConfig] = useState<Set<string>>(new Set());
   const [necesarios, setNecesarios] = useState<number | null>(null);
 
-  const minutosSlot = 70; // default del backend (no se envía; sirve para estimar capacidad)
+  const minutosSlot = 90; // default del preset de agenda (no se envía; sirve para estimar capacidad)
   const [diasSel, setDiasSel] = useState<Set<string>>(new Set());
 
   const [procesando, setProcesando] = useState(false);
@@ -87,12 +87,17 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
     })();
   }, [tournamentId, fechaInicio, fechaFin]);
 
-  // Cada día genera según su horario típico (semana 18–23, finde 14–23).
+  // El formato lo infiere el sistema: 1 día = EXPRESS (todas las fases, 09–22);
+  // más días = FINDE (jue/vie zona, sáb llave, dom finales; si no hay día de
+  // finales, el back reparte solo: zona primero → llave → finales el último día).
+  const formato: 'EXPRESS' | 'FINDE' = diasSel.size === 1 ? 'EXPRESS' : 'FINDE';
+
+  // Cada día genera según su horario típico (semana 18–23, finde 14–23; EXPRESS 09–22).
   // Igual que el motor: cuenta todo partido que EMPIEZA antes de la hora tope,
   // aunque termine después (la hora fin es tope para empezar, no para terminar)
   // → redondeo hacia arriba, no hacia abajo.
   const generables = [...diasSel].reduce((acc, f) => {
-    const h = horarioPorTipoDia(f);
+    const h = formato === 'EXPRESS' ? { horaInicio: '09:00', horaFin: '22:00' } : horarioPorTipoDia(f);
     const minutos = aMin(h.horaFin) - aMin(h.horaInicio);
     const slots = Math.max(0, Math.ceil(minutos / (minutosSlot || 1))) * canchas.length;
     return acc + slots;
@@ -108,15 +113,13 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
 
     setProcesando(true);
     try {
-      // 1. Crear los días seleccionados que falten configurar, cada uno con su
-      //    horario típico (semana 18–23, finde 14–23).
-      const aCrear = [...diasSel].filter((f) => !diasConfig.has(f)).sort();
-      for (const fecha of aCrear) {
-        const h = horarioPorTipoDia(fecha);
-        await canchasSorteoService.configurarDiaJuego({
-          tournamentId, fecha, horaInicio: h.horaInicio, horaFin: h.horaFin, canchasIds: canchas.map((c) => c.id),
-        });
-      }
+      // 1. Armar los días con el preset de agenda: además del horario típico,
+      //    reparte QUÉ FASES admite cada día (zona primero, finales el último) —
+      //    sin esto, un torneo fuera del finde deja la llave sin horario.
+      //    Reemplaza los días ya configurados (pre-sorteo no hay partidos aún).
+      await canchasSorteoService.aplicarPreset({
+        tournamentId, formato, fechas: [...diasSel].sort(),
+      });
       // 2. Cerrar inscripciones y sortear las categorías elegibles.
       const r = await canchasSorteoService.cerrarInscripcionesYsortear({
         tournamentId, categoriasIds: elegibles.map((c) => c.id),
@@ -172,7 +175,13 @@ export function ArmarTodoModal({ tournamentId, fechaInicio, fechaFin, onClose, o
                 {/* Horario por tipo de día (no un horario único para todos) */}
                 <div className="bg-[#0B0E14] border border-white/10 rounded-lg p-3 text-xs text-gray-400 flex items-start gap-2">
                   <Clock className="w-4 h-4 mt-0.5 text-[#df2531] shrink-0" />
-                  <span>Cada día usa su horario típico: <span className="text-white">semana 18–23</span>, <span className="text-white">finde 14–23</span>. Lo afinás día por día en “Configurar y sortear”.</span>
+                  <span>
+                    {formato === 'EXPRESS'
+                      ? <>Un solo día: se juega todo de corrido, <span className="text-white">09–22</span>.</>
+                      : <>Cada día usa su horario típico (<span className="text-white">semana 18–23</span>, <span className="text-white">finde 14–23</span>) y las fases se reparten solas: zona los primeros días, finales el último.</>}
+                    {' '}Lo afinás día por día en “Configurar y sortear”.
+                    {diasConfig.size > 0 && <span className="text-amber-300"> Los días que ya configuraste se rearman con este plan.</span>}
+                  </span>
                 </div>
 
                 {/* Días */}
