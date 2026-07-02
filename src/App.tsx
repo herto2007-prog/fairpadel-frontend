@@ -75,6 +75,7 @@ const FederacionPage = lazy(() => import('./features/admin/pages/FederacionPage'
 // Organizador
 const MisTorneosPage = lazy(() => import('./features/organizador/pages/MisTorneosPage').then(m => ({ default: m.MisTorneosPage })));
 const GestionarTorneoPage = lazy(() => import('./features/organizador/pages/GestionarTorneoPage').then(m => ({ default: m.GestionarTorneoPage })));
+const OrganizarPage = lazy(() => import('./features/organizador/pages/OrganizarPage').then(m => ({ default: m.OrganizarPage })));
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 
 function PageLoader() {
@@ -216,6 +217,9 @@ function App() {
 
               {/* Feed / Novedades - Ahora redirige al dashboard unificado */}
               <Route path="/novedades" element={<HomeDashboardPage />} />
+
+              {/* Puerta de entrada del organizador (cualquier usuario logueado) */}
+              <Route path="/organizar" element={<OrganizarPage />} />
 
               {/* Organizador - Gestión de Torneos */}
               <Route element={<RoleProtectedRoute allowedRoles={['organizador', 'dueño']} />}>

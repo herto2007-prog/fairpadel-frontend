@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Plus, Users, Calendar, MapPin, ChevronRight, 
@@ -31,13 +32,18 @@ interface Tournament {
 
 export function MisTorneosPage() {
   useNoIndex();
-  const [showWizard, setShowWizard] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?crear=1: llegar con el wizard ya abierto (ej. recién activó el modo organizador)
+  const [showWizard, setShowWizard] = useState(searchParams.get('crear') === '1');
   const [torneos, setTorneos] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [createdTorneo, setCreatedTorneo] = useState<Tournament | null>(null);
 
   useEffect(() => {
     loadTorneos();
+    if (searchParams.get('crear') === '1') {
+      setSearchParams({}, { replace: true }); // que un F5 no reabra el wizard
+    }
   }, []);
 
   const loadTorneos = async () => {

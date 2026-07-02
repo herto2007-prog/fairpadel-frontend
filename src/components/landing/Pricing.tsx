@@ -37,7 +37,7 @@ const plans = [
       'Soporte prioritario',
     ],
     cta: 'Organizar Torneos',
-    ctaLink: 'https://wa.me/595982342473?text=Hola%20FairPadel!%20Me%20interesa%20organizar%20torneos%20con%20ustedes.',
+    ctaLink: '/organizar',
     popular: true,
     gradient: 'from-primary to-red-600',
   },
@@ -148,8 +148,9 @@ export const Pricing = () => {
                   {/* CTA Button */}
                   <motion.a
                     href={plan.ctaLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    {...(plan.ctaLink.startsWith('http')
+                      ? { target: '_blank', rel: 'noopener noreferrer' }
+                      : {})}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`w-full py-4 rounded-xl font-semibold text-center block mb-8 transition-all duration-300 ${

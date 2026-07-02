@@ -5,7 +5,7 @@ import {
   Mail, Lock, Eye, EyeOff, ArrowRight, 
   CheckCircle, Sparkles, ArrowLeft
 } from 'lucide-react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../../../services/authService';
@@ -22,7 +22,10 @@ export const LoginPage = () => {
   const [resetSent, setResetSent] = useState(false);
   const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  // Si venía a una ruta protegida (ej. /organizar desde la landing), volver ahí.
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
 
   // Redirigir si ya está autenticado
   if (authLoading) {
@@ -38,7 +41,7 @@ export const LoginPage = () => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={from} replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -48,7 +51,7 @@ export const LoginPage = () => {
     
     try {
       await login(documento, password);
-      navigate('/dashboard');
+      navigate(from);
     } catch (err: any) {
       setLoginError(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {

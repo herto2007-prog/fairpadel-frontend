@@ -37,9 +37,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { path: '/instructores', label: 'Instructores', icon: Users },
   ];
 
-  // Gestión: van al menú del avatar (solo a quien le corresponde el rol)
+  // Gestión: van al menú del avatar. Quien no es organizador ve la puerta
+  // de entrada ("Organizá tu torneo" → /organizar activa el rol).
   const gestionItems = [
-    ...(isOrganizador ? [{ path: '/mis-torneos', label: 'Mis torneos', icon: Target }] : []),
+    ...(isOrganizador
+      ? [{ path: '/mis-torneos', label: 'Mis torneos', icon: Target }]
+      : [{ path: '/organizar', label: 'Organizá tu torneo', icon: Target }]),
     ...(isDueno ? [{ path: '/mis-sedes', label: 'Mis sedes', icon: Building2 }] : []),
   ];
 
