@@ -10,6 +10,7 @@ import { overviewService, OverviewData, TareaPendiente } from '../../services/ov
 import { formatDatePY } from '../../../../utils/date';
 import { RoadmapTorneo } from './RoadmapTorneo';
 import { ArmarTodoModal } from './ArmarTodoModal';
+import { RankingsDelTorneo } from './RankingsDelTorneo';
 import { useConfirm } from '../../../../hooks/useConfirm';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useToast } from '../../../../components/ui/ToastProvider';
@@ -415,6 +416,9 @@ export function OverviewTab({ tournamentId, onTabChange, onEditar, reloadSignal 
           </button>
         </div>
       </div>
+
+      {/* Rankings donde suma este torneo (puerta torneo→ranking) */}
+      <RankingsDelTorneo tournamentId={tournamentId} />
 
       <ConfirmModal
         isOpen={confirmState.isOpen}
