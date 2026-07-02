@@ -9,6 +9,7 @@ import { api } from '../../../services/api';
 import { BackgroundEffects } from '../../../components/ui/BackgroundEffects';
 import { formatDatePYShort } from '../../../utils/date';
 import { AlertaCiudadCTA } from '../components/AlertaCiudadCTA';
+import { useAuth } from '../../auth/context/AuthContext';
 
 interface Torneo {
   id: string;
@@ -50,6 +51,7 @@ interface Filtros {
 
 export function TorneosPublicListPage() {
   // const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [torneos, setTorneos] = useState<Torneo[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -325,26 +327,8 @@ export function TorneosPublicListPage() {
                 Limpiar filtros
               </button>
 
-              {/* CTA de oferta: cuando no hay torneos, invitar a crear un americano gratis */}
-              <div className="max-w-md mx-auto mt-10 p-6 bg-emerald-500/[0.07] border border-emerald-500/20 rounded-2xl">
-                <div className="w-12 h-12 bg-emerald-500/15 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h4 className="text-lg font-semibold text-white mb-1">¿No hay torneos en tu ciudad?</h4>
-                <p className="text-white/50 text-sm mb-5">
-                  Creá un torneo americano gratis en pocos minutos. Sin sede ni canchas: invitás a tus amigos y a jugar.
-                </p>
-                <Link
-                  to="/americano?crear=1"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-medium rounded-xl transition-colors"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Crear un americano gratis
-                </Link>
-              </div>
-
-              {/* CTA: avisarme cuando haya torneos en mi ciudad */}
-              <AlertaCiudadCTA ciudadInicial={filtros.ciudad} />
+              {/* CTA: avisarme cuando haya torneos en mi ciudad (solo logueados) */}
+              {isAuthenticated && <AlertaCiudadCTA ciudadInicial={filtros.ciudad} />}
             </motion.div>
           ) : (
             <>

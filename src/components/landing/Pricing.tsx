@@ -54,7 +54,7 @@ const plans = [
       'Tu sede en el catálogo nacional',
     ],
     cta: 'Empezar como Sede',
-    ctaLink: 'https://wa.me/595982342473?text=Hola%20FairPadel!%20Tengo%20un%20complejo%20de%20p%C3%A1del%20y%20quiero%20saber%20m%C3%A1s%20sobre%20el%20sistema%20de%20reservas.',
+    ctaLink: '/suma-tu-sede',
     popular: false,
     gradient: 'from-amber-500 to-orange-600',
   },
