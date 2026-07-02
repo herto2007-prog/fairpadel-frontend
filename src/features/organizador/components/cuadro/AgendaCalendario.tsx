@@ -109,6 +109,22 @@ export function AgendaCalendario({ tournamentId }: Props) {
     [partidos],
   );
 
+  // Partidos CON horario pero sin franja en la grilla (ej. el god-panel de
+  // Auditoría les puso una hora a medida). Si no los mostramos, el calendario
+  // los "pierde" — van en su propia lista, arrastrables a una franja.
+  const partidosEnGrilla = useMemo(() => {
+    const s = new Set<string>();
+    for (const d of dias) for (const sl of d.slots) if (sl.ocupadoPor) s.add(sl.ocupadoPor.partidoId);
+    return s;
+  }, [dias]);
+  const fueraDeGrilla = useMemo(
+    () =>
+      partidos.filter(
+        (p) => !p.esBye && !TERMINALES.includes(p.estado) && p.programacion?.hora && !partidosEnGrilla.has(p.id),
+      ),
+    [partidos, partidosEnGrilla],
+  );
+
   const esAncla = (matchId: string) => TERMINALES.includes(partidoById.get(matchId)?.estado || '');
 
   // ── Operaciones (el back valida; acá solo cableamos) ──
@@ -274,25 +290,47 @@ export function AgendaCalendario({ tournamentId }: Props) {
           <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />Jugado (anclado)</span>
         </div>
 
-        {sinHorario.length > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 max-w-full">
-            <p className="text-amber-300 text-[11.5px] flex items-center gap-1.5 mb-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> Sin horario ({sinHorario.length}) — arrastralos a un hueco libre:
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {sinHorario.map((p) => (
-                <button key={p.id}
-                  draggable={!procesando}
-                  onDragStart={() => setSeleccionado(p.id)}
-                  onDragEnd={() => setSeleccionado((s) => (s === p.id ? null : s))}
-                  onClick={() => !procesando && setSeleccionado(seleccionado === p.id ? null : p.id)}
-                  className={`text-[11px] px-2 py-1 rounded-md border bg-[#0B0E14] transition-all cursor-grab ${seleccionado === p.id ? 'ring-2 ring-[#df2531] border-transparent text-white' : 'border-white/10 text-gray-300'}`}>
-                  {p.categoria?.nombre} · {faseLabel(p.fase)} · {p.pareja1} vs {p.pareja2}
-                </button>
-              ))}
+        <div className="flex flex-col gap-2 max-w-full">
+          {sinHorario.length > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+              <p className="text-amber-300 text-[11.5px] flex items-center gap-1.5 mb-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" /> Sin horario ({sinHorario.length}) — arrastralos a un hueco libre:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {sinHorario.map((p) => (
+                  <button key={p.id}
+                    draggable={!procesando}
+                    onDragStart={() => setSeleccionado(p.id)}
+                    onDragEnd={() => setSeleccionado((s) => (s === p.id ? null : s))}
+                    onClick={() => !procesando && setSeleccionado(seleccionado === p.id ? null : p.id)}
+                    className={`text-[11px] px-2 py-1 rounded-md border bg-[#0B0E14] transition-all cursor-grab ${seleccionado === p.id ? 'ring-2 ring-[#df2531] border-transparent text-white' : 'border-white/10 text-gray-300'}`}>
+                    {p.categoria?.nombre} · {faseLabel(p.fase)} · {p.pareja1} vs {p.pareja2}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {fueraDeGrilla.length > 0 && (
+            <div className="bg-sky-500/10 border border-sky-500/30 rounded-lg px-3 py-2">
+              <p className="text-sky-300 text-[11.5px] flex items-center gap-1.5 mb-1.5">
+                <Clock className="w-3.5 h-3.5" /> Con horario propio, fuera de la grilla ({fueraDeGrilla.length}) — arrastralos a una franja si querés que ocupen cancha:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {fueraDeGrilla.map((p) => (
+                  <button key={p.id}
+                    draggable={!procesando}
+                    onDragStart={() => setSeleccionado(p.id)}
+                    onDragEnd={() => setSeleccionado((s) => (s === p.id ? null : s))}
+                    onClick={() => !procesando && setSeleccionado(seleccionado === p.id ? null : p.id)}
+                    className={`text-[11px] px-2 py-1 rounded-md border bg-[#0B0E14] transition-all cursor-grab ${seleccionado === p.id ? 'ring-2 ring-[#df2531] border-transparent text-white' : 'border-white/10 text-gray-300'}`}>
+                    {p.categoria?.nombre} · {faseLabel(p.fase)} · {p.pareja1} vs {p.pareja2} · {formatDatePY(p.programacion!.fecha)} {p.programacion!.hora}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {procesando && (
